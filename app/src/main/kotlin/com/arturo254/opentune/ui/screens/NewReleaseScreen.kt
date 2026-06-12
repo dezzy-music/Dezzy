@@ -4,90 +4,94 @@
  * Licensed Under GPL-3.0 | see git history for contributors
  */
 
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
-
 package com.arturo254.opentune.ui.screens
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularWavyProgressIndicator
-import androidx.compose.material3.ElevatedButton
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import coil3.compose.AsyncImage
 import com.arturo254.opentune.LocalPlayerAwareWindowInsets
 import com.arturo254.opentune.LocalPlayerConnection
 import com.arturo254.opentune.R
-import com.arturo254.opentune.constants.GridThumbnailHeight
+import com.arturo254.opentune.innertube.models.AlbumItem
 import com.arturo254.opentune.ui.component.IconButton
 import com.arturo254.opentune.ui.component.LocalMenuState
-import com.arturo254.opentune.ui.component.YouTubeGridItem
 import com.arturo254.opentune.ui.component.shimmer.GridItemPlaceHolder
 import com.arturo254.opentune.ui.component.shimmer.ShimmerHost
 import com.arturo254.opentune.ui.menu.YouTubeAlbumMenu
 import com.arturo254.opentune.ui.utils.backToMain
-import com.arturo254.opentune.viewmodels.NewReleaseContent
 import com.arturo254.opentune.viewmodels.NewReleaseUiState
 import com.arturo254.opentune.viewmodels.NewReleaseViewModel
 
 @OptIn(
     ExperimentalFoundationApi::class,
     ExperimentalMaterial3Api::class,
-    ExperimentalMaterial3ExpressiveApi::class
+    ExperimentalMaterial3ExpressiveApi::class,
 )
 @Composable
 fun NewReleaseScreen(
@@ -102,462 +106,740 @@ fun NewReleaseScreen(
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
 
     val uiState by viewModel.uiState.collectAsState()
-    val content by viewModel.content.collectAsState()
+    val albumsList by viewModel.albums.collectAsState(initial = emptyList())
+    val singlesList by viewModel.singles.collectAsState(initial = emptyList())
+    val epsList by viewModel.eps.collectAsState(initial = emptyList())
 
     val coroutineScope = rememberCoroutineScope()
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val systemBarsTopPadding =
+        with(LocalDensity.current) { WindowInsets.systemBars.getTop(this).toDp() }
 
-    Scaffold(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .nestedScroll(scrollBehavior.nestedScrollConnection),
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-        contentWindowInsets = LocalPlayerAwareWindowInsets.current,
-        topBar = {
-            LargeTopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.new_releases),
-                        fontWeight = FontWeight.Bold,
+    ) {
+        LazyColumn(
+            contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
+            verticalArrangement = Arrangement.spacedBy(0.dp),
+        ) {
+            // Espacio TopAppBar
+            item { Spacer(modifier = Modifier.height(72.dp)) }
+
+            // ── Hero Stats ──────────────────────────────────────────────────
+            item {
+                AnimatedVisibility(
+                    visible = uiState is NewReleaseUiState.Success,
+                    enter = fadeIn(tween(500)) + slideInVertically(
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMediumLow,
+                        ),
+                        initialOffsetY = { -it / 2 },
+                    ),
+                ) {
+                    NewReleaseHero(
+                        albumCount = albumsList.size,
+                        singleCount = singlesList.size,
+                        epCount = epsList.size,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
                     )
-                },
-                navigationIcon = {
-                    IconButton(
-                        onClick = navController::navigateUp,
-                        onLongClick = navController::backToMain,
-                    ) {
-                        Icon(
-                            painterResource(R.drawable.arrow_back),
-                            contentDescription = null,
+                }
+                // Shimmer del hero mientras carga
+                AnimatedVisibility(visible = uiState is NewReleaseUiState.Loading) {
+                    ShimmerHost {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(96.dp)
+                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                                .clip(RoundedCornerShape(24.dp))
+                                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
                         )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    navigationIconContentColor = Color.Unspecified,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    actionIconContentColor = Color.Unspecified
-                ),
-                scrollBehavior = scrollBehavior,
-            )
-        },
-    ) { innerPadding ->
-        AnimatedContent(
-            targetState = uiState,
-            transitionSpec = {
-                fadeIn(tween(300)) togetherWith fadeOut(tween(150))
-            },
-            modifier = Modifier.fillMaxSize(),
-            label = "NewReleaseContent",
-        ) { state ->
-            when (state) {
-                NewReleaseUiState.Loading -> {
-                    NewReleaseLoadingState(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding),
-                    )
                 }
+            }
 
-                is NewReleaseUiState.Error -> {
-                    NewReleaseErrorState(
-                        message = state.message,
+            // ── Sección Albums ──────────────────────────────────────────────
+            item {
+                ReleaseSectionHeader(
+                    title = stringResource(R.string.albums),
+                    count = if (uiState is NewReleaseUiState.Loading) null else albumsList.size,
+                    iconRes = R.drawable.album,
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.padding(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 16.dp,
+                        bottom = 4.dp
+                    ),
+                )
+            }
+            item {
+                AnimatedContent(
+                    targetState = uiState is NewReleaseUiState.Loading,
+                    transitionSpec = { fadeIn(tween(400)) togetherWith fadeOut(tween(250)) },
+                    label = "albums_carousel",
+                ) { isLoading ->
+                    if (isLoading || albumsList.isEmpty()) {
+                        CarouselShimmerRow()
+                    } else {
+                        M3Carousel(
+                            items = albumsList,
+                            isPlaying = isPlaying,
+                            mediaMetadata = mediaMetadata,
+                            navController = navController,
+                            haptic = haptic,
+                            menuState = menuState,
+                        )
+                    }
+                }
+            }
+
+            item {
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                )
+            }
+
+            // ── Sección Singles ─────────────────────────────────────────────
+            item {
+                ReleaseSectionHeader(
+                    title = stringResource(R.string.singles),
+                    count = if (uiState is NewReleaseUiState.Loading) null else singlesList.size,
+                    iconRes = R.drawable.music_note,
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                    modifier = Modifier.padding(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 8.dp,
+                        bottom = 4.dp
+                    ),
+                )
+            }
+            item {
+                AnimatedContent(
+                    targetState = uiState is NewReleaseUiState.Loading,
+                    transitionSpec = { fadeIn(tween(400)) togetherWith fadeOut(tween(250)) },
+                    label = "singles_carousel",
+                ) { isLoading ->
+                    if (isLoading || singlesList.isEmpty()) {
+                        CarouselShimmerRow()
+                    } else {
+                        M3Carousel(
+                            items = singlesList,
+                            isPlaying = isPlaying,
+                            mediaMetadata = mediaMetadata,
+                            navController = navController,
+                            haptic = haptic,
+                            menuState = menuState,
+                        )
+                    }
+                }
+            }
+
+            item {
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                )
+            }
+
+            // ── Sección EPs ─────────────────────────────────────────────────
+            item {
+                ReleaseSectionHeader(
+                    title = "EPs",
+                    count = if (uiState is NewReleaseUiState.Loading) null else epsList.size,
+                    iconRes = R.drawable.queue_music,
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.padding(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 8.dp,
+                        bottom = 4.dp
+                    ),
+                )
+            }
+            item {
+                AnimatedContent(
+                    targetState = uiState is NewReleaseUiState.Loading,
+                    transitionSpec = { fadeIn(tween(400)) togetherWith fadeOut(tween(250)) },
+                    label = "eps_carousel",
+                ) { isLoading ->
+                    if (isLoading || epsList.isEmpty()) {
+                        CarouselShimmerRow()
+                    } else {
+                        M3Carousel(
+                            items = epsList,
+                            isPlaying = isPlaying,
+                            mediaMetadata = mediaMetadata,
+                            navController = navController,
+                            haptic = haptic,
+                            menuState = menuState,
+                        )
+                    }
+                }
+            }
+
+            item { Spacer(modifier = Modifier.height(16.dp)) }
+
+            // ── Error / Empty ───────────────────────────────────────────────
+            when (val state = uiState) {
+                is NewReleaseUiState.Error -> item {
+                    ErrorState(
+                        message = state.throwable?.message
+                            ?: stringResource(R.string.error_unknown),
                         onRetry = viewModel::retry,
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding),
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 32.dp),
                     )
                 }
 
-                NewReleaseUiState.Empty -> {
-                    NewReleaseEmptyState(
+                is NewReleaseUiState.Empty -> item {
+                    EmptyState(
                         onRefresh = viewModel::retry,
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding),
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 32.dp),
                     )
                 }
 
-                is NewReleaseUiState.Success -> {
-                    NewReleaseCategoriesContent(
-                        content = state.content,
-                        activeAlbumId = mediaMetadata?.album?.id,
-                        isPlaying = isPlaying,
-                        coroutineScope = coroutineScope,
-                        paddingValues = innerPadding,
-                        onAlbumClick = { album ->
-                            navController.navigate("album/${album.id}")
-                        },
-                        onAlbumLongClick = { album ->
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            menuState.show {
-                                YouTubeAlbumMenu(
-                                    albumItem = album,
-                                    navController = navController,
-                                    onDismiss = menuState::dismiss,
-                                )
-                            }
-                        },
-                    )
-                }
+                else -> Unit
             }
         }
+
+        // TopAppBar flotante
+        TopAppBar(
+            modifier = Modifier.align(Alignment.TopCenter),
+            title = { Text(stringResource(R.string.new_release_albums)) },
+            navigationIcon = {
+                IconButton(
+                    onClick = navController::navigateUp,
+                    onLongClick = navController::backToMain,
+                ) {
+                    Icon(
+                        painterResource(R.drawable.arrow_back),
+                        contentDescription = null,
+                    )
+                }
+            },
+            scrollBehavior = scrollBehavior,
+        )
     }
 }
 
-@Immutable
-private enum class NewReleaseCategory(
-    val titleRes: Int,
-    val contentType: String,
-) {
-    Albums(
-        titleRes = R.string.albums,
-        contentType = "new_release_album_grid_item",
-    ),
-    Singles(
-        titleRes = R.string.singles,
-        contentType = "new_release_single_grid_item",
-    ),
-    Ep(
-        titleRes = R.string.ep,
-        contentType = "new_release_ep_grid_item",
-    ),
-}
+// ═══════════════════════════════════════════════════════════════════════════
+// Hero Stats
+// ═══════════════════════════════════════════════════════════════════════════
 
-@Immutable
-private data class NewReleaseSection(
-    val category: NewReleaseCategory,
-    val releases: List<com.arturo254.opentune.innertube.models.AlbumItem>,
-)
-
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun NewReleaseCategoriesContent(
-    content: NewReleaseContent,
-    activeAlbumId: String?,
-    isPlaying: Boolean,
-    coroutineScope: kotlinx.coroutines.CoroutineScope,
-    paddingValues: PaddingValues,
-    onAlbumClick: (com.arturo254.opentune.innertube.models.AlbumItem) -> Unit,
-    onAlbumLongClick: (com.arturo254.opentune.innertube.models.AlbumItem) -> Unit,
+private fun NewReleaseHero(
+    albumCount: Int,
+    singleCount: Int,
+    epCount: Int,
+    modifier: Modifier = Modifier,
 ) {
-    val sections = remember(content) {
-        buildList {
-            if (content.albums.isNotEmpty()) {
-                add(NewReleaseSection(NewReleaseCategory.Albums, content.albums))
-            }
-            if (content.singles.isNotEmpty()) {
-                add(NewReleaseSection(NewReleaseCategory.Singles, content.singles))
-            }
-            if (content.eps.isNotEmpty()) {
-                add(NewReleaseSection(NewReleaseCategory.Ep, content.eps))
-            }
-        }
-    }
-
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = GridThumbnailHeight + 24.dp),
-        contentPadding = paddingValues,
-        modifier = Modifier.fillMaxSize(),
+    ElevatedCard(
+        modifier = modifier,
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.dp),
     ) {
-        sections.forEach { section ->
-            item(
-                key = "new_release_section_header_${section.category.name}",
-                span = { GridItemSpan(maxLineSpan) },
-                contentType = "new_release_section_header",
-            ) {
-                NewReleaseSectionHeader(
-                    title = stringResource(section.category.titleRes),
-                    count = section.releases.size,
-                )
-            }
-
-            item(
-                key = "new_release_section_${section.category.name}",
-                span = { GridItemSpan(maxLineSpan) },
-                contentType = "new_release_horizontal_section",
-            ) {
-                NewReleaseHorizontalSection(
-                    releases = section.releases,
-                    contentType = section.category.contentType,
-                    activeAlbumId = activeAlbumId,
-                    isPlaying = isPlaying,
-                    coroutineScope = coroutineScope,
-                    onAlbumClick = onAlbumClick,
-                    onAlbumLongClick = onAlbumLongClick,
-                )
-            }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 16.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            HeroStat(
+                count = albumCount,
+                label = stringResource(R.string.albums),
+                iconRes = R.drawable.album,
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+            VerticalDividerLine()
+            HeroStat(
+                count = singleCount,
+                label = stringResource(R.string.singles),
+                iconRes = R.drawable.music_note,
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+            )
+            VerticalDividerLine()
+            HeroStat(
+                count = epCount,
+                label = "EPs",
+                iconRes = R.drawable.queue_music,
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
         }
     }
 }
 
 @Composable
-private fun NewReleaseSectionHeader(
-    title: String,
+private fun HeroStat(
     count: Int,
+    label: String,
+    iconRes: Int,
+    containerColor: androidx.compose.ui.graphics.Color,
+    contentColor: androidx.compose.ui.graphics.Color,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 20.dp, top = 16.dp, end = 20.dp, bottom = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = containerColor,
+            modifier = Modifier.size(52.dp),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    painter = painterResource(iconRes),
+                    contentDescription = null,
+                    tint = contentColor,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+        }
+        AnimatedContent(
+            targetState = count,
+            transitionSpec = {
+                (fadeIn(tween(300)) + slideInVertically { it / 2 }) togetherWith
+                        fadeOut(tween(200))
+            },
+            label = "hero_count_$label",
+        ) { c ->
+            Text(
+                text = c.toString(),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Medium,
+        )
+    }
+}
+
+@Composable
+private fun VerticalDividerLine() {
+    Box(
+        modifier = Modifier
+            .height(52.dp)
+            .width(1.dp)
+            .background(
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                RoundedCornerShape(1.dp),
+            ),
+    )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Section Header — M3 Expressive pill style
+// ═══════════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun ReleaseSectionHeader(
+    title: String,
+    count: Int?,
+    iconRes: Int,
+    containerColor: androidx.compose.ui.graphics.Color,
+    contentColor: androidx.compose.ui.graphics.Color,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        // Pill icon
+        Surface(
+            shape = CircleShape,
+            color = containerColor,
+            modifier = Modifier.size(36.dp),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    painter = painterResource(iconRes),
+                    contentDescription = null,
+                    tint = contentColor,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        }
+
         Text(
             text = title,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
         )
-        Text(
-            text = stringResource(R.string.n_releases, count),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+
+        // Badge count
+        AnimatedVisibility(visible = count != null && count > 0) {
+            Surface(
+                shape = RoundedCornerShape(50),
+                color = containerColor,
+            ) {
+                Text(
+                    text = count.toString(),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = contentColor,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                )
+            }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// M3 HorizontalMultiBrowseCarousel real
+// ═══════════════════════════════════════════════════════════════════════════
+
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalMaterial3ExpressiveApi::class,
+    ExperimentalFoundationApi::class
+)
+@Composable
+private fun M3Carousel(
+    items: List<AlbumItem>,
+    isPlaying: Boolean,
+    mediaMetadata: com.arturo254.opentune.models.MediaMetadata?,
+    navController: NavController,
+    haptic: androidx.compose.ui.hapticfeedback.HapticFeedback,
+    menuState: com.arturo254.opentune.ui.component.MenuState,
+) {
+    val distinctItems = items.distinctBy { it.id }
+    val carouselState = rememberCarouselState { distinctItems.size }
+
+    HorizontalMultiBrowseCarousel(
+        state = carouselState,
+        modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight()
+            .padding(vertical = 8.dp),
+        preferredItemWidth = 128.dp,
+        itemSpacing = 8.dp,
+        contentPadding = PaddingValues(horizontal = 16.dp),
+    ) { i ->
+        val album = distinctItems[i]
+        val isActive = mediaMetadata?.album?.id == album.id
+        CarouselCard(
+            album = album,
+            isActive = isActive,
+            isPlaying = isPlaying,
+            onClick = { navController.navigate("album/${album.id}") },
+            onLongClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                menuState.show {
+                    YouTubeAlbumMenu(
+                        albumItem = album,
+                        navController = navController,
+                        onDismiss = menuState::dismiss,
+                    )
+                }
+            },
         )
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun NewReleaseHorizontalSection(
-    releases: List<com.arturo254.opentune.innertube.models.AlbumItem>,
-    contentType: String,
-    activeAlbumId: String?,
+private fun CarouselCard(
+    album: AlbumItem,
+    isActive: Boolean,
     isPlaying: Boolean,
-    coroutineScope: kotlinx.coroutines.CoroutineScope,
-    onAlbumClick: (com.arturo254.opentune.innertube.models.AlbumItem) -> Unit,
-    onAlbumLongClick: (com.arturo254.opentune.innertube.models.AlbumItem) -> Unit,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
 ) {
-    // Siempre usar carrusel, incluso con 1 item
-    val carouselState = rememberCarouselState { releases.size }
+    val elevation by animateFloatAsState(
+        targetValue = if (isActive) 8f else 2f,
+        animationSpec = spring(
+            Spring.DampingRatioMediumBouncy,
+            Spring.StiffnessMedium,
+        ),
+        label = "card_elevation",
+    )
 
-    HorizontalMultiBrowseCarousel(
-        state = carouselState,
-        preferredItemWidth = 180.dp,
-        itemSpacing = 12.dp,
-        contentPadding = PaddingValues(horizontal = 16.dp),
+    Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .height(216.dp),
-    ) { index ->
-        val album = releases[index]
-        YouTubeGridItem(
-            item = album,
-            isActive = activeAlbumId == album.id,
-            isPlaying = isPlaying,
-            fillMaxWidth = false,  // Importante: false para que respete el ancho del carrusel
-            coroutineScope = coroutineScope,
+            .width(128.dp)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick,
+            ),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Box(
             modifier = Modifier
-                .fillMaxSize()  // fillMaxSize para que ocupe todo el espacio del carrusel
-                .clip(RoundedCornerShape(12.dp))
-                .combinedClickable(
-                    onClick = { onAlbumClick(album) },
-                    onLongClick = { onAlbumLongClick(album) },
-                ),
+                .fillMaxWidth()
+                .height(128.dp),
+        ) {
+            AsyncImage(
+                model = album.thumbnail,
+                contentDescription = album.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        shadowElevation = elevation
+                    }
+                    .clip(
+                        if (isActive) MaterialTheme.shapes.large
+                        else MaterialTheme.shapes.medium
+                    )
+                    .let { modifier ->
+                        if (isActive) {
+                            modifier.background(
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
+                            )
+                        } else {
+                            modifier
+                        }
+                    }
+            )
+
+            androidx.compose.animation.AnimatedVisibility(
+                visible = isActive && isPlaying,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(6.dp),
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp),
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.play),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(12.dp),
+                        )
+                    }
+                }
+            }
+        }
+
+        Text(
+            text = album.title,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
+            color = if (isActive) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp),
         )
+
+        album.artists?.firstOrNull()?.let { artist ->
+            Text(
+                text = artist.name,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp),
+            )
+        }
+
+        album.year?.let { year ->
+            Text(
+                text = year.toString(),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline,
+                maxLines = 1,
+                textAlign = TextAlign.Center,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// Shimmer de carga para los carruseles
+// ═══════════════════════════════════════════════════════════════════════════
+
 @Composable
-private fun NewReleaseLoadingState(
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier.padding(24.dp),
+private fun CarouselShimmerRow() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        ElevatedCard(
-            shape = MaterialTheme.shapes.extraLarge,
-            colors = MaterialTheme.colorScheme.surfaceContainerHigh.let {
-                androidx.compose.material3.CardDefaults.elevatedCardColors(containerColor = it)
-            },
-            elevation = androidx.compose.material3.CardDefaults.elevatedCardElevation(
-                defaultElevation = 6.dp
-            ),
-        ) {
-            Column(
-                modifier = Modifier.padding(48.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(24.dp),
-            ) {
-                CircularWavyProgressIndicator(
-                    modifier = Modifier.size(72.dp),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                )
-                Text(
-                    text = stringResource(R.string.loading_new_releases),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
+        repeat(4) {
+            ShimmerHost {
+                Column(
+                    modifier = Modifier.width(128.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(128.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                    )
+                    Box(
+                        modifier = Modifier
+                            .width(96.dp)
+                            .height(12.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                    )
+                    Box(
+                        modifier = Modifier
+                            .width(64.dp)
+                            .height(10.dp)
+                            .clip(RoundedCornerShape(5.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                    )
+                }
             }
         }
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// Error & Empty states — M3 Expressive
+// ═══════════════════════════════════════════════════════════════════════════
+
 @Composable
-private fun NewReleaseErrorState(
+private fun ErrorState(
     message: String,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier.padding(24.dp),
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        ElevatedCard(
-            shape = MaterialTheme.shapes.extraLarge,
-            colors = MaterialTheme.colorScheme.surfaceContainerHigh.let {
-                androidx.compose.material3.CardDefaults.elevatedCardColors(containerColor = it)
-            },
-            elevation = androidx.compose.material3.CardDefaults.elevatedCardElevation(
-                defaultElevation = 6.dp
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .widthIn(max = 560.dp),
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.errorContainer,
+            modifier = Modifier.size(64.dp),
         ) {
-            Column(
-                modifier = Modifier.padding(40.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                    modifier = Modifier.size(88.dp),
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            painter = painterResource(R.drawable.error),
-                            contentDescription = null,
-                            modifier = Modifier.size(44.dp),
-                        )
-                    }
-                }
-
-                Text(
-                    text = stringResource(R.string.new_releases_error_title),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.ExtraBold,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurface,
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    painter = painterResource(R.drawable.error),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.size(32.dp),
                 )
-
-                Text(
-                    text = stringResource(R.string.new_releases_error_desc),
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-
-                if (message.isNotBlank()) {
-                    Text(
-                        text = message,
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(top = 8.dp),
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                ElevatedButton(
-                    onClick = onRetry,
-                    shape = MaterialTheme.shapes.extraLarge,
-                    colors = ButtonDefaults.elevatedButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    ),
-                    contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.retry),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
             }
+        }
+        Text(
+            text = stringResource(R.string.error_unknown),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        Button(
+            onClick = onRetry,
+            shape = RoundedCornerShape(50),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            ),
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.replay),
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(stringResource(R.string.retry))
         }
     }
 }
 
 @Composable
-private fun NewReleaseEmptyState(
+private fun EmptyState(
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier.padding(24.dp),
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        ElevatedCard(
-            shape = MaterialTheme.shapes.extraLarge,
-            colors = MaterialTheme.colorScheme.surfaceContainerHigh.let {
-                androidx.compose.material3.CardDefaults.elevatedCardColors(containerColor = it)
-            },
-            elevation = androidx.compose.material3.CardDefaults.elevatedCardElevation(
-                defaultElevation = 6.dp
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .widthIn(max = 560.dp),
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            modifier = Modifier.size(64.dp),
         ) {
-            Column(
-                modifier = Modifier.padding(40.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(88.dp),
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            painter = painterResource(R.drawable.album),
-                            contentDescription = null,
-                            modifier = Modifier.size(44.dp),
-                        )
-                    }
-                }
-
-                Text(
-                    text = stringResource(R.string.no_releases_found),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.ExtraBold,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurface,
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    painter = painterResource(R.drawable.library_music),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(32.dp),
                 )
-
-                Text(
-                    text = stringResource(R.string.new_releases_empty_desc),
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                ElevatedButton(
-                    onClick = onRefresh,
-                    shape = MaterialTheme.shapes.extraLarge,
-                    colors = ButtonDefaults.elevatedButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    ),
-                    contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.refresh),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
             }
+        }
+        Text(
+            text = stringResource(R.string.no_results_found),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Button(
+            onClick = onRefresh,
+            shape = RoundedCornerShape(50),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            ),
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.replay),
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(stringResource(R.string.refresh))
         }
     }
 }

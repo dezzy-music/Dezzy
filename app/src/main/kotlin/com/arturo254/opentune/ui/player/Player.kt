@@ -773,6 +773,8 @@ fun BottomSheetPlayer(
                 position = position,
                 duration = duration,
                 pureBlack = pureBlack,
+                navController = navController,
+                state = state
             )
         },
     ) {

@@ -4,74 +4,28 @@
  * Licensed Under GPL-3.0 | see git history for contributors
  */
 
-
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 
 package com.arturo254.opentune.ui.player
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.BlurEffect
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.media3.common.PlaybackException
-import androidx.media3.common.Player
-import androidx.media3.common.Player.STATE_BUFFERING
-import coil3.compose.AsyncImage
+import androidx.navigation.NavController
 import com.arturo254.opentune.LocalPlayerConnection
-import com.arturo254.opentune.R
-import com.arturo254.opentune.constants.MiniPlayerHeight
 import com.arturo254.opentune.constants.SwipeSensitivityKey
 import com.arturo254.opentune.constants.ThumbnailCornerRadius
 import com.arturo254.opentune.constants.UseNewMiniPlayerDesignKey
@@ -79,6 +33,7 @@ import com.arturo254.opentune.constants.MiniPlayerStyle
 import com.arturo254.opentune.constants.MiniPlayerStyleKey
 import androidx.compose.foundation.border
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import com.arturo254.opentune.constants.CropThumbnailToSquareKey
 import com.arturo254.opentune.extensions.togglePlayPause
 import com.arturo254.opentune.models.MediaMetadata
@@ -92,9 +47,13 @@ import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.toBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
 import com.arturo254.opentune.constants.DynamicMiniPlayerColorKey
 import androidx.compose.runtime.LaunchedEffect
 import kotlin.math.absoluteValue
+import com.arturo254.opentune.ui.component.BottomSheetState
 import kotlin.math.roundToInt
 
 
@@ -104,12 +63,16 @@ fun MiniPlayer(
     duration: Long,
     modifier: Modifier = Modifier,
     pureBlack: Boolean,
+    navController: NavController,
+    state: BottomSheetState
 ) {
     NewMiniPlayer(
         position = position,
         duration = duration,
         modifier = modifier,
-        pureBlack = pureBlack
+        pureBlack = pureBlack,
+        navController = navController,
+        state = state
     )
 }
 
@@ -119,6 +82,8 @@ private fun NewMiniPlayer(
     duration: Long,
     modifier: Modifier = Modifier,
     pureBlack: Boolean,
+    navController: NavController,
+    state: BottomSheetState
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
     val layoutDirection = LocalLayoutDirection.current
@@ -207,7 +172,9 @@ private fun NewMiniPlayer(
                 duration = duration,
                 playerConnection = playerConnection,
                 miniPlayerStyle = miniPlayerStyle,
-                onStyleChange = { setStyle(it.name) }
+                onStyleChange = { setStyle(it.name) },
+                navController = navController,
+                state = state
             )
         }
     }
