@@ -202,6 +202,9 @@ fun Queue(
         modifier = modifier,
         collapsedContent = {
             when (playerDesignStyle) {
+                PlayerDesignStyle.IPOD, PlayerDesignStyle.SPOTIFY -> {
+                    // Do not render collapsed content to avoid duplicated control buttons (sleep timer, lyrics, queue)
+                }
                 PlayerDesignStyle.V2 -> {
                     QueueCollapsedContentV2(
                         showCodecOnPlayer = showCodecOnPlayer,
@@ -397,6 +400,28 @@ fun Queue(
                             context.startActivity(intent)
                         },
                         deviceName = activeDevice
+                    )
+                }
+
+                else -> {
+                    QueueCollapsedContentV4(
+                        showCodecOnPlayer = showCodecOnPlayer,
+                        currentFormat = currentFormat,
+                        textBackgroundColor = TextBackgroundColor,
+                        textButtonColor = textButtonColor,
+                        iconButtonColor = iconButtonColor,
+                        sleepTimerEnabled = sleepTimerEnabled,
+                        sleepTimerTimeLeft = sleepTimerTimeLeft,
+                        mediaMetadata = mediaMetadata,
+                        onExpandQueue = { state.expandSoft() },
+                        onSleepTimerClick = {
+                            if (sleepTimerEnabled) {
+                                playerConnection.service.sleepTimer.clear()
+                            } else {
+                                showSleepTimerDialog = true
+                            }
+                        },
+                        onShowLyrics = onShowLyrics
                     )
                 }
             }

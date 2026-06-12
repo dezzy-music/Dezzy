@@ -19,10 +19,12 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -67,6 +69,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
@@ -241,6 +244,19 @@ fun PlayerTopActions(
     context: Context,
     currentSongLiked: Boolean
 ) {
+    var showShareDialog by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+
+    if (showShareDialog) {
+        com.arturo254.opentune.ui.component.ShareBottomSheet(
+            title = mediaMetadata.title,
+            subtitle = mediaMetadata.artists.joinToString { it.name },
+            thumbnailUrl = mediaMetadata.thumbnailUrl,
+            shareLink = "https://music.youtube.com/watch?v=${mediaMetadata.id}",
+            hasVideo = false,
+            onDismiss = { showShareDialog = false }
+        )
+    }
+
     when (playerDesignStyle) {
         PlayerDesignStyle.V2 -> {
             val shareShape = RoundedCornerShape(
@@ -262,17 +278,7 @@ fun PlayerTopActions(
                         .size(42.dp)
                         .clip(shareShape)
                         .background(textButtonColor)
-                        .clickable {
-                            val intent = Intent().apply {
-                                action = Intent.ACTION_SEND
-                                type = "text/plain"
-                                putExtra(
-                                    Intent.EXTRA_TEXT,
-                                    "https://music.youtube.com/watch?v=${mediaMetadata.id}"
-                                )
-                            }
-                            context.startActivity(Intent.createChooser(intent, null))
-                        }
+                        .clickable { showShareDialog = true }
                 ) {
                     Image(
                         painter = painterResource(R.drawable.share),
@@ -318,17 +324,7 @@ fun PlayerTopActions(
                     modifier = Modifier
                         .size(36.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .clickable {
-                            val intent = Intent().apply {
-                                action = Intent.ACTION_SEND
-                                type = "text/plain"
-                                putExtra(
-                                    Intent.EXTRA_TEXT,
-                                    "https://music.youtube.com/watch?v=${mediaMetadata.id}"
-                                )
-                            }
-                            context.startActivity(Intent.createChooser(intent, null))
-                        },
+                        .clickable { showShareDialog = true },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -366,17 +362,7 @@ fun PlayerTopActions(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
-                    onClick = {
-                        val intent = Intent().apply {
-                            action = Intent.ACTION_SEND
-                            type = "text/plain"
-                            putExtra(
-                                Intent.EXTRA_TEXT,
-                                "https://music.youtube.com/watch?v=${mediaMetadata.id}"
-                            )
-                        }
-                        context.startActivity(Intent.createChooser(intent, null))
-                    },
+                    onClick = { showShareDialog = true },
                     shape = RoundedCornerShape(14.dp),
                     color = textBackgroundColor.copy(alpha = 0.12f),
                     modifier = Modifier
@@ -462,18 +448,7 @@ fun PlayerTopActions(
                         .size(40.dp)
                         .clip(RoundedCornerShape(24.dp))
                         .background(textButtonColor)
-                        .clickable {
-                            val intent =
-                                Intent().apply {
-                                    action = Intent.ACTION_SEND
-                                    type = "text/plain"
-                                    putExtra(
-                                        Intent.EXTRA_TEXT,
-                                        "https://music.youtube.com/watch?v=${mediaMetadata.id}"
-                                    )
-                                }
-                            context.startActivity(Intent.createChooser(intent, null))
-                        },
+                        .clickable { showShareDialog = true },
             ) {
                 Image(
                     painter = painterResource(R.drawable.share),
@@ -527,17 +502,7 @@ fun PlayerTopActions(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
-                    onClick = {
-                        val intent = Intent().apply {
-                            action = Intent.ACTION_SEND
-                            type = "text/plain"
-                            putExtra(
-                                Intent.EXTRA_TEXT,
-                                "https://music.youtube.com/watch?v=${mediaMetadata.id}"
-                            )
-                        }
-                        context.startActivity(Intent.createChooser(intent, null))
-                    },
+                    onClick = { showShareDialog = true },
                     shape = RoundedCornerShape(
                         topStart = 50.dp, bottomStart = 50.dp,
                         topEnd = 6.dp, bottomEnd = 6.dp
@@ -678,6 +643,7 @@ fun PlayerTopActions(
                 }
             }
         }
+        else -> {}
     }
 }
 
@@ -1678,6 +1644,7 @@ fun PlayerPlaybackControls(
                 }
             }
         }
+        else -> {}
     }
 }
 
@@ -1715,6 +1682,7 @@ fun PlayerControlsContent(
     onSliderValueChangeFinished: () -> Unit,
     currentFormat: FormatEntity? = null,
     onResetTimer: () -> Unit = {},
+    controlsFaded: Boolean = false,
 ) {
     val currentSong by playerConnection.currentSong.collectAsState(initial = null)
     val currentSongLiked = currentSong?.song?.liked == true
@@ -1723,6 +1691,12 @@ fun PlayerControlsContent(
         targetValue = if (isPlaying) 24.dp else 36.dp,
         animationSpec = tween(durationMillis = 90, easing = LinearEasing),
         label = "playPauseRoundness",
+    )
+
+    val fadeAlpha by animateFloatAsState(
+        targetValue = if (controlsFaded) 0f else 1f,
+        animationSpec = tween(durationMillis = 300),
+        label = "controlsFadeAlpha"
     )
 
     Row(
@@ -1745,98 +1719,129 @@ fun PlayerControlsContent(
 
         Spacer(modifier = Modifier.width(12.dp))
 
-        PlayerTopActions(
-            mediaMetadata = mediaMetadata,
-            playerDesignStyle = playerDesignStyle,
-            textButtonColor = textButtonColor,
-            iconButtonColor = iconButtonColor,
-            textBackgroundColor = textBackgroundColor,
-            playerConnection = playerConnection,
-            navController = navController,
-            menuState = menuState,
-            state = state,
-            bottomSheetPageState = bottomSheetPageState,
-            context = context,
-            currentSongLiked = currentSongLiked
-        )
+        Box(
+            modifier = Modifier
+                .graphicsLayer { alpha = fadeAlpha }
+                .pointerInput(controlsFaded) {
+                    if (controlsFaded) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                awaitPointerEvent(PointerEventPass.Initial)
+                            }
+                        }
+                    }
+                }
+        ) {
+            PlayerTopActions(
+                mediaMetadata = mediaMetadata,
+                playerDesignStyle = playerDesignStyle,
+                textButtonColor = textButtonColor,
+                iconButtonColor = iconButtonColor,
+                textBackgroundColor = textBackgroundColor,
+                playerConnection = playerConnection,
+                navController = navController,
+                menuState = menuState,
+                state = state,
+                bottomSheetPageState = bottomSheetPageState,
+                context = context,
+                currentSongLiked = currentSongLiked
+            )
+        }
     }
 
-    Spacer(Modifier.height(12.dp))
-
-    PlayerSlider(
-        sliderStyle = sliderStyle,
-        sliderPosition = sliderPosition,
-        position = position,
-        duration = duration,
-        isPlaying = isPlaying,
-        textButtonColor = textButtonColor,
-        onValueChange = onSliderValueChange,
-        onValueChangeFinished = onSliderValueChangeFinished
-    )
-
-    Spacer(Modifier.height(4.dp))
-
-    PlayerTimeLabel(
-        sliderPosition = sliderPosition,
-        position = position,
-        duration = duration,
-        textBackgroundColor = textBackgroundColor,
-        showRemainingTime = playerDesignStyle == PlayerDesignStyle.V7,
-        centerContent = if (playerDesignStyle == PlayerDesignStyle.V7 && currentFormat != null) {
-            {
-                val codec = currentFormat.mimeType.substringAfter("/").uppercase()
-                val label = when {
-                    codec.contains("FLAC") || codec.contains("ALAC") -> "Lossless"
-                    codec.contains("OPUS") -> codec
-                    codec.contains("AAC") -> codec
-                    codec.contains("MP4A") -> "AAC"
-                    codec.contains("VORBIS") -> "Vorbis"
-                    else -> codec
-                }
-                Surface(
-                    shape = RoundedCornerShape(4.dp),
-                    color = textBackgroundColor.copy(alpha = 0.12f),
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.graphic_eq),
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = textBackgroundColor.copy(alpha = 0.8f),
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = textBackgroundColor.copy(alpha = 0.8f),
-                        )
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer { alpha = fadeAlpha }
+            .pointerInput(controlsFaded) {
+                if (controlsFaded) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            awaitPointerEvent(PointerEventPass.Initial)
+                        }
                     }
                 }
             }
-        } else null,
-    )
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Spacer(Modifier.height(12.dp))
 
-    Spacer(Modifier.height(12.dp))
+            PlayerSlider(
+                sliderStyle = sliderStyle,
+                sliderPosition = sliderPosition,
+                position = position,
+                duration = duration,
+                isPlaying = isPlaying,
+                textButtonColor = textButtonColor,
+                onValueChange = onSliderValueChange,
+                onValueChangeFinished = onSliderValueChangeFinished
+            )
 
-    PlayerPlaybackControls(
-        playerDesignStyle = playerDesignStyle,
-        playbackState = playbackState,
-        isPlaying = isPlaying,
-        isLoading = isLoading,
-        repeatMode = repeatMode,
-        canSkipPrevious = canSkipPrevious,
-        canSkipNext = canSkipNext,
-        textButtonColor = textButtonColor,
-        iconButtonColor = iconButtonColor,
-        textBackgroundColor = textBackgroundColor,
-        icBackgroundColor = icBackgroundColor,
-        playPauseRoundness = playPauseRoundness,
-        playerConnection = playerConnection,
-        currentSongLiked = currentSongLiked
-    )
+            Spacer(Modifier.height(4.dp))
+
+            PlayerTimeLabel(
+                sliderPosition = sliderPosition,
+                position = position,
+                duration = duration,
+                textBackgroundColor = textBackgroundColor,
+                showRemainingTime = playerDesignStyle == PlayerDesignStyle.V7,
+                centerContent = if (playerDesignStyle == PlayerDesignStyle.V7 && currentFormat != null) {
+                    {
+                        val codec = currentFormat.mimeType.substringAfter("/").uppercase()
+                        val label = when {
+                            codec.contains("FLAC") || codec.contains("ALAC") -> "Lossless"
+                            codec.contains("OPUS") -> codec
+                            codec.contains("AAC") -> codec
+                            codec.contains("MP4A") -> "AAC"
+                            codec.contains("VORBIS") -> "Vorbis"
+                            else -> codec
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = textBackgroundColor.copy(alpha = 0.12f),
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.graphic_eq),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp),
+                                    tint = textBackgroundColor.copy(alpha = 0.8f),
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = textBackgroundColor.copy(alpha = 0.8f),
+                                )
+                            }
+                        }
+                    }
+                } else null,
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            PlayerPlaybackControls(
+                playerDesignStyle = playerDesignStyle,
+                playbackState = playbackState,
+                isPlaying = isPlaying,
+                isLoading = isLoading,
+                repeatMode = repeatMode,
+                canSkipPrevious = canSkipPrevious,
+                canSkipNext = canSkipNext,
+                textButtonColor = textButtonColor,
+                iconButtonColor = iconButtonColor,
+                textBackgroundColor = textBackgroundColor,
+                icBackgroundColor = icBackgroundColor,
+                playPauseRoundness = playPauseRoundness,
+                playerConnection = playerConnection,
+                currentSongLiked = currentSongLiked
+            )
+        }
+    }
 }
 @Composable
 fun PlayerBackground(

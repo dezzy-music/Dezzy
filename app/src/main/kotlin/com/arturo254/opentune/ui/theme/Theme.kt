@@ -28,6 +28,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import com.arturo254.opentune.utils.rememberPreference
+import com.arturo254.opentune.constants.FontFamilyKey
 import androidx.palette.graphics.Palette
 import com.kyant.m3color.hct.Hct
 import com.kyant.m3color.scheme.SchemeMonochrome
@@ -65,8 +67,27 @@ fun OpenTuneTheme(
     val useSystemDynamicColor =
         (seedPalette == null && themeColor == DefaultThemeColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
 
-    val typography = remember(useSystemFont) {
-        if (useSystemFont) SystemTypography else AppTypography
+    val fontFamilyState = rememberPreference(
+        key = FontFamilyKey,
+        defaultValue = "POPPINS"
+    )
+    val fontFamilyVal = fontFamilyState.value
+    val (enableWallpaperTheme) = rememberPreference(
+        key = com.arturo254.opentune.constants.EnableWallpaperThemeKey,
+        defaultValue = false
+    )
+    val (enableVideoWallpaper) = rememberPreference(
+        key = com.arturo254.opentune.constants.EnableVideoWallpaperKey,
+        defaultValue = false
+    )
+    val isWallpaperActive = enableWallpaperTheme || enableVideoWallpaper
+
+    val typography = remember(fontFamilyVal, useSystemFont) {
+        if (useSystemFont) {
+            SystemTypography
+        } else {
+            getTypography(fontFamilyVal)
+        }
     }
 
     val appColorScheme =
@@ -101,7 +122,13 @@ fun OpenTuneTheme(
     MaterialExpressiveTheme(
         colorScheme = animatedColorScheme,
         typography = typography,
-        content = content
+        content = {
+            androidx.compose.material3.MaterialTheme(
+                colorScheme = animatedColorScheme,
+                typography = typography,
+                content = content
+            )
+        }
     )
 }
 

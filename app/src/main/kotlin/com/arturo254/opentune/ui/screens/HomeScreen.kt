@@ -27,9 +27,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.PointerEventPass
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
@@ -139,6 +145,28 @@ fun HomeScreen(
         forgottenFavoritesLazyGridState.scrollToItem(0)
     }
 
+    val (enableWallpaperTheme) = rememberPreference(com.arturo254.opentune.constants.EnableWallpaperThemeKey, defaultValue = false)
+    val (enableVideoWallpaper) = rememberPreference(com.arturo254.opentune.constants.EnableVideoWallpaperKey, defaultValue = false)
+    val isWallpaperActive = enableWallpaperTheme || enableVideoWallpaper
+
+    val (homeInactivityFade) = rememberPreference(com.arturo254.opentune.constants.HomeInactivityFadeKey, defaultValue = true)
+    val contentAlpha = remember { androidx.compose.animation.core.Animatable(1f) }
+    var lastInteractionTime by remember { androidx.compose.runtime.mutableLongStateOf(System.currentTimeMillis()) }
+
+    val resetInactivity = {
+        lastInteractionTime = System.currentTimeMillis()
+    }
+
+    LaunchedEffect(isWallpaperActive, homeInactivityFade, lastInteractionTime) {
+        if (isWallpaperActive && homeInactivityFade) {
+            contentAlpha.animateTo(1f, animationSpec = androidx.compose.animation.core.tween(300))
+            delay(120_000L) // 2 minutes inactivity
+            contentAlpha.animateTo(0f, animationSpec = androidx.compose.animation.core.tween(1000))
+        } else {
+            contentAlpha.animateTo(1f, animationSpec = androidx.compose.animation.core.tween(300))
+        }
+    }
+
     // Capture M3 Expressive colors from theme outside drawBehind
     val color1 = MaterialTheme.colorScheme.primary
     val color2 = MaterialTheme.colorScheme.secondary
@@ -148,10 +176,19 @@ fun HomeScreen(
     val surfaceColor = MaterialTheme.colorScheme.surface
     
     Box(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                        resetInactivity()
+                    }
+                }
+            }
     ) {
         // M3E Mesh gradient background layer at the top
-        if (!disableBlur) {
+        if (!disableBlur && !isWallpaperActive) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -256,6 +293,7 @@ fun HomeScreen(
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
+                .graphicsLayer { alpha = contentAlpha.value }
                 .pullToRefresh(
                     state = pullRefreshState,
                     isRefreshing = isRefreshing,
@@ -290,14 +328,12 @@ fun HomeScreen(
                 }
 
                 quickPicks?.takeIf { it.isNotEmpty() }?.let { picks ->
-            /*
-                item {
+                    item {
                     NavigationTitle(
                         title = stringResource(R.string.quick_picks),
                         modifier = Modifier.animateItem()
                     )
                 }
-            */
 
                 item {
                     QuickPicksSection(
@@ -444,6 +480,19 @@ fun HomeScreen(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(LocalPlayerAwareWindowInsets.current.asPaddingValues()),
+            )
+        }
+
+        if (contentAlpha.value == 0f) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(
+                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        resetInactivity()
+                    }
             )
         }
     }

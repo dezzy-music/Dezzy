@@ -138,6 +138,18 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.window.core.layout.WindowSizeClass
 import coil3.compose.AsyncImage
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.platform.LocalConfiguration
+import android.content.res.Configuration
+import com.arturo254.opentune.ui.component.VideoWallpaperPlayer
+import com.arturo254.opentune.constants.EnableWallpaperThemeKey
+import com.arturo254.opentune.constants.WallpaperUriKey
+import com.arturo254.opentune.constants.WallpaperLandscapeUriKey
+import com.arturo254.opentune.constants.WallpaperOpacityKey
+import com.arturo254.opentune.constants.EnableVideoWallpaperKey
+import com.arturo254.opentune.constants.VideoWallpaperUriKey
+import com.arturo254.opentune.constants.VideoWallpaperLandscapeUriKey
+import com.arturo254.opentune.constants.VideoWallpaperOpacityKey
 import coil3.imageLoader
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
@@ -447,6 +459,14 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
+            val navController = rememberNavController()
+            LaunchedEffect(navController) {
+                this@MainActivity.navController = navController
+            }
+            val navBackStackEntry by navController.currentBackStackEntryAsState()
+            val currentRoute = navBackStackEntry?.destination?.route
+            val isAtHome = currentRoute == "home"
+
             val notificationPermissionLauncher =
                 rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
                     if (isGranted) {
@@ -476,6 +496,36 @@ class MainActivity : ComponentActivity() {
             // (previously retrieving the composition local directly created different
             // instances in different composition scopes which caused the update
             // bottom sheet to not appear and overlay interactions to be blocked).
+            val context = androidx.compose.ui.platform.LocalContext.current
+            androidx.compose.runtime.LaunchedEffect(Unit) {
+                // Restore persistable URI permissions for wallpapers
+                try {
+                    val contentResolver = context.contentResolver
+                    val prefs = context.dataStore.data.first()
+                    listOf(
+                        prefs[com.arturo254.opentune.constants.WallpaperUriKey],
+                        prefs[com.arturo254.opentune.constants.WallpaperLandscapeUriKey],
+                        prefs[com.arturo254.opentune.constants.VideoWallpaperUriKey],
+                        prefs[com.arturo254.opentune.constants.VideoWallpaperLandscapeUriKey],
+                        prefs[com.arturo254.opentune.constants.PlayerCustomImageUriKey]
+                    ).forEach { uriString ->
+                        if (!uriString.isNullOrBlank()) {
+                            try {
+                                val uri = android.net.Uri.parse(uriString)
+                                contentResolver.takePersistableUriPermission(
+                                    uri,
+                                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                )
+                            } catch (e: Exception) {
+                                // Ignore if permission is already held or cannot be requested
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Ignore errors during permission restoration
+                }
+            }
+
             val bottomSheetPageState = remember { BottomSheetPageState() }
             val (liquidGlassNavBar) = rememberPreference(LiquidGlassNavBarKey, defaultValue = false)
             val menuState = remember { MenuState() }
@@ -567,6 +617,32 @@ class MainActivity : ComponentActivity() {
             val pureBlackEnabled by rememberPreference(PureBlackKey, defaultValue = false)
             val pureBlack = pureBlackEnabled && useDarkTheme
 
+            val enableWallpaperTheme by rememberPreference(EnableWallpaperThemeKey, defaultValue = false)
+            val wallpaperUri by rememberPreference(WallpaperUriKey, defaultValue = "")
+            val wallpaperLandscapeUri by rememberPreference(WallpaperLandscapeUriKey, defaultValue = "")
+            val wallpaperOpacity by rememberPreference(WallpaperOpacityKey, defaultValue = 0.5f)
+
+            val enableVideoWallpaper by rememberPreference(EnableVideoWallpaperKey, defaultValue = false)
+            val videoWallpaperUri by rememberPreference(VideoWallpaperUriKey, defaultValue = "")
+            val videoWallpaperLandscapeUri by rememberPreference(VideoWallpaperLandscapeUriKey, defaultValue = "")
+            val videoWallpaperOpacity by rememberPreference(VideoWallpaperOpacityKey, defaultValue = 0.5f)
+            val isWallpaperActive = enableWallpaperTheme || enableVideoWallpaper
+
+            val focusManager = LocalFocusManager.current
+            var active by rememberSaveable {
+                mutableStateOf(false)
+            }
+            // Will be initialized shortly after, we use a reference-based or late listener approach if needed,
+            // or simply perform clean-up directly inside SearchBar / components.
+            // Since query state is declared lower down, we can reset active and let the component handle text clear,
+            // or reset text in search bar onClick. Let's keep it simple:
+            val onActiveChange: (Boolean) -> Unit = { newActive ->
+                active = newActive
+                if (!newActive) {
+                    focusManager.clearFocus()
+                }
+            }
+
             val customThemeSeedPalette = remember(customThemeColorValue) {
                 if (customThemeColorValue.startsWith("#")) {
                     null
@@ -647,14 +723,47 @@ class MainActivity : ComponentActivity() {
                 seedPalette = if (!enableDynamicTheme) customThemeSeedPalette else null,
                 useSystemFont = useSystemFont,
             ) {
+                // Screens where wallpaper is allowed to show (home, library, settings only)
+                val isWallpaperScreen = remember(currentRoute) {
+                    currentRoute == "home" ||
+                    currentRoute == "library" ||
+                    currentRoute?.startsWith("settings") == true
+                }
+
                 BoxWithConstraints(
                     modifier =
                         Modifier
                             .fillMaxSize()
                             .background(
-                                if (pureBlack) Color.Black else MaterialTheme.colorScheme.surface
+                                if (pureBlack && !(isWallpaperActive && isWallpaperScreen && !active)) Color.Black
+                                else if (isWallpaperActive && isWallpaperScreen && !active) Color.Transparent
+                                else MaterialTheme.colorScheme.surface
                             )
                 ) {
+                    val configuration = LocalConfiguration.current
+                    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+                    // 1. Render Video Wallpaper under the UI (only on allowed screens)
+                    if (enableVideoWallpaper && isWallpaperScreen && !active) {
+                        val videoUri = if (isLandscape && videoWallpaperLandscapeUri.isNotEmpty()) videoWallpaperLandscapeUri else videoWallpaperUri
+                        if (videoUri.isNotEmpty()) {
+                            Box(modifier = Modifier.fillMaxSize().alpha(videoWallpaperOpacity)) {
+                                VideoWallpaperPlayer(videoUri = videoUri)
+                            }
+                        }
+                    } else if (enableWallpaperTheme && isWallpaperScreen && !active) {
+                        // 2. Render Image Wallpaper under the UI (only on allowed screens)
+                        val imageUri = if (isLandscape && wallpaperLandscapeUri.isNotEmpty()) wallpaperLandscapeUri else wallpaperUri
+                        if (imageUri.isNotEmpty()) {
+                            AsyncImage(
+                                model = imageUri,
+                                contentDescription = null,
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize().alpha(wallpaperOpacity)
+                            )
+                        }
+                    }
+
                     val focusManager = LocalFocusManager.current
                     val density = LocalDensity.current
                     val windowsInsets = WindowInsets.systemBars
@@ -664,14 +773,11 @@ class MainActivity : ComponentActivity() {
                     val useRail = currentWindowAdaptiveInfo().windowSizeClass
                         .isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
 
-                    val navController = rememberNavController()
                     val homeViewModel: HomeViewModel = hiltViewModel()
                     val accountImageUrl by homeViewModel.accountImageUrl.collectAsState()
                     val allLocalItems by homeViewModel.allLocalItems.collectAsState()
                     val allYtItems by homeViewModel.allYtItems.collectAsState()
-                    val navBackStackEntry by navController.currentBackStackEntryAsState()
                     val (previousTab) = rememberSaveable { mutableStateOf("home") }
-                    val currentRoute = navBackStackEntry?.destination?.route
                     val isYearInMusicScreen = currentRoute == "year_in_music"
 
                     val navigationItems = remember { Screens.MainScreens }
@@ -706,19 +812,7 @@ class MainActivity : ComponentActivity() {
                             mutableStateOf(TextFieldValue())
                         }
 
-                    var active by rememberSaveable {
-                        mutableStateOf(false)
-                    }
 
-                    val onActiveChange: (Boolean) -> Unit = { newActive ->
-                        active = newActive
-                        if (!newActive) {
-                            focusManager.clearFocus()
-                            if (navigationItems.fastAny { it.route == navBackStackEntry?.destination?.route }) {
-                                onQueryChange(TextFieldValue())
-                            }
-                        }
-                    }
 
 
 
@@ -757,8 +851,7 @@ class MainActivity : ComponentActivity() {
                         }
 
                     val shouldShowHomeShuffleButton =
-                        currentRoute == Screens.Home.route &&
-                                (allLocalItems.isNotEmpty() || allYtItems.isNotEmpty())
+                        currentRoute == Screens.Home.route
 
                     fun getBottomNavPadding(): Dp {
                         return if (shouldShowNavigationBar && !useRail) {
@@ -1147,6 +1240,7 @@ class MainActivity : ComponentActivity() {
                             }
 
                             Scaffold(
+                                containerColor = if (isWallpaperActive && isWallpaperScreen && !active) Color.Transparent else MaterialTheme.colorScheme.background,
                                 topBar = {
                                     if (shouldShowTopBar) {
                                         val shouldUseFloatingTopBar = remember(navBackStackEntry) {
@@ -1198,15 +1292,6 @@ class MainActivity : ComponentActivity() {
                                                 } else WindowInsetsSides.Horizontal) + WindowInsetsSides.Top),
                                                 title = {
                                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                                        // app icon
-                                                        Icon(
-                                                            painter = painterResource(R.drawable.opentune),
-                                                            contentDescription = null,
-                                                            modifier = Modifier
-                                                                .size(35.dp)
-                                                                .padding(end = 3.dp)
-                                                        )
-
                                                         Text(
                                                             text = stringResource(R.string.app_name),
                                                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),

@@ -235,7 +235,9 @@ fun LibraryPlaylistListItem(
     }
 
     val openPlaylist: () -> Unit = {
-        if (
+        if (playlist.id == com.arturo254.opentune.db.entities.PlaylistEntity.LIKED_PLAYLIST_ID) {
+            navController.navigate("auto_playlist/liked")
+        } else if (
             !playlist.playlist.isEditable &&
             playlist.songCount == 0 &&
             playlist.playlist.remoteSongCount != 0

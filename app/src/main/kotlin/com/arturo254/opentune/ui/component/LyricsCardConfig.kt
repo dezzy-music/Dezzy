@@ -43,6 +43,10 @@ enum class LyricsLayoutStyle(
         displayName = "Streaming",
         description = "Estilo app de música moderna",
     ),
+    DezzyShare(
+        displayName = "Dezzy Style",
+        description = "Personalización rápida de colores",
+    ),
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -93,4 +97,12 @@ data class LyricsCardConfig(
      * Rango recomendado: 12.dp – 36.dp
      */
     val cardPadding: Dp = 24.dp,
+    
+    /** Nombre de la fuente seleccionada para las letras compartidas */
+    val fontName: String = "POPPINS",
+
+    /** Colores personalizados para el DezzyShareLayout */
+    val customBgColor: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF22201C),
+    val customTextColor: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color.White,
+    val customSecondaryTextColor: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color.Gray,
 )

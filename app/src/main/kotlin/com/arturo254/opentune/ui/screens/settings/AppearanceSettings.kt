@@ -10,6 +10,7 @@ package com.arturo254.opentune.ui.screens.settings
 
 import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -61,6 +62,7 @@ import com.arturo254.opentune.constants.LyricsTextPositionKey
 import com.arturo254.opentune.constants.PlayerDesignStyle
 import com.arturo254.opentune.constants.PlayerDesignStyleKey
 import com.arturo254.opentune.constants.UseNewMiniPlayerDesignKey
+import com.arturo254.opentune.constants.DynamicMiniPlayerColorKey
 import com.arturo254.opentune.constants.PlayerBackgroundStyle
 import com.arturo254.opentune.constants.PlayerBackgroundStyleKey
 import com.arturo254.opentune.constants.PureBlackKey
@@ -91,6 +93,8 @@ import com.arturo254.opentune.constants.CropThumbnailToSquareKey
 import com.arturo254.opentune.constants.DisableBlurKey
 import com.arturo254.opentune.constants.LiquidGlassNavBarKey
 import com.arturo254.opentune.constants.UseLyricsV2Key
+import com.arturo254.opentune.constants.FontFamilyKey
+import com.arturo254.opentune.constants.EnableBubbleKey
 import com.arturo254.opentune.ui.component.DefaultDialog
 import com.arturo254.opentune.ui.component.EnumListPreference
 import com.arturo254.opentune.ui.component.IconButton
@@ -103,6 +107,26 @@ import com.arturo254.opentune.ui.player.StyledPlaybackSlider
 import com.arturo254.opentune.ui.utils.backToMain
 import com.arturo254.opentune.utils.rememberEnumPreference
 import com.arturo254.opentune.utils.rememberPreference
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
+import com.arturo254.opentune.constants.EnableWallpaperThemeKey
+import com.arturo254.opentune.constants.WallpaperUriKey
+import com.arturo254.opentune.constants.WallpaperLandscapeUriKey
+import com.arturo254.opentune.constants.WallpaperOpacityKey
+import com.arturo254.opentune.constants.EnableVideoWallpaperKey
+import com.arturo254.opentune.constants.VideoWallpaperUriKey
+import com.arturo254.opentune.constants.VideoWallpaperLandscapeUriKey
+import com.arturo254.opentune.constants.VideoWallpaperOpacityKey
+import com.arturo254.opentune.constants.KeepPlayerScreenAwakeKey
+import com.arturo254.opentune.constants.HomeInactivityFadeKey
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.draw.alpha
+import com.arturo254.opentune.ui.component.VideoWallpaperPlayer
 import kotlin.math.roundToInt
 import timber.log.Timber
 
@@ -112,6 +136,95 @@ fun AppearanceSettings(
     navController: NavController,
     scrollBehavior: TopAppBarScrollBehavior,
 ) {
+    val context = LocalContext.current
+    val contentResolver = context.contentResolver
+
+    val (enableWallpaperTheme, onEnableWallpaperThemeChange) = rememberPreference(
+        EnableWallpaperThemeKey,
+        defaultValue = false
+    )
+    val (wallpaperUri, onWallpaperUriChange) = rememberPreference(
+        WallpaperUriKey,
+        defaultValue = ""
+    )
+    val (wallpaperLandscapeUri, onWallpaperLandscapeUriChange) = rememberPreference(
+        WallpaperLandscapeUriKey,
+        defaultValue = ""
+    )
+    val (wallpaperOpacity, onWallpaperOpacityChange) = rememberPreference(
+        WallpaperOpacityKey,
+        defaultValue = 0.5f
+    )
+    val (enableVideoWallpaper, onEnableVideoWallpaperChange) = rememberPreference(
+        EnableVideoWallpaperKey,
+        defaultValue = false
+    )
+    val (videoWallpaperUri, onVideoWallpaperUriChange) = rememberPreference(
+        VideoWallpaperUriKey,
+        defaultValue = ""
+    )
+    val (videoWallpaperLandscapeUri, onVideoWallpaperLandscapeUriChange) = rememberPreference(
+        VideoWallpaperLandscapeUriKey,
+        defaultValue = ""
+    )
+    val (videoWallpaperOpacity, onVideoWallpaperOpacityChange) = rememberPreference(
+        VideoWallpaperOpacityKey,
+        defaultValue = 0.5f
+    )
+
+    // Launchers for picking images and videos
+    val verticalImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        uri?.let {
+            try {
+                contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            } catch (e: Exception) {
+                Timber.e(e, "Error taking persistable permission")
+            }
+            onWallpaperUriChange(it.toString())
+        }
+    }
+
+    val landscapeImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        uri?.let {
+            try {
+                contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            } catch (e: Exception) {
+                Timber.e(e, "Error taking persistable permission")
+            }
+            onWallpaperLandscapeUriChange(it.toString())
+        }
+    }
+
+    val verticalVideoLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        uri?.let {
+            try {
+                contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            } catch (e: Exception) {
+                Timber.e(e, "Error taking persistable permission")
+            }
+            onVideoWallpaperUriChange(it.toString())
+        }
+    }
+
+    val landscapeVideoLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        uri?.let {
+            try {
+                contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            } catch (e: Exception) {
+                Timber.e(e, "Error taking persistable permission")
+            }
+            onVideoWallpaperLandscapeUriChange(it.toString())
+        }
+    }
+
     val (dynamicTheme, onDynamicThemeChange) = rememberPreference(
         DynamicThemeKey,
         defaultValue = true
@@ -132,10 +245,11 @@ fun AppearanceSettings(
         UseNewMiniPlayerDesignKey,
         defaultValue = true
     )
-    val (useNewLibraryDesign, onUseNewLibraryDesignChange) = rememberPreference(
-        key = com.arturo254.opentune.constants.UseNewLibraryDesignKey,
+    val (dynamicMiniPlayerColor, onDynamicMiniPlayerColorChange) = rememberPreference(
+        DynamicMiniPlayerColorKey,
         defaultValue = false
     )
+
     val (hidePlayerThumbnail, onHidePlayerThumbnailChange) = rememberPreference(
         HidePlayerThumbnailKey,
         defaultValue = false
@@ -160,6 +274,8 @@ fun AppearanceSettings(
     val (pureBlack, onPureBlackChange) = rememberPreference(PureBlackKey, defaultValue = false)
     val (disableBlur, onDisableBlurChange) = rememberPreference(DisableBlurKey, defaultValue = true)
     val (useSystemFont, onUseSystemFontChange) = rememberPreference(UseSystemFontKey, defaultValue = false)
+    val (fontFamily, onFontFamilyChange) = rememberPreference(FontFamilyKey, defaultValue = "POPPINS")
+    val (enableBubble, onEnableBubbleChange) = rememberPreference(EnableBubbleKey, defaultValue = false)
     val (defaultOpenTab, onDefaultOpenTabChange) = rememberEnumPreference(
         DefaultOpenTabKey,
         defaultValue = NavigationTab.HOME
@@ -181,6 +297,8 @@ fun AppearanceSettings(
     val (lyricsTextSize, onLyricsTextSizeChange) = rememberPreference(LyricsTextSizeKey, defaultValue = 26f)
     val (lyricsLineSpacing, onLyricsLineSpacingChange) = rememberPreference(LyricsLineSpacingKey, defaultValue = 1.3f)
     val (useLyricsV2, onUseLyricsV2Change) = rememberPreference(UseLyricsV2Key, defaultValue = false)
+    val (keepPlayerScreenAwake, onKeepPlayerScreenAwakeChange) = rememberPreference(KeepPlayerScreenAwakeKey, defaultValue = false)
+    val (homeInactivityFade, onHomeInactivityFadeChange) = rememberPreference(HomeInactivityFadeKey, defaultValue = true)
 
     val (sliderStyle, onSliderStyleChange) = rememberEnumPreference(
         SliderStyleKey,
@@ -374,13 +492,50 @@ fun AppearanceSettings(
             onCheckedChange = onDisableBlurChange,
         )
 
-        SwitchPreference(
-            title = { Text(stringResource(R.string.use_system_font)) },
-            description = stringResource(R.string.use_system_font_desc),
+        ListPreference(
+            title = { Text("Fuente de la aplicación") },
             icon = { Icon(painterResource(R.drawable.text_fields), null) },
-            checked = useSystemFont,
-            onCheckedChange = onUseSystemFontChange,
-        )
+            selectedValue = fontFamily,
+            onValueSelected = onFontFamilyChange,
+                values = listOf(
+                    "POPPINS", "SF_PRO", "SERIF", "MONOSPACE", "SYSTEM",
+                    "INTER", "ROBOTO", "MONTSERRAT", "LORA", "PLAYFAIR_DISPLAY",
+                    "NUNITO", "RUBIK", "KANIT", "COMFORTAA", "PACIFICO",
+                    "LOBSTER", "DANCING_SCRIPT", "CAVEAT", "GREAT_VIBES", "CINZEL",
+                    "OUTFIT", "SYNE", "SPACE_GROTESK", "MERRIWEATHER", "OSWALD"
+                ),
+                valueText = {
+                    when (it) {
+                        "POPPINS" -> "Poppins (Predeterminada)"
+                        "SF_PRO" -> "SF Pro Display (Premium)"
+                        "SERIF" -> "Serif"
+                        "MONOSPACE" -> "Monospace"
+                        "SYSTEM" -> "Sistema"
+                        "INTER" -> "Inter"
+                        "ROBOTO" -> "Roboto"
+                        "MONTSERRAT" -> "Montserrat"
+                        "LORA" -> "Lora"
+                        "PLAYFAIR_DISPLAY" -> "Playfair Display"
+                        "NUNITO" -> "Nunito"
+                        "RUBIK" -> "Rubik"
+                        "KANIT" -> "Kanit"
+                        "COMFORTAA" -> "Comfortaa"
+                        "PACIFICO" -> "Pacifico"
+                        "LOBSTER" -> "Lobster"
+                        "DANCING_SCRIPT" -> "Dancing Script"
+                        "CAVEAT" -> "Caveat"
+                        "GREAT_VIBES" -> "Great Vibes"
+                        "CINZEL" -> "Cinzel"
+                        "OUTFIT" -> "Outfit"
+                        "SYNE" -> "Syne"
+                        "SPACE_GROTESK" -> "Space Grotesk"
+                        "MERRIWEATHER" -> "Merriweather"
+                        "OSWALD" -> "Oswald"
+                        else -> it
+                    }
+                },
+                itemTextStyle = { com.arturo254.opentune.ui.theme.getTypography(it).bodyLarge }
+            )
 
         PreferenceGroupTitle(
             title = stringResource(R.string.player),
@@ -400,8 +555,19 @@ fun AppearanceSettings(
                     PlayerDesignStyle.V5 -> stringResource(R.string.player_design_v5)
                     PlayerDesignStyle.V6 -> stringResource(R.string.player_design_v6)
                     PlayerDesignStyle.V7 -> stringResource(R.string.player_design_v7)
+                    PlayerDesignStyle.IPOD -> "iPod Classic"
+                    PlayerDesignStyle.SPOTIFY -> "Spotify"
+                    PlayerDesignStyle.CAR -> "Modo Coche"
                 }
             },
+        )
+
+        SwitchPreference(
+            title = { Text("Mantener pantalla encendida") },
+            description = "Evita que la pantalla se apague cuando el reproductor está expandido",
+            icon = { Icon(painterResource(R.drawable.motion_photos_on), null) },
+            checked = keepPlayerScreenAwake,
+            onCheckedChange = onKeepPlayerScreenAwakeChange,
         )
 
         SwitchPreference(
@@ -411,13 +577,17 @@ fun AppearanceSettings(
             onCheckedChange = onUseNewMiniPlayerDesignChange,
         )
 
-        SwitchPreference(
-            title = { Text(stringResource(R.string.new_library_design)) },
-            description = stringResource(R.string.new_library_design_description),
-            icon = { Icon(painterResource(R.drawable.grid_view), null) },
-            checked = useNewLibraryDesign,
-            onCheckedChange = onUseNewLibraryDesignChange,
-        )
+        AnimatedVisibility(visible = useNewMiniPlayerDesign) {
+            SwitchPreference(
+                title = { Text("Color dinámico en mini reproductor") },
+                description = "Usa el color dominante de la carátula como fondo",
+                icon = { Icon(painterResource(R.drawable.palette), null) },
+                checked = dynamicMiniPlayerColor,
+                onCheckedChange = onDynamicMiniPlayerColorChange,
+            )
+        }
+
+
 
         EnumListPreference(
             title = { Text(stringResource(R.string.player_background_style)) },
@@ -456,8 +626,8 @@ fun AppearanceSettings(
         )
 
         SwitchPreference(
-            title = { Text(stringResource(R.string.OpenTune_canvas)) },
-            description = stringResource(R.string.OpenTune_canvas_desc),
+            title = { Text(stringResource(R.string.Dezzy_canvas)) },
+            description = stringResource(R.string.Dezzy_canvas_desc),
             icon = { Icon(painterResource(R.drawable.motion_photos_on), null) },
             checked = OpenTuneCanvasEnabled,
             onCheckedChange = onOpenTuneCanvasEnabledChange
@@ -609,22 +779,7 @@ fun AppearanceSettings(
             },
         )
 
-        EnumListPreference(
-          title = { Text(stringResource(R.string.lyrics_animation_style)) },
-          icon = { Icon(painterResource(R.drawable.animation), null) },
-          selectedValue = lyricsAnimation,
-          onValueSelected = onLyricsAnimationChange,
-          valueText = {
-              when (it) {
-                  LyricsAnimationStyle.NONE -> stringResource(R.string.none)
-                  LyricsAnimationStyle.FADE -> stringResource(R.string.fade)
-                  LyricsAnimationStyle.GLOW -> stringResource(R.string.glow)
-                  LyricsAnimationStyle.SLIDE -> stringResource(R.string.slide)
-                  LyricsAnimationStyle.KARAOKE -> stringResource(R.string.karaoke)
-                  LyricsAnimationStyle.APPLE -> stringResource(R.string.apple_music_style)
-              }
-          }
-        )
+        // Lyrics Animation Style preference removed - GLOW is now forced by default
 
         SwitchPreference(
             title = { Text(stringResource(R.string.lyrics_click_change)) },
@@ -832,6 +987,26 @@ fun AppearanceSettings(
             onClick = { navController.navigate("settings/appearance/always_on_display") }
         )
 
+        val context = LocalContext.current
+        SwitchPreference(
+            title = { Text("Burbuja Flotante") },
+            description = "Habilitar un reproductor de burbuja flotante en pantalla",
+            icon = { Icon(painterResource(R.drawable.motion_photos_on), null) },
+            checked = enableBubble,
+            onCheckedChange = { isChecked ->
+                if (isChecked && !android.provider.Settings.canDrawOverlays(context)) {
+                    val intent = android.content.Intent(
+                        android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        android.net.Uri.parse("package:${context.packageName}")
+                    )
+                    context.startActivity(intent)
+                    onEnableBubbleChange(false)
+                } else {
+                    onEnableBubbleChange(isChecked)
+                }
+            },
+        )
+
         SwitchPreference(
             title = { Text(stringResource(R.string.show_home_category_chips)) },
             description = stringResource(R.string.show_home_category_chips_desc),
@@ -913,6 +1088,104 @@ fun AppearanceSettings(
             icon = { Icon(painterResource(R.drawable.cached), null) },
             checked = showCachedPlaylist,
             onCheckedChange = onShowCachedPlaylistChange
+        )
+
+        PreferenceGroupTitle(
+            title = "Fondo de Pantalla & Video"
+        )
+
+        SwitchPreference(
+            title = { Text("Activar Fondo de Pantalla (Imagen)") },
+            icon = { Icon(painterResource(R.drawable.image), null) },
+            checked = enableWallpaperTheme,
+            onCheckedChange = { checked ->
+                onEnableWallpaperThemeChange(checked)
+                if (checked) {
+                    onEnableVideoWallpaperChange(false)
+                }
+            }
+        )
+
+        AnimatedVisibility(enableWallpaperTheme) {
+            Column {
+                PreferenceEntry(
+                    title = { Text("Seleccionar Imagen Vertical") },
+                    description = if (wallpaperUri.isEmpty()) "Ninguna seleccionada" else "Imagen vertical configurada",
+                    icon = { Icon(painterResource(R.drawable.android_cell), null) },
+                    onClick = { verticalImageLauncher.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+                )
+
+                PreferenceEntry(
+                    title = { Text("Seleccionar Imagen Horizontal") },
+                    description = if (wallpaperLandscapeUri.isEmpty()) "Ninguna seleccionada" else "Imagen horizontal configurada",
+                    icon = { Icon(painterResource(R.drawable.desktop_windows), null) },
+                    onClick = { landscapeImageLauncher.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+                )
+
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    Text(
+                        text = "Opacidad de Imagen: ${(wallpaperOpacity * 100).roundToInt()}%",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Slider(
+                        value = wallpaperOpacity,
+                        onValueChange = onWallpaperOpacityChange,
+                        valueRange = 0f..1f,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        }
+
+        SwitchPreference(
+            title = { Text("Activar Video Wallpaper") },
+            icon = { Icon(painterResource(R.drawable.motion_photos_on), null) },
+            checked = enableVideoWallpaper,
+            onCheckedChange = { checked ->
+                onEnableVideoWallpaperChange(checked)
+                if (checked) {
+                    onEnableWallpaperThemeChange(false)
+                }
+            }
+        )
+
+        AnimatedVisibility(enableVideoWallpaper) {
+            Column {
+                PreferenceEntry(
+                    title = { Text("Seleccionar Video Vertical") },
+                    description = if (videoWallpaperUri.isEmpty()) "Ninguna seleccionada" else "Video vertical configurado",
+                    icon = { Icon(painterResource(R.drawable.android_cell), null) },
+                    onClick = { verticalVideoLauncher.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.VideoOnly)) }
+                )
+
+                PreferenceEntry(
+                    title = { Text("Seleccionar Video Horizontal") },
+                    description = if (videoWallpaperLandscapeUri.isEmpty()) "Ninguna seleccionada" else "Video horizontal configurado",
+                    icon = { Icon(painterResource(R.drawable.desktop_windows), null) },
+                    onClick = { landscapeVideoLauncher.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.VideoOnly)) }
+                )
+
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    Text(
+                        text = "Opacidad de Video: ${(videoWallpaperOpacity * 100).roundToInt()}%",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Slider(
+                        value = videoWallpaperOpacity,
+                        onValueChange = onVideoWallpaperOpacityChange,
+                        valueRange = 0f..1f,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        }
+
+        SwitchPreference(
+            title = { Text("Desvanecimiento por inactividad") },
+            description = "Desvanece la pantalla de inicio tras 2 minutos de inactividad si hay un fondo activo",
+            icon = { Icon(painterResource(R.drawable.image), null) },
+            checked = homeInactivityFade,
+            onCheckedChange = onHomeInactivityFadeChange,
         )
     }
 

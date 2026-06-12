@@ -40,6 +40,11 @@ fun String.resize(
             return "${split("=s")[0]}=s${maxOf(w, h)}"
         }
 
+        // If it doesn't have a known parameter but is a googleusercontent link, just append it
+        if (!contains("=")) {
+            return "$this=w$w-h$h-p-l90-rj"
+        }
+
         return this
     }
 

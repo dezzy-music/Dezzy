@@ -8,6 +8,8 @@
 
 package com.arturo254.opentune.canvas
 
+import com.arturo254.opentune.canvas.models.CanvasArtwork
+
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.okhttp.OkHttp
@@ -166,18 +168,4 @@ object OpenTuneCanvas {
                 .joinToString("|")
         return "$prefix|$normalized"
     }
-}
-
-@Serializable
-data class CanvasArtwork(
-    val name: String? = null,
-    val artist: String? = null,
-    @SerialName("albumId")
-    val albumId: String? = null,
-    val static: String? = null,
-    val animated: String? = null,
-    val videoUrl: String? = null,
-) {
-    val preferredAnimationUrl: String?
-        get() = animated ?: videoUrl
 }

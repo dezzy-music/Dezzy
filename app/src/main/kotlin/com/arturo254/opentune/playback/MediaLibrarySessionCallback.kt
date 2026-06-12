@@ -43,9 +43,13 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.guava.future
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import javax.inject.Inject
 import kotlin.math.min
+import androidx.datastore.preferences.core.edit
+import com.arturo254.opentune.utils.dataStore
+import com.arturo254.opentune.constants.PermanentShuffleKey
 
 class MediaLibrarySessionCallback
 @Inject
@@ -103,8 +107,15 @@ constructor(
             MediaSessionConstants.ACTION_TOGGLE_LIKE -> toggleLike()
             MediaSessionConstants.ACTION_TOGGLE_START_RADIO -> toggleStartRadio()
             MediaSessionConstants.ACTION_TOGGLE_LIBRARY -> toggleLibrary()
-            MediaSessionConstants.ACTION_TOGGLE_SHUFFLE -> session.player.shuffleModeEnabled =
-                !session.player.shuffleModeEnabled
+            MediaSessionConstants.ACTION_TOGGLE_SHUFFLE -> {
+                val newState = !session.player.shuffleModeEnabled
+                session.player.shuffleModeEnabled = newState
+                scope.launch(Dispatchers.IO) {
+                    context.dataStore.edit { settings ->
+                        settings[PermanentShuffleKey] = newState
+                    }
+                }
+            }
 
             MediaSessionConstants.ACTION_TOGGLE_REPEAT_MODE -> session.player.toggleRepeatMode()
         }

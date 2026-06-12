@@ -13,7 +13,15 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Thumbnails(
     val thumbnails: List<Thumbnail>,
-)
+) {
+    fun getHighestResUrl(): String? {
+        return thumbnails
+            .filter { it.width != null && it.height != null }
+            .maxByOrNull { it.width!! * it.height!! }
+            ?.url
+            ?: thumbnails.lastOrNull()?.url
+    }
+}
 
 @Serializable
 data class Thumbnail(

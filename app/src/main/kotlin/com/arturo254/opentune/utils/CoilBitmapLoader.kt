@@ -27,6 +27,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.guava.future
 import kotlin.math.roundToInt
+import com.arturo254.opentune.ui.utils.highRes
 
 class CoilBitmapLoader(
     private val context: Context,
@@ -54,13 +55,13 @@ class CoilBitmapLoader(
 
     override fun loadBitmap(uri: Uri): ListenableFuture<Bitmap> =
         scope.future(Dispatchers.IO) {
-            val density = context.resources.displayMetrics.density
-            val maxIconSizePx = (density * 128f).roundToInt().coerceIn(128, 512)
+            val highResUri = Uri.parse(uri.toString().highRes())
+            val maxIconSizePx = 512 // Reducido para evitar el límite de Binder en notificaciones
             val attempts = 3
             for (attempt in 1..attempts) {
                 try {
                     val request = ImageRequest.Builder(context)
-                        .data(uri)
+                        .data(highResUri)
                         .allowHardware(false)
                         .size(maxIconSizePx, maxIconSizePx)
                         .build()
@@ -98,6 +99,38 @@ class CoilBitmapLoader(
                         }
 
                         is ErrorResult -> {
+                            val fallbackRequest = ImageRequest.Builder(context)
+                                .data(uri)
+                                .allowHardware(false)
+                                .size(maxIconSizePx, maxIconSizePx)
+                                .build()
+                            val fallbackResult = context.imageLoader.execute(fallbackRequest)
+                            if (fallbackResult is SuccessResult) {
+                                try {
+                                    val bitmap = fallbackResult.image.toBitmap()
+                                    val scaled =
+                                        if (bitmap.width <= 0 || bitmap.height <= 0) {
+                                            null
+                                        } else if (bitmap.width <= maxIconSizePx && bitmap.height <= maxIconSizePx) {
+                                            bitmap
+                                        } else {
+                                            val scale =
+                                                minOf(
+                                                    maxIconSizePx.toFloat() / bitmap.width.toFloat(),
+                                                    maxIconSizePx.toFloat() / bitmap.height.toFloat(),
+                                                )
+                                            val targetWidth = (bitmap.width * scale).roundToInt().coerceAtLeast(1)
+                                            val targetHeight = (bitmap.height * scale).roundToInt().coerceAtLeast(1)
+                                            Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, true)
+                                        }
+
+                                    if (scaled != null) {
+                                        return@future scaled.copy(Bitmap.Config.ARGB_8888, false)
+                                    }
+                                } catch (e: Exception) {
+                                    reportException(e)
+                                }
+                            }
                             result.throwable?.let { reportException(it) }
                         }
                     }

@@ -135,6 +135,7 @@ import com.arturo254.opentune.db.entities.LyricsEntity
 import com.arturo254.opentune.db.entities.RelatedSongMap
 import com.arturo254.opentune.db.entities.Song
 import com.arturo254.opentune.db.entities.SongEntity
+import com.arturo254.opentune.db.entities.LyricsEntity.Companion.LYRICS_NOT_FOUND
 import com.arturo254.opentune.db.entities.ArtistEntity
 import com.arturo254.opentune.db.entities.AlbumEntity
 import com.arturo254.opentune.di.DownloadCache
@@ -184,6 +185,7 @@ import com.arturo254.opentune.constants.ScrobbleDelayPercentKey
 import com.arturo254.opentune.constants.ScrobbleMinSongDurationKey
 import com.arturo254.opentune.constants.ScrobbleDelaySecondsKey
 import com.arturo254.opentune.constants.TogetherClientIdKey
+import com.arturo254.opentune.constants.EnableBubbleKey
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -248,6 +250,7 @@ class MusicService :
 
     private lateinit var audioManager: AudioManager
     private var audioFocusRequest: AudioFocusRequest? = null
+    private var isBubbleEnabled = false
     private var lastAudioFocusState = AudioManager.AUDIOFOCUS_NONE
     private var wasPlayingBeforeAudioFocusLoss = false
     private var pauseOnDeviceMuteEnabled = false
@@ -517,7 +520,7 @@ class MusicService :
                     )
 
                 NotificationCompat.Builder(this, CHANNEL_ID)
-                    .setSmallIcon(R.drawable.opentune_monochrome)
+                    .setSmallIcon(R.drawable.star)
                     .setContentTitle(getString(R.string.music_player))
                     .setContentText(getString(R.string.app_name))
                     .setContentIntent(contentIntent)
@@ -683,7 +686,7 @@ class MusicService :
                 CHANNEL_ID,
                 R.string.music_player
             ).apply {
-                setSmallIcon(R.drawable.opentune)
+                setSmallIcon(R.drawable.star)
             }
         )
         
@@ -750,17 +753,25 @@ class MusicService :
         ) { mediaMetadata, showLyrics ->
             mediaMetadata to showLyrics
         }.collectLatest(ioScope) { (mediaMetadata, showLyrics) ->
-            if (showLyrics && mediaMetadata != null && database.lyrics(mediaMetadata.id)
-                    .first() == null
-            ) {
-                val lyrics = lyricsHelper.getLyrics(mediaMetadata)
-                database.query {
-                    upsert(
-                        LyricsEntity(
-                            id = mediaMetadata.id,
-                            lyrics = lyrics,
-                        ),
-                    )
+            if (showLyrics && mediaMetadata != null) {
+                val currentLyrics = database.lyrics(mediaMetadata.id).first()
+                if (currentLyrics == null || currentLyrics.lyrics == LYRICS_NOT_FOUND) {
+                    val lyrics = lyricsHelper.getLyrics(mediaMetadata)
+                    if (lyrics != LYRICS_NOT_FOUND) {
+                        database.query {
+                            upsert(
+                                LyricsEntity(
+                                    id = mediaMetadata.id,
+                                    lyrics = lyrics,
+                                ),
+                            )
+                        }
+                    } else if (currentLyrics == null) {
+                        // Optionally still cache LYRICS_NOT_FOUND temporarily? 
+                        // The user said "cache of original lyrics never gets lost", maybe we shouldn't cache the not found state.
+                        // We will cache it but maybe we need a way to clear it.
+                        // Actually, if we don't cache it, it will fetch every time if it's not found, which is better than being stuck offline.
+                    }
                 }
             }
         }
@@ -886,6 +897,14 @@ class MusicService :
                 }
             ).also { it.start(scope) }
 
+        // Register bubble command receiver
+        val bubbleFilter = IntentFilter("com.arturo254.opentune.BUBBLE_COMMAND")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(bubbleCommandReceiver, bubbleFilter, RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(bubbleCommandReceiver, bubbleFilter)
+        }
+
         // Initialize lyrics pre-load manager
         lyricsPreloadManager = LyricsPreloadManager(
             context = this,
@@ -940,6 +959,19 @@ class MusicService :
                     1f
                 }
         }
+
+        dataStore.data
+            .map { it[EnableBubbleKey] ?: false }
+            .distinctUntilChanged()
+            .collectLatest(scope) { enableBubble ->
+                isBubbleEnabled = enableBubble
+                if (enableBubble && android.provider.Settings.canDrawOverlays(this@MusicService)) {
+                    startService(Intent(this@MusicService, BubbleService::class.java))
+                    sendBubbleUpdate(player.isPlaying)
+                } else {
+                    stopService(Intent(this@MusicService, BubbleService::class.java))
+                }
+            }
 
         dataStore.data
             .map { it[DiscordTokenKey] to (it[EnableDiscordRPCKey] ?: true) }
@@ -1646,9 +1678,7 @@ class MusicService :
         currentQueue = queue
         queueTitle = null
         val permanentShuffle = dataStore.get(PermanentShuffleKey, false)
-        if (!permanentShuffle) {
-            player.shuffleModeEnabled = false
-        }
+        player.shuffleModeEnabled = permanentShuffle
         
         clearAutomix()
         automixSeedMediaId = null
@@ -2205,71 +2235,52 @@ class MusicService :
 
         ioScope.launch(SilentHandler) {
             stopTogetherInternal()
-            togetherIsOnlineSession = false
-
-            val localIp = getLocalIpv4Address()
-            val sessionId = java.util.UUID.randomUUID().toString()
-            val sessionKey = java.util.UUID.randomUUID().toString()
-            val joinInfo =
-                com.arturo254.opentune.together.TogetherJoinInfo(
-                    host = localIp ?: "127.0.0.1",
-                    port = port,
-                    sessionId = sessionId,
-                    sessionKey = sessionKey,
-                )
-            val joinLink = com.arturo254.opentune.together.TogetherLink.encode(joinInfo)
-
-            val server =
-                com.arturo254.opentune.together.TogetherServer(
-                    scope = ioScope,
-                    sessionId = sessionId,
-                    sessionKey = sessionKey,
-                    hostDisplayName = displayName.trim().ifBlank { getString(R.string.app_name) },
-                    initialSettings = settings,
-                )
-
-            server.onEvent = { event ->
-                ioScope.launch(SilentHandler) {
-                    handleTogetherHostEvent(event) { server.currentSettings() }
+            togetherIsOnlineSession = true // using new ws server
+            
+            val client = com.arturo254.opentune.listentogether.ListenTogetherClient.getInstance() 
+                ?: com.arturo254.opentune.listentogether.ListenTogetherClient(applicationContext).also {
+                    com.arturo254.opentune.listentogether.ListenTogetherClient.setInstance(it)
                 }
-            }
-
-            server.start(port)
-            togetherServer = server
-
-            scope.launch(SilentHandler) {
-                togetherSessionState.value =
-                    com.arturo254.opentune.together.TogetherSessionState.Hosting(
-                        sessionId = sessionId,
-                        joinLink = joinLink,
-                        localAddressHint = localIp,
-                        port = port,
-                        settings = settings,
-                        roomState = null,
-                    )
-            }
-
-            togetherBroadcastJob =
-                ioScope.launch(SilentHandler) {
-                    while (togetherServer === server) {
-                        val state = buildTogetherRoomState(sessionId = sessionId, hostId = togetherHostId)
-                        server.broadcastRoomState(state)
-                        scope.launch(SilentHandler) {
-                            val hosting = togetherSessionState.value as? com.arturo254.opentune.together.TogetherSessionState.Hosting
-                            if (hosting?.sessionId == sessionId) {
-                                togetherSessionState.value =
-                                    hosting.copy(
-                                        settings = server.currentSettings(),
-                                        roomState = state.copy(
-                                            participants = server.currentParticipants(),
-                                            settings = server.currentSettings(),
+                
+            client.createRoom(displayName.trim().ifBlank { getString(R.string.app_name) })
+            
+            togetherClientEventsJob?.cancel()
+            togetherClientEventsJob = ioScope.launch(SilentHandler) {
+                client.events.collect { event ->
+                    when (event) {
+                        is com.arturo254.opentune.listentogether.ListenTogetherEvent.RoomCreated -> {
+                            togetherSelfParticipantId = event.userId
+                            scope.launch(SilentHandler) {
+                                togetherSessionState.value = com.arturo254.opentune.together.TogetherSessionState.HostingOnline(
+                                    sessionId = event.roomCode,
+                                    code = event.roomCode,
+                                    settings = settings,
+                                    roomState = com.arturo254.opentune.together.TogetherRoomState(
+                                        sessionId = event.roomCode,
+                                        hostId = event.userId,
+                                        participants = listOf(
+                                            com.arturo254.opentune.together.TogetherParticipant(
+                                                id = event.userId,
+                                                name = displayName,
+                                                isHost = true,
+                                                isConnected = true
+                                            )
                                         ),
+                                        settings = settings
                                     )
+                                )
                             }
                         }
-                        kotlinx.coroutines.delay(750)
+                        is com.arturo254.opentune.listentogether.ListenTogetherEvent.Disconnected -> {
+                            scope.launch(SilentHandler) {
+                                togetherSessionState.value = com.arturo254.opentune.together.TogetherSessionState.Error("Disconnected from server", true)
+                            }
+                        }
+                        // Handle other ListenTogetherEvent as needed
+                        else -> {}
                     }
                 }
+            }
         }
     }
 
@@ -2435,16 +2446,16 @@ class MusicService :
     }
 
     fun joinTogether(
-        rawLink: String,
+        rawLink: String, // For the new system, rawLink will just be the 6 character code
         displayName: String,
     ) {
         ensureScopesActive()
-        val joinInfo = com.arturo254.opentune.together.TogetherLink.decode(rawLink)
-        if (joinInfo == null) {
+        val trimmedCode = rawLink.trim()
+        if (trimmedCode.isBlank()) {
             scope.launch(SilentHandler) {
                 togetherSessionState.value =
                     com.arturo254.opentune.together.TogetherSessionState.Error(
-                        message = getString(R.string.invalid_link),
+                        message = getString(R.string.invalid_code),
                         recoverable = true,
                     )
             }
@@ -2452,166 +2463,60 @@ class MusicService :
         }
 
         scope.launch(SilentHandler) {
-            togetherSessionState.value = com.arturo254.opentune.together.TogetherSessionState.Joining(joinInfo.toDeepLink())
+            togetherSessionState.value = com.arturo254.opentune.together.TogetherSessionState.JoiningOnline(trimmedCode)
         }
 
         ioScope.launch(SilentHandler) {
             stopTogetherInternal()
-            togetherIsOnlineSession = false
-            val client =
-                com.arturo254.opentune.together.TogetherClient(
-                    ioScope,
-                    clientId = getOrCreateTogetherClientId(),
-                )
-            togetherClient = client
-            togetherClock = com.arturo254.opentune.together.TogetherClock()
-            togetherSelfParticipantId = null
-            togetherLastAppliedQueueHash = null
-
+            togetherIsOnlineSession = true
+            
+            val client = com.arturo254.opentune.listentogether.ListenTogetherClient.getInstance() 
+                ?: com.arturo254.opentune.listentogether.ListenTogetherClient(applicationContext).also {
+                    com.arturo254.opentune.listentogether.ListenTogetherClient.setInstance(it)
+                }
+                
+            client.joinRoom(trimmedCode, displayName.trim().ifBlank { getString(R.string.together_role_guest) })
+            
             togetherClientEventsJob?.cancel()
-            togetherClientEventsJob =
-                ioScope.launch(SilentHandler) {
+            togetherClientEventsJob = ioScope.launch(SilentHandler) {
                 client.events.collect { event ->
                     when (event) {
-                        is com.arturo254.opentune.together.TogetherClientEvent.Welcome -> {
-                            togetherSelfParticipantId = event.welcome.participantId
+                        is com.arturo254.opentune.listentogether.ListenTogetherEvent.JoinApproved -> {
+                            togetherSelfParticipantId = event.userId
                             scope.launch(SilentHandler) {
-                                val state = togetherSessionState.value
-                                if (state is com.arturo254.opentune.together.TogetherSessionState.Joining) {
-                                    val selfName = displayName.trim().ifBlank { getString(R.string.together_role_guest) }
-                                    val initial =
-                                        com.arturo254.opentune.together.TogetherRoomState(
-                                            sessionId = joinInfo.sessionId,
-                                            hostId = togetherHostId,
-                                            participants =
-                                                listOf(
-                                                    com.arturo254.opentune.together.TogetherParticipant(
-                                                        id = event.welcome.participantId,
-                                                        name = selfName,
-                                                        isHost = false,
-                                                        isPending = event.welcome.isPending,
-                                                        isConnected = true,
-                                                    ),
-                                                ),
-                                            settings = event.welcome.settings,
-                                            queue = emptyList(),
-                                            queueHash = "",
-                                            currentIndex = 0,
-                                            isPlaying = false,
-                                            positionMs = 0L,
-                                            repeatMode = 0,
-                                            shuffleEnabled = false,
-                                            sentAtElapsedRealtimeMs = android.os.SystemClock.elapsedRealtime(),
-                                        )
-                                    togetherSessionState.value =
-                                        com.arturo254.opentune.together.TogetherSessionState.Joined(
-                                            role = com.arturo254.opentune.together.TogetherRole.Guest,
-                                            sessionId = joinInfo.sessionId,
-                                            selfParticipantId = event.welcome.participantId,
-                                            roomState = initial,
-                                        )
-                                }
-                            }
-                            startTogetherHeartbeat(joinInfo.sessionId, client)
-                        }
-
-                        is com.arturo254.opentune.together.TogetherClientEvent.RoomState -> {
-                            applyRemoteRoomState(event.state)
-                        }
-
-                        is com.arturo254.opentune.together.TogetherClientEvent.JoinDecision -> {
-                            if (!event.decision.approved) {
-                                scope.launch(SilentHandler) {
-                                    togetherSessionState.value =
-                                        com.arturo254.opentune.together.TogetherSessionState.Error(
-                                            message = getString(R.string.not_allowed),
-                                            recoverable = true,
-                                        )
-                                }
-                                ioScope.launch(SilentHandler) { stopTogetherInternal() }
-                            }
-                        }
-
-                        is com.arturo254.opentune.together.TogetherClientEvent.ServerIssue -> {
-                            Timber.tag("Together").w("server issue (lan) code=${event.code.orEmpty()} message=${event.message}")
-                            when (event.code) {
-                                "GUEST_CONTROL_DISABLED" -> {
-                                    showTogetherNotice(event.message, key = "GUEST_CONTROL_DISABLED")
-                                    val joined =
-                                        togetherSessionState.value as? com.arturo254.opentune.together.TogetherSessionState.Joined
-                                    if (joined?.role is com.arturo254.opentune.together.TogetherRole.Guest) {
-                                        togetherPendingGuestControl = null
-                                        togetherLastSentControlAction = null
-                                        scope.launch(SilentHandler) { applyRemoteRoomState(joined.roomState) }
-                                    }
-                                }
-
-                                "GUEST_ADD_DISABLED" -> {
-                                    showTogetherNotice(event.message, key = "GUEST_ADD_DISABLED")
-                                }
-
-                                "HOST_OFFLINE" -> {
-                                    showTogetherNotice(event.message, key = "HOST_OFFLINE")
-                                }
-
-                                else -> {
-                                    scope.launch(SilentHandler) {
-                                        togetherSessionState.value =
-                                            com.arturo254.opentune.together.TogetherSessionState.Error(
-                                                message = event.message,
-                                                recoverable = true,
+                                togetherSessionState.value = com.arturo254.opentune.together.TogetherSessionState.Joined(
+                                    role = com.arturo254.opentune.together.TogetherRole.Guest,
+                                    sessionId = event.roomCode,
+                                    selfParticipantId = event.userId,
+                                    roomState = com.arturo254.opentune.together.TogetherRoomState(
+                                        sessionId = event.roomCode,
+                                        hostId = event.state.hostId,
+                                        participants = event.state.users.map {
+                                            com.arturo254.opentune.together.TogetherParticipant(
+                                                id = it.userId,
+                                                name = it.username,
+                                                isHost = it.isHost,
+                                                isConnected = it.isConnected
                                             )
-                                    }
-                                    ioScope.launch(SilentHandler) { stopTogetherInternal() }
-                                }
-                            }
-                        }
-
-                        is com.arturo254.opentune.together.TogetherClientEvent.HeartbeatPong -> {
-                            val clock = togetherClock ?: return@collect
-                            clock.onPong(
-                                sentAtElapsedMs = event.pong.clientElapsedRealtimeMs,
-                                receivedAtElapsedMs = event.receivedAtElapsedRealtimeMs,
-                                serverElapsedMs = event.pong.serverElapsedRealtimeMs,
-                            )
-                        }
-
-                        is com.arturo254.opentune.together.TogetherClientEvent.Error -> {
-                            scope.launch(SilentHandler) {
-                                togetherSessionState.value =
-                                    com.arturo254.opentune.together.TogetherSessionState.Error(
-                                        message = event.message,
-                                        recoverable = true,
+                                        }
                                     )
+                                )
                             }
-                            ioScope.launch(SilentHandler) { stopTogetherInternal() }
                         }
-
-                        com.arturo254.opentune.together.TogetherClientEvent.Disconnected -> {
-                            val current = togetherSessionState.value
-                            if (current is com.arturo254.opentune.together.TogetherSessionState.Idle) return@collect
+                        is com.arturo254.opentune.listentogether.ListenTogetherEvent.JoinRejected -> {
                             scope.launch(SilentHandler) {
-                                val currentState = togetherSessionState.value
-                                togetherSessionState.value =
-                                    com.arturo254.opentune.together.TogetherSessionState.Error(
-                                        message =
-                                            if (currentState is com.arturo254.opentune.together.TogetherSessionState.Joined &&
-                                                currentState.role is com.arturo254.opentune.together.TogetherRole.Guest
-                                            ) {
-                                                getString(R.string.together_host_left_session)
-                                            } else {
-                                                getString(R.string.network_unavailable)
-                                            },
-                                        recoverable = true,
-                                    )
+                                togetherSessionState.value = com.arturo254.opentune.together.TogetherSessionState.Error(event.reason, true)
                             }
-                            ioScope.launch(SilentHandler) { stopTogetherInternal() }
                         }
+                        is com.arturo254.opentune.listentogether.ListenTogetherEvent.Disconnected -> {
+                            scope.launch(SilentHandler) {
+                                togetherSessionState.value = com.arturo254.opentune.together.TogetherSessionState.Error("Disconnected from server", true)
+                            }
+                        }
+                        else -> {}
                     }
                 }
             }
-
-            client.connect(joinInfo, displayName.trim().ifBlank { getString(R.string.together_role_guest) })
         }
     }
 
@@ -2902,58 +2807,58 @@ class MusicService :
     }
 
     fun requestTogetherControl(action: com.arturo254.opentune.together.ControlAction) {
-        val client =
-            togetherClient ?: run {
-                showTogetherNotice(getString(R.string.network_unavailable), key = "TOGETHER_CLIENT_MISSING")
-                return
-            }
+        val client = com.arturo254.opentune.listentogether.ListenTogetherClient.getInstance() ?: return
         val state = togetherSessionState.value as? com.arturo254.opentune.together.TogetherSessionState.Joined ?: return
         if (state.role !is com.arturo254.opentune.together.TogetherRole.Guest) return
         if (!state.roomState.settings.allowGuestsToControlPlayback) {
-            Timber.tag("Together").i("control blocked locally (disabled) action=${action::class.java.simpleName}")
+            Timber.tag("Together").i("control blocked locally")
             showTogetherNotice(getString(R.string.not_allowed), key = "GUEST_CONTROL_DISABLED_LOCAL")
             return
         }
-        val now = android.os.SystemClock.elapsedRealtime()
-        val lastAction = togetherLastSentControlAction
-        val lastAt = togetherLastSentControlAtElapsedMs
-        if (lastAction == action && now - lastAt < 350L) return
-        togetherLastSentControlAction = action
-        togetherLastSentControlAtElapsedMs = now
 
-        val timeout = if (togetherIsOnlineSession) 5000L else 2000L
-        togetherPendingGuestControl =
-            when (action) {
-                com.arturo254.opentune.together.ControlAction.Play ->
-                    TogetherPendingGuestControl(desiredIsPlaying = true, requestedAtElapsedMs = now, expiresAtElapsedMs = now + timeout)
-                com.arturo254.opentune.together.ControlAction.Pause ->
-                    TogetherPendingGuestControl(desiredIsPlaying = false, requestedAtElapsedMs = now, expiresAtElapsedMs = now + timeout)
-                is com.arturo254.opentune.together.ControlAction.SeekToIndex ->
-                    TogetherPendingGuestControl(desiredIndex = action.index.coerceAtLeast(0), requestedAtElapsedMs = now, expiresAtElapsedMs = now + timeout)
-                is com.arturo254.opentune.together.ControlAction.SeekToTrack ->
-                    TogetherPendingGuestControl(
-                        desiredTrackId = action.trackId.trim().ifBlank { null },
-                        requestedAtElapsedMs = now,
-                        expiresAtElapsedMs = now + timeout,
-                    )
-                else -> togetherPendingGuestControl
-            }
-        client.requestControl(state.sessionId, action)
+        // Convert ControlAction to PlaybackAction string
+        val actionStr = when (action) {
+            com.arturo254.opentune.together.ControlAction.Play -> com.arturo254.opentune.listentogether.PlaybackActions.PLAY
+            com.arturo254.opentune.together.ControlAction.Pause -> com.arturo254.opentune.listentogether.PlaybackActions.PAUSE
+            is com.arturo254.opentune.together.ControlAction.SeekToIndex -> com.arturo254.opentune.listentogether.PlaybackActions.SEEK
+            is com.arturo254.opentune.together.ControlAction.SeekToTrack -> com.arturo254.opentune.listentogether.PlaybackActions.CHANGE_TRACK
+            else -> return
+        }
+        
+        val trackId = if (action is com.arturo254.opentune.together.ControlAction.SeekToTrack) action.trackId else null
+        val position = if (action is com.arturo254.opentune.together.ControlAction.SeekToIndex) action.positionMs else if (action is com.arturo254.opentune.together.ControlAction.SeekToTrack) action.positionMs else null
+
+        client.sendPlaybackAction(actionStr, trackId = trackId, position = position)
     }
 
     fun requestTogetherAddTrack(
         track: com.arturo254.opentune.together.TogetherTrack,
         mode: com.arturo254.opentune.together.AddTrackMode,
     ) {
-        val client = togetherClient ?: return
+        val client = com.arturo254.opentune.listentogether.ListenTogetherClient.getInstance() ?: return
         val state = togetherSessionState.value as? com.arturo254.opentune.together.TogetherSessionState.Joined ?: return
         if (state.role !is com.arturo254.opentune.together.TogetherRole.Guest) return
         if (!state.roomState.settings.allowGuestsToAddTracks) {
-            Timber.tag("Together").i("add blocked locally (disabled) mode=$mode trackId=${track.id}")
             showTogetherNotice(getString(R.string.not_allowed), key = "GUEST_ADD_DISABLED_LOCAL")
             return
         }
-        client.requestAddTrack(state.sessionId, track, mode)
+
+        val trackInfo = com.arturo254.opentune.listentogether.TrackInfo(
+            id = track.id,
+            title = track.title,
+            artist = track.artists.joinToString(", "),
+            duration = track.durationSec * 1000L,
+            thumbnail = track.thumbnailUrl
+        )
+
+        val actionStr = when (mode) {
+            com.arturo254.opentune.together.AddTrackMode.PLAY_NEXT -> com.arturo254.opentune.listentogether.PlaybackActions.QUEUE_ADD
+            com.arturo254.opentune.together.AddTrackMode.ADD_TO_QUEUE -> com.arturo254.opentune.listentogether.PlaybackActions.QUEUE_ADD
+        }
+        
+        val insertNext = mode == com.arturo254.opentune.together.AddTrackMode.PLAY_NEXT
+
+        client.sendPlaybackAction(actionStr, trackInfo = trackInfo, insertNext = insertNext)
     }
 
     private suspend fun handleTogetherHostEvent(
@@ -3572,6 +3477,8 @@ class MusicService :
             ?: player.currentMediaItem?.mediaId
     )
 
+    OmegaMathIntegration.reportNowPlaying(mediaItem)
+
     crossfadeAudio?.onMediaItemTransition(mediaItem, reason)
 
     // Pre-load lyrics for upcoming songs in queue
@@ -4059,6 +3966,7 @@ class MusicService :
     } else {
         ensurePresenceManager()
     }
+    sendBubbleUpdate(player.isPlaying)
   }
 
 
@@ -4085,6 +3993,7 @@ class MusicService :
         
         // Save state when shuffle mode changes - must be on Main thread to access player
         scope.launch {
+            dataStore.edit { it[PermanentShuffleKey] = shuffleModeEnabled }
             if (dataStore.get(PersistentQueueKey, true)) {
                 saveQueueToDisk()
             }
@@ -4818,6 +4727,9 @@ class MusicService :
         super.onDestroy()
         unregisterBluetoothReceiver()
         try {
+            unregisterReceiver(bubbleCommandReceiver)
+        } catch (_: Exception) {}
+        try {
             scope.launch { stopTogetherInternal() }
         } catch (_: Exception) {}
         try {
@@ -4991,6 +4903,32 @@ class MusicService :
     inner class MusicBinder : Binder() {
         val service: MusicService
             get() = this@MusicService
+    }
+
+    private val bubbleCommandReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.getStringExtra("command")) {
+                "PLAY_PAUSE" -> if (player.isPlaying) player.pause() else player.play()
+                "NEXT" -> player.seekToNext()
+                "PREVIOUS" -> player.seekToPrevious()
+            }
+        }
+    }
+
+    private fun sendBubbleUpdate(isPlaying: Boolean) {
+        if (!isBubbleEnabled || !android.provider.Settings.canDrawOverlays(this)) return
+        val song = player.currentMediaItem?.mediaMetadata
+        val songData = currentMediaMetadata.value
+        val intent = Intent(BubbleService.ACTION_UPDATE).apply {
+            putExtra(BubbleService.EXTRA_TITLE, songData?.title ?: song?.title?.toString() ?: "")
+            putExtra(BubbleService.EXTRA_ARTIST, songData?.artists?.joinToString(", ") { it.name } ?: song?.artist?.toString() ?: "")
+            putExtra(BubbleService.EXTRA_IS_PLAYING, isPlaying)
+            putExtra(BubbleService.EXTRA_ART_URL, songData?.thumbnailUrl ?: song?.artworkUri?.toString() ?: "")
+            putExtra(BubbleService.EXTRA_POSITION, player.currentPosition)
+            putExtra(BubbleService.EXTRA_DURATION, player.duration)
+            setPackage(packageName)
+        }
+        sendBroadcast(intent)
     }
 
     companion object {

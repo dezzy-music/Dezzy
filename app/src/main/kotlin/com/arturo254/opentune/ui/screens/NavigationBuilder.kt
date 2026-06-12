@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.rememberModalBottomSheetState
+import com.arturo254.opentune.LocalPlayerConnection
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -88,6 +89,8 @@ import com.arturo254.opentune.ui.screens.settings.UpdateScreen
 import com.arturo254.opentune.ui.screens.musicrecognition.MusicRecognitionRoute
 import com.arturo254.opentune.ui.screens.musicrecognition.MusicRecognitionScreen
 import com.arturo254.opentune.ui.screens.settings.AODSettings
+import com.arturo254.opentune.ui.screens.settings.AiSettings
+import com.arturo254.opentune.ui.screens.SpotifyLoginScreen
 
 import com.arturo254.opentune.ui.utils.ShowMediaInfo
 import com.arturo254.opentune.utils.rememberEnumPreference
@@ -341,6 +344,9 @@ fun NavGraphBuilder.navigationBuilder(
     composable("settings/content") {
         ContentSettings(navController, scrollBehavior)
     }
+    composable("settings/ai") {
+        AiSettings(navController, scrollBehavior)
+    }
     composable("settings/player") {
         PlayerSettings(navController, scrollBehavior)
     }
@@ -362,6 +368,17 @@ fun NavGraphBuilder.navigationBuilder(
     composable("settings/music_together") {
         MusicTogetherScreen(navController, scrollBehavior)
     }
+    composable("listen_together_chat") {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val togetherClient = remember(context) {
+            com.arturo254.opentune.listentogether.ListenTogetherClient.getInstance()
+                ?: com.arturo254.opentune.listentogether.ListenTogetherClient(context.applicationContext)
+        }
+        ListenTogetherChatScreen(
+            manager = togetherClient,
+            onDismiss = { navController.navigateUp() }
+        )
+    }
     composable("settings/lastfm") {
         LastFMSettings(navController, scrollBehavior)
     }
@@ -382,6 +399,10 @@ fun NavGraphBuilder.navigationBuilder(
     }
     composable("settings/about") {
         AboutScreen(navController, scrollBehavior)
+    }
+
+    composable("settings/spotify/login") {
+        SpotifyLoginScreen(navController)
     }
     composable("settings/po_token") {
         PoTokenScreen(navController, scrollBehavior)

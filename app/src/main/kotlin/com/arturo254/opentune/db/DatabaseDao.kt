@@ -54,12 +54,13 @@ import com.arturo254.opentune.db.entities.SongEntity
 import com.arturo254.opentune.db.entities.SongWithStats
 import com.arturo254.opentune.db.entities.TagEntity
 import com.arturo254.opentune.db.entities.PlaylistTagMap
+import com.arturo254.opentune.db.entities.LyricsTranslationEntity
 import com.arturo254.opentune.db.entities.PlaylistWithTags
 import com.arturo254.opentune.extensions.reversed
 import com.arturo254.opentune.extensions.toSQLiteQuery
 import com.arturo254.opentune.models.MediaMetadata
 import com.arturo254.opentune.models.toMediaMetadata
-import com.arturo254.opentune.ui.utils.resize
+import com.arturo254.opentune.ui.utils.highRes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -1428,7 +1429,7 @@ interface DatabaseDao {
         update(
             artist.copy(
                 name = artistPage.artist.title,
-                thumbnailUrl = artistPage.artist.thumbnail?.resize(544, 544),
+                thumbnailUrl = artistPage.artist.thumbnail?.highRes(),
                 lastUpdateTime = LocalDateTime.now()
             )
         )
@@ -1494,11 +1495,14 @@ interface DatabaseDao {
 
     @Update
     fun update(playlistEntity: PlaylistEntity, playlistItem: PlaylistItem) {
+        val keepLocalThumbnail = playlistEntity.thumbnailUrl != null &&
+                !playlistEntity.thumbnailUrl.startsWith("http", ignoreCase = true)
+
         update(
             playlistEntity.copy(
                 name = playlistItem.title,
                 browseId = playlistItem.id,
-                thumbnailUrl = playlistItem.thumbnail,
+                thumbnailUrl = if (keepLocalThumbnail) playlistEntity.thumbnailUrl else playlistItem.thumbnail,
                 isEditable = playlistItem.isEditable,
                 remoteSongCount = playlistItem.songCountText?.let { Regex("""\d+""").find(it)?.value?.toIntOrNull() },
                 playEndpointParams = playlistItem.playEndpoint?.params,
@@ -1650,4 +1654,10 @@ interface DatabaseDao {
             addTagToPlaylist(playlistId, tagId)
         }
     }
+
+    @Query("SELECT * FROM lyrics_translation WHERE cacheKey = :cacheKey LIMIT 1")
+    suspend fun getLyricsTranslation(cacheKey: String): LyricsTranslationEntity?
+
+    @Upsert
+    suspend fun upsert(entity: LyricsTranslationEntity)
 }

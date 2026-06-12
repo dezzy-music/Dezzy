@@ -16,6 +16,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <queries>
         <intent>
@@ -63,7 +64,7 @@
 
                 <data
                     android:host="together"
-                    android:scheme="opentune" />
+                    android:scheme="dezzy" />
             </intent-filter>
 
             <!-- Youtube filter -->
@@ -168,6 +169,10 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </service>
+
+        <service
+            android:name=".playback.BubbleService"
+            android:exported="false" />
 
         <receiver
             android:name="androidx.media3.session.MediaButtonReceiver"

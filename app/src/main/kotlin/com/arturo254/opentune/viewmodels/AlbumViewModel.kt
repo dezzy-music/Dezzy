@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -79,7 +80,7 @@ constructor(
     fun retry() {
         viewModelScope.launch {
             _fetchState.value = FetchState.Pending
-            val album = database.album(albumId).first()
+            val album = database.album(albumId).firstOrNull()
             YouTube
                 .album(albumId)
                 .onSuccess {
@@ -98,7 +99,7 @@ constructor(
                     val isNotFound = it.message?.contains("NOT_FOUND") == true
                     if (isNotFound) {
                         database.query {
-                            album?.album?.let(::delete)
+                            album?.album?.let { delete(it) }
                         }
                     }
                     _fetchState.value = FetchState.Failed(isNotFound = isNotFound)

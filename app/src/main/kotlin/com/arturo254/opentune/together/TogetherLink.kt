@@ -31,7 +31,7 @@ data class TogetherJoinInfo(
             ).joinToString("&") { (k, v) ->
                 "${URLEncoder.encode(k, charset)}=${URLEncoder.encode(v, charset)}"
             }
-        return "OpenTune://together?$q"
+        return "Dezzy://together?$q"
     }
 }
 

@@ -22,6 +22,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -57,6 +61,8 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import com.arturo254.opentune.constants.ThumbnailCornerRadiusKey
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -122,6 +128,7 @@ import com.arturo254.opentune.LocalPlayerConnection
 import com.arturo254.opentune.constants.DarkModeKey
 import com.arturo254.opentune.constants.PlayerDesignStyle
 import com.arturo254.opentune.constants.PlayerDesignStyleKey
+import com.arturo254.opentune.constants.KeepPlayerScreenAwakeKey
 import com.arturo254.opentune.constants.UseNewMiniPlayerDesignKey
 import com.arturo254.opentune.constants.PlayerBackgroundStyle
 import com.arturo254.opentune.constants.PlayerBackgroundStyleKey
@@ -213,6 +220,18 @@ fun BottomSheetPlayer(
 
 
     val (aodAutoTimeoutSeconds) = rememberPreference(AodAutoActivationKey, 30)
+
+    val (keepPlayerScreenAwake) = rememberPreference(KeepPlayerScreenAwakeKey, defaultValue = false)
+
+    DisposableEffect(state.isExpanded, keepPlayerScreenAwake) {
+        val window = (context as? android.app.Activity)?.window
+        if (state.isExpanded && keepPlayerScreenAwake) {
+            window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+        onDispose {
+            window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
 
     var lastInteractionTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var isAodActive by remember { mutableStateOf(false) }
@@ -306,6 +325,11 @@ fun BottomSheetPlayer(
 
     // Track loading state: when buffering or when user is seeking
     val isLoading = playbackState == STATE_BUFFERING || sliderPosition != null
+
+    var controlsFaded by remember { mutableStateOf(false) }
+    LaunchedEffect(mediaMetadata?.id) {
+        controlsFaded = false
+    }
 
     var gradientColors by remember {
         mutableStateOf<List<Color>>(emptyList())
@@ -828,10 +852,17 @@ fun BottomSheetPlayer(
                 onSliderValueChangeFinished = onSliderValueChangeFinished,
                 currentFormat = if (playerDesignStyle == PlayerDesignStyle.V7) currentFormat else null,
                 onResetTimer = { resetAodTimer() },
+                controlsFaded = controlsFaded,
             )
         }
 
-        if (!state.isCollapsed && playerDesignStyle != PlayerDesignStyle.V5 && playerDesignStyle != PlayerDesignStyle.V7) {
+        if (!state.isCollapsed &&
+            playerDesignStyle != PlayerDesignStyle.V5 &&
+            playerDesignStyle != PlayerDesignStyle.V7 &&
+            playerDesignStyle != PlayerDesignStyle.IPOD &&
+            playerDesignStyle != PlayerDesignStyle.SPOTIFY &&
+            playerDesignStyle != PlayerDesignStyle.CAR
+        ) {
             PlayerBackground(
                 playerBackground = playerBackground,
                 mediaMetadata = mediaMetadata,
@@ -847,7 +878,55 @@ fun BottomSheetPlayer(
 
 // distance
 
-        when (LocalConfiguration.current.orientation) {
+        if (playerDesignStyle == PlayerDesignStyle.IPOD) {
+            IpodPlayer(
+                state = state,
+                navController = navController,
+                positionState = rememberUpdatedState(position),
+                durationState = rememberUpdatedState(duration),
+                sliderPosition = sliderPosition,
+                onSliderPositionChange = { sliderPosition = it },
+                onQueueClick = queueSheetState::expandSoft,
+                onMenuClick = {
+                    enrichedMetadata?.let { metadata ->
+                        menuState.show {
+                            PlayerMenu(
+                                mediaMetadata = metadata,
+                                navController = navController,
+                                playerBottomSheetState = state,
+                                onShowDetailsDialog = {
+                                    bottomSheetPageState.show {
+                                        ShowMediaInfo(metadata.id)
+                                    }
+                                },
+                                onDismiss = menuState::dismiss
+                            )
+                        }
+                    }
+                },
+                modifier = Modifier.padding(bottom = queueSheetState.collapsedBound)
+            )
+        } else if (playerDesignStyle == PlayerDesignStyle.SPOTIFY) {
+            SpotifyPlayer(
+                state = state,
+                navController = navController,
+                positionState = rememberUpdatedState(position),
+                durationState = rememberUpdatedState(duration),
+                sliderPosition = sliderPosition,
+                onSliderPositionChange = { sliderPosition = it },
+                onQueueClick = queueSheetState::expandSoft,
+                modifier = Modifier.padding(bottom = queueSheetState.collapsedBound)
+            )
+        } else if (playerDesignStyle == PlayerDesignStyle.CAR) {
+            CarModePlayer(
+                state = state,
+                navController = navController,
+                mediaMetadata = enrichedMetadata,
+                isPlaying = isPlaying,
+                onQueueClick = queueSheetState::expandSoft
+            )
+        } else {
+            when (LocalConfiguration.current.orientation) {
             Configuration.ORIENTATION_LANDSCAPE -> {
                 if (playerDesignStyle == PlayerDesignStyle.V5) {
                     val littleBackground = MaterialTheme.colorScheme.primaryContainer
@@ -934,6 +1013,12 @@ fun BottomSheetPlayer(
                             thumbnailUrl = mediaMetadata?.thumbnailUrl,
                             disableBlur = disableBlur,
                             label = "v7BackdropLandscape",
+                            modifier = Modifier.clickable(
+                                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                indication = null
+                            ) {
+                                controlsFaded = !controlsFaded
+                            }
                         )
 
                         Column(
@@ -964,9 +1049,14 @@ fun BottomSheetPlayer(
                         ) {
                             val screenWidth = LocalConfiguration.current.screenWidthDp
                             val thumbnailSize = (screenWidth * 0.4).dp
+                            val (thumbnailCornerRadius) = rememberPreference(ThumbnailCornerRadiusKey, 12f)
                             Thumbnail(
                                 sliderPositionProvider = { sliderPosition },
-                                modifier = Modifier.size(thumbnailSize),
+                                onTap = { controlsFaded = !controlsFaded },
+                                modifier = Modifier
+                                    .size(thumbnailSize)
+                                    .clip(RoundedCornerShape(thumbnailCornerRadius.dp))
+                                    .align(Alignment.Center),
                                 isPlayerExpanded = state.isExpanded
                             )
                         }
@@ -1082,6 +1172,12 @@ fun BottomSheetPlayer(
                             thumbnailUrl = mediaMetadata?.thumbnailUrl,
                             disableBlur = disableBlur,
                             label = "v7BackdropPortrait",
+                            modifier = Modifier.clickable(
+                                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                indication = null
+                            ) {
+                                controlsFaded = !controlsFaded
+                            }
                         )
 
                         Column(
@@ -1117,7 +1213,13 @@ fun BottomSheetPlayer(
                         ) {
                             Thumbnail(
                                 sliderPositionProvider = { sliderPosition },
-                                modifier = Modifier.nestedScroll(state.preUpPostDownNestedScrollConnection),
+                                onTap = { 
+                                    if (playerDesignStyle != PlayerDesignStyle.IPOD && playerDesignStyle != PlayerDesignStyle.SPOTIFY) {
+                                        controlsFaded = !controlsFaded
+                                    }
+                                },
+                                modifier = Modifier
+                                    .nestedScroll(state.preUpPostDownNestedScrollConnection),
                                 isPlayerExpanded = state.isExpanded
                             )
                         }
@@ -1131,6 +1233,7 @@ fun BottomSheetPlayer(
                 }
             }
         }
+    }
 
         val queueOnBackgroundColor = if (useBlackBackground) Color.White else MaterialTheme.colorScheme.onSurface
         val queueSurfaceColor = if (useBlackBackground) Color.Black else MaterialTheme.colorScheme.surface

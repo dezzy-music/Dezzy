@@ -57,6 +57,10 @@ import timber.log.Timber
 import java.net.Proxy
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
+import com.arturo254.opentune.utils.OfflineArtworkInterceptor
+import com.arturo254.opentune.utils.toArtworkHash
+import dagger.hilt.android.EntryPointAccessors
+import com.arturo254.opentune.di.DatabaseEntryPoint
 
 @HiltAndroidApp
 class App : Application(), SingletonImageLoader.Factory {
@@ -171,6 +175,8 @@ class App : Application(), SingletonImageLoader.Factory {
             }
         }
 
+        migrateOfflineArtworks()
+
         applicationScope.launch(Dispatchers.IO) {
             dataStore.data
                 .map { it[VisitorDataKey] }
@@ -279,6 +285,43 @@ class App : Application(), SingletonImageLoader.Factory {
         }
     }
 
+    private fun migrateOfflineArtworks() {
+        applicationScope.launch(Dispatchers.IO) {
+            try {
+                val artworkDir = java.io.File(filesDir, "artwork")
+                if (!artworkDir.exists()) return@launch
+
+                val database = EntryPointAccessors.fromApplication(
+                    this@App, DatabaseEntryPoint::class.java
+                ).musicDatabase()
+
+                artworkDir.listFiles()?.forEach { file ->
+                    val name = file.name
+                    // Migration: Original files were saved as {songId}.jpg (usually length 11 + 4). MD5 is 32 + 4 = 36.
+                    if (name.endsWith(".jpg") && name.length != 36) {
+                        val songId = name.removeSuffix(".jpg")
+                        val song = database.getSongById(songId)
+                        if (song != null) {
+                            val thumbnailUrl = song.song.thumbnailUrl
+                            if (thumbnailUrl != null) {
+                                val hash = thumbnailUrl.toArtworkHash()
+                                val newFile = java.io.File(artworkDir, "$hash.jpg")
+                                if (!newFile.exists()) {
+                                    file.renameTo(newFile)
+                                    Timber.tag("ArtworkMigration").d("Migrated artwork for $songId to hash $hash")
+                                } else {
+                                    file.delete()
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.tag("ArtworkMigration").e(e, "Failed to migrate old artwork files")
+            }
+        }
+    }
+
     override fun newImageLoader(context: PlatformContext): ImageLoader {
         val smartTrimmer = dataStore[SmartTrimmerKey] ?: false
         val imageCacheConfig = resolveImageDiskCacheConfig(dataStore[MaxImageCacheSizeKey])
@@ -293,6 +336,9 @@ class App : Application(), SingletonImageLoader.Factory {
         }
 
         return ImageLoader.Builder(this)
+            .components {
+                add(OfflineArtworkInterceptor(this@App))
+            }
             .crossfade(true)
             .allowHardware(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
             .diskCache(diskCache)

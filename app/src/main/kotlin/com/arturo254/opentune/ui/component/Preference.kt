@@ -176,6 +176,7 @@ fun <T> ListPreference(
     valueText: @Composable (T) -> String,
     onValueSelected: (T) -> Unit,
     isEnabled: Boolean = true,
+    itemTextStyle: @Composable (T) -> androidx.compose.ui.text.TextStyle = { MaterialTheme.typography.bodyLarge },
 ) {
     var showDialog by remember {
         mutableStateOf(false)
@@ -202,7 +203,7 @@ fun <T> ListPreference(
 
                     Text(
                         text = valueText(value),
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = itemTextStyle(value),
                         modifier = Modifier.padding(start = 16.dp),
                     )
                 }
@@ -213,7 +214,16 @@ fun <T> ListPreference(
     PreferenceEntry(
         modifier = modifier,
         title = title,
-        description = valueText(selectedValue),
+        description = null,
+        content = {
+            Text(
+                text = valueText(selectedValue),
+                style = itemTextStyle(selectedValue).copy(
+                    fontSize = MaterialTheme.typography.bodySmall.fontSize,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            )
+        },
         icon = icon,
         onClick = { showDialog = true },
         isEnabled = isEnabled,

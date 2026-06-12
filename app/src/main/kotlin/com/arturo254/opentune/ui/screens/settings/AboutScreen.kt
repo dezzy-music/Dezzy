@@ -220,28 +220,22 @@ fun AboutScreen(
                     links = listOf(
                         SocialLink(
                             R.drawable.github,
-                            "https://github.com/Arturo254/OpenTune",
+                            "https://github.com/dezzy-music",
                             "GitHub"
                         ),
                         SocialLink(
-                            R.drawable.telegram,
-                            "https://t.me/opentune_updates",
-                            "Telegram"
-                        ),
-                        SocialLink(
                             R.drawable.facebook,
-                            "https://www.facebook.com/Arturo254",
+                            "https://www.facebook.com/share/18nog3EfkG/",
                             "Facebook"
                         ),
-                        SocialLink(R.drawable.paypal, "https://www.paypal.me/OpenTune", "PayPal"),
                         SocialLink(
                             R.drawable.instagram,
-                            "https://www.instagram.com/arturocg.dev/",
+                            "https://www.instagram.com/dezzy_9n9_/?utm_source=ig_web_button_share_sheet",
                             "Instagram"
                         ),
                         SocialLink(
                             R.drawable.resource_public,
-                            "https://opentune.netlify.app/",
+                            "https://dezzy.space",
                             "Website"
                         ),
                     ),
@@ -293,7 +287,7 @@ fun AboutScreen(
             item(key = "license") {
                 LicenseFooterExpressive(
                     onLicenseClick = {
-                        uriHandler.openUri("https://github.com/Arturo254/OpenTune/blob/master/LICENSE")
+                        uriHandler.openUri("https://github.com/dezzy-music/Dezzy/blob/master/LICENSE")
                     }
                 )
             }
@@ -404,7 +398,7 @@ private fun HeroCardExpressive(shimmerBrush: Brush) {
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Image(
-                            painter = painterResource(R.drawable.opentune_monochrome),
+                            painter = painterResource(R.drawable.star),
                             contentDescription = null,
                             colorFilter = ColorFilter.tint(
                                 MaterialTheme.colorScheme.onPrimaryContainer,
@@ -522,7 +516,7 @@ private fun DeveloperInfoExpressive() {
             modifier = Modifier.size(44.dp),
         ) {
             AsyncImage(
-                model = "https://avatars.githubusercontent.com/u/87346871?v=4",
+                model = "https://github.com/dezzy-music.png",
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -532,7 +526,7 @@ private fun DeveloperInfoExpressive() {
         }
         Column {
             Text(
-                text = "Arturo Cervantes",
+                text = "Jhonny Hernández",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,

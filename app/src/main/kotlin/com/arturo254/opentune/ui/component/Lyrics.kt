@@ -82,6 +82,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
@@ -146,6 +147,16 @@ import com.arturo254.opentune.constants.LyricsScrollKey
 import com.arturo254.opentune.constants.LyricsTextPositionKey
 import com.arturo254.opentune.constants.LyricsAnimationStyle
 import com.arturo254.opentune.constants.LyricsAnimationStyleKey
+import com.arturo254.opentune.constants.OpenRouterApiKey
+import com.arturo254.opentune.constants.OpenRouterBaseUrlKey
+import com.arturo254.opentune.constants.OpenRouterModelKey
+import com.arturo254.opentune.constants.AutoTranslateLyricsKey
+import com.arturo254.opentune.constants.AutoTranslateLyricsMismatchKey
+import com.arturo254.opentune.constants.TranslateLanguageKey
+import com.arturo254.opentune.constants.TranslateModeKey
+import com.arturo254.opentune.LocalDatabase
+import com.arturo254.opentune.lyrics.LyricsTranslationHelper
+import com.arturo254.opentune.lyrics.LanguageDetectionHelper
 import com.arturo254.opentune.constants.LyricsLineBlurKey
 import com.arturo254.opentune.constants.LyricsTextSizeKey
 import com.arturo254.opentune.constants.LyricsLineSpacingKey
@@ -427,22 +438,51 @@ fun Lyrics(
         configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     val lyricsTextPosition by rememberEnumPreference(LyricsTextPositionKey, LyricsPosition.LEFT)
-    val lyricsAnimationStyle by rememberEnumPreference(LyricsAnimationStyleKey, LyricsAnimationStyle.APPLE)
+    val lyricsAnimationStyle = LyricsAnimationStyle.GLOW
+
+    val coroutineScope = rememberCoroutineScope()
     val lyricsTextSize by rememberPreference(LyricsTextSizeKey, 26f)
     val lyricsLineSpacing by rememberPreference(LyricsLineSpacingKey, 1.3f)
     val useSystemFont by rememberPreference(UseSystemFontKey, false)
-    val lyricsFontFamily = remember(useSystemFont) {
-        if (useSystemFont) null else FontFamily(Font(R.font.sfprodisplaybold))
+    val lyricsFontFamily = androidx.compose.material3.MaterialTheme.typography.headlineMedium.fontFamily
+
+    // Adaptive sizing: cap fontSize and padding in landscape
+    val effectiveLyricsTextSize = if (landscapeOffset) {
+        (lyricsTextSize * 0.65f).coerceIn(14f, 22f)
+    } else {
+        lyricsTextSize
     }
+    val lyricsHorizontalPadding = if (landscapeOffset) 12.dp else 24.dp
+    val lyricsVerticalPadding = if (landscapeOffset) 4.dp else 8.dp
 
     val verticalLineSpacing = with(LocalDensity.current) {
-        (lyricsTextSize.sp * (lyricsLineSpacing - 1f)).toDp().coerceAtLeast(0.dp)
+        (effectiveLyricsTextSize.sp * (lyricsLineSpacing - 1f)).toDp().coerceAtLeast(0.dp)
     }
     val changeLyrics by rememberPreference(LyricsClickKey, true)
     val scrollLyrics by rememberPreference(LyricsScrollKey, true)
     val romanizeJapaneseLyrics by rememberPreference(LyricsRomanizeJapaneseKey, true)
     val romanizeKoreanLyrics by rememberPreference(LyricsRomanizeKoreanKey, true)
     val scope = rememberCoroutineScope()
+
+    val database = LocalDatabase.current
+    val aiProvider by rememberPreference(com.arturo254.opentune.constants.AiProviderKey, "OpenRouter")
+    val openRouterApiKey by rememberPreference(OpenRouterApiKey, "")
+    val openRouterBaseUrl by rememberPreference(OpenRouterBaseUrlKey, "https://openrouter.ai/api/v1/chat/completions")
+    val openRouterModel by rememberPreference(OpenRouterModelKey, "mistralai/mistral-small-3.1-24b-instruct:free")
+    val autoTranslateLyrics by rememberPreference(AutoTranslateLyricsKey, false)
+    val autoTranslateLyricsMismatch by rememberPreference(AutoTranslateLyricsMismatchKey, false)
+    val translateLanguage by rememberPreference(TranslateLanguageKey, "en")
+    val translateMode by rememberPreference(TranslateModeKey, "Literal")
+
+    val translationStatus by LyricsTranslationHelper.status.collectAsState()
+
+    DisposableEffect(Unit) {
+        LyricsTranslationHelper.setCompositionActive(true)
+        onDispose {
+            LyricsTranslationHelper.setCompositionActive(false)
+            LyricsTranslationHelper.cancelTranslation()
+        }
+    }
 
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
     val lyricsEntity by playerConnection.currentLyrics.collectAsState(initial = null)
@@ -565,6 +605,76 @@ fun Lyrics(
         remember(lyrics) {
             !lyrics.isNullOrEmpty() && (lyrics.startsWith("[") || isTtml(lyrics))
         }
+
+    LaunchedEffect(lyricsEntity, lines.size, openRouterApiKey) {
+        LyricsTranslationHelper.manualTrigger.collect {
+             if (lines.isNotEmpty() && openRouterApiKey.isNotBlank()) {
+                 LyricsTranslationHelper.translateLyrics(
+                     lyrics = lines,
+                     targetLanguage = translateLanguage,
+                     apiKey = openRouterApiKey,
+                     baseUrl = openRouterBaseUrl,
+                     model = openRouterModel,
+                     mode = translateMode,
+                     scope = scope,
+                     context = context,
+                     database = database,
+                     provider = aiProvider
+                 )
+             } else if (openRouterApiKey.isBlank()) {
+                 Toast.makeText(context, context.getString(R.string.ai_api_key_required), Toast.LENGTH_SHORT).show()
+             }
+        }
+    }
+
+    LaunchedEffect(lines, autoTranslateLyrics, autoTranslateLyricsMismatch, openRouterApiKey, translateMode, translateLanguage) {
+        if (lines.isNotEmpty()) {
+            val targetLang = if (autoTranslateLyricsMismatch) java.util.Locale.getDefault().language else translateLanguage
+            val hasCached = LyricsTranslationHelper.applyCachedTranslations(lines, translateMode, targetLang, database)
+
+            if (!autoTranslateLyrics) {
+                if (!hasCached) {
+                    LyricsTranslationHelper.resetStatus()
+                }
+                return@LaunchedEffect
+            }
+            
+            if (!hasCached && openRouterApiKey.isNotBlank()) {
+                val needsTranslation = lines.any { it.translatedTextFlow.value == null && it.text.isNotBlank() }
+                if (needsTranslation) {
+                    var shouldTranslate = true
+                    if (autoTranslateLyricsMismatch) {
+                        try {
+                            val combinedText = lines.take(5).joinToString(" ") { it.text }
+                            val detectedLang = LanguageDetectionHelper.identifyLanguage(combinedText)
+                            val systemLang = java.util.Locale.getDefault().language
+                            
+                            if (detectedLang != null && detectedLang == systemLang) {
+                                shouldTranslate = false
+                            }
+                        } catch (e: Exception) {
+                            timber.log.Timber.e(e, "Language detection failed, proceeding with translation")
+                        }
+                    }
+
+                    if (shouldTranslate) {
+                        LyricsTranslationHelper.translateLyrics(
+                            lyrics = lines,
+                            targetLanguage = targetLang,
+                            apiKey = openRouterApiKey,
+                            baseUrl = openRouterBaseUrl,
+                            model = openRouterModel,
+                            mode = translateMode,
+                            scope = scope,
+                            context = context,
+                            database = database,
+                            provider = aiProvider
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     val lyricsBaseColor = if (useDarkTheme || playerBackground != PlayerBackgroundStyle.DEFAULT) Color.White else Color.Black
     val lyricsGlowColor = if (useDarkTheme || playerBackground != PlayerBackgroundStyle.DEFAULT) Color.White else Color.Black
@@ -813,6 +923,100 @@ fun Lyrics(
             .fillMaxSize()
             .padding(bottom = 12.dp)
     ) {
+        // Status UI for translation
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .zIndex(1f)
+                .padding(top = 56.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            when (val status = translationStatus) {
+                is LyricsTranslationHelper.TranslationStatus.Translating -> {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        ),
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            androidx.compose.material3.CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Text(
+                                text = stringResource(R.string.ai_translating_lyrics),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+                }
+                is LyricsTranslationHelper.TranslationStatus.Error -> {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        ),
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.error),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = status.message,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                    }
+                }
+                is LyricsTranslationHelper.TranslationStatus.Success -> {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                        ),
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.check),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = stringResource(R.string.ai_lyrics_translated),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        }
+                    }
+                }
+                is LyricsTranslationHelper.TranslationStatus.Idle -> {
+                    // No status display
+                }
+            }
+        }
 
         if (lyrics == LYRICS_NOT_FOUND) {
             Box(
@@ -1021,8 +1225,8 @@ fun Lyrics(
                                 shape = RoundedCornerShape(8.dp)
                             )
                             .padding(
-                                horizontal = 24.dp,
-                                vertical = 8.dp
+                                horizontal = lyricsHorizontalPadding,
+                                vertical = lyricsVerticalPadding
                             )
                             .then(
                                 if (lyricsLineBlur) {
@@ -1083,7 +1287,7 @@ fun Lyrics(
                                         }
                                     val hasRomanization = remember(romanizedText) { romanizedText != null }
 
-                                    val effectiveAnimationStyle = lyricsAnimationStyle
+                                    val effectiveAnimationStyle = LyricsAnimationStyle.GLOW
 
                                     val reduceMotionDuringScroll =
                                         isSelectionModeActive
@@ -1245,7 +1449,7 @@ fun Lyrics(
                                                     endTime = wordEndMs,
                                                     currentTimeProvider = karaokeCurrentTimeProvider,
                                                     isRtl = lineIsRtl,
-                                                    fontSize = lyricsTextSize.sp,
+                                                    fontSize = effectiveLyricsTextSize.sp,
                                                     textColor = lyricsBaseColor,
                                                     inactiveAlpha = if (isActiveLine) 0.35f else 0.7f,
                                                     fontWeight = if (hasRomanization) FontWeight.Bold else FontWeight.ExtraBold,
@@ -1258,11 +1462,11 @@ fun Lyrics(
                                         if (!isActiveLine || reduceMotionDuringScroll) {
                                             Text(
                                                 text = item.text,
-                                                fontSize = lyricsTextSize.sp,
+                                                fontSize = effectiveLyricsTextSize.sp,
                                                 color = lineColor,
                                                 textAlign = alignment,
                                                 fontWeight = if (hasRomanization) FontWeight.Bold else FontWeight.SemiBold,
-                                                lineHeight = (lyricsTextSize * lyricsLineSpacing).sp
+                                                lineHeight = (effectiveLyricsTextSize * lyricsLineSpacing).sp
                                             )
                                         } else {
 
@@ -1314,7 +1518,7 @@ fun Lyrics(
                                                         style = SpanStyle(
                                                             color = wordColor,
                                                             fontWeight = wordWeight,
-                                                            fontSize = if (word.isBackground) lyricsTextSize.sp * 0.7f else TextUnit.Unspecified
+                                                            fontSize = if (word.isBackground) effectiveLyricsTextSize.sp * 0.7f else TextUnit.Unspecified
                                                         )
                                                     ) {
                                                         append(word.text)
@@ -1324,20 +1528,20 @@ fun Lyrics(
 
                                             Text(
                                                 text = styledText,
-                                                fontSize = lyricsTextSize.sp,
+                                                fontSize = effectiveLyricsTextSize.sp,
                                                 textAlign = alignment,
-                                                lineHeight = (lyricsTextSize * lyricsLineSpacing).sp
+                                                lineHeight = (effectiveLyricsTextSize * lyricsLineSpacing).sp
                                             )
                                         }
                                     } else if (hasWordTimings && item.words != null && effectiveAnimationStyle == LyricsAnimationStyle.FADE) {
                                         if (!isActiveLine || reduceMotionDuringScroll) {
                                             Text(
                                                 text = item.text,
-                                                fontSize = lyricsTextSize.sp,
+                                                fontSize = effectiveLyricsTextSize.sp,
                                                 color = lineColor,
                                                 textAlign = alignment,
                                                 fontWeight = if (hasRomanization) FontWeight.Bold else FontWeight.SemiBold,
-                                                lineHeight = (lyricsTextSize * lyricsLineSpacing).sp
+                                                lineHeight = (effectiveLyricsTextSize * lyricsLineSpacing).sp
                                             )
                                         } else {
 
@@ -1386,7 +1590,7 @@ fun Lyrics(
                                                         style = SpanStyle(
                                                             color = wordColor,
                                                             fontWeight = wordWeight,
-                                                            fontSize = if (word.isBackground) lyricsTextSize.sp * 0.85f else TextUnit.Unspecified
+                                                            fontSize = if (word.isBackground) effectiveLyricsTextSize.sp * 0.85f else TextUnit.Unspecified
                                                         )
                                                     ) {
                                                         append(word.text)
@@ -1396,20 +1600,20 @@ fun Lyrics(
 
                                             Text(
                                                 text = styledText,
-                                                fontSize = lyricsTextSize.sp,
+                                                fontSize = effectiveLyricsTextSize.sp,
                                                 textAlign = alignment,
-                                                lineHeight = (lyricsTextSize * lyricsLineSpacing).sp
+                                                lineHeight = (effectiveLyricsTextSize * lyricsLineSpacing).sp
                                             )
                                         }
                                     } else if (hasWordTimings && item.words != null && effectiveAnimationStyle == LyricsAnimationStyle.GLOW) {
                                         if (!isActiveLine || reduceMotionDuringScroll) {
                                             Text(
                                                 text = item.text,
-                                                fontSize = lyricsTextSize.sp,
+                                                fontSize = effectiveLyricsTextSize.sp,
                                                 color = lineColor,
                                                 textAlign = alignment,
                                                 fontWeight = if (hasRomanization) FontWeight.Bold else FontWeight.SemiBold,
-                                                lineHeight = (lyricsTextSize * lyricsLineSpacing).sp
+                                                lineHeight = (effectiveLyricsTextSize * lyricsLineSpacing).sp
                                             )
                                         } else {
 
@@ -1468,25 +1672,25 @@ fun Lyrics(
                                                     }
 
                                                     val wordShadow = if (isWordActive && glowIntensity > 0.05f) {
-                                                        Shadow(
-                                                            color = lyricsGlowColor.copy(alpha = if (hasRomanization) 0.6f + (0.3f * glowIntensity) else 0.5f + (0.3f * glowIntensity)),
-                                                            offset = floatOffset,
-                                                            blurRadius = if (hasRomanization) 20f + (12f * glowIntensity) else 16f + (12f * glowIntensity)
-                                                        )
-                                                    } else if (hasWordPassed) {
-                                                        Shadow(
-                                                            color = lyricsGlowColor.copy(alpha = if (hasRomanization) 0.35f else 0.25f),
-                                                            offset = Offset.Zero,
-                                                            blurRadius = if (hasRomanization) 12f else 8f
-                                                        )
-                                                    } else null
+                                                         Shadow(
+                                                             color = lyricsGlowColor.copy(alpha = 0.9f + (0.1f * glowIntensity)),
+                                                             offset = floatOffset,
+                                                             blurRadius = if (hasRomanization) 35f + (15f * glowIntensity) else 30f + (15f * glowIntensity)
+                                                         )
+                                                     } else if (hasWordPassed) {
+                                                         Shadow(
+                                                             color = lyricsGlowColor.copy(alpha = 0.5f),
+                                                             offset = Offset.Zero,
+                                                             blurRadius = if (hasRomanization) 20f else 15f
+                                                         )
+                                                     } else null
 
                                                     withStyle(
                                                         style = SpanStyle(
                                                             color = wordColor,
                                                             fontWeight = wordWeight,
                                                             shadow = wordShadow,
-                                                            fontSize = if (word.isBackground) lyricsTextSize.sp * 0.7f else TextUnit.Unspecified
+                                                            fontSize = if (word.isBackground) effectiveLyricsTextSize.sp * 0.7f else TextUnit.Unspecified
                                                         )
                                                     ) {
                                                         append(word.text)
@@ -1496,9 +1700,9 @@ fun Lyrics(
 
                                             Text(
                                                 text = styledText,
-                                                fontSize = lyricsTextSize.sp,
+                                                fontSize = effectiveLyricsTextSize.sp,
                                                 textAlign = alignment,
-                                                lineHeight = (lyricsTextSize * lyricsLineSpacing).sp
+                                                lineHeight = (effectiveLyricsTextSize * lyricsLineSpacing).sp
                                             )
                                         }
                                     } else if (hasWordTimings && item.words != null && effectiveAnimationStyle == LyricsAnimationStyle.SLIDE) {
@@ -1544,29 +1748,29 @@ fun Lyrics(
 
                                             Text(
                                                 text = styledText,
-                                                fontSize = lyricsTextSize.sp,
+                                                fontSize = effectiveLyricsTextSize.sp,
                                                 textAlign = alignment,
-                                                lineHeight = (lyricsTextSize * lyricsLineSpacing).sp
+                                                lineHeight = (effectiveLyricsTextSize * lyricsLineSpacing).sp
                                             )
                                         } else if (hasLinePassed) {
 
                                             Text(
                                                 text = item.text,
-                                                fontSize = lyricsTextSize.sp,
+                                                fontSize = effectiveLyricsTextSize.sp,
                                                 color = lyricsBaseColor,
                                                 textAlign = alignment,
                                                 fontWeight = FontWeight.Bold,
-                                                lineHeight = (lyricsTextSize * lyricsLineSpacing).sp
+                                                lineHeight = (effectiveLyricsTextSize * lyricsLineSpacing).sp
                                             )
                                         } else {
 
                                             Text(
                                                 text = item.text,
-                                                fontSize = lyricsTextSize.sp,
+                                                fontSize = effectiveLyricsTextSize.sp,
                                                 color = if (!isActiveLine) lineColor else lyricsBaseColor.copy(alpha = 0.35f),
                                                 textAlign = alignment,
                                                 fontWeight = if (hasRomanization) FontWeight.Bold else FontWeight.SemiBold,
-                                                lineHeight = (lyricsTextSize * lyricsLineSpacing).sp
+                                                lineHeight = (effectiveLyricsTextSize * lyricsLineSpacing).sp
                                             )
                                         }
                                     } else if (hasWordTimings && item.words != null && effectiveAnimationStyle == LyricsAnimationStyle.KARAOKE) {
@@ -1645,9 +1849,9 @@ fun Lyrics(
 
                                         Text(
                                             text = styledText,
-                                            fontSize = lyricsTextSize.sp,
+                                            fontSize = effectiveLyricsTextSize.sp,
                                             textAlign = alignment,
-                                            lineHeight = (lyricsTextSize * lyricsLineSpacing).sp
+                                            lineHeight = (effectiveLyricsTextSize * lyricsLineSpacing).sp
                                         )
                                     } else if (hasWordTimings && item.words != null && effectiveAnimationStyle == LyricsAnimationStyle.APPLE) {
 
@@ -1704,9 +1908,9 @@ fun Lyrics(
 
                                         Text(
                                             text = styledText,
-                                            fontSize = lyricsTextSize.sp,
+                                            fontSize = effectiveLyricsTextSize.sp,
                                             textAlign = alignment,
-                                            lineHeight = (lyricsTextSize * lyricsLineSpacing).sp
+                                            lineHeight = (effectiveLyricsTextSize * lyricsLineSpacing).sp
                                         )
                                     } else if (isActiveLine && effectiveAnimationStyle == LyricsAnimationStyle.GLOW && !reduceMotionDuringScroll) {
 
@@ -1714,9 +1918,9 @@ fun Lyrics(
                                             withStyle(
                                                 style = SpanStyle(
                                                     shadow = Shadow(
-                                                        color = lyricsGlowColor.copy(alpha = if (hasRomanization) 0.9f else 0.8f),
+                                                        color = lyricsGlowColor.copy(alpha = 1.0f),
                                                         offset = Offset(0f, 0f),
-                                                        blurRadius = if (hasRomanization) 36f else 30f
+                                                        blurRadius = if (hasRomanization) 60f else 50f
                                                     )
                                                 )
                                             ) {
@@ -1726,11 +1930,11 @@ fun Lyrics(
 
                                         Text(
                                             text = styledText,
-                                            fontSize = lyricsTextSize.sp,
+                                            fontSize = effectiveLyricsTextSize.sp,
                                             color = lyricsBaseColor,
                                             textAlign = alignment,
                                             fontWeight = if (hasRomanization) FontWeight.Bold else FontWeight.ExtraBold,
-                                            lineHeight = (lyricsTextSize * lyricsLineSpacing).sp
+                                            lineHeight = (effectiveLyricsTextSize * lyricsLineSpacing).sp
                                         )
                                     } else if (isActiveLine && effectiveAnimationStyle == LyricsAnimationStyle.SLIDE && !reduceMotionDuringScroll) {
 
@@ -1788,10 +1992,10 @@ fun Lyrics(
 
                                         Text(
                                             text = styledText,
-                                            fontSize = lyricsTextSize.sp,
+                                            fontSize = effectiveLyricsTextSize.sp,
                                             textAlign = alignment,
                                             fontWeight = if (hasRomanization) FontWeight.Bold else FontWeight.ExtraBold,
-                                            lineHeight = (lyricsTextSize * lyricsLineSpacing).sp,
+                                            lineHeight = (effectiveLyricsTextSize * lyricsLineSpacing).sp,
                                             modifier = Modifier.graphicsLayer {
                                                 scaleX = 1f
                                                 scaleY = 1f
@@ -1847,9 +2051,9 @@ fun Lyrics(
 
                                         Text(
                                             text = styledText,
-                                            fontSize = lyricsTextSize.sp,
+                                            fontSize = effectiveLyricsTextSize.sp,
                                             textAlign = alignment,
-                                            lineHeight = (lyricsTextSize * lyricsLineSpacing).sp
+                                            lineHeight = (effectiveLyricsTextSize * lyricsLineSpacing).sp
                                         )
                                     } else if (isActiveLine && effectiveAnimationStyle == LyricsAnimationStyle.APPLE && !reduceMotionDuringScroll) {
 
@@ -1871,7 +2075,7 @@ fun Lyrics(
                                             buildAnnotatedString {
                                                 item.words.forEachIndexed { idx, word ->
                                                     if (word.isBackground) {
-                                                        withStyle(SpanStyle(fontSize = lyricsTextSize.sp * 0.7f)) {
+                                                        withStyle(SpanStyle(fontSize = effectiveLyricsTextSize.sp * 0.7f)) {
                                                             append(word.text)
                                                         }
                                                     } else {
@@ -1883,11 +2087,11 @@ fun Lyrics(
 
                                         Text(
                                             text = styledText,
-                                            fontSize = lyricsTextSize.sp,
+                                            fontSize = effectiveLyricsTextSize.sp,
                                             color = lyricsBaseColor,
                                             textAlign = alignment,
                                             fontWeight = FontWeight.Bold,
-                                            lineHeight = (lyricsTextSize * lyricsLineSpacing).sp,
+                                            lineHeight = (effectiveLyricsTextSize * lyricsLineSpacing).sp,
                                             modifier = Modifier.graphicsLayer {
                                                 scaleX = 1f
                                                 scaleY = 1f
@@ -1914,7 +2118,7 @@ fun Lyrics(
                                             buildAnnotatedString {
                                                 item.words.forEachIndexed { idx, word ->
                                                     if (word.isBackground) {
-                                                        withStyle(SpanStyle(fontSize = lyricsTextSize.sp * 0.7f)) {
+                                                        withStyle(SpanStyle(fontSize = effectiveLyricsTextSize.sp * 0.7f)) {
                                                             append(word.text)
                                                         }
                                                     } else {
@@ -1926,11 +2130,11 @@ fun Lyrics(
 
                                         Text(
                                             text = styledText,
-                                            fontSize = lyricsTextSize.sp,
+                                            fontSize = effectiveLyricsTextSize.sp,
                                             color = lineColor,
                                             textAlign = alignment,
                                             fontWeight = if (isActiveLine) FontWeight.ExtraBold else if (index > displayedCurrentLineIndex) FontWeight.Light else FontWeight.Bold,
-                                            lineHeight = (lyricsTextSize * lyricsLineSpacing).sp,
+                                            lineHeight = (effectiveLyricsTextSize * lyricsLineSpacing).sp,
                                             modifier = Modifier
                                         )
                                     }
@@ -2053,12 +2257,12 @@ fun Lyrics(
 
                                                                     val romAlpha = 0.4f + (0.4f * fillProgress)
                                                                     val romShadow = if (isWordActive && fillProgress > 0.05f) {
-                                                                        Shadow(
-                                                                            color = lyricsGlowColor.copy(alpha = 0.5f * fillProgress),
-                                                                            offset = Offset.Zero,
-                                                                            blurRadius = 10f * fillProgress
-                                                                        )
-                                                                    } else null
+                                                                         Shadow(
+                                                                             color = lyricsGlowColor.copy(alpha = 0.8f * fillProgress),
+                                                                             offset = Offset.Zero,
+                                                                             blurRadius = 25f * fillProgress
+                                                                         )
+                                                                     } else null
 
                                                                     withStyle(
                                                                         style = SpanStyle(
@@ -2131,6 +2335,26 @@ fun Lyrics(
                                                     modifier = Modifier.padding(top = 2.dp)
                                                 )
                                             }
+                                        }
+                                    }
+                                    val (autoTranslateLyricsPref) = rememberPreference(AutoTranslateLyricsKey, defaultValue = false)
+                                    val openRouterApiKeyPref by rememberPreference(OpenRouterApiKey, "")
+                                    if (autoTranslateLyricsPref || openRouterApiKeyPref.isNotBlank()) {
+                                        val translatedText by item.translatedTextFlow.collectAsState()
+                                        translatedText?.let { translated ->
+                                            Text(
+                                                text = translated,
+                                                fontSize = (effectiveLyricsTextSize * 0.7f).sp,
+                                                color = lyricsBaseColor.copy(alpha = if (isActiveLine) 0.7f else 0.4f),
+                                                style = LocalTextStyle.current.copy(shadow = null),
+                                                textAlign = when (lyricsTextPosition) {
+                                                    LyricsPosition.LEFT -> TextAlign.Start
+                                                    LyricsPosition.CENTER -> TextAlign.Center
+                                                    LyricsPosition.RIGHT -> TextAlign.End
+                                                },
+                                                fontWeight = FontWeight.Normal,
+                                                modifier = Modifier.padding(top = 4.dp).fillMaxWidth()
+                                            )
                                         }
                                     }
                                 }
@@ -2283,6 +2507,46 @@ fun Lyrics(
             }
 
         }
+    }
+
+    if (showShareDialog && shareDialogData != null) {
+        val (text, title, artist) = shareDialogData!!
+        LyricsShareCarouselSheet(
+            lyricText = text,
+            mediaMetadata = mediaMetadata ?: com.arturo254.opentune.models.MediaMetadata(
+                id = "", title = title, artists = emptyList(), album = null, duration = 0
+            ),
+            onDismiss = { showShareDialog = false },
+            onShare = { config ->
+                showShareDialog = false
+                coroutineScope.launch {
+                    try {
+                        val bitmap = ComposeToImage.createLyricsImageWithConfig(
+                            context = context,
+                            coverArtUrl = mediaMetadata?.thumbnailUrl,
+                            songTitle = title,
+                            artistName = artist,
+                            lyrics = text,
+                            config = config,
+                            outputSize = 1080
+                        )
+                        val uri = ComposeToImage.saveBitmapAsFile(context, bitmap, "Dezzy_Lyrics")
+                        context.startActivity(
+                            android.content.Intent.createChooser(
+                                android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                    type = "image/png"
+                                    putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                },
+                                context.getString(R.string.share)
+                            )
+                        )
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        )
     }
 }
 

@@ -13,6 +13,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -59,12 +60,15 @@ internal val LyricsCardCorner     = 24.dp
 // Helpers internos — reutilizados por todos los layouts
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Fuente de letras respetando la preferencia del usuario */
+/** Fuente de letras seleccionada por el usuario */
 @Composable
-internal fun rememberLyricsFontFamily(): FontFamily? {
-    val (useSystemFont) = rememberPreference(UseSystemFontKey, defaultValue = false)
-    return remember(useSystemFont) {
-        if (useSystemFont) null else FontFamily(Font(R.font.sfprodisplaybold))
+internal fun rememberLyricsFontFamily(fontName: String): FontFamily? {
+    return remember(fontName) {
+        if (fontName == "SYSTEM") {
+            null
+        } else {
+            com.arturo254.opentune.ui.theme.getTypography(fontName).headlineMedium.fontFamily
+        }
     }
 }
 
@@ -98,7 +102,7 @@ internal fun LyricsBrandingRow(
             contentAlignment = Alignment.Center,
         ) {
             Image(
-                painter = painterResource(R.drawable.opentune),
+                painter = painterResource(R.drawable.star),
                 contentDescription = null,
                 modifier = Modifier.size(15.dp),
                 colorFilter = ColorFilter.tint(
@@ -114,6 +118,13 @@ internal fun LyricsBrandingRow(
             fontSize    = 13.sp,
             fontWeight  = FontWeight.SemiBold,
             letterSpacing = 0.02.em,
+        )
+        Spacer(Modifier.width(4.dp))
+        Icon(
+            painter = painterResource(R.drawable.star),
+            contentDescription = null,
+            modifier = Modifier.size(10.dp),
+            tint = secondaryColor
         )
     }
 }
@@ -198,6 +209,144 @@ fun LyricsCardByLayout(
         LyricsLayoutStyle.Centered       -> CenteredLayout(lyricText, mediaMetadata, config, modifier)
         LyricsLayoutStyle.BlurWash       -> BlurWashLayout(lyricText, mediaMetadata, config, modifier)
         LyricsLayoutStyle.StreamingModern -> StreamingModernLayout(lyricText, mediaMetadata, config, modifier)
+        LyricsLayoutStyle.DezzyShare     -> DezzyShareLayout(lyricText, mediaMetadata, config, modifier)
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Layout 7 — Dezzy Share
+// ─────────────────────────────────────────────────────────────────────────────
+
+@SuppressLint("UnusedBoxWithConstraintsScope")
+@Composable
+fun DezzyShareLayout(
+    lyricText: String,
+    mediaMetadata: MediaMetadata,
+    config: LyricsCardConfig,
+    modifier: Modifier = Modifier,
+) {
+    val density = LocalDensity.current
+    val fontFamily = rememberLyricsFontFamily(config.fontName)
+    val artworkPainter = rememberArtworkPainter(mediaMetadata.thumbnailUrl)
+    val bgColor = config.customBgColor
+    val mainText = config.customTextColor
+    val secondaryTxt = config.customSecondaryTextColor
+
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(LyricsCardSize)
+                .clip(RoundedCornerShape(LyricsCardCorner))
+                .background(bgColor),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.SpaceBetween,
+            ) {
+                // Top: Album art + Title + Artist
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Image(
+                        painter = artworkPainter,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                    )
+                    Spacer(Modifier.width(16.dp))
+                    Column {
+                        Text(
+                            text = mediaMetadata.title,
+                            color = mainText,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = mediaMetadata.artists.joinToString { it.name },
+                            color = secondaryTxt,
+                            fontSize = 14.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                // Middle: Lyrics
+                BoxWithConstraints(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    val textStyle = TextStyle(
+                        color = mainText,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Start,
+                        fontFamily = fontFamily,
+                        letterSpacing = (-0.02).em,
+                    )
+                    val initialSize = when {
+                        lyricText.length < 50 -> 24.sp
+                        lyricText.length < 100 -> 20.sp
+                        lyricText.length < 200 -> 16.sp
+                        else -> 14.sp
+                    }
+                    val dynamicFontSize = rememberAdjustedFontSize(
+                        text = lyricText,
+                        maxWidth = maxWidth,
+                        maxHeight = maxHeight,
+                        density = density,
+                        initialFontSize = (initialSize.value * config.textSizeMultiplier).sp,
+                        minFontSize = 11.sp,
+                        style = textStyle,
+                        textMeasurer = rememberTextMeasurer(),
+                    )
+                    Text(
+                        text = lyricText,
+                        style = textStyle.copy(
+                            fontSize = dynamicFontSize,
+                            lineHeight = dynamicFontSize.value.sp * 1.3f,
+                        ),
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Start,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+
+                // Bottom: Branding
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(secondaryTxt.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.star),
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = secondaryTxt
+                        )
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "Dezzy",
+                        color = secondaryTxt,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -215,7 +364,7 @@ fun GlassCardLayout(
     modifier: Modifier = Modifier,
 ) {
     val density       = LocalDensity.current
-    val fontFamily    = rememberLyricsFontFamily()
+    val fontFamily = rememberLyricsFontFamily(config.fontName)
     val glassStyle    = config.glassStyle
     val mainTextColor = glassStyle.textColor
     val secondaryColor = glassStyle.secondaryTextColor
@@ -369,7 +518,7 @@ fun MinimalLayout(
     modifier: Modifier = Modifier,
 ) {
     val density    = LocalDensity.current
-    val fontFamily = rememberLyricsFontFamily()
+    val fontFamily = rememberLyricsFontFamily(config.fontName)
     val isDark     = config.glassStyle.isDark
 
     val bgColor      = if (isDark) Color(0xFF0F0F0F) else Color(0xFFF5F5F5)
@@ -511,7 +660,7 @@ fun CoverFocusedLayout(
     modifier: Modifier = Modifier,
 ) {
     val density        = LocalDensity.current
-    val fontFamily     = rememberLyricsFontFamily()
+    val fontFamily = rememberLyricsFontFamily(config.fontName)
     val glassStyle     = config.glassStyle
     val mainTextColor  = glassStyle.textColor
     val secondaryColor = glassStyle.secondaryTextColor
@@ -647,7 +796,7 @@ fun CenteredLayout(
     modifier: Modifier = Modifier,
 ) {
     val density        = LocalDensity.current
-    val fontFamily     = rememberLyricsFontFamily()
+    val fontFamily = rememberLyricsFontFamily(config.fontName)
     val artworkPainter = rememberArtworkPainter(mediaMetadata.thumbnailUrl)
     val mainTextColor  = config.glassStyle.textColor
     val secondaryColor = config.glassStyle.secondaryTextColor
@@ -783,7 +932,7 @@ fun BlurWashLayout(
     modifier: Modifier = Modifier,
 ) {
     val density        = LocalDensity.current
-    val fontFamily     = rememberLyricsFontFamily()
+    val fontFamily = rememberLyricsFontFamily(config.fontName)
     val glassStyle     = config.glassStyle
     val mainTextColor  = glassStyle.textColor
     val secondaryColor = glassStyle.secondaryTextColor
@@ -941,7 +1090,7 @@ fun StreamingModernLayout(
     modifier: Modifier = Modifier,
 ) {
     val density        = LocalDensity.current
-    val fontFamily     = rememberLyricsFontFamily()
+    val fontFamily = rememberLyricsFontFamily(config.fontName)
     val artworkPainter = rememberArtworkPainter(mediaMetadata.thumbnailUrl)
 
     // Acento: usa surfaceTint del glassStyle, fallback índigo si es negro/blanco

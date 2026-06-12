@@ -259,7 +259,7 @@ fun SongMenu(
         onDismiss = {
             showChoosePlaylistDialog = false
         },
-        onAddComplete = { songCount, playlistNames ->
+        onAddComplete = { _, playlistNames ->
             val message = when {
                 playlistNames.size == 1 -> context.getString(R.string.added_to_playlist, playlistNames.first())
                 else -> context.getString(R.string.added_to_n_playlists, playlistNames.size)
@@ -267,6 +267,17 @@ fun SongMenu(
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         },
     )
+
+    var showShareDialog by rememberSaveable { mutableStateOf(false) }
+    if (showShareDialog) {
+        com.arturo254.opentune.ui.component.ShareBottomSheet(
+            title = song.song.title,
+            subtitle = song.artists.joinToString { it.name },
+            thumbnailUrl = song.song.thumbnailUrl,
+            shareLink = "https://music.youtube.com/watch?v=${song.song.id}",
+            onDismiss = { showShareDialog = false; onDismiss() }
+        )
+    }
 
     if (showErrorPlaylistAddDialog) {
         ListDialog(
@@ -465,14 +476,7 @@ fun SongMenu(
                 },
                 text = shareText,
                 onClick = {
-                    onDismiss()
-                    val intent =
-                        Intent().apply {
-                            action = Intent.ACTION_SEND
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_TEXT, "https://music.youtube.com/watch?v=${song.id}")
-                        }
-                    context.startActivity(Intent.createChooser(intent, null))
+                    showShareDialog = true
                 },
             ),
             NewAction(

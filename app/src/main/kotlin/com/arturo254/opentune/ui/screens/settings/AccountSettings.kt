@@ -264,6 +264,20 @@ fun AccountSettings(
                         navController.navigate("settings/music_together")
                     }
                 )
+
+                HorizontalDivider(
+                    modifier = Modifier.padding(start = 56.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                )
+
+                SettingsClickableItem(
+                    icon = painterResource(R.drawable.login), // Or an appropriate icon
+                    title = "Iniciar sesión con Spotify", // Or a string resource if available
+                    onClick = {
+                        onClose()
+                        navController.navigate("settings/spotify/login")
+                    }
+                )
             }
 
             // Advanced Section
@@ -351,7 +365,7 @@ private fun AccountSettingsHeader(onClose: () -> Unit) {
             ) {
                 // App Icon
                 Icon(
-                    painter = painterResource(R.drawable.opentune),
+                    painter = painterResource(R.drawable.star),
                     contentDescription = null,
                     modifier = Modifier
                         .size(44.dp)

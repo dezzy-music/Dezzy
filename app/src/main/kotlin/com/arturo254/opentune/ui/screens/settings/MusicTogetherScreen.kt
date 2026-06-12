@@ -138,6 +138,7 @@ fun MusicTogetherScreen(
         defaultValue = Build.MODEL?.takeIf { it.isNotBlank() } ?: context.getString(R.string.app_name),
     )
     val (port, setPort) = rememberPreference(TogetherDefaultPortKey, defaultValue = 42117)
+    val (serverUrl, setServerUrl) = rememberPreference(com.arturo254.opentune.constants.ListenTogetherServerUrlKey, defaultValue = "https://huggingface.co/spaces/Dezzyyyy/listen-together")
     val (allowAddTracks, setAllowAddTracksRaw) = rememberPreference(
         TogetherAllowGuestsToAddTracksKey, defaultValue = true
     )
@@ -176,6 +177,7 @@ fun MusicTogetherScreen(
     var showNameDialog by rememberSaveable { mutableStateOf(false) }
     var showPortDialog by rememberSaveable { mutableStateOf(false) }
     var showJoinDialog by rememberSaveable { mutableStateOf(false) }
+    var showServerUrlDialog by rememberSaveable { mutableStateOf(false) }
 
     val hostingLan = sessionState as? TogetherSessionState.Hosting
     val lanParticipants = hostingLan?.roomState?.participants.orEmpty()
@@ -233,6 +235,17 @@ fun MusicTogetherScreen(
             isInputValid = { it.trim().toIntOrNull() in 1..65535 },
             onDone = { setPort(it.trim().toInt()) },
             onDismiss = { showPortDialog = false },
+        )
+    }
+
+    if (showServerUrlDialog) {
+        TextFieldDialog(
+            title = { Text("Server URL") },
+            placeholder = { Text("https://huggingface.co/spaces/Dezzyyyy/listen-together") },
+            isInputValid = { it.trim().isNotBlank() },
+            initialTextFieldValue = androidx.compose.ui.text.input.TextFieldValue(serverUrl),
+            onDone = { setServerUrl(it.trim()) },
+            onDismiss = { showServerUrlDialog = false },
         )
     }
 
@@ -358,6 +371,7 @@ fun MusicTogetherScreen(
                 )
             },
             onLeave = { playerConnection?.service?.leaveTogether() },
+            onOpenChat = { navController.navigate("listen_together_chat") },
             modifier = Modifier
                 .padding(horizontal = 16.dp)
                 .padding(top = 4.dp, bottom = 12.dp),
@@ -379,21 +393,23 @@ fun MusicTogetherScreen(
             )
         }
 
-        // Host section (LAN only)
+        // Host section
         if (!isJoinedAsGuest) {
             HostSectionCard(
                 displayName = displayName,
                 port = port,
+                serverUrl = serverUrl,
                 allowAddTracks = allowAddTracks,
                 allowControlPlayback = allowControlPlayback,
                 requireApproval = requireApproval,
                 onShowNameDialog = { showNameDialog = true },
                 onShowPortDialog = { showPortDialog = true },
+                onShowServerUrlDialog = { showServerUrlDialog = true },
                 onAllowAddTracksChange = setAllowAddTracks,
                 onAllowControlPlaybackChange = setAllowControlPlayback,
                 onRequireApprovalChange = setRequireApproval,
                 isStartEnabled = !isCreatingSessionLoading && !isJoining && !isHosting &&
-                        sessionState !is TogetherSessionState.Joined,
+                        sessionState !is TogetherSessionState.Joined && sessionState !is TogetherSessionState.HostingOnline,
                 isLoading = isCreatingSessionLoading,
                 onStartSession = {
                     playerConnection?.service?.startTogetherHost(
@@ -465,11 +481,13 @@ fun MusicTogetherScreen(
 private fun HostSectionCard(
     displayName: String,
     port: Int,
+    serverUrl: String,
     allowAddTracks: Boolean,
     allowControlPlayback: Boolean,
     requireApproval: Boolean,
     onShowNameDialog: () -> Unit,
     onShowPortDialog: () -> Unit,
+    onShowServerUrlDialog: () -> Unit,
     onAllowAddTracksChange: (Boolean) -> Unit,
     onAllowControlPlaybackChange: (Boolean) -> Unit,
     onRequireApprovalChange: (Boolean) -> Unit,
@@ -569,6 +587,13 @@ private fun HostSectionCard(
                 title = stringResource(R.string.together_port),
                 subtitle = port.toString(),
                 onClick = onShowPortDialog,
+            )
+            Divider()
+            SettingsItemRow(
+                icon = R.drawable.sync,
+                title = "Server URL",
+                subtitle = serverUrl,
+                onClick = onShowServerUrlDialog
             )
             Divider()
             ToggleRow(
@@ -914,6 +939,7 @@ private fun StatusCard(
     onCopyLink: (String) -> Unit,
     onShareLink: (String) -> Unit,
     onLeave: () -> Unit,
+    onOpenChat: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val isActive = state !is TogetherSessionState.Idle
@@ -1026,8 +1052,27 @@ private fun StatusCard(
                             fontWeight = FontWeight.SemiBold,
                         )
                     }
-                    if (isActive) {
-                        FilledTonalButton(onClick = onLeave, shape = RoundedCornerShape(14.dp)) {
+                }
+                if (isActive) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        FilledTonalButton(
+                            onClick = onOpenChat,
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(painterResource(R.drawable.lyrics), null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Chat", fontWeight = FontWeight.SemiBold)
+                        }
+                        FilledTonalButton(
+                            onClick = onLeave,
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
                             Icon(painterResource(R.drawable.leave), null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))
                             Text(stringResource(R.string.leave), fontWeight = FontWeight.SemiBold)
@@ -1044,6 +1089,15 @@ private fun StatusCard(
                             port = state.port,
                             onCopy  = { onCopyLink(state.joinLink) },
                             onShare = { onShareLink(state.joinLink) },
+                        )
+                    }
+                    is TogetherSessionState.HostingOnline -> {
+                        LanSessionLinkCard(
+                            link = state.code,
+                            localAddressHint = null,
+                            port = 0,
+                            onCopy  = { onCopyLink(state.code) },
+                            onShare = { onShareLink(state.code) },
                         )
                     }
                     is TogetherSessionState.Joined -> {

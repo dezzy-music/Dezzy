@@ -43,9 +43,11 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import okhttp3.OkHttpClient
 import java.time.LocalDateTime
-import java.util.concurrent.Executor
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
 import javax.inject.Inject
 import javax.inject.Singleton
+import androidx.media3.exoplayer.offline.DownloadRequest
 
 @Singleton
 class DownloadUtil
@@ -56,11 +58,15 @@ constructor(
     val databaseProvider: DatabaseProvider,
     @DownloadCache val downloadCache: Cache,
     @PlayerCache val playerCache: Cache,
+    private val downloadExporter: dagger.Lazy<DownloadExporter>,
 ) {
     private val connectivityManager = context.getSystemService<ConnectivityManager>()!!
     private val audioQuality by enumPreference(context, AudioQualityKey, AudioQuality.AUTO)
     private val preferredStreamClient by enumPreference(context, PlayerStreamClientKey, PlayerStreamClient.ANDROID_VR)
-    private val songUrlCache = HashMap<String, Pair<String, Long>>()
+    // ConcurrentHashMap is thread-safe: multiple download threads can read/write simultaneously (P1 fix)
+    private val songUrlCache = ConcurrentHashMap<String, Pair<String, Long>>()
+    // Stable scope for post-download processing — survives across DownloadManager listener calls (P5 fix)
+    private val internalScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val avoidStreamCodecs: Set<String> by lazy {
         if (deviceSupportsMimeType("audio/opus")) emptySet() else setOf("opus")
     }
@@ -84,7 +90,7 @@ constructor(
 
                 val clientParam = request.url.queryParameter("c")?.trim().orEmpty()
 
-                val userAgent = StreamClientUtils.resolveUserAgent(clientParam)
+                val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                 val originReferer = StreamClientUtils.resolveOriginReferer(clientParam)
 
                 val builder = request.newBuilder().header("User-Agent", userAgent)
@@ -123,16 +129,19 @@ constructor(
             songUrlCache[mediaId]?.takeIf { it.second > System.currentTimeMillis() }?.let {
                 return@Factory dataSpec.withUri(it.first.toUri())
             }
+            // withTimeout(30s) prevents indefinite thread blocking when YouTube is slow (P2 fix)
             val playbackData = runBlocking(Dispatchers.IO) {
-                val networkMeteredPref = context.dataStore.get(NetworkMeteredKey, true)
-                YTPlayerUtils.playerResponseForPlayback(
-                    mediaId,
-                    audioQuality = audioQuality,
-                    preferredStreamClient = preferredStreamClient,
-                    connectivityManager = connectivityManager,
-                    networkMetered = networkMeteredPref,
-                    avoidCodecs = avoidStreamCodecs,
-                )
+                withTimeout(30_000L) {
+                    val networkMeteredPref = context.dataStore.get(NetworkMeteredKey, true)
+                    YTPlayerUtils.playerResponseForPlayback(
+                        mediaId,
+                        audioQuality = audioQuality,
+                        preferredStreamClient = preferredStreamClient,
+                        connectivityManager = connectivityManager,
+                        networkMetered = networkMeteredPref,
+                        avoidCodecs = avoidStreamCodecs,
+                    )
+                }
             }.getOrThrow()
             val format = playbackData.format
 
@@ -162,11 +171,27 @@ constructor(
                         id = mediaId,
                         title = playbackData.videoDetails?.title ?: "Unknown",
                         duration = playbackData.videoDetails?.lengthSeconds?.toIntOrNull() ?: 0,
-                        thumbnailUrl = playbackData.videoDetails?.thumbnail?.thumbnails?.lastOrNull()?.url,
+                        thumbnailUrl = playbackData.videoDetails?.thumbnail?.getHighestResUrl(),
                         dateDownload = now
                     )
                 }
 
+                val author = playbackData.videoDetails?.author
+                if (existing == null && author != null) {
+                    insert(
+                        com.arturo254.opentune.db.entities.ArtistEntity(
+                            id = author,
+                            name = author
+                        )
+                    )
+                    insert(
+                        com.arturo254.opentune.db.entities.SongArtistMap(
+                            songId = mediaId,
+                            artistId = author,
+                            position = 0
+                        )
+                    )
+                }
                 upsert(updatedSong)
             }
 
@@ -185,9 +210,13 @@ constructor(
             databaseProvider,
             downloadCache,
             dataSourceFactory,
-            Executor(Runnable::run)
+            // Thread pool size = 5 for faster concurrent resolution
+            Executors.newFixedThreadPool(5)
         ).apply {
-            maxParallelDownloads = 3
+            // 3 parallel downloads by default — good balance between speed and stability
+            maxParallelDownloads = context.dataStore.get(com.arturo254.opentune.constants.MaxParallelDownloadsKey, 3)
+            // 3 retries — enough for transient failures without waiting too long
+            minRetryCount = 3
             addListener(
                 object : DownloadManager.Listener {
                     override fun onDownloadChanged(
@@ -198,6 +227,12 @@ constructor(
                         downloads.update { map ->
                             map.toMutableMap().apply {
                                 set(download.request.id, download)
+                            }
+                        }
+                        if (download.state == Download.STATE_COMPLETED) {
+                            // Use stable internalScope instead of fire-and-forget CoroutineScope (P5 fix)
+                            internalScope.launch {
+                                downloadExporter.get().processDownload(download.request.id, false)
                             }
                         }
                     }
@@ -217,6 +252,16 @@ constructor(
     }
 
     fun getDownload(songId: String): Flow<Download?> = downloads.map { it[songId] }
+
+    /**
+     * Centralised factory for DownloadRequests — prevents duplicated construction logic (P6 fix).
+     * Encodes the song title as the request data so notifications can display it.
+     */
+    fun String.toDownloadRequest(title: String): DownloadRequest =
+        DownloadRequest.Builder(this, this.toUri())
+            .setCustomCacheKey(this)
+            .setData(title.toByteArray())
+            .build()
 
     private fun deviceSupportsMimeType(mimeType: String): Boolean {
         return runCatching {

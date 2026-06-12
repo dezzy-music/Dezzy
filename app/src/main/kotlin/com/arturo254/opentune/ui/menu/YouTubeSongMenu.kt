@@ -296,6 +296,16 @@ fun YouTubeSongMenu(
         }
 
         item {
+            var showShareDialog by remember { mutableStateOf(false) }
+            if (showShareDialog) {
+                com.arturo254.opentune.ui.component.ShareBottomSheet(
+                    title = song.title,
+                    subtitle = song.artists.joinToString { it.name },
+                    thumbnailUrl = song.thumbnail,
+                    shareLink = song.shareLink ?: "https://music.youtube.com/watch?v=${song.id}",
+                    onDismiss = { showShareDialog = false; onDismiss() }
+                )
+            }
             // Row for "Play next", "Add to playlist", and "Share" buttons with grid-like background
             // Enhanced Action Grid using NewMenuComponents
             NewActionGrid(
@@ -340,13 +350,7 @@ fun YouTubeSongMenu(
                         },
                         text = stringResource(R.string.share),
                         onClick = {
-                            val intent = Intent().apply {
-                                action = Intent.ACTION_SEND
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, song.shareLink)
-                            }
-                            context.startActivity(Intent.createChooser(intent, null))
-                            onDismiss()
+                            showShareDialog = true
                         }
                     )
                 ),

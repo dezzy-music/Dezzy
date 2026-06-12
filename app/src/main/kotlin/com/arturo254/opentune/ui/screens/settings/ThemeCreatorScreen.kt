@@ -625,7 +625,7 @@ private fun ThemeRichPreview(
         var checkboxOn by rememberSaveable { mutableStateOf(true) }
         var radioSelected by rememberSaveable { mutableStateOf(0) }
         var sliderValue by rememberSaveable { mutableStateOf(0.62f) }
-        var query by rememberSaveable { mutableStateOf("OpenTune") }
+        var query by rememberSaveable { mutableStateOf("Dezzy") }
 
         Card(
             modifier = modifier

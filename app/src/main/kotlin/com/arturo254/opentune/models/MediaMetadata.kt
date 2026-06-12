@@ -12,7 +12,7 @@ import androidx.compose.runtime.Immutable
 import com.arturo254.opentune.innertube.models.SongItem
 import com.arturo254.opentune.db.entities.Song
 import com.arturo254.opentune.db.entities.SongEntity
-import com.arturo254.opentune.ui.utils.resize
+import com.arturo254.opentune.ui.utils.highRes
 import java.io.Serializable
 import java.time.LocalDateTime
 
@@ -122,7 +122,7 @@ fun SongItem.toMediaMetadata() =
             )
         },
         duration = duration ?: MediaMetadata.UNKNOWN_DURATION,
-        thumbnailUrl = thumbnail.resize(544, 544),
+        thumbnailUrl = thumbnail.highRes(),
         album =
         album?.let {
             MediaMetadata.Album(

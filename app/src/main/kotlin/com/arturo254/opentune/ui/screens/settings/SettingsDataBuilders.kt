@@ -79,6 +79,12 @@ fun buildIntegrationActions(
             accentColor = MaterialTheme.colorScheme.secondary,
         ),
         SettingsIntegrationAction(
+            icon = painterResource(R.drawable.translate),
+            label = "Traducción IA",
+            onClick = { resetSearch(); navController.navigate("settings/ai") },
+            accentColor = MaterialTheme.colorScheme.primary,
+        ),
+        SettingsIntegrationAction(
             icon = painterResource(R.drawable.fire),
             label = stringResource(R.string.music_together),
             onClick = { resetSearch(); navController.navigate("settings/music_together") },
@@ -130,6 +136,14 @@ fun buildSettingsGroups(
                         accentColor = MaterialTheme.colorScheme.secondary,
                         keywords = listOf("language", "content", "lyrics", "translation", "region"),
                         onClick = { resetSearch(); navController.navigate("settings/content") },
+                    ),
+                    SettingsItem(
+                        icon = painterResource(R.drawable.translate),
+                        title = "Traducción de letras por IA",
+                        subtitle = "Configura la traducción de letras mediante inteligencia artificial",
+                        accentColor = MaterialTheme.colorScheme.primary,
+                        keywords = listOf("ai", "lyrics", "translation", "traduccion", "letras", "deepl", "openrouter", "mistral", "dezzy"),
+                        onClick = { resetSearch(); navController.navigate("settings/ai") },
                     ),
                     SettingsItem(
                         icon = painterResource(R.drawable.token),
@@ -261,7 +275,7 @@ fun buildSettingsGroups(
                         SettingsItem(
                             icon = painterResource(R.drawable.info),
                             title = stringResource(R.string.about),
-                            subtitle = "OpenTune",
+                            subtitle = "Dezzy",
                             accentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                             keywords = listOf("about", "app info", "license", "contributors"),
                             onClick = { resetSearch(); navController.navigate("settings/about") },

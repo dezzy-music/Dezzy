@@ -53,31 +53,58 @@ class ExoDownloadService : DownloadService(
     override fun getForegroundNotification(
         downloads: MutableList<Download>,
         notMetRequirements: Int
-    ): Notification =
-        Notification.Builder.recoverBuilder(
-            this, downloadUtil.downloadNotificationHelper.buildProgressNotification(
-                this,
-                R.drawable.download,
-                null,
-                if (downloads.size == 1) Util.fromUtf8Bytes(downloads[0].request.data)
-                else resources.getQuantityString(R.plurals.n_song, downloads.size, downloads.size),
-                downloads,
-                notMetRequirements
-            )
-        ).addAction(
-            Notification.Action.Builder(
-                Icon.createWithResource(this, R.drawable.close),
+    ): Notification {
+        val message = if (downloads.size == 1) {
+            Util.fromUtf8Bytes(downloads[0].request.data)
+        } else {
+            resources.getQuantityString(R.plurals.n_song, downloads.size, downloads.size)
+        }
+
+        var totalPercentage = 0f
+        var downloadTaskCount = 0
+        var allDownloadPercentagesAreKnown = true
+        for (download in downloads) {
+            if (download.state == Download.STATE_REMOVING || download.state == Download.STATE_RESTARTING) {
+                continue
+            }
+            if (download.state != Download.STATE_DOWNLOADING) {
+                continue
+            }
+            val percentage = download.percentDownloaded
+            if (percentage != androidx.media3.common.C.PERCENTAGE_UNSET.toFloat()) {
+                totalPercentage += percentage
+                allDownloadPercentagesAreKnown = allDownloadPercentagesAreKnown && true
+            } else {
+                allDownloadPercentagesAreKnown = false
+            }
+            downloadTaskCount++
+        }
+        var progress = 0
+        var indeterminate = true
+        if (allDownloadPercentagesAreKnown && downloadTaskCount > 0) {
+            progress = (totalPercentage / downloadTaskCount).toInt()
+            indeterminate = false
+        }
+
+        return androidx.core.app.NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.drawable.download)
+            .setContentTitle(getString(R.string.downloading))
+            .setContentText(message)
+            .setProgress(100, progress, indeterminate)
+            .setOngoing(true)
+            .setShowWhen(false)
+            .addAction(
+                R.drawable.close,
                 getString(android.R.string.cancel),
                 PendingIntent.getService(
                     this,
                     0,
-                    Intent(this, ExoDownloadService::class.java).setAction(
-                        REMOVE_ALL_PENDING_DOWNLOADS
-                    ),
+                    Intent(this, ExoDownloadService::class.java).setAction(REMOVE_ALL_PENDING_DOWNLOADS),
                     PendingIntent.FLAG_IMMUTABLE
                 )
-            ).build()
-        ).build()
+            )
+            .build()
+    }
 
 
     /**

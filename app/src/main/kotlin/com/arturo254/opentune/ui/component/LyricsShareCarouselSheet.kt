@@ -37,14 +37,56 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.palette.graphics.Palette
+import coil3.ImageLoader
+import coil3.request.ImageRequest
+import coil3.request.allowHardware
+import coil3.toBitmap
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.arturo254.opentune.R
 import com.arturo254.opentune.models.MediaMetadata
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Paletas de colores (Dezzy Style)
+// ─────────────────────────────────────────────────────────────────────────────
+
+private val BackgroundColors = listOf(
+    Color(0xFFEED294), // Light Tan
+    Color(0xFF22201C), // Dark Grey
+    Color(0xFFDBB240), // Mustard
+    Color(0xFF5A5542), // Olive
+    Color(0xFFB67A18), // Orange
+    Color(0xFFE6E0F8), // Light Purple
+    Color(0xFF000000)  // Black
+)
+
+private val TextColors = listOf(
+    Color(0xFFEED294), // Light Tan
+    Color(0xFF22201C), // Dark Grey
+    Color(0xFFDBB240), // Mustard
+    Color(0xFF5A5542), // Olive
+    Color(0xFFB67A18), // Orange
+    Color(0xFFFFFFFF), // White
+    Color(0xFF000000)  // Black
+)
+
+private val SecondaryTextColors = listOf(
+    Color(0xFFEED294), // Light Tan
+    Color(0xFF22201C), // Dark Grey
+    Color(0xFFDBB240), // Mustard
+    Color(0xFF5A5542), // Olive
+    Color(0xFFB67A18), // Orange
+    Color(0xFFBDBDBD), // Light Grey
+    Color(0xFF000000)  // Black
+)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // API pública
@@ -73,6 +115,38 @@ fun LyricsShareCarouselSheet(
     onSave: ((config: LyricsCardConfig) -> Unit)? = null,
 ) {
     var config by remember { mutableStateOf(initialConfig) }
+    var extractedColors by remember { mutableStateOf<List<Color>?>(null) }
+    val coverUrl = mediaMetadata.thumbnailUrl
+    val context = LocalContext.current
+    LaunchedEffect(coverUrl) {
+        if (coverUrl != null) {
+            withContext(Dispatchers.IO) {
+                try {
+                    val loader = ImageLoader(context)
+                    val req = ImageRequest.Builder(context).data(coverUrl).allowHardware(false).build()
+                    val result = loader.execute(req)
+                    val bmp = result.image?.toBitmap()
+                    if (bmp != null) {
+                        val palette = Palette.from(bmp).generate()
+                        val swatches = listOfNotNull(
+                            palette.dominantSwatch,
+                            palette.vibrantSwatch,
+                            palette.mutedSwatch,
+                            palette.darkVibrantSwatch,
+                            palette.darkMutedSwatch,
+                            palette.lightVibrantSwatch,
+                            palette.lightMutedSwatch
+                        ).map { Color(it.rgb) }.distinct()
+                        extractedColors = swatches.ifEmpty { null }
+                    }
+                } catch (_: Exception) {}
+            }
+        }
+    }
+
+    val currentBgColors = extractedColors?.let { it + BackgroundColors }?.distinct() ?: BackgroundColors
+    val currentTextColors = extractedColors?.let { it + TextColors }?.distinct() ?: TextColors
+    val currentSecondaryColors = extractedColors?.let { it + SecondaryTextColors }?.distinct() ?: SecondaryTextColors
 
     ModalBottomSheet(
         onDismissRequest  = onDismiss,
@@ -140,35 +214,73 @@ fun LyricsShareCarouselSheet(
 
             Spacer(Modifier.height(18.dp))
 
-            // ── Selector de estilo de vidrio ──────────────────────────────
-            SheetSectionLabel("Estilo")
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            AnimatedVisibility(
+                visible = config.layoutStyle == LyricsLayoutStyle.DezzyShare,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
             ) {
-                LyricsGlassStyle.allPresets.forEach { preset ->
-                    GlassStyleChip(
-                        preset     = preset,
-                        isSelected = config.glassStyle == preset,
-                        onSelect   = { config = config.copy(glassStyle = preset) },
+                Column {
+                    ColorSelectorRow(
+                        title = "Color del fondo",
+                        colors = currentBgColors,
+                        selectedColor = config.customBgColor,
+                        onColorSelected = { config = config.copy(customBgColor = it) }
                     )
+                    Spacer(Modifier.height(20.dp))
+                    ColorSelectorRow(
+                        title = "Color del texto",
+                        colors = currentTextColors,
+                        selectedColor = config.customTextColor,
+                        onColorSelected = { config = config.copy(customTextColor = it) }
+                    )
+                    Spacer(Modifier.height(20.dp))
+                    ColorSelectorRow(
+                        title = "Color secundario del texto",
+                        colors = currentSecondaryColors,
+                        selectedColor = config.customSecondaryTextColor,
+                        onColorSelected = { config = config.copy(customSecondaryTextColor = it) }
+                    )
+                    Spacer(Modifier.height(18.dp))
                 }
             }
 
-            Spacer(Modifier.height(14.dp))
+            AnimatedVisibility(
+                visible = config.layoutStyle != LyricsLayoutStyle.DezzyShare,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                Column {
+                    // ── Selector de estilo de vidrio ──────────────────────────────
+                    SheetSectionLabel("Estilo")
 
-            // ── Panel de personalización (expandible) ─────────────────────
-            CustomizationPanel(
-                config        = config,
-                onConfigChange = { config = it },
-                modifier      = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-            )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        LyricsGlassStyle.allPresets.forEach { preset ->
+                            GlassStyleChip(
+                                preset     = preset,
+                                isSelected = config.glassStyle == preset,
+                                onSelect   = { config = config.copy(glassStyle = preset) },
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(14.dp))
+
+                    // ── Panel de personalización (expandible) ─────────────────────
+                    CustomizationPanel(
+                        config        = config,
+                        onConfigChange = { config = it },
+                        modifier      = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp),
+                    )
+                }
+            }
 
             Spacer(Modifier.height(26.dp))
 
@@ -631,5 +743,65 @@ private fun SheetSectionLabel(text: String) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 24.dp, bottom = 8.dp),
+    )
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Color selectors for DezzyShare Layout
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun ColorSelectorRow(
+    title: String,
+    colors: List<Color>,
+    selectedColor: Color,
+    onColorSelected: (Color) -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 12.dp)
+        )
+        
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            colors.forEach { color ->
+                ColorSwatch(
+                    color = color,
+                    isSelected = color == selectedColor,
+                    onClick = { onColorSelected(color) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ColorSwatch(
+    color: Color,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(42.dp)
+            .clip(CircleShape)
+            .background(color)
+            .border(
+                width = if (isSelected) 3.dp else 1.dp,
+                color = if (isSelected) Color.White else Color.Black.copy(alpha = 0.1f),
+                shape = CircleShape
+            )
+            .clickable(onClick = onClick)
     )
 }

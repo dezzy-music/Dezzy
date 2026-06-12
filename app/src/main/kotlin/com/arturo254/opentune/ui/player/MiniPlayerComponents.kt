@@ -80,6 +80,9 @@ import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.ui.layout.ContentScale
 import coil3.compose.AsyncImage
+import com.arturo254.opentune.constants.MiniPlayerStyle
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 
 
 @Composable
@@ -312,8 +315,8 @@ private fun MiniPlayerArtwork(
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
-                Image(
-                    painter = painterResource(R.drawable.opentune),
+                Icon(
+                    painter = painterResource(R.drawable.star),
                     contentDescription = null,
                     modifier = Modifier.size(22.dp)
                 )
@@ -420,7 +423,9 @@ fun NewMiniPlayerContent(
     pureBlack: Boolean,
     position: Long,
     duration: Long,
-    playerConnection: PlayerConnection
+    playerConnection: PlayerConnection,
+    miniPlayerStyle: MiniPlayerStyle = MiniPlayerStyle.PILL,
+    onStyleChange: (MiniPlayerStyle) -> Unit = {}
 ) {
     val isPlaying by playerConnection.isPlaying.collectAsState()
     val playbackState by playerConnection.playbackState.collectAsState()
@@ -446,39 +451,84 @@ fun NewMiniPlayerContent(
 
         Spacer(modifier = Modifier.width(12.dp))
 
-        mediaMetadata?.let {
-            MiniPlayerInfo(mediaMetadata = it)
-        } ?: Spacer(Modifier.weight(1f))
+        if (miniPlayerStyle != MiniPlayerStyle.COMPACT) {
+            mediaMetadata?.let {
+                MiniPlayerInfo(mediaMetadata = it)
+            } ?: Spacer(Modifier.weight(1f))
 
-        if (togetherSessionState !is TogetherSessionState.Idle) {
-            Spacer(modifier = Modifier.width(8.dp))
-            Surface(
-                shape = RoundedCornerShape(999.dp),
-                color = MaterialTheme.colorScheme.primaryContainer,
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            if (togetherSessionState !is TogetherSessionState.Idle) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Surface(
+                    shape = RoundedCornerShape(999.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer,
                 ) {
-                    Icon(
-                        painter = painterResource(R.drawable.all_inclusive),
-                        contentDescription = stringResource(R.string.music_together),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(14.dp),
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.all_inclusive),
+                            contentDescription = stringResource(R.string.music_together),
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(14.dp),
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            MiniPlayerTransportControls(
+                isPlaying = isPlaying,
+                playbackState = playbackState,
+                isLoading = isLoading,
+                canSkipPrevious = canSkipPrevious,
+                canSkipNext = canSkipNext,
+                playerConnection = playerConnection
+            )
+        } else {
+            Spacer(Modifier.weight(1f))
+            
+            MiniPlayerTransportButton(
+                iconResId = when {
+                    playbackState == Player.STATE_ENDED -> R.drawable.replay
+                    isPlaying -> R.drawable.pause
+                    else -> R.drawable.play
+                },
+                contentDescription = null,
+                onClick = {
+                    if (playbackState == Player.STATE_ENDED) {
+                        playerConnection.player.seekTo(0, 0)
+                        playerConnection.player.playWhenReady = true
+                    } else {
+                        playerConnection.player.togglePlayPause()
+                    }
+                },
+                isPrimary = false
+            )
+        }
+
+        var expanded by remember { mutableStateOf(false) }
+        Box {
+            IconButton(
+                onClick = { expanded = true },
+                modifier = Modifier.size(if (miniPlayerStyle == MiniPlayerStyle.COMPACT) 36.dp else 24.dp).padding(start = if (miniPlayerStyle == MiniPlayerStyle.COMPACT) 8.dp else 4.dp)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.style),
+                    contentDescription = "Style",
+                    modifier = Modifier.size(if (miniPlayerStyle == MiniPlayerStyle.COMPACT) 20.dp else 16.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                MiniPlayerStyle.values().forEach { style ->
+                    DropdownMenuItem(
+                        text = { Text(style.name.lowercase().replaceFirstChar { it.uppercase() } + " Style") },
+                        onClick = { onStyleChange(style); expanded = false }
                     )
                 }
             }
         }
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        MiniPlayerTransportControls(
-            isPlaying = isPlaying,
-            playbackState = playbackState,
-            isLoading = isLoading,
-            canSkipPrevious = canSkipPrevious,
-            canSkipNext = canSkipNext,
-            playerConnection = playerConnection
-        )
     }
 }

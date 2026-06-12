@@ -58,7 +58,7 @@ fun CustomizeBackground(
     val (contrast, onContrastChange) = rememberPreference(PlayerCustomContrastKey, 1f)
     val (brightness, onBrightnessChange) = rememberPreference(PlayerCustomBrightnessKey, 1f)
 
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
             context.contentResolver.takePersistableUriPermission(
                 uri,
@@ -184,7 +184,7 @@ fun CustomizeBackground(
                     }
                 }
             }
-            Button(onClick = { launcher.launch(arrayOf("image/*")) }, modifier = Modifier.fillMaxWidth()) {
+            Button(onClick = { launcher.launch("image/*") }, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.add_image))
             }
 

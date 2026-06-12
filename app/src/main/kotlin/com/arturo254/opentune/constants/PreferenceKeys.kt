@@ -30,6 +30,7 @@ val SwipeToSongKey = booleanPreferencesKey("SwipeToSong")
 val PlayerDesignStyleKey = stringPreferencesKey("playerDesignStyle")
 val UseNewLibraryDesignKey = booleanPreferencesKey("useNewLibraryDesign")
 val UseNewMiniPlayerDesignKey = booleanPreferencesKey("useNewMiniPlayerDesign")
+val DynamicMiniPlayerColorKey = booleanPreferencesKey("dynamicMiniPlayerColor")
 val HidePlayerThumbnailKey = booleanPreferencesKey("hidePlayerThumbnail")
 val OpenTuneCanvasKey = booleanPreferencesKey("OpenTuneCanvas")
 val ThumbnailCornerRadiusKey = floatPreferencesKey("thumbnailCornerRadius")
@@ -38,6 +39,23 @@ val SeekExtraSeconds = booleanPreferencesKey("seekExtraSeconds")
 val DisableBlurKey = booleanPreferencesKey("disableBlur")
 val BlurRadiusKey = floatPreferencesKey("blurRadius")
 val MiniPlayerLastAnchorKey = intPreferencesKey("miniPlayerLastAnchor")
+val MiniPlayerStyleKey = stringPreferencesKey("miniPlayerStyle")
+
+enum class MiniPlayerStyle {
+    PILL,   // default: rounded pill with surfaceContainer
+    CARD,   // elevated card with shadow and softer corners
+    GLASS,  // glassmorphism: blur + frosted overlay + accent border
+    COMPACT // minimal: artwork + thin progress bar only, controls on tap
+}
+
+// Wallpaper Keys
+val EnableWallpaperThemeKey = booleanPreferencesKey("enableWallpaperTheme")
+val WallpaperUriKey = stringPreferencesKey("wallpaperUri")
+val WallpaperLandscapeUriKey = stringPreferencesKey("wallpaperLandscapeUri")
+val WallpaperOpacityKey = floatPreferencesKey("wallpaperOpacity")
+val EnableVideoWallpaperKey = booleanPreferencesKey("enableVideoWallpaper")
+val VideoWallpaperLandscapeUriKey = stringPreferencesKey("videoWallpaperLandscapeUri")
+val VideoWallpaperOpacityKey = floatPreferencesKey("videoWallpaperOpacity")
 
 enum class SliderStyle {
     Standard,
@@ -143,6 +161,7 @@ val MaxImageCacheSizeKey = intPreferencesKey("maxImageCacheSize")
 val SmartTrimmerKey = booleanPreferencesKey("smartTrimmer")
 val MaxSongCacheSizeKey = intPreferencesKey("maxSongCacheSize")
 val MaxCanvasCacheSizeKey = intPreferencesKey("maxCanvasCacheSize")
+val MaxParallelDownloadsKey = intPreferencesKey("maxParallelDownloads")
 
 val PauseListenHistoryKey = booleanPreferencesKey("pauseListenHistory")
 val PauseSearchHistoryKey = booleanPreferencesKey("pauseSearchHistory")
@@ -391,7 +410,10 @@ enum class PlayerDesignStyle {
     V4,
     V5,
     V6,
-    V7
+    V7,
+    IPOD,
+    SPOTIFY,
+    CAR,
 }
 
 enum class PlayerBackgroundStyle {
@@ -658,3 +680,78 @@ val AodClockFormatKey = booleanPreferencesKey("aod_clock_24h")
 val LyricsLineBlurKey = booleanPreferencesKey("lyricsLineBlur")
 
 val LyricsSyncOffsetKey = intPreferencesKey("lyrics_sync_offset")
+
+// Video Wallpaper
+val VideoWallpaperEnabledKey = booleanPreferencesKey("videoWallpaperEnabled")
+val VideoWallpaperUriKey = stringPreferencesKey("videoWallpaperUri")
+val SplashVideoEnabledKey = booleanPreferencesKey("splashVideoEnabled")
+
+// Download lyrics
+val EmbedLyricsOnDownloadKey = booleanPreferencesKey("embedLyricsOnDownload")
+
+// Font selection
+val FontFamilyKey = stringPreferencesKey("fontFamily")
+
+// Spotify login & configurations
+val SpotifyAccessTokenKey = stringPreferencesKey("spotifyAccessToken")
+val SpotifySpDcKey = stringPreferencesKey("spotifySpDc")
+val SpotifySpKeyKey = stringPreferencesKey("spotifySpKey")
+val SpotifyTokenExpiryKey = longPreferencesKey("spotifyTokenExpiry")
+val SpotifyUsernameKey = stringPreferencesKey("spotifyUsername")
+val SpotifyUserIdKey = stringPreferencesKey("spotifyUserId")
+val EnableSpotifyKey = booleanPreferencesKey("enableSpotify")
+val SpotifySyncLikesKey = booleanPreferencesKey("spotifySyncLikes")
+val UseSpotifySearchKey = booleanPreferencesKey("useSpotifySearch")
+val UseSpotifyHomeKey = booleanPreferencesKey("useSpotifyHome")
+val SpotifyHomeOnlyKey = booleanPreferencesKey("spotifyHomeOnly")
+
+
+// Floating Bubble
+val EnableBubbleKey = booleanPreferencesKey("enableBubble")
+
+// Sleep timer & crossfade
+val CrossfadeEnabledKey = booleanPreferencesKey("crossfadeEnabled")
+val CrossfadeDurationKey = floatPreferencesKey("crossfadeDuration")
+val CrossfadeGaplessKey = booleanPreferencesKey("crossfadeGapless")
+val SleepTimerFadeOutKey = booleanPreferencesKey("sleepTimerFadeOut")
+
+// Dezzy IA
+val OpenRouterApiKey = stringPreferencesKey("openRouterApiKey")
+val AiProviderKey = stringPreferencesKey("aiProvider")
+val OpenRouterBaseUrlKey = stringPreferencesKey("openRouterBaseUrl")
+val OpenRouterModelKey = stringPreferencesKey("openRouterModel")
+val AiSystemPromptKey = stringPreferencesKey("aiSystemPrompt")
+val DeeplApiKey = stringPreferencesKey("deeplApiKey")
+val DeeplFormalityKey = stringPreferencesKey("deeplFormality")
+val AutoTranslateLyricsKey = booleanPreferencesKey("autoTranslateLyrics")
+val AutoTranslateLyricsMismatchKey = booleanPreferencesKey("autoTranslateLyricsMismatch")
+val TranslateLanguageKey = stringPreferencesKey("translateLanguage")
+val TranslateModeKey = stringPreferencesKey("translateMode")
+
+
+// Listen Together
+val ListenTogetherServerUrlKey = stringPreferencesKey("listenTogetherServerUrl")
+val ListenTogetherUsernameKey = stringPreferencesKey("listenTogetherUsername")
+val EnableListenTogetherKey = booleanPreferencesKey("enableListenTogether")
+val ListenTogetherAutoApprovalKey = booleanPreferencesKey("listenTogetherAutoApproval")
+val ListenTogetherSyncVolumeKey = booleanPreferencesKey("listenTogetherSyncVolume")
+val ListenTogetherBlockedUsersKey = stringPreferencesKey("listenTogetherBlockedUsers")
+val ListenTogetherInTopBarKey = booleanPreferencesKey("listenTogetherInTopBar")
+val ListenTogetherSessionTokenKey = stringPreferencesKey("listenTogetherSessionToken")
+val ListenTogetherRoomCodeKey = stringPreferencesKey("listenTogetherRoomCode")
+val ListenTogetherUserIdKey = stringPreferencesKey("listenTogetherUserId")
+val ListenTogetherIsHostKey = booleanPreferencesKey("listenTogetherIsHost")
+val ListenTogetherSessionTimestampKey = longPreferencesKey("listenTogetherSessionTimestamp")
+
+// iPod Theme Mode
+enum class IpodThemeMode {
+    CLASSIC,
+    DYNAMIC,
+}
+val IpodThemeModeKey = stringPreferencesKey("ipodThemeMode")
+
+val KeepPlayerScreenAwakeKey = booleanPreferencesKey("keepPlayerScreenAwake")
+val HomeInactivityFadeKey = booleanPreferencesKey("homeInactivityFade")
+
+
+

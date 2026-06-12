@@ -373,7 +373,7 @@ object ComposeToImage {
     ) {
         val baseSize  = cardSize.toFloat()
         val logoSize  = (baseSize * 0.045f).toInt()
-        val rawLogo   = context.getDrawable(R.drawable.opentune)?.toBitmap(logoSize, logoSize)
+        val rawLogo   = context.getDrawable(R.drawable.star)?.toBitmap(logoSize, logoSize)
         val logo = rawLogo?.let { source ->
             val colored = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
             Canvas(colored).drawBitmap(source, 0f, 0f, Paint().apply {
@@ -389,12 +389,14 @@ object ComposeToImage {
         val circleRadius = logoSize * 0.55f
         val circleX = x + circleRadius
         val circleY = y - circleRadius
+        
         canvas.drawCircle(circleX, circleY, circleRadius, Paint().apply {
             color = circleColor; isAntiAlias = true; style = Paint.Style.FILL
         })
         logo?.let { canvas.drawBitmap(it, circleX - logoSize / 2f, circleY - logoSize / 2f, null) }
+        
         canvas.drawText(
-            context.getString(R.string.app_name),
+            "Dezzy",
             circleX + circleRadius + 10f,
             circleY + appNamePaint.textSize * 0.3f,
             appNamePaint,
@@ -423,6 +425,7 @@ object ComposeToImage {
             LyricsLayoutStyle.Centered       -> renderCentered(context, coverArt, songTitle, artistName, lyrics, config, outputSize)
             LyricsLayoutStyle.BlurWash       -> renderBlurWash(context, coverArt, songTitle, artistName, lyrics, config, outputSize)
             LyricsLayoutStyle.StreamingModern -> renderStreamingModern(context, coverArt, songTitle, artistName, lyrics, config, outputSize)
+            LyricsLayoutStyle.DezzyShare     -> renderDezzyShare(context, coverArt, songTitle, artistName, lyrics, config, outputSize)
         }
     }
 
@@ -1070,5 +1073,115 @@ object ComposeToImage {
             FileOutputStream(imageFile).use { safeBitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
             FileProvider.getUriForFile(context, "${context.packageName}.FileProvider", imageFile)
         }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+    // RENDERER 7 — DezzyShare
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private fun renderDezzyShare(
+        context: Context,
+        coverArt: Bitmap?,
+        songTitle: String,
+        artistName: String,
+        lyrics: String,
+        config: LyricsCardConfig,
+        cardSize: Int,
+    ): Bitmap {
+        val bitmap  = createBitmap(cardSize, cardSize)
+        val canvas  = Canvas(bitmap)
+        val corner  = cardSize * 0.06f
+        val padding = cardSize * 0.07f
+        val size    = cardSize.toFloat()
+
+        val bgColor      = config.customBgColor.toArgb()
+        val mainColor    = config.customTextColor.toArgb()
+        val secondaryClr = config.customSecondaryTextColor.toArgb()
+
+        // Background
+        canvas.drawRoundRect(RectF(0f, 0f, size, size), corner, corner, Paint().apply {
+            color = bgColor; isAntiAlias = true
+        })
+
+        // Top: Album art + Title + Artist
+        val artSize = cardSize * 0.16f
+        if (coverArt != null) {
+            val artRect = RectF(padding, padding, padding + artSize, padding + artSize)
+            val artCorner = cardSize * 0.02f
+            val path = Path().apply { addRoundRect(artRect, artCorner, artCorner, Path.Direction.CW) }
+            canvas.withClip(path) { drawBitmap(coverArt, null, artRect, null) }
+        }
+
+        val textStartX = if (coverArt != null) padding + artSize + cardSize * 0.05f else padding
+        val titlePaint = TextPaint().apply {
+            color = mainColor; textSize = cardSize * 0.048f; typeface = Typeface.DEFAULT_BOLD; isAntiAlias = true; letterSpacing = -0.01f
+        }
+        val artistPaint = TextPaint().apply {
+            color = secondaryClr; textSize = cardSize * 0.038f; typeface = Typeface.DEFAULT; isAntiAlias = true
+        }
+
+        val titleLayout = StaticLayout.Builder.obtain(songTitle, 0, songTitle.length, titlePaint, (size - textStartX - padding).toInt())
+            .setAlignment(Layout.Alignment.ALIGN_NORMAL).setMaxLines(1).build()
+        val artistLayout = StaticLayout.Builder.obtain(artistName, 0, artistName.length, artistPaint, (size - textStartX - padding).toInt())
+            .setAlignment(Layout.Alignment.ALIGN_NORMAL).setMaxLines(1).build()
+
+        val headerHeight = titleLayout.height + artistLayout.height + cardSize * 0.01f
+        val headerY = padding + (artSize - headerHeight) / 2f
+        
+        canvas.withTranslation(textStartX, headerY) {
+            titleLayout.draw(this)
+            translate(0f, titleLayout.height.toFloat() + cardSize * 0.01f)
+            artistLayout.draw(this)
+        }
+
+        // Bottom: Branding
+        val logoSize = cardSize * 0.05f
+        val brandingY = size - padding - logoSize
+        val rawLogo = context.getDrawable(R.drawable.star)?.toBitmap(logoSize.toInt(), logoSize.toInt())
+        val logoPaint = Paint().apply {
+            colorFilter = PorterDuffColorFilter(secondaryClr, PorterDuff.Mode.SRC_IN); isAntiAlias = true
+        }
+        
+        // Circular background for logo
+        val circleRadius = logoSize * 0.7f
+        val circleX = padding + circleRadius
+        val circleY = brandingY + logoSize / 2f
+        canvas.drawCircle(circleX, circleY, circleRadius, Paint().apply {
+            color = (secondaryClr and 0x00FFFFFF) or 0x33000000; isAntiAlias = true // 20% opacity
+        })
+        
+        if (rawLogo != null) {
+            canvas.drawBitmap(rawLogo, circleX - logoSize / 2f, circleY - logoSize / 2f, logoPaint)
+        }
+
+        val dezzyPaint = TextPaint().apply {
+            color = secondaryClr; textSize = cardSize * 0.038f; typeface = Typeface.DEFAULT_BOLD; isAntiAlias = true
+        }
+        canvas.drawText("Dezzy", circleX + circleRadius + cardSize * 0.03f, brandingY + logoSize * 0.8f, dezzyPaint)
+
+        // Middle: Lyrics
+        val lyricsTop = padding + artSize + padding
+        val lyricsBottom = brandingY - padding
+
+        val customTypeface = com.arturo254.opentune.ui.theme.getTypeface(context, config.fontName)
+
+        val lyricsPaint = TextPaint().apply {
+            color = mainColor; typeface = customTypeface; isAntiAlias = true; letterSpacing = -0.02f
+        }
+        val lyricsMaxWidth  = (size - padding * 2).toInt()
+        
+        val lyricsLayout = buildFittedLyricsLayout(
+            lyrics          = lyrics,
+            paint           = lyricsPaint,
+            maxWidth        = lyricsMaxWidth,
+            availableHeight = lyricsBottom - lyricsTop,
+            alignment       = Layout.Alignment.ALIGN_NORMAL,
+            initialTextSize = (cardSize * 0.065f) * config.textSizeMultiplier,
+            minTextSize     = 24f,
+        )
+        
+        val lyricsY = lyricsTop + (lyricsBottom - lyricsTop - lyricsLayout.height) / 2f
+        canvas.withTranslation(padding, lyricsY) { lyricsLayout.draw(this) }
+
+        return bitmap
     }
 }

@@ -51,6 +51,7 @@ import com.arturo254.opentune.R
 import com.arturo254.opentune.constants.MaxCanvasCacheSizeKey
 import com.arturo254.opentune.constants.MaxImageCacheSizeKey
 import com.arturo254.opentune.constants.MaxSongCacheSizeKey
+import com.arturo254.opentune.constants.MaxParallelDownloadsKey
 import com.arturo254.opentune.constants.SmartTrimmerKey
 import com.arturo254.opentune.extensions.directorySizeBytes
 import com.arturo254.opentune.extensions.tryOrNull
@@ -99,6 +100,10 @@ fun StorageSettings(
     val (maxCanvasCacheSize, onMaxCanvasCacheSizeChange) = rememberPreference(
         key = MaxCanvasCacheSizeKey,
         defaultValue = 256,
+    )
+    val (maxParallelDownloads, onMaxParallelDownloadsChange) = rememberPreference(
+        key = MaxParallelDownloadsKey,
+        defaultValue = 1,
     )
     var clearCacheDialog by remember { mutableStateOf(false) }
     var clearDownloads by remember { mutableStateOf(false) }
@@ -226,6 +231,13 @@ fun StorageSettings(
             description = stringResource(R.string.size_used, formatFileSize(downloadCacheSize)),
             progress = null,
             actions = {
+                ListPreference(
+                    title = { Text(stringResource(R.string.max_parallel_downloads)) },
+                    selectedValue = maxParallelDownloads,
+                    values = listOf(1, 2, 3, 6),
+                    valueText = { "$it" },
+                    onValueSelected = onMaxParallelDownloadsChange,
+                )
                 PreferenceEntry(
                     title = { Text(stringResource(R.string.clear_all_downloads)) },
                     onClick = { clearDownloads = true },

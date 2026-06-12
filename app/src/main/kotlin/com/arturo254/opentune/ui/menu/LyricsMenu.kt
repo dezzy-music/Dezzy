@@ -608,6 +608,21 @@ fun LyricsMenu(
                     NewAction(
                         icon = {
                             Icon(
+                                painter = painterResource(R.drawable.translate),
+                                contentDescription = null,
+                                modifier = Modifier.size(28.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        text = stringResource(R.string.ai_translate),
+                        onClick = {
+                            com.arturo254.opentune.lyrics.LyricsTranslationHelper.triggerManualTranslation()
+                            onDismiss()
+                        }
+                    ),
+                    NewAction(
+                        icon = {
+                            Icon(
                                 painter = painterResource(R.drawable.search),
                                 contentDescription = null,
                                 modifier = Modifier.size(28.dp),

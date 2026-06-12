@@ -252,6 +252,7 @@ fun Thumbnail(
     sliderPositionProvider: () -> Long?,
     modifier: Modifier = Modifier,
     isPlayerExpanded: Boolean = true, // Add parameter to control swipe based on player state
+    onTap: (() -> Unit)? = null,
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
     val context = LocalContext.current
@@ -585,6 +586,7 @@ fun Thumbnail(
                                     .padding(horizontal = PlayerHorizontalPadding)
                                     .pointerInput(Unit) {
                                         detectTapGestures(
+                                            onTap = { onTap?.invoke() },
                                             onDoubleTap = { offset ->
                                                 val currentPosition = playerConnection.player.currentPosition
                                                 val duration = playerConnection.player.duration
@@ -638,15 +640,15 @@ fun Thumbnail(
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Icon(
-                                                painter = painterResource(R.drawable.opentune),
+                                                painter = painterResource(R.drawable.star),
                                                 contentDescription = stringResource(R.string.hide_player_thumbnail),
                                                 tint = textBackgroundColor.copy(alpha = 0.7f),
                                                 modifier = Modifier.size(120.dp)
                                             )
                                         }
                                     } else {
-                                        val primaryCanvasUrl = canvasArtwork?.animated
-                                        val fallbackCanvasUrl = canvasArtwork?.videoUrl
+                                        val primaryCanvasUrl = canvasArtwork?.animatedVertical ?: canvasArtwork?.animated
+                                        val fallbackCanvasUrl = canvasArtwork?.videoUrlVertical ?: canvasArtwork?.videoUrl
 
                                         val shouldCropArtwork =
                                             cropThumbnailToSquare &&

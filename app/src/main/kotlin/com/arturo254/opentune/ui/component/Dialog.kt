@@ -497,19 +497,41 @@ fun EditPlaylistDialog(
     }
 
     val pickCoverLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
             if (uri == null) return@rememberLauncherForActivityResult
             val old = thumbnailUrl
+
+            val dir = java.io.File(context.filesDir, "custom_covers")
+            if (!dir.exists()) dir.mkdirs()
+            val newFile = java.io.File(dir, "cover_${System.currentTimeMillis()}.jpg")
+
             runCatching {
-                context.contentResolver.takePersistableUriPermission(
-                    uri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
+                context.contentResolver.openInputStream(uri)?.use { input ->
+                    newFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+            }.onSuccess {
+                val newUrl = "file://${newFile.absolutePath}"
+                if (old != null && old.startsWith("file://") && old != newUrl) {
+                    runCatching { java.io.File(java.net.URI(old).path).delete() }
+                }
+                if (old != null && old.startsWith("content://") && old != uri.toString()) {
+                    releasePersistablePermissionIfPossible(old)
+                }
+                thumbnailUrl = newUrl
+            }.onFailure {
+                runCatching {
+                    context.contentResolver.takePersistableUriPermission(
+                        uri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
+                }
+                if (old != null && old != uri.toString()) {
+                    releasePersistablePermissionIfPossible(old)
+                }
+                thumbnailUrl = uri.toString()
             }
-            if (old != null && old != uri.toString()) {
-                releasePersistablePermissionIfPossible(old)
-            }
-            thumbnailUrl = uri.toString()
         }
 
     val canSave by remember {
@@ -564,7 +586,7 @@ fun EditPlaylistDialog(
                 )
 
                 Surface(
-                    onClick = { pickCoverLauncher.launch(arrayOf("image/*")) },
+                    onClick = { pickCoverLauncher.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly)) },
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     shadowElevation = 6.dp,

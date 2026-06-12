@@ -49,6 +49,7 @@ import com.arturo254.opentune.db.entities.SortedSongAlbumMap
 import com.arturo254.opentune.db.entities.SortedSongArtistMap
 import com.arturo254.opentune.db.entities.TagEntity
 import com.arturo254.opentune.db.entities.PlaylistTagMap
+import com.arturo254.opentune.db.entities.LyricsTranslationEntity
 import com.arturo254.opentune.extensions.toSQLiteQuery
 import java.time.Instant
 import java.time.LocalDateTime
@@ -58,7 +59,7 @@ import java.util.concurrent.Executor
 import kotlin.coroutines.resume
 
 private const val TAG = "MusicDatabase"
-private const val CURRENT_VERSION = 27
+private const val CURRENT_VERSION = 28
 
 class MusicDatabase(
     private val delegate: InternalDatabase,
@@ -123,7 +124,8 @@ class MusicDatabase(
         SetVideoIdEntity::class,
         PlayCountEntity::class,
         TagEntity::class,
-        PlaylistTagMap::class
+        PlaylistTagMap::class,
+        LyricsTranslationEntity::class
     ],
     views = [
         SortedSongArtistMap::class,

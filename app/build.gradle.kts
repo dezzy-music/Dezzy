@@ -107,6 +107,7 @@ android {
 
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("debug")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -199,6 +200,7 @@ dependencies {
     debugImplementation(libs.compose.ui.tooling)
     implementation(libs.compose.animation)
     implementation(libs.compose.reorderable)
+    implementation(libs.compose.google.fonts)
 
     implementation(libs.viewmodel)
     implementation(libs.viewmodel.compose)
@@ -250,6 +252,7 @@ dependencies {
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.okhttp)
     implementation(libs.ktor.serialization.json)
+    implementation(libs.kotlinx.serialization.protobuf)
     implementation(libs.ktor.client.websockets)
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.cio)
@@ -261,8 +264,10 @@ dependencies {
     implementation(libs.timber)
     testImplementation(libs.junit)
     implementation("com.github.therealbush:translator:1.1.1")
+    implementation("com.google.mlkit:language-id:17.0.6")
     implementation("androidx.lifecycle:lifecycle-process:2.10.0")
     implementation("androidx.compose.material3.adaptive:adaptive:1.2.0")
+    implementation("net.jthink:jaudiotagger:3.0.1")
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {

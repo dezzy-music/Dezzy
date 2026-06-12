@@ -178,8 +178,8 @@ private fun FloatingToolbarOverflowAction(
     Box {
         FloatingToolbarDefaults.VibrantFloatingActionButton(
             onClick = { fabMenuExpanded = !fabMenuExpanded },
-            containerColor = floatingToolbarFabContainerColor(pureBlack = pureBlack),
-            contentColor = floatingToolbarFabContentColor(pureBlack = pureBlack),
+            containerColor = Color.Black,
+            contentColor = Color.White,
         ) {
             Icon(
                 painter = painterResource(R.drawable.more_horiz),

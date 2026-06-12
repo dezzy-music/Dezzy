@@ -63,6 +63,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
@@ -103,6 +104,16 @@ import com.arturo254.opentune.constants.LyricsScrollKey
 import com.arturo254.opentune.constants.LyricsTextSizeKey
 import com.arturo254.opentune.constants.PlayerBackgroundStyle
 import com.arturo254.opentune.constants.PlayerBackgroundStyleKey
+import com.arturo254.opentune.constants.OpenRouterApiKey
+import com.arturo254.opentune.constants.OpenRouterBaseUrlKey
+import com.arturo254.opentune.constants.OpenRouterModelKey
+import com.arturo254.opentune.constants.AutoTranslateLyricsKey
+import com.arturo254.opentune.constants.AutoTranslateLyricsMismatchKey
+import com.arturo254.opentune.constants.TranslateLanguageKey
+import com.arturo254.opentune.constants.TranslateModeKey
+import com.arturo254.opentune.LocalDatabase
+import com.arturo254.opentune.lyrics.LyricsTranslationHelper
+import com.arturo254.opentune.lyrics.LanguageDetectionHelper
 import com.arturo254.opentune.constants.UseSystemFontKey
 import com.arturo254.opentune.db.entities.LyricsEntity.Companion.LYRICS_NOT_FOUND
 import com.arturo254.opentune.lyrics.LyricsEntry
@@ -183,10 +194,18 @@ fun LyricsV2(
     val (romanizeJapanese) = rememberPreference(LyricsRomanizeJapaneseKey, defaultValue = true)
     val (romanizeKorean) = rememberPreference(LyricsRomanizeKoreanKey, defaultValue = true)
     val (useSystemFont) = rememberPreference(UseSystemFontKey, defaultValue = false)
-    val lyricsFontFamily = remember(useSystemFont) {
-        if (useSystemFont) null else FontFamily(Font(R.font.sfprodisplaybold))
-    }
+    val lyricsFontFamily = androidx.compose.material3.MaterialTheme.typography.headlineMedium.fontFamily
     val playerBackground by rememberEnumPreference(PlayerBackgroundStyleKey, PlayerBackgroundStyle.DEFAULT)
+
+    val database = LocalDatabase.current
+    val openRouterApiKey by rememberPreference(OpenRouterApiKey, "")
+    val openRouterBaseUrl by rememberPreference(OpenRouterBaseUrlKey, "https://openrouter.ai/api/v1/chat/completions")
+    val openRouterModel by rememberPreference(OpenRouterModelKey, "mistralai/mistral-small-3.1-24b-instruct:free")
+    val autoTranslateLyrics by rememberPreference(AutoTranslateLyricsKey, false)
+    val autoTranslateLyricsMismatch by rememberPreference(AutoTranslateLyricsMismatchKey, false)
+    val translateLanguage by rememberPreference(TranslateLanguageKey, "en")
+    val translateMode by rememberPreference(TranslateModeKey, "Literal")
+    val aiProvider by rememberPreference(com.arturo254.opentune.constants.AiProviderKey, "OpenRouter")
 
     // ── Text colour derived from background style ──
     val textColor = if (playerBackground == PlayerBackgroundStyle.DEFAULT)
@@ -434,6 +453,86 @@ fun LyricsV2(
         }
     }
 
+    val translationStatus by LyricsTranslationHelper.status.collectAsState()
+    
+    DisposableEffect(Unit) {
+        LyricsTranslationHelper.setCompositionActive(true)
+        onDispose {
+            LyricsTranslationHelper.setCompositionActive(false)
+            LyricsTranslationHelper.cancelTranslation()
+        }
+    }
+    
+    LaunchedEffect(true, entriesWithWords.size, openRouterApiKey) {
+        LyricsTranslationHelper.manualTrigger.collect {
+             if (entriesWithWords.isNotEmpty() && openRouterApiKey.isNotBlank()) {
+                     LyricsTranslationHelper.translateLyrics(
+                         lyrics = entriesWithWords,
+                         targetLanguage = translateLanguage,
+                         apiKey = openRouterApiKey,
+                         baseUrl = openRouterBaseUrl,
+                         model = openRouterModel,
+                         mode = translateMode,
+                         scope = scope,
+                         context = context,
+                         database = database,
+                         provider = aiProvider
+                     )
+             } else if (openRouterApiKey.isBlank()) {
+                 Toast.makeText(context, context.getString(R.string.ai_api_key_required), Toast.LENGTH_SHORT).show()
+             }
+        }
+    }
+
+    LaunchedEffect(entriesWithWords, autoTranslateLyrics, autoTranslateLyricsMismatch, openRouterApiKey, translateMode, translateLanguage) {
+        if (entriesWithWords.isNotEmpty()) {
+            val targetLang = if (autoTranslateLyricsMismatch) java.util.Locale.getDefault().language else translateLanguage
+            val hasCached = LyricsTranslationHelper.applyCachedTranslations(entriesWithWords, translateMode, targetLang, database)
+
+            if (!autoTranslateLyrics) {
+                if (!hasCached) {
+                    LyricsTranslationHelper.resetStatus()
+                }
+                return@LaunchedEffect
+            }
+            
+            if (!hasCached && openRouterApiKey.isNotBlank()) {
+                val needsTranslation = entriesWithWords.any { it.translatedTextFlow.value == null && it.text.isNotBlank() }
+                if (needsTranslation) {
+                    var shouldTranslate = true
+                    if (autoTranslateLyricsMismatch) {
+                        try {
+                            val combinedText = entriesWithWords.take(5).joinToString(" ") { it.text }
+                            val detectedLang = LanguageDetectionHelper.identifyLanguage(combinedText)
+                            val systemLang = java.util.Locale.getDefault().language
+                            
+                            if (detectedLang != null && detectedLang == systemLang) {
+                                shouldTranslate = false
+                            }
+                        } catch (e: Exception) {
+                            timber.log.Timber.e(e, "Language detection failed, proceeding with translation")
+                        }
+                    }
+
+                    if (shouldTranslate) {
+                        LyricsTranslationHelper.translateLyrics(
+                            lyrics = entriesWithWords,
+                            targetLanguage = targetLang,
+                            apiKey = openRouterApiKey,
+                            baseUrl = openRouterBaseUrl,
+                            model = openRouterModel,
+                            mode = translateMode,
+                            scope = scope,
+                            context = context,
+                            database = database,
+                            provider = aiProvider
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     // ── Render ──
     BoxWithConstraints(
         contentAlignment = Alignment.TopCenter,
@@ -441,6 +540,100 @@ fun LyricsV2(
             .fillMaxSize()
             .padding(bottom = 12.dp)
     ) {
+        // Status UI for translation
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .zIndex(1f)
+                .padding(top = 56.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            when (val status = translationStatus) {
+                is LyricsTranslationHelper.TranslationStatus.Translating -> {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        ),
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            androidx.compose.material3.CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Text(
+                                text = stringResource(R.string.ai_translating_lyrics),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+                }
+                is LyricsTranslationHelper.TranslationStatus.Error -> {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        ),
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.error),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = status.message,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                    }
+                }
+                is LyricsTranslationHelper.TranslationStatus.Success -> {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                        ),
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.check),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = stringResource(R.string.ai_lyrics_translated),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        }
+                    }
+                }
+                is LyricsTranslationHelper.TranslationStatus.Idle -> {
+                    // No status display
+                }
+            }
+        }
         if (lyrics == LYRICS_NOT_FOUND) {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -635,6 +828,20 @@ fun LyricsV2(
                                 .fillMaxWidth()
                                 .padding(top = (lyricsTextSize * 0.3f).dp),
                         )
+                    }
+                    if (autoTranslateLyrics || openRouterApiKey.isNotBlank()) {
+                        val translatedText by item.translatedTextFlow.collectAsState(initial = null)
+                        translatedText?.let { translated ->
+                            Text(
+                                text = translated,
+                                fontSize = (lyricsTextSize * 0.7f).sp,
+                                color = textColor.copy(alpha = if (isActive) 0.7f else 0.4f),
+                                style = MaterialTheme.typography.bodyMedium.copy(shadow = null),
+                                textAlign = textAlign,
+                                fontWeight = FontWeight.Normal,
+                                modifier = Modifier.padding(top = 8.dp).fillMaxWidth()
+                            )
+                        }
                     }
                 }
             }
@@ -1283,8 +1490,8 @@ private fun AnimatedWordV2(
     // "lines and words that are done animating shouldnt continue to glow"
     // Make glow build up faster: reach max intensity at 50% progress
     val glowProgress = (progress * 2f).coerceAtMost(1f)
-    val glowAlpha = if (isWordActive) glowProgress * 0.45f else 0f
-    val glowRadius = if (isWordActive) glowProgress * 12f else 0f
+    val glowAlpha = if (isWordActive) glowProgress * 0.95f else 0f
+    val glowRadius = if (isWordActive) glowProgress * 35f else 0f
 
     val actualFontSize = if (isBackground) fontSize * 0.85f else fontSize
     val fontWeight = FontWeight.SemiBold // Consistent weight — no thin→bold jump

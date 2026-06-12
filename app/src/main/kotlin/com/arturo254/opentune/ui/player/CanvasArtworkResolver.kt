@@ -12,7 +12,7 @@
 
 package com.arturo254.opentune.ui.player
 
-import com.arturo254.opentune.canvas.CanvasArtwork
+import com.arturo254.opentune.canvas.models.CanvasArtwork
 import com.arturo254.opentune.canvas.OpenTuneCanvas
 
 
@@ -42,7 +42,7 @@ internal suspend fun fetchCanvasArtworkForPlayback(
                 storefront = storefront,
             )?.takeIf { artwork ->
                 if (requireVertical) {
-                    false
+                    !artwork.preferredVerticalAnimationUrl.isNullOrBlank()
                 } else {
                     !artwork.preferredAnimationUrl.isNullOrBlank()
                 }

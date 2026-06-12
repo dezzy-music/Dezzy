@@ -144,6 +144,17 @@ fun PlaylistMenu(
             fallbackThumbnails = playlist.songThumbnails.filterNotNull(),
             onDismiss = { showEditDialog = false },
             onSave = { name, thumbnailUrl ->
+                val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                if (thumbnailUrl?.startsWith("content://") == true) {
+                    try {
+                        context.contentResolver.takePersistableUriPermission(
+                            android.net.Uri.parse(thumbnailUrl),
+                            takeFlags
+                        )
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
                 onDismiss()
                 database.query {
                     update(
