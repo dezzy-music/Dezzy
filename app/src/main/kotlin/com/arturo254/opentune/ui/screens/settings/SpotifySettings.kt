@@ -88,8 +88,8 @@ fun SpotifySettings(
         defaultValue = false,
     )
 
-    val isLoggedIn = remember(spotifyAccessToken, spotifySpDc) {
-        spotifyAccessToken.isNotEmpty() && spotifySpDc.isNotEmpty()
+    val isLoggedIn = remember(spotifySpDc) {
+        spotifySpDc.isNotEmpty()
     }
 
     Column(
@@ -344,6 +344,14 @@ internal suspend fun runInitialSpotifyLikeSync(
 
     try {
         withContext(Dispatchers.IO) {
+            // Spotify.accessToken is only an in-memory field, populated during a live login.
+            // On any fresh process (app restart, phone reboot) it's null even though the
+            // sp_dc-derived token is still valid in DataStore, so hydrate it first or every
+            // sync silently fails with "Not authenticated with Spotify".
+            if (!com.arturo254.opentune.spotify.SpotifyTokenManager.ensureAuthenticated()) {
+                throw Exception("No se pudo autenticar con Spotify. Vuelve a iniciar sesión.")
+            }
+
             val mapper = SpotifyYouTubeMapper(database, context)
             val allTracks = mutableListOf<com.arturo254.opentune.spotify.SpotifyTrack>()
 

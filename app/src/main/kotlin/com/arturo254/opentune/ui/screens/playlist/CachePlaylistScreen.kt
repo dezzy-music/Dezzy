@@ -15,6 +15,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -34,6 +35,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -51,6 +54,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
@@ -88,8 +92,11 @@ import coil3.request.allowHardware
 import coil3.toBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.arturo254.opentune.LocalDatabase
 import com.arturo254.opentune.LocalPlayerAwareWindowInsets
 import com.arturo254.opentune.LocalPlayerConnection
+import com.arturo254.opentune.models.toMediaMetadata
+import com.arturo254.opentune.lyrics.PlaylistTranslationManager
 import com.arturo254.opentune.R
 import com.arturo254.opentune.constants.DisableBlurKey
 import com.arturo254.opentune.constants.HideExplicitKey
@@ -123,6 +130,8 @@ fun CachePlaylistScreen(
     viewModel: CachePlaylistViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
+    val database = LocalDatabase.current
+    val scope = rememberCoroutineScope()
     val menuState = LocalMenuState.current
     val playerConnection = LocalPlayerConnection.current ?: return
     val haptic = LocalHapticFeedback.current
@@ -471,6 +480,9 @@ fun CachePlaylistScreen(
                                 horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
+                                val playBtnContainer = MaterialTheme.colorScheme.primary
+                                val playBtnContent = if (playBtnContainer.luminance() > 0.5f) Color.Black else Color.White
+
                                 // Play Button
                                 Button(
                                     onClick = {
@@ -481,16 +493,33 @@ fun CachePlaylistScreen(
                                             )
                                         )
                                     },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = playBtnContainer,
+                                        contentColor = playBtnContent,
+                                    ),
                                     shape = RoundedCornerShape(24.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp),
                                     modifier = Modifier
                                         .weight(1f)
                                         .height(48.dp)
                                 ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.play),
-                                        contentDescription = stringResource(R.string.play),
-                                        modifier = Modifier.size(24.dp)
-                                    )
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.play),
+                                            contentDescription = stringResource(R.string.play),
+                                            tint = playBtnContent,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Text(
+                                            text = stringResource(R.string.play),
+                                            style = MaterialTheme.typography.labelLarge,
+                                            color = playBtnContent,
+                                            maxLines = 1
+                                        )
+                                    }
                                 }
 
                                 // Shuffle Button
@@ -503,23 +532,43 @@ fun CachePlaylistScreen(
                                             )
                                         )
                                     },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = playBtnContainer,
+                                        contentColor = playBtnContent,
+                                    ),
                                     shape = RoundedCornerShape(24.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp),
                                     modifier = Modifier
                                         .weight(1f)
                                         .height(48.dp)
                                 ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.shuffle),
-                                        contentDescription = stringResource(R.string.shuffle),
-                                        modifier = Modifier.size(24.dp)
-                                    )
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.shuffle),
+                                            contentDescription = stringResource(R.string.shuffle),
+                                            tint = playBtnContent,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Text(
+                                            text = stringResource(R.string.shuffle),
+                                            style = MaterialTheme.typography.labelLarge,
+                                            color = playBtnContent,
+                                            maxLines = 1
+                                        )
+                                    }
                                 }
 
-                                // Add to Queue Button
+                                // Translate Playlist Button
                                 Surface(
                                     onClick = {
-                                        playerConnection.addToQueue(
-                                            items = filteredSongs.map { it.item.toMediaItem() },
+                                        PlaylistTranslationManager.translatePlaylist(
+                                            context = context,
+                                            database = database,
+                                            scope = scope,
+                                            songs = filteredSongs.map { it.item.toMediaMetadata() }
                                         )
                                     },
                                     shape = CircleShape,
@@ -531,8 +580,8 @@ fun CachePlaylistScreen(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
-                                            painter = painterResource(R.drawable.queue_music),
-                                            contentDescription = null,
+                                            painter = painterResource(R.drawable.translate),
+                                            contentDescription = stringResource(R.string.translate_playlist),
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.size(24.dp)
                                         )

@@ -1,0 +1,26 @@
+<!--
+  AI Canvas icon family — "bars"
+  Minimal equalizer: three capsule bars (round-capped) at staggered heights.
+  24x24 grid · tinted at use-site.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:strokeColor="@android:color/white"
+        android:strokeWidth="3.2"
+        android:strokeLineCap="round"
+        android:pathData="M6,14 L6,18" />
+    <path
+        android:strokeColor="@android:color/white"
+        android:strokeWidth="3.2"
+        android:strokeLineCap="round"
+        android:pathData="M12,6.5 L12,18" />
+    <path
+        android:strokeColor="@android:color/white"
+        android:strokeWidth="3.2"
+        android:strokeLineCap="round"
+        android:pathData="M18,10.5 L18,18" />
+</vector>

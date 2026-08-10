@@ -118,6 +118,25 @@ fun YouTubePlaylistMenu(
     var showChoosePlaylistDialog by rememberSaveable { mutableStateOf(false) }
     var showImportPlaylistDialog by rememberSaveable { mutableStateOf(false) }
     var showErrorPlaylistAddDialog by rememberSaveable { mutableStateOf(false) }
+    var showShareSheet by rememberSaveable { mutableStateOf(false) }
+
+    if (showShareSheet) {
+        com.arturo254.opentune.ui.component.ShareBottomSheet(
+            title = playlist.title,
+            subtitle = com.arturo254.opentune.ui.component.ShareEntity.Playlist.descriptor,
+            thumbnailUrl = playlist.thumbnail,
+            shareLink = playlist.shareLink,
+            entity = com.arturo254.opentune.ui.component.ShareEntity.Playlist,
+            tracks = songs.take(4).map { song ->
+                com.arturo254.opentune.utils.ComposeToImage.ShareTrack(
+                    title = song.title,
+                    artist = song.artists.joinToString(", ") { it.name },
+                    thumbnailUrl = song.thumbnail,
+                )
+            },
+            onDismiss = { showShareSheet = false; onDismiss() },
+        )
+    }
 
     val notAddedList by remember {
         mutableStateOf(mutableListOf<MediaMetadata>())
@@ -261,13 +280,15 @@ fun YouTubePlaylistMenu(
                 TextButton(
                     onClick = {
                         showRemoveDownloadDialog = false
-                        songs.forEach { song ->
-                            DownloadService.sendRemoveDownload(
-                                context,
-                                ExoDownloadService::class.java,
-                                song.id,
-                                false
-                            )
+                        coroutineScope.launch(Dispatchers.IO) {
+                            songs.forEach { song ->
+                                DownloadService.sendRemoveDownload(
+                                    context,
+                                    ExoDownloadService::class.java,
+                                    song.id,
+                                    false
+                                )
+                            }
                         }
                     }
                 ) {
@@ -716,12 +737,12 @@ fun YouTubePlaylistMenu(
                                 )
                             },
                             modifier = Modifier.clickable {
-                                coroutineScope.launch {
+                                // Bulk-enqueueing on the main thread can freeze the app for large
+                                // playlists, so the whole thing (fetch + enqueue) runs on IO.
+                                coroutineScope.launch(Dispatchers.IO) {
                                     songs
                                         .ifEmpty {
-                                            withContext(Dispatchers.IO) {
-                                                YouTube.playlist(playlist.id).completed().getOrNull()?.songs.orEmpty()
-                                            }
+                                            YouTube.playlist(playlist.id).completed().getOrNull()?.songs.orEmpty()
                                         }.forEach { song ->
                                             val downloadRequest =
                                                 DownloadRequest.Builder(song.id, song.id.toUri())
@@ -759,16 +780,7 @@ fun YouTubePlaylistMenu(
                                 contentDescription = null,
                             )
                         },
-                        modifier = Modifier.clickable {
-                            val intent =
-                                Intent().apply {
-                                    action = Intent.ACTION_SEND
-                                    type = "text/plain"
-                                    putExtra(Intent.EXTRA_TEXT, playlist.shareLink)
-                                }
-                            context.startActivity(Intent.createChooser(intent, null))
-                            onDismiss()
-                        },
+                        modifier = Modifier.clickable { showShareSheet = true },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     )
 

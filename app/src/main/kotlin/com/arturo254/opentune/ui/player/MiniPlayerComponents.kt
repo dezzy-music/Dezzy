@@ -92,12 +92,7 @@ import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 import com.arturo254.opentune.LocalDatabase
 import com.arturo254.opentune.db.entities.ArtistEntity
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.material3.CircularWavyProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.ui.layout.ContentScale
-import coil3.compose.AsyncImage
+
 import com.arturo254.opentune.constants.MiniPlayerStyle
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -454,7 +449,8 @@ fun NewMiniPlayerContent(
     val canSkipPrevious by playerConnection.canSkipPrevious.collectAsState()
     val canSkipNext by playerConnection.canSkipNext.collectAsState()
     val currentSong by playerConnection.currentSong.collectAsState(initial = null)
-    val isLiked = currentSong?.song?.liked == true
+    // Optimista: ver PlayerConnection.currentSongLiked.
+    val isLiked by playerConnection.currentSongLiked.collectAsState()
 
     val isLoading = playbackState == Player.STATE_BUFFERING
 
@@ -606,15 +602,6 @@ fun NewMiniPlayerContent(
                     }
             )
         }
-
-        Spacer(modifier = Modifier.width(4.dp))
-
-        // ── Botón Play/Pause principal (Cookie6Sided) ─────────────────────
-        MiniPlayerPlayPauseButton(
-            isPlaying = isPlaying,
-            isLoading = isLoading,
-            playerConnection = playerConnection
-        )
 
         Spacer(modifier = Modifier.width(4.dp))
     }

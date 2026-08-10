@@ -58,7 +58,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -162,13 +164,20 @@ fun PoTokenScreen(
         }
     }
 
+    val coroutineScope = rememberCoroutineScope()
     val launchExtraction: () -> Unit = {
         viewModel.resetState()
-        val launchUrl = sourceUrl.takeIf { it.isNotBlank() } ?: DEFAULT_EXTRACT_URL
-        val intent = Intent(context, PoTokenExtractionActivity::class.java).apply {
-            putExtra(PoTokenExtractionActivity.EXTRA_SOURCE_URL, launchUrl)
+        Toast.makeText(context, R.string.generating_tokens, Toast.LENGTH_SHORT).show()
+        coroutineScope.launch {
+            // Mint a genuine BotGuard token via the playback pipeline. This replaces the old
+            // WebView flow that produced fake tokens YouTube always rejected.
+            val ok = com.arturo254.opentune.playback.potoken.PlaybackPoTokenController.forceRefresh()
+            Toast.makeText(
+                context,
+                if (ok) R.string.tokens_generated else R.string.token_generation_failed,
+                Toast.LENGTH_SHORT,
+            ).show()
         }
-        extractionLauncher.launch(intent)
     }
 
     val hasCookie = innerTubeCookie.isNotBlank()
@@ -179,6 +188,13 @@ fun PoTokenScreen(
                 onStoredGvsTokenChange(state.gvsToken)
                 onStoredPlayerTokenChange(state.playerToken)
                 onStoredVisitorDataChange(state.visitorData)
+                // Generating a PoToken is useless unless it is actually applied to
+                // playback requests. Without these flags the token stays gated off
+                // (PlaybackAuthState.resolvePlayerPoToken/resolveGvsPoToken return null),
+                // so YouTube keeps rejecting streams with bot detection. The token is
+                // minted against visitorData, so playback must use it too.
+                if (!webClientPoTokenEnabled) onWebClientPoTokenEnabledChange(true)
+                if (!useVisitorData) onUseVisitorDataChange(true)
                 Toast.makeText(context, R.string.tokens_generated, Toast.LENGTH_SHORT).show()
             }
             is PoTokenState.Error -> {

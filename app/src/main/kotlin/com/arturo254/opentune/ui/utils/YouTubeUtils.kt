@@ -9,7 +9,7 @@
 
 package com.arturo254.opentune.ui.utils
 
-private const val PlayerArtworkHighResPx = 1080
+private const val PlayerArtworkHighResPx = 544
 
 fun String.resize(
     width: Int? = null,

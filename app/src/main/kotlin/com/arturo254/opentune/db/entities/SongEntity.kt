@@ -47,8 +47,22 @@ data class SongEntity(
     val inLibrary: LocalDateTime? = null,
     val dateDownload: LocalDateTime? = LocalDateTime.now(),
     @ColumnInfo(name = "isLocal", defaultValue = "0")
-    val isLocal: Boolean = false
+    val isLocal: Boolean = false,
+    /**
+     * Formato/códec del archivo local descargado (p. ej. "FLAC", "MP3"). Null para
+     * canciones no locales. Se muestra como etiqueta en la biblioteca.
+     */
+    val localFormat: String? = null,
+    /**
+     * MODS (personalización por canción). Guardan el valor ORIGINAL de título y
+     * carátula la primera vez que se aplica un mod, para poder revertir. Si alguno
+     * es != null, la canción está "modificada" (badge MOD). Editar es no destructivo.
+     */
+    val modOriginalTitle: String? = null,
+    val modOriginalThumbnailUrl: String? = null,
 ) {
+    /** True si el usuario personalizó (mod) esta canción. */
+    val isModded: Boolean get() = modOriginalTitle != null || modOriginalThumbnailUrl != null
     fun localToggleLike() = copy(
         liked = !liked,
         likedDate = if (!liked) LocalDateTime.now() else null,

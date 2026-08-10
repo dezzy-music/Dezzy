@@ -115,6 +115,10 @@ fun YouTubeAlbumMenu(
         }
     }
 
+    var showShareSheet by rememberSaveable {
+        mutableStateOf(false)
+    }
+
     var downloadState by remember {
         mutableIntStateOf(Download.STATE_STOPPED)
     }
@@ -364,13 +368,7 @@ fun YouTubeAlbumMenu(
                         },
                         text = stringResource(R.string.share),
                         onClick = {
-                            onDismiss()
-                            val intent = Intent().apply {
-                                action = Intent.ACTION_SEND
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, albumItem.shareLink)
-                            }
-                            context.startActivity(Intent.createChooser(intent, null))
+                            showShareSheet = true
                         }
                     )
                 ),
@@ -444,13 +442,15 @@ fun YouTubeAlbumMenu(
                             )
                         },
                         modifier = Modifier.clickable {
-                            album?.songs?.forEach { song ->
-                                DownloadService.sendRemoveDownload(
-                                    context,
-                                    ExoDownloadService::class.java,
-                                    song.id,
-                                    false,
-                                )
+                            coroutineScope.launch(Dispatchers.IO) {
+                                album?.songs?.forEach { song ->
+                                    DownloadService.sendRemoveDownload(
+                                        context,
+                                        ExoDownloadService::class.java,
+                                        song.id,
+                                        false,
+                                    )
+                                }
                             }
                         }
                     )
@@ -465,13 +465,15 @@ fun YouTubeAlbumMenu(
                             )
                         },
                         modifier = Modifier.clickable {
-                            album?.songs?.forEach { song ->
-                                DownloadService.sendRemoveDownload(
-                                    context,
-                                    ExoDownloadService::class.java,
-                                    song.id,
-                                    false,
-                                )
+                            coroutineScope.launch(Dispatchers.IO) {
+                                album?.songs?.forEach { song ->
+                                    DownloadService.sendRemoveDownload(
+                                        context,
+                                        ExoDownloadService::class.java,
+                                        song.id,
+                                        false,
+                                    )
+                                }
                             }
                         }
                     )
@@ -486,19 +488,21 @@ fun YouTubeAlbumMenu(
                             )
                         },
                         modifier = Modifier.clickable {
-                            album?.songs?.forEach { song ->
-                                val downloadRequest =
-                                    DownloadRequest
-                                        .Builder(song.id, song.id.toUri())
-                                        .setCustomCacheKey(song.id)
-                                        .setData(song.song.title.toByteArray())
-                                        .build()
-                                DownloadService.sendAddDownload(
-                                    context,
-                                    ExoDownloadService::class.java,
-                                    downloadRequest,
-                                    false,
-                                )
+                            coroutineScope.launch(Dispatchers.IO) {
+                                album?.songs?.forEach { song ->
+                                    val downloadRequest =
+                                        DownloadRequest
+                                            .Builder(song.id, song.id.toUri())
+                                            .setCustomCacheKey(song.id)
+                                            .setData(song.song.title.toByteArray())
+                                            .build()
+                                    DownloadService.sendAddDownload(
+                                        context,
+                                        ExoDownloadService::class.java,
+                                        downloadRequest,
+                                        false,
+                                    )
+                                }
                             }
                         }
                     )
@@ -526,6 +530,20 @@ fun YouTubeAlbumMenu(
                 )
             }
         }
+    }
 
+    if (showShareSheet) {
+        val artistsText = albumItem.artists?.joinToString { it.name } ?: ""
+        com.arturo254.opentune.ui.component.ShareBottomSheet(
+            title = albumItem.title,
+            subtitle = artistsText,
+            thumbnailUrl = albumItem.thumbnail,
+            shareLink = albumItem.shareLink,
+            entity = com.arturo254.opentune.ui.component.ShareEntity.Album,
+            onDismiss = {
+                showShareSheet = false
+                onDismiss()
+            }
+        )
     }
 }

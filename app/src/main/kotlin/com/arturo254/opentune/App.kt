@@ -26,6 +26,8 @@ import coil3.request.crossfade
 import com.arturo254.opentune.constants.*
 import com.arturo254.opentune.extensions.*
 import com.arturo254.opentune.ui.screens.settings.ThemePalettes
+import com.arturo254.opentune.ui.screens.settings.DarkMode
+
 import com.arturo254.opentune.ui.theme.ThemeSeedPalette
 import com.arturo254.opentune.ui.theme.ThemeSeedPaletteCodec
 import com.arturo254.opentune.utils.dataStore
@@ -36,6 +38,7 @@ import com.arturo254.opentune.innertube.YouTube
 import com.arturo254.opentune.innertube.models.YouTubeLocale
 import com.arturo254.opentune.kugou.KuGou
 import com.arturo254.opentune.lastfm.LastFM
+import com.arturo254.opentune.spotify.SpotifyTokenManager
 import com.arturo254.opentune.ui.player.CanvasArtworkPlaybackCache
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -91,7 +94,11 @@ class App : Application(), SingletonImageLoader.Factory {
             return
         }
         PreferenceStore.start(this)
-        Timber.plant(Timber.DebugTree())
+        // Logcat logging only in debug builds — in release every Timber call still paid
+        // string formatting + a logcat write. GlobalLogTree stays: it feeds the in-app log viewer.
+        if (BuildConfig.DEBUG) {
+            Timber.plant(Timber.DebugTree())
+        }
         try {
             Timber.plant(com.arturo254.opentune.utils.GlobalLogTree())
         } catch (_: Exception) {}
@@ -101,7 +108,15 @@ class App : Application(), SingletonImageLoader.Factory {
     }
 
     private fun initializeCriticalSync() {
+        SpotifyTokenManager.init(dataStore)
         CanvasArtworkPlaybackCache.init(this)
+        // Load the Spotify→YouTube match cache at startup (not only during preload) so the
+        // Spotify Canvas can resolve a track's Spotify id in any session, not just the one
+        // where the library was preloaded.
+        com.arturo254.opentune.spotify.SpotifyMatchFileCache.init(this)
+        // Bring up the genuine BotGuard poToken pipeline so playback is not blocked by
+        // "Sign in to confirm you're not a bot". Safe to call before the deferred init runs.
+        com.arturo254.opentune.playback.potoken.PlaybackPoTokenController.init(this, dataStore)
 
         val locale = Locale.getDefault()
         val languageTag = locale.toLanguageTag().replace("-Hant", "")
@@ -124,6 +139,36 @@ class App : Application(), SingletonImageLoader.Factory {
         applicationScope.launch(Dispatchers.IO) {
             try {
                 val prefs = dataStore.data.first()
+
+                // Initialize default preferences on first launch
+                val isFirstLaunchInitialized = prefs[FirstLaunchInitializedKey] ?: false
+                if (!isFirstLaunchInitialized) {
+                    dataStore.edit { settings ->
+                        settings[FirstLaunchInitializedKey] = true
+                        settings[DarkModeKey] = DarkMode.ON.name
+                        settings[PureBlackKey] = true
+                        settings[FontFamilyKey] = "LORA"
+                        settings[KeepPlayerScreenAwakeKey] = true
+                        settings[UseNewMiniPlayerDesignKey] = true
+                        settings[DynamicMiniPlayerColorKey] = true
+                        settings[PlayerDesignStyleKey] = PlayerDesignStyle.APPLE_MUSIC.name
+                        settings[PlayerBackgroundStyleKey] = PlayerBackgroundStyle.GLOW_ANIMATED.name
+                        settings[MiniPlayerBackgroundStyleKey] = "LIVE_MESH"
+                        settings[CanvasModeKey] = CanvasMode.APPLE_WITH_FALLBACK.name
+                        settings[RotatingThumbnailKey] = true
+                        settings[ShowCommentButtonKey] = true
+                        settings[ShowCodecOnPlayerKey] = true
+                        settings[SliderStyleKey] = SliderStyle.Waveform.name
+                        settings[UseLyricsV2Key] = true
+                        settings[LyricsV2StyleKey] = LyricsV2Style.CHROMATIC.name
+                        settings[LyricsAnimationStyleKey] = LyricsAnimationStyle.APPLE.name
+                        settings[AodAutoActivationKey] = 0
+                        settings[ShowArtistVideoKey] = true
+                        settings[AudioQualityKey] = AudioQuality.HIGHEST.name
+                        settings[AutoDownloadOnLikeKey] = true
+                    }
+                }
+
                 
                 prefs[ContentCountryKey]?.takeIf { it != SYSTEM_DEFAULT }?.let { country ->
                     YouTube.locale = YouTube.locale.copy(gl = country)
@@ -133,6 +178,14 @@ class App : Application(), SingletonImageLoader.Factory {
                 }
                 
                 LastFM.sessionKey = prefs[LastFMSessionKey]
+
+                // Restore the native social-network session (Supabase JWT) on startup.
+                com.arturo254.opentune.social.SupabaseAuth.load()
+                // Keep the social identity in lockstep with the YouTube/Google login: links the
+                // same Google account (headless when consent already exists, falling back to the
+                // per-device anonymous identity) and signs the social session out when the user
+                // logs out of YouTube.
+                com.arturo254.opentune.social.GoogleIdentityBridge.startAutoSync(this@App, applicationScope)
 
                 if (prefs[ProxyEnabledKey] == true) {
                     try {
@@ -335,12 +388,20 @@ class App : Application(), SingletonImageLoader.Factory {
             applicationScope.launch(Dispatchers.IO) { trimImageDiskCache(diskCache) }
         }
 
+        val maxHeapBytes = Runtime.getRuntime().maxMemory()
+        val memoryCacheSize = (maxHeapBytes * 0.15).toLong()
+
         return ImageLoader.Builder(this)
             .components {
                 add(OfflineArtworkInterceptor(this@App))
             }
             .crossfade(true)
             .allowHardware(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+            .memoryCache {
+                coil3.memory.MemoryCache.Builder()
+                    .maxSizeBytes(memoryCacheSize)
+                    .build()
+            }
             .diskCache(diskCache)
             .diskCachePolicy(imageCacheConfig.policy)
             .build()
@@ -393,7 +454,7 @@ internal data class ImageDiskCacheConfig(
 )
 
 internal fun resolveImageDiskCacheConfig(maxImageCacheSizeMb: Int?): ImageDiskCacheConfig {
-    val sizeMb = maxImageCacheSizeMb ?: 512
+    val sizeMb = maxImageCacheSizeMb ?: -1
     if (sizeMb == 0) return ImageDiskCacheConfig(policy = CachePolicy.DISABLED, maxSizeBytes = 1L)
     if (sizeMb < 0) return ImageDiskCacheConfig(policy = CachePolicy.ENABLED, maxSizeBytes = Long.MAX_VALUE)
     val bytesPerMb = 1024L * 1024L

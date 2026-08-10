@@ -86,6 +86,8 @@ import com.arturo254.opentune.constants.PlayerDesignStyle
 import com.arturo254.opentune.constants.PlayerDesignStyleKey
 import com.arturo254.opentune.constants.QueueEditLockKey
 import com.arturo254.opentune.constants.AutoLoadMoreKey
+import com.arturo254.opentune.constants.ShowCommentButtonKey
+import com.arturo254.opentune.ui.screens.CommentSheet
 import com.arturo254.opentune.extensions.metadata
 import com.arturo254.opentune.extensions.move
 import com.arturo254.opentune.extensions.togglePlayPause
@@ -182,6 +184,10 @@ fun Queue(
         key = booleanPreferencesKey("show_codec_on_player"),
         defaultValue = false
     )
+    val showCommentButton by rememberPreference(
+        key = ShowCommentButtonKey,
+        defaultValue = true
+    )
 
     LaunchedEffect(sleepTimerEnabled) {
         if (sleepTimerEnabled) {
@@ -198,11 +204,12 @@ fun Queue(
 
     BottomSheet(
         state = state,
-        backgroundColor = Color.Unspecified,
+        backgroundColor = Color.Transparent,
         modifier = modifier,
         collapsedContent = {
             when (playerDesignStyle) {
-                PlayerDesignStyle.IPOD, PlayerDesignStyle.SPOTIFY -> {
+                PlayerDesignStyle.IPOD, PlayerDesignStyle.SPOTIFY,
+                PlayerDesignStyle.APPLE_MUSIC, PlayerDesignStyle.LIVE_MESH -> {
                     // Do not render collapsed content to avoid duplicated control buttons (sleep timer, lyrics, queue)
                 }
                 PlayerDesignStyle.V2 -> {
@@ -627,6 +634,17 @@ fun Queue(
                         } else {
                             playerConnection.service.onInfiniteQueueDisabled()
                         }
+                    },
+                    showCommentButton = showCommentButton,
+                    onCommentClick = {
+                        mediaMetadata?.id?.let { songId ->
+                            bottomSheetPageState.show {
+                                CommentSheet(
+                                    videoId = songId,
+                                    onDismiss = bottomSheetPageState::dismiss
+                                )
+                            }
+                        }
                     }
                 )
 
@@ -656,11 +674,16 @@ fun Queue(
 
                     itemsIndexed(
                         items = mutableQueueWindows,
-                        key = { _, item -> item.uid.hashCode() },
+                        // Media3's default Timeline.Window.uid can be as simple as the window's
+                        // own index, so two windows can legitimately hash to the same value (e.g.
+                        // the same song queued twice, or a brief overlap while the queue is being
+                        // rebuilt) — "Key already used" crashes were coming from that collision.
+                        // Prefixing with the loop index guarantees uniqueness within one snapshot.
+                        key = { index, item -> "$index:${item.uid}" },
                     ) { index, window ->
                         ReorderableItem(
                             state = reorderableState,
-                            key = window.uid.hashCode(),
+                            key = "$index:${window.uid}",
                         ) {
                             val currentItem by rememberUpdatedState(window)
                             val isActive = window.uid == currentPlayingUid

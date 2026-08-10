@@ -79,6 +79,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.compose.ui.zIndex
 import androidx.media3.common.MediaItem
@@ -561,6 +562,10 @@ fun SongListItem(
     showInLibraryIcon: Boolean = false,
     showDownloadIcon: Boolean = true,
     badges: @Composable RowScope.() -> Unit = {
+        // Etiqueta "MOD" si el usuario personalizó la canción.
+        if (song.song.isModded) Icon.Mod()
+        // Etiqueta de formato para archivos locales descargados (FLAC / MP3).
+        Icon.Format(song.song.localFormat)
         if (metadata != null) {
             if (showLikedIcon && metadata.isLiked) Icon.Favorite()
             if (song.song.explicit) Icon.Explicit()
@@ -576,7 +581,8 @@ fun SongListItem(
             if (showInLibraryIcon && song.song.inLibrary != null) {
                 Icon.Library()
             }
-            if (showDownloadIcon) {
+            // Los locales no usan la descarga de ExoPlayer; su estado lo indica el badge de formato.
+            if (showDownloadIcon && !song.song.isLocal) {
                 val download by LocalDownloadUtil.current.getDownload(song.id)
                     .collectAsState(initial = null)
                 Icon.Download(download?.state)
@@ -1379,6 +1385,40 @@ fun YouTubeGridItem(
         val playerConnection = LocalPlayerConnection.current ?: return@GridItem
         val shape = if (item is ArtistItem) CircleShape else RoundedCornerShape(GridThumbnailCornerRadius)
 
+        if (item is PlaylistItem) {
+            // Tarjeta estilo YouTube Music para playlists/mixes: carátula con
+            // esquinas bien redondeadas y efecto de "baraja apilada" asomando arriba.
+            val stackColor = MaterialTheme.colorScheme.onSurface
+            Box(modifier = Modifier.fillMaxSize()) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth(0.78f)
+                        .height(10.dp)
+                        .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
+                        .background(stackColor.copy(alpha = 0.20f)),
+                )
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 5.dp)
+                        .fillMaxWidth(0.89f)
+                        .height(10.dp)
+                        .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
+                        .background(stackColor.copy(alpha = 0.38f)),
+                )
+                ItemThumbnail(
+                    thumbnailUrl = item.thumbnail,
+                    isActive = isActive,
+                    isPlaying = isPlaying,
+                    shape = RoundedCornerShape(16.dp),
+                    thumbnailRatio = thumbnailRatio,
+                    modifier = Modifier
+                        .padding(top = 10.dp)
+                        .align(Alignment.TopCenter),
+                )
+            }
+        } else {
         ItemThumbnail(
             thumbnailUrl = item.thumbnail,
             isActive = isActive,
@@ -1386,6 +1426,7 @@ fun YouTubeGridItem(
             shape = shape,
             thumbnailRatio = thumbnailRatio
         )
+        }
 
         if (item is SongItem && !isActive) {
             OverlayPlayButton(
@@ -2017,5 +2058,46 @@ private object Icon {
                 .size(18.dp)
                 .padding(end = 2.dp)
         )
+    }
+
+    /** Etiqueta "MOD" para canciones personalizadas por el usuario. */
+    @Composable
+    fun Mod() {
+        Box(
+            modifier = Modifier
+                .padding(end = 4.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(MaterialTheme.colorScheme.tertiaryContainer)
+                .padding(horizontal = 5.dp, vertical = 1.dp),
+        ) {
+            Text(
+                text = "MOD",
+                style = MaterialTheme.typography.labelSmall,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onTertiaryContainer,
+            )
+        }
+    }
+
+    /** Etiqueta de formato del archivo local descargado (FLAC / MP3). */
+    @Composable
+    fun Format(format: String?) {
+        if (format.isNullOrBlank()) return
+        Box(
+            modifier = Modifier
+                .padding(end = 4.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(MaterialTheme.colorScheme.secondaryContainer)
+                .padding(horizontal = 5.dp, vertical = 1.dp),
+        ) {
+            Text(
+                text = format,
+                style = MaterialTheme.typography.labelSmall,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+        }
     }
 }

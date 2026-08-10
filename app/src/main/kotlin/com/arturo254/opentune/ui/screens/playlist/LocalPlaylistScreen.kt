@@ -16,6 +16,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -36,6 +37,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -134,6 +137,7 @@ import com.arturo254.opentune.innertube.YouTube
 import com.arturo254.opentune.innertube.models.SongItem
 import com.arturo254.opentune.innertube.utils.completed
 import com.arturo254.opentune.models.toMediaMetadata
+import com.arturo254.opentune.lyrics.PlaylistTranslationManager
 import com.arturo254.opentune.playback.ExoDownloadService
 import com.arturo254.opentune.playback.queues.ListQueue
 import com.arturo254.opentune.playback.queues.LocalMixQueue
@@ -337,13 +341,15 @@ fun LocalPlaylistScreen(
                                 playlist?.id?.let { clearPlaylist(it) }
                             }
                         }
-                        songs.forEach { song ->
-                            DownloadService.sendRemoveDownload(
-                                context,
-                                ExoDownloadService::class.java,
-                                song.song.id,
-                                false
-                            )
+                        coroutineScope.launch(Dispatchers.IO) {
+                            songs.forEach { song ->
+                                DownloadService.sendRemoveDownload(
+                                    context,
+                                    ExoDownloadService::class.java,
+                                    song.song.id,
+                                    false
+                                )
+                            }
                         }
                     }
                 ) {
@@ -836,6 +842,9 @@ fun LocalPlaylistScreen(
                                         }
                                     }
 
+                                    val playBtnContainer = MaterialTheme.colorScheme.primary
+                                    val playBtnContent = if (playBtnContainer.luminance() > 0.5f) Color.Black else Color.White
+
                                     // Play Button
                                     Button(
                                         onClick = {
@@ -846,16 +855,33 @@ fun LocalPlaylistScreen(
                                                 ),
                                             )
                                         },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = playBtnContainer,
+                                            contentColor = playBtnContent,
+                                        ),
                                         shape = RoundedCornerShape(24.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp),
                                         modifier = Modifier
                                             .weight(1f)
                                             .height(48.dp)
                                     ) {
-                                        Icon(
-                                            painter = painterResource(R.drawable.play),
-                                            contentDescription = stringResource(R.string.play),
-                                            modifier = Modifier.size(24.dp)
-                                        )
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(R.drawable.play),
+                                                contentDescription = stringResource(R.string.play),
+                                                tint = playBtnContent,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Text(
+                                                text = stringResource(R.string.play),
+                                                style = MaterialTheme.typography.labelLarge,
+                                                color = playBtnContent,
+                                                maxLines = 1
+                                            )
+                                        }
                                     }
 
                                     // Shuffle Button
@@ -868,6 +894,10 @@ fun LocalPlaylistScreen(
                                                 ),
                                             )
                                         },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = playBtnContainer,
+                                            contentColor = playBtnContent,
+                                        ),
                                         shape = RoundedCornerShape(24.dp),
                                         modifier = Modifier
                                             .weight(1f)
@@ -876,6 +906,7 @@ fun LocalPlaylistScreen(
                                         Icon(
                                             painter = painterResource(R.drawable.shuffle),
                                             contentDescription = stringResource(R.string.shuffle),
+                                            tint = playBtnContent,
                                             modifier = Modifier.size(24.dp)
                                         )
                                     }
@@ -888,28 +919,36 @@ fun LocalPlaylistScreen(
                                                     showRemoveDownloadDialog = true
                                                 }
                                                 Download.STATE_DOWNLOADING -> {
-                                                    songs.forEach { song ->
-                                                        DownloadService.sendRemoveDownload(
-                                                            context,
-                                                            ExoDownloadService::class.java,
-                                                            song.song.id,
-                                                            false,
-                                                        )
+                                                    // Playlists here can hold 1000+ songs (e.g. an
+                                                    // imported Spotify library) — sending that many
+                                                    // startService intents synchronously on the UI
+                                                    // thread froze the app. Do it off-thread instead.
+                                                    coroutineScope.launch(Dispatchers.IO) {
+                                                        songs.forEach { song ->
+                                                            DownloadService.sendRemoveDownload(
+                                                                context,
+                                                                ExoDownloadService::class.java,
+                                                                song.song.id,
+                                                                false,
+                                                            )
+                                                        }
                                                     }
                                                 }
                                                 else -> {
-                                                    songs.forEach { song ->
-                                                        val downloadRequest = DownloadRequest
-                                                            .Builder(song.song.id, song.song.id.toUri())
-                                                            .setCustomCacheKey(song.song.id)
-                                                            .setData(song.song.song.title.toByteArray())
-                                                            .build()
-                                                        DownloadService.sendAddDownload(
-                                                            context,
-                                                            ExoDownloadService::class.java,
-                                                            downloadRequest,
-                                                            false,
-                                                        )
+                                                    coroutineScope.launch(Dispatchers.IO) {
+                                                        songs.forEach { song ->
+                                                            val downloadRequest = DownloadRequest
+                                                                .Builder(song.song.id, song.song.id.toUri())
+                                                                .setCustomCacheKey(song.song.id)
+                                                                .setData(song.song.song.title.toByteArray())
+                                                                .build()
+                                                            DownloadService.sendAddDownload(
+                                                                context,
+                                                                ExoDownloadService::class.java,
+                                                                downloadRequest,
+                                                                false,
+                                                            )
+                                                        }
                                                     }
                                                 }
                                             }
@@ -947,6 +986,33 @@ fun LocalPlaylistScreen(
                                                     )
                                                 }
                                             }
+                                        }
+                                    }
+
+                                    // Translate Playlist Button
+                                    Surface(
+                                        onClick = {
+                                            PlaylistTranslationManager.translatePlaylist(
+                                                context = context,
+                                                database = database,
+                                                scope = coroutineScope,
+                                                songs = songs.map { it.song.toMediaMetadata() }
+                                            )
+                                        },
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.surfaceVariant,
+                                        modifier = Modifier.size(48.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(R.drawable.translate),
+                                                contentDescription = stringResource(R.string.translate_playlist),
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.size(24.dp)
+                                            )
                                         }
                                     }
 

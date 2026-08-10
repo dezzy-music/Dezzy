@@ -22,6 +22,7 @@ import androidx.media3.common.Timeline
 import com.arturo254.opentune.db.MusicDatabase
 import com.arturo254.opentune.extensions.getCurrentQueueIndex
 import com.arturo254.opentune.extensions.getQueueWindows
+import com.arturo254.opentune.extensions.toMediaItem
 import com.arturo254.opentune.extensions.metadata
 import com.arturo254.opentune.playback.MusicService.MusicBinder
 import com.arturo254.opentune.playback.queues.Queue
@@ -60,6 +61,17 @@ class PlayerConnection(
         mediaMetadata.flatMapLatest {
             database.song(it?.id)
         }
+
+    // "Me gusta" optimista: se rellena AL INSTANTE al tocar, sin esperar el
+    // viaje de ida y vuelta a la base de datos (que en algunos equipos tardaba
+    // en reflejarse — "se tarda en rellenarse"). La BD lo confirma después; el
+    // override se ignora en cuanto cambia de canción (comprueba el id).
+    private val optimisticLike = MutableStateFlow<Pair<String, Boolean>?>(null)
+    val currentSongLiked =
+        combine(currentSong, optimisticLike) { song, opt ->
+            if (opt != null && opt.first == song?.id) opt.second
+            else song?.song?.liked == true
+        }.stateIn(scope, SharingStarted.Lazily, false)
     val currentLyrics = mediaMetadata.flatMapLatest { mediaMetadata ->
         database.lyrics(mediaMetadata?.id)
     }
@@ -82,6 +94,20 @@ class PlayerConnection(
     val error = MutableStateFlow<PlaybackException?>(null)
     val waitingForNetworkConnection = service.waitingForNetworkConnection
     val queueRestoreCompleted = service.queueRestoreCompleted
+
+    // Music video ("watch the video") mode — see MusicService's standalone video player.
+    val videoModeActive = service.videoModeActive
+    val videoModeLoading = service.videoModeLoading
+    val videoModeError = service.videoModeError
+    val videoPlayerInstance = service.videoPlayerInstance
+
+    fun enableVideoMode() = service.enableVideoMode()
+    fun disableVideoMode() = service.disableVideoMode()
+
+    // Chromecast
+    val castConnected = service.castConnected
+    val castDeviceName = service.castDeviceName
+    fun stopCasting() = service.stopCasting()
 
     init {
         player.addListener(this)
@@ -118,7 +144,26 @@ class PlayerConnection(
     }
 
     fun toggleLike() {
+        // Voltea el estado optimista ya, para que el corazón responda al toque.
+        mediaMetadata.value?.id?.let { id ->
+            optimisticLike.value = id to !currentSongLiked.value
+        }
         service.toggleLike()
+    }
+
+    /**
+     * Reproduce un stream lossless (FLAC del resolver) de inmediato: registra la
+     * URL bajo el mediaId y encola la pista. El player la reproduce progresivamente
+     * (ver el passthrough "flacstream_" en MusicService), sin pasar por YouTube.
+     */
+    fun playLosslessStream(metadata: com.arturo254.opentune.models.MediaMetadata, streamUrl: String) {
+        service.flacStreamUrls[metadata.id] = streamUrl
+        playQueue(
+            com.arturo254.opentune.playback.queues.ListQueue(
+                title = metadata.title,
+                items = listOf(metadata.toMediaItem()),
+            ),
+        )
     }
 
     fun seekToNext() {
@@ -127,9 +172,7 @@ class PlayerConnection(
             service.requestTogetherControl(com.arturo254.opentune.together.ControlAction.SkipNext)
             return
         }
-        player.seekToNext()
-        player.prepare()
-        player.playWhenReady = true
+        service.skipToNextManual()
         // Immediately restart the Discord presence updater so it picks up the new track without waiting
         if (com.arturo254.opentune.ui.screens.settings.DiscordPresenceManager.isRunning()) {
             try {
@@ -144,9 +187,7 @@ class PlayerConnection(
             service.requestTogetherControl(com.arturo254.opentune.together.ControlAction.SkipPrevious)
             return
         }
-        player.seekToPrevious()
-        player.prepare()
-        player.playWhenReady = true
+        service.skipToPreviousManual()
         // Immediately restart the Discord presence updater so it picks up the new track without waiting
         if (com.arturo254.opentune.ui.screens.settings.DiscordPresenceManager.isRunning()) {
             try {

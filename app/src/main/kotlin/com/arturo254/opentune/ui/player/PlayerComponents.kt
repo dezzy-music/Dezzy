@@ -31,6 +31,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -57,6 +58,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -72,8 +74,11 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.foundation.Canvas
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
@@ -86,9 +91,19 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.graphics.asAndroidPath
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.C
+import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.pow
+import kotlin.math.sin
 import androidx.media3.common.Player
 import androidx.media3.common.Player.STATE_ENDED
 import androidx.navigation.NavController
@@ -242,7 +257,8 @@ fun PlayerTopActions(
     state: BottomSheetState,
     bottomSheetPageState: BottomSheetPageState,
     context: Context,
-    currentSongLiked: Boolean
+    currentSongLiked: Boolean,
+    onVisualizerClick: (() -> Unit)? = null
 ) {
     var showShareDialog by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
 
@@ -253,6 +269,7 @@ fun PlayerTopActions(
             thumbnailUrl = mediaMetadata.thumbnailUrl,
             shareLink = "https://music.youtube.com/watch?v=${mediaMetadata.id}",
             hasVideo = false,
+            mediaId = mediaMetadata.id,
             onDismiss = { showShareDialog = false }
         )
     }
@@ -273,6 +290,25 @@ fun PlayerTopActions(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                if (onVisualizerClick != null) {
+                    Box(
+                        modifier = Modifier
+                            .size(42.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(textButtonColor)
+                            .clickable { onVisualizerClick() }
+                    ) {
+                        Image(
+                            painter = painterResource(R.drawable.auto_awesome),
+                            contentDescription = "Visualizador",
+                            colorFilter = ColorFilter.tint(iconButtonColor),
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .size(22.dp)
+                        )
+                    }
+                }
+
                 Box(
                     modifier = Modifier
                         .size(42.dp)
@@ -320,6 +356,22 @@ fun PlayerTopActions(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                if (onVisualizerClick != null) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onVisualizerClick() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.auto_awesome),
+                            contentDescription = "Visualizador",
+                            tint = textBackgroundColor.copy(alpha = 0.7f),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
                 Box(
                     modifier = Modifier
                         .size(36.dp)
@@ -361,6 +413,26 @@ fun PlayerTopActions(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                if (onVisualizerClick != null) {
+                    Surface(
+                        onClick = { onVisualizerClick() },
+                        shape = RoundedCornerShape(14.dp),
+                        color = textBackgroundColor.copy(alpha = 0.12f),
+                        modifier = Modifier
+                            .height(44.dp)
+                            .width(44.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            Icon(
+                                painter = painterResource(R.drawable.auto_awesome),
+                                contentDescription = "Visualizador",
+                                tint = textBackgroundColor,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    }
+                }
+
                 Surface(
                     onClick = { showShareDialog = true },
                     shape = RoundedCornerShape(14.dp),
@@ -657,7 +729,8 @@ fun PlayerSlider(
     isPlaying: Boolean,
     textButtonColor: Color,
     onValueChange: (Long) -> Unit,
-    onValueChangeFinished: () -> Unit
+    onValueChangeFinished: () -> Unit,
+    songKey: String = "",
 ) {
     val safeDuration = if (duration <= 0L) 0f else duration.toFloat()
     val safeValue = (sliderPosition ?: position).toFloat().coerceIn(0f, maxOf(0f, safeDuration))
@@ -670,6 +743,7 @@ fun PlayerSlider(
         onValueChangeFinished = onValueChangeFinished,
         activeColor = textButtonColor,
         isPlaying = isPlaying,
+        songKey = songKey,
         modifier = Modifier.padding(horizontal = PlayerHorizontalPadding)
     )
 }
@@ -684,7 +758,8 @@ fun StyledPlaybackSlider(
     onValueChangeFinished: () -> Unit,
     activeColor: Color,
     isPlaying: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    songKey: String = "",
 ) {
     when (sliderStyle) {
         SliderStyle.Standard -> {
@@ -765,7 +840,770 @@ fun StyledPlaybackSlider(
                 modifier = modifier
             )
         }
+
+        SliderStyle.NeonGlow -> {
+            // Dynamic per song: pulse cadence is seeded from the song id, and the tube color
+            // is the album-art accent (activeColor) that already changes with every track.
+            val seed = remember(songKey) { songKey.hashCode() }
+            val pulseDurationMs = remember(seed) { 850 + abs(seed % 900) }
+            val neonTransition = rememberInfiniteTransition(label = "neonGlow")
+            val pulseRaw by neonTransition.animateFloat(
+                initialValue = 0f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(pulseDurationMs, easing = LinearEasing),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+                label = "neonPulse",
+            )
+            val shimmerRaw by neonTransition.animateFloat(
+                initialValue = 0f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(2400, easing = LinearEasing),
+                ),
+                label = "neonShimmer",
+            )
+            val pulse = if (isPlaying) 0.55f + 0.45f * pulseRaw else 0.55f
+            val shimmer = if (isPlaying) shimmerRaw else -1f
+
+            Slider(
+                value = value,
+                valueRange = valueRange,
+                onValueChange = onValueChange,
+                onValueChangeFinished = onValueChangeFinished,
+                colors = SliderDefaults.colors(
+                    activeTrackColor = Color.Transparent,
+                    inactiveTrackColor = Color.Transparent,
+                    thumbColor = Color.Transparent
+                ),
+                thumb = { Spacer(modifier = Modifier.size(0.dp)) },
+                track = { sliderState ->
+                    val valRange = sliderState.valueRange
+                    val fraction = ((sliderState.value - valRange.start) / (valRange.endInclusive - valRange.start)).coerceIn(0f, 1f)
+                    Canvas(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(26.dp)
+                    ) {
+                        val isRtl = layoutDirection == LayoutDirection.Rtl
+                        val sliderLeft = Offset(0f, center.y)
+                        val sliderRight = Offset(size.width, center.y)
+                        val sliderStart = if (isRtl) sliderRight else sliderLeft
+                        val sliderEnd = if (isRtl) sliderLeft else sliderRight
+                        val sliderValueEnd = Offset(
+                            x = sliderStart.x + (sliderEnd.x - sliderStart.x) * fraction,
+                            y = center.y
+                        )
+
+                        // Unlit tube: thin base line + the faintest hint of the neon color,
+                        // like a switched-off neon sign.
+                        drawLine(
+                            color = Color.White.copy(alpha = 0.10f),
+                            start = sliderStart,
+                            end = sliderEnd,
+                            strokeWidth = 2.dp.toPx(),
+                            cap = StrokeCap.Round
+                        )
+                        drawGlowLine(
+                            color = activeColor.copy(alpha = 0.07f),
+                            start = sliderStart,
+                            end = sliderEnd,
+                            strokeWidthPx = 4.dp.toPx(),
+                            blurRadiusPx = 6.dp.toPx(),
+                        )
+
+                        if (fraction > 0f) {
+                            // Lit tube: wide soft halo -> tighter halo -> saturated core ->
+                            // white-hot filament. The halos breathe with the pulse.
+                            drawGlowLine(
+                                color = activeColor.copy(alpha = 0.22f * pulse),
+                                start = sliderStart,
+                                end = sliderValueEnd,
+                                strokeWidthPx = 10.dp.toPx(),
+                                blurRadiusPx = 16.dp.toPx() * pulse,
+                            )
+                            drawGlowLine(
+                                color = activeColor.copy(alpha = 0.50f * pulse),
+                                start = sliderStart,
+                                end = sliderValueEnd,
+                                strokeWidthPx = 5.dp.toPx(),
+                                blurRadiusPx = 7.dp.toPx() * pulse,
+                            )
+                            drawLine(
+                                color = activeColor,
+                                start = sliderStart,
+                                end = sliderValueEnd,
+                                strokeWidth = 3.dp.toPx(),
+                                cap = StrokeCap.Round
+                            )
+                            drawLine(
+                                color = lerp(activeColor, Color.White, 0.72f),
+                                start = sliderStart,
+                                end = sliderValueEnd,
+                                strokeWidth = 1.2.dp.toPx(),
+                                cap = StrokeCap.Round
+                            )
+
+                            // Energy spark travelling down the lit tube while music plays.
+                            if (shimmer >= 0f) {
+                                val sparkX = sliderStart.x + (sliderValueEnd.x - sliderStart.x) * shimmer
+                                drawGlowCircle(
+                                    color = lerp(activeColor, Color.White, 0.8f).copy(alpha = 0.65f),
+                                    radiusPx = 2.5.dp.toPx(),
+                                    center = Offset(sparkX, center.y),
+                                    blurRadiusPx = 6.dp.toPx(),
+                                )
+                            }
+                        }
+
+                        // Glowing playhead orb (replaces the thumb).
+                        drawGlowCircle(
+                            color = activeColor.copy(alpha = 0.55f * pulse + 0.2f),
+                            radiusPx = (5.dp.toPx() + 2.dp.toPx() * pulse),
+                            center = sliderValueEnd,
+                            blurRadiusPx = 10.dp.toPx(),
+                        )
+                        drawCircle(
+                            color = lerp(activeColor, Color.White, 0.85f),
+                            radius = 3.dp.toPx(),
+                            center = sliderValueEnd,
+                        )
+                    }
+                },
+                modifier = modifier
+            )
+        }
+
+        SliderStyle.ShootingStar -> {
+            // Per-song sky: star positions, twinkle phases and comet cadence are all seeded
+            // from the song id, so every track gets its own constellation.
+            val seed = remember(songKey) { songKey.hashCode() }
+            val stars = remember(seed) {
+                val rnd = java.util.Random(seed.toLong())
+                List(24) {
+                    StarSpec(
+                        x = rnd.nextFloat(),
+                        yOffset = (rnd.nextFloat() - 0.5f) * 2f,
+                        phase = rnd.nextFloat() * TWO_PI,
+                        twinkleSpeed = 0.6f + rnd.nextFloat() * 1.6f,
+                        size = 0.5f + rnd.nextFloat(),
+                    )
+                }
+            }
+            val tailSparks = remember(seed) {
+                val rnd = java.util.Random(seed.toLong() * 31 + 7)
+                List(12) {
+                    StarSpec(
+                        x = rnd.nextFloat().pow(1.4f),          // clustered near the head
+                        yOffset = (rnd.nextFloat() - 0.5f) * 2f,
+                        phase = rnd.nextFloat() * TWO_PI,
+                        twinkleSpeed = 1f + rnd.nextFloat() * 2f,
+                        size = 0.4f + rnd.nextFloat() * 0.8f,
+                    )
+                }
+            }
+            val starTransition = rememberInfiniteTransition(label = "shootingStar")
+            val timeRaw by starTransition.animateFloat(
+                initialValue = 0f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(6000, easing = LinearEasing),
+                ),
+                label = "starTime",
+            )
+            val time = if (isPlaying) timeRaw else 0.31f
+
+            Slider(
+                value = value,
+                valueRange = valueRange,
+                onValueChange = onValueChange,
+                onValueChangeFinished = onValueChangeFinished,
+                colors = SliderDefaults.colors(
+                    activeTrackColor = Color.Transparent,
+                    inactiveTrackColor = Color.Transparent,
+                    thumbColor = Color.Transparent
+                ),
+                thumb = { Spacer(modifier = Modifier.size(0.dp)) },
+                track = { sliderState ->
+                    val valRange = sliderState.valueRange
+                    val fraction = ((sliderState.value - valRange.start) / (valRange.endInclusive - valRange.start)).coerceIn(0f, 1f)
+                    Canvas(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(30.dp)
+                    ) {
+                        drawShootingStarTrack(
+                            fraction = fraction,
+                            activeColor = activeColor,
+                            time = time,
+                            isPlaying = isPlaying,
+                            stars = stars,
+                            tailSparks = tailSparks,
+                            isRtl = layoutDirection == LayoutDirection.Rtl,
+                        )
+                    }
+                },
+                modifier = modifier
+            )
+        }
+
+        SliderStyle.Aurora -> {
+            // Aurora borealis: three translucent ribbons whose hues orbit the album accent
+            // color; waveforms and drift speeds are seeded per song.
+            val seed = remember(songKey) { songKey.hashCode() }
+            val ribbons = remember(seed, activeColor) {
+                val rnd = java.util.Random(seed.toLong())
+                listOf(-38f, 0f, 34f).map { hueShift ->
+                    RibbonSpec(
+                        color = shiftHue(activeColor, hueShift),
+                        amplitude = 0.55f + rnd.nextFloat() * 0.45f,
+                        wavelength = 0.55f + rnd.nextFloat() * 0.75f,
+                        speed = if (rnd.nextBoolean()) 1f + rnd.nextFloat() else -(1f + rnd.nextFloat()),
+                        phase = rnd.nextFloat() * TWO_PI,
+                    )
+                }
+            }
+            val auroraTransition = rememberInfiniteTransition(label = "aurora")
+            val timeRaw by auroraTransition.animateFloat(
+                initialValue = 0f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(7000, easing = LinearEasing),
+                ),
+                label = "auroraTime",
+            )
+            val time = if (isPlaying) timeRaw else 0.18f
+            val auroraPath = remember { androidx.compose.ui.graphics.Path() }
+
+            Slider(
+                value = value,
+                valueRange = valueRange,
+                onValueChange = onValueChange,
+                onValueChangeFinished = onValueChangeFinished,
+                colors = SliderDefaults.colors(
+                    activeTrackColor = Color.Transparent,
+                    inactiveTrackColor = Color.Transparent,
+                    thumbColor = Color.Transparent
+                ),
+                thumb = { Spacer(modifier = Modifier.size(0.dp)) },
+                track = { sliderState ->
+                    val valRange = sliderState.valueRange
+                    val fraction = ((sliderState.value - valRange.start) / (valRange.endInclusive - valRange.start)).coerceIn(0f, 1f)
+                    Canvas(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(30.dp)
+                    ) {
+                        drawAuroraTrack(
+                            fraction = fraction,
+                            activeColor = activeColor,
+                            time = time,
+                            ribbons = ribbons,
+                            path = auroraPath,
+                            isRtl = layoutDirection == LayoutDirection.Rtl,
+                        )
+                    }
+                },
+                modifier = modifier
+            )
+        }
+
+        SliderStyle.Capsule -> {
+            Slider(
+                value = value,
+                valueRange = valueRange,
+                onValueChange = onValueChange,
+                onValueChangeFinished = onValueChangeFinished,
+                colors = SliderDefaults.colors(
+                    activeTrackColor = activeColor,
+                    inactiveTrackColor = Color.White.copy(alpha = 0.15f),
+                    thumbColor = activeColor
+                ),
+                thumb = {
+                    Box(
+                        modifier = Modifier
+                            .size(width = 8.dp, height = 18.dp)
+                            .background(activeColor, RoundedCornerShape(4.dp))
+                    )
+                },
+                track = { sliderState ->
+                    PlayerSliderTrack(
+                        sliderState = sliderState,
+                        colors = PlayerSliderColors.thickSliderColors(activeColor),
+                        trackHeight = 12.dp
+                    )
+                },
+                modifier = modifier
+            )
+        }
+
+        SliderStyle.DoubleLine -> {
+            Slider(
+                value = value,
+                valueRange = valueRange,
+                onValueChange = onValueChange,
+                onValueChangeFinished = onValueChangeFinished,
+                colors = SliderDefaults.colors(
+                    activeTrackColor = activeColor,
+                    inactiveTrackColor = Color.White.copy(alpha = 0.15f),
+                    thumbColor = activeColor
+                ),
+                thumb = {
+                    Box(
+                        modifier = Modifier
+                            .size(width = 4.dp, height = 16.dp)
+                            .background(activeColor, RoundedCornerShape(2.dp))
+                    )
+                },
+                track = { sliderState ->
+                    val valRange = sliderState.valueRange
+                    val fraction = ((sliderState.value - valRange.start) / (valRange.endInclusive - valRange.start)).coerceIn(0f, 1f)
+                    Canvas(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(16.dp)
+                    ) {
+                        val isRtl = layoutDirection == LayoutDirection.Rtl
+                        val sliderLeft = Offset(0f, center.y)
+                        val sliderRight = Offset(size.width, center.y)
+                        val sliderStart = if (isRtl) sliderRight else sliderLeft
+                        val sliderEnd = if (isRtl) sliderLeft else sliderRight
+                        
+                        val sliderValueEnd = Offset(
+                            x = sliderStart.x + (sliderEnd.x - sliderStart.x) * fraction,
+                            y = center.y
+                        )
+
+                        val offset1 = 3.dp.toPx()
+
+                        drawLine(
+                            color = Color.White.copy(alpha = 0.15f),
+                            start = Offset(sliderStart.x, center.y - offset1),
+                            end = Offset(sliderEnd.x, center.y - offset1),
+                            strokeWidth = 2.dp.toPx(),
+                            cap = StrokeCap.Round
+                        )
+                        drawLine(
+                            color = Color.White.copy(alpha = 0.15f),
+                            start = Offset(sliderStart.x, center.y + offset1),
+                            end = Offset(sliderEnd.x, center.y + offset1),
+                            strokeWidth = 2.dp.toPx(),
+                            cap = StrokeCap.Round
+                        )
+
+                        drawLine(
+                            color = activeColor,
+                            start = Offset(sliderStart.x, center.y - offset1),
+                            end = Offset(sliderValueEnd.x, center.y - offset1),
+                            strokeWidth = 2.dp.toPx(),
+                            cap = StrokeCap.Round
+                        )
+                        drawLine(
+                            color = activeColor,
+                            start = Offset(sliderStart.x, center.y + offset1),
+                            end = Offset(sliderValueEnd.x, center.y + offset1),
+                            strokeWidth = 2.dp.toPx(),
+                            cap = StrokeCap.Round
+                        )
+                    }
+                },
+                modifier = modifier
+            )
+        }
+
+        SliderStyle.Dotted -> {
+            Slider(
+                value = value,
+                valueRange = valueRange,
+                onValueChange = onValueChange,
+                onValueChangeFinished = onValueChangeFinished,
+                colors = SliderDefaults.colors(
+                    activeTrackColor = activeColor,
+                    inactiveTrackColor = Color.White.copy(alpha = 0.25f),
+                    thumbColor = activeColor
+                ),
+                thumb = {
+                    Box(
+                        modifier = Modifier
+                            .size(14.dp)
+                            .background(activeColor, CircleShape)
+                    )
+                },
+                track = { sliderState ->
+                    val valRange = sliderState.valueRange
+                    val fraction = ((sliderState.value - valRange.start) / (valRange.endInclusive - valRange.start)).coerceIn(0f, 1f)
+                    Canvas(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(12.dp)
+                    ) {
+                        val dotsCount = 20
+                        val stepX = size.width / (dotsCount - 1)
+                        for (i in 0 until dotsCount) {
+                            val dotFraction = i.toFloat() / (dotsCount - 1)
+                            val dotX = i * stepX
+                            val isFilled = dotFraction <= fraction
+                            drawCircle(
+                                color = if (isFilled) activeColor else Color.White.copy(alpha = 0.25f),
+                                radius = (if (isFilled) 4.dp else 3.dp).toPx(),
+                                center = Offset(dotX, center.y)
+                            )
+                        }
+                    }
+                },
+                modifier = modifier
+            )
+        }
+
+        SliderStyle.Waveform -> {
+            Slider(
+                value = value,
+                valueRange = valueRange,
+                onValueChange = onValueChange,
+                onValueChangeFinished = onValueChangeFinished,
+                colors = SliderDefaults.colors(
+                    activeTrackColor = activeColor,
+                    inactiveTrackColor = Color.White.copy(alpha = 0.2f),
+                    thumbColor = Color.Transparent
+                ),
+                thumb = { Spacer(modifier = Modifier.size(0.dp)) },
+                track = { sliderState ->
+                    val valRange = sliderState.valueRange
+                    val fraction = ((sliderState.value - valRange.start) / (valRange.endInclusive - valRange.start)).coerceIn(0f, 1f)
+                    Canvas(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(28.dp)
+                    ) {
+                        val barCount = 35
+                        val barWidth = 3.dp.toPx()
+                        val gap = 2.dp.toPx()
+                        val totalBarWidth = barWidth + gap
+                        val startX = (size.width - (barCount * totalBarWidth - gap)) / 2
+                        
+                        for (i in 0 until barCount) {
+                            val waveFactor = kotlin.math.sin(i.toFloat() * 0.3f) * 0.4f + 0.6f
+                            val barHeight = (size.height * waveFactor * 0.8f).coerceAtLeast(4.dp.toPx())
+                            val x = startX + i * totalBarWidth
+                            val barFraction = i.toFloat() / (barCount - 1)
+                            val isFilled = barFraction <= fraction
+                            
+                            drawLine(
+                                color = if (isFilled) activeColor else Color.White.copy(alpha = 0.2f),
+                                start = Offset(x, center.y - barHeight / 2),
+                                end = Offset(x, center.y + barHeight / 2),
+                                strokeWidth = barWidth,
+                                cap = StrokeCap.Round
+                            )
+                        }
+                    }
+                },
+                modifier = modifier
+            )
+        }
     }
+}
+
+private const val TWO_PI = (Math.PI * 2).toFloat()
+
+/** Static per-particle parameters, pre-seeded per song so the sky is unique per track. */
+private data class StarSpec(
+    val x: Float,            // 0..1 along the track
+    val yOffset: Float,      // -1..1 vertical scatter
+    val phase: Float,        // twinkle phase offset
+    val twinkleSpeed: Float, // twinkle cycles per animation loop
+    val size: Float,         // relative size multiplier
+)
+
+/** Static per-ribbon parameters for the Aurora slider. */
+private data class RibbonSpec(
+    val color: Color,
+    val amplitude: Float,  // relative (multiplied by dp base)
+    val wavelength: Float, // relative to track width
+    val speed: Float,      // drift cycles per loop (sign = direction)
+    val phase: Float,
+)
+
+/** Rotates the hue of [color] by [degrees], keeping saturation/value. */
+private fun shiftHue(color: Color, degrees: Float): Color {
+    val hsv = FloatArray(3)
+    android.graphics.Color.colorToHSV(color.toArgb(), hsv)
+    hsv[0] = (hsv[0] + degrees + 360f) % 360f
+    return Color(android.graphics.Color.HSVToColor(hsv))
+}
+
+/**
+ * True blurred glow line — Compose has no shadow for strokes, so this drops to the
+ * framework canvas and uses a [android.graphics.BlurMaskFilter].
+ */
+private fun DrawScope.drawGlowLine(
+    color: Color,
+    start: Offset,
+    end: Offset,
+    strokeWidthPx: Float,
+    blurRadiusPx: Float,
+) {
+    drawIntoCanvas { canvas ->
+        val paint = android.graphics.Paint().apply {
+            isAntiAlias = true
+            style = android.graphics.Paint.Style.STROKE
+            strokeCap = android.graphics.Paint.Cap.ROUND
+            strokeWidth = strokeWidthPx
+            this.color = color.toArgb()
+            if (blurRadiusPx > 0.5f) {
+                maskFilter = android.graphics.BlurMaskFilter(
+                    blurRadiusPx,
+                    android.graphics.BlurMaskFilter.Blur.NORMAL,
+                )
+            }
+        }
+        canvas.nativeCanvas.drawLine(start.x, start.y, end.x, end.y, paint)
+    }
+}
+
+/** True blurred glow dot, same technique as [drawGlowLine]. */
+private fun DrawScope.drawGlowCircle(
+    color: Color,
+    radiusPx: Float,
+    center: Offset,
+    blurRadiusPx: Float,
+) {
+    drawIntoCanvas { canvas ->
+        val paint = android.graphics.Paint().apply {
+            isAntiAlias = true
+            style = android.graphics.Paint.Style.FILL
+            this.color = color.toArgb()
+            if (blurRadiusPx > 0.5f) {
+                maskFilter = android.graphics.BlurMaskFilter(
+                    blurRadiusPx,
+                    android.graphics.BlurMaskFilter.Blur.NORMAL,
+                )
+            }
+        }
+        canvas.nativeCanvas.drawCircle(center.x, center.y, radiusPx, paint)
+    }
+}
+
+/** Comet + starfield track for [SliderStyle.ShootingStar]. */
+private fun DrawScope.drawShootingStarTrack(
+    fraction: Float,
+    activeColor: Color,
+    time: Float,
+    isPlaying: Boolean,
+    stars: List<StarSpec>,
+    tailSparks: List<StarSpec>,
+    isRtl: Boolean,
+) {
+    val sliderLeft = Offset(0f, center.y)
+    val sliderRight = Offset(size.width, center.y)
+    val sliderStart = if (isRtl) sliderRight else sliderLeft
+    val sliderEnd = if (isRtl) sliderLeft else sliderRight
+    val head = Offset(
+        x = sliderStart.x + (sliderEnd.x - sliderStart.x) * fraction,
+        y = center.y,
+    )
+    val dir = if (isRtl) -1f else 1f
+    val starColor = lerp(activeColor, Color.White, 0.75f)
+
+    // Faint horizon line across the whole track.
+    drawLine(
+        color = Color.White.copy(alpha = 0.10f),
+        start = sliderStart,
+        end = sliderEnd,
+        strokeWidth = 1.5.dp.toPx(),
+        cap = StrokeCap.Round,
+    )
+
+    // Twinkling constellation over the part of the sky not yet travelled.
+    for (star in stars) {
+        if (star.x <= fraction) continue
+        val twinkle = 0.5f + 0.5f * sin(TWO_PI * star.twinkleSpeed * time + star.phase)
+        val alpha = 0.10f + 0.45f * twinkle
+        drawCircle(
+            color = starColor.copy(alpha = alpha),
+            radius = (0.8f + star.size) * 1.dp.toPx() * (0.75f + 0.25f * twinkle),
+            center = Offset(
+                x = sliderStart.x + (sliderEnd.x - sliderStart.x) * star.x,
+                y = center.y + star.yOffset * 8.dp.toPx(),
+            ),
+        )
+    }
+
+    if (fraction > 0.001f) {
+        // Comet tail: gradient trail that brightens toward the head, with a soft glow.
+        val tailBrush = Brush.horizontalGradient(
+            colorStops = arrayOf(
+                0f to activeColor.copy(alpha = 0f),
+                0.55f to activeColor.copy(alpha = 0.35f),
+                1f to activeColor.copy(alpha = 0.95f),
+            ),
+            startX = sliderStart.x,
+            endX = head.x,
+        )
+        drawGlowLine(
+            color = activeColor.copy(alpha = 0.30f),
+            start = sliderStart,
+            end = head,
+            strokeWidthPx = 6.dp.toPx(),
+            blurRadiusPx = 9.dp.toPx(),
+        )
+        drawLine(
+            brush = tailBrush,
+            start = sliderStart,
+            end = head,
+            strokeWidth = 3.dp.toPx(),
+            cap = StrokeCap.Round,
+        )
+
+        // Ember sparks tumbling in the comet's wake.
+        val tailLen = (head.x - sliderStart.x) * dir
+        val maxSparkSpan = minOf(tailLen, size.width * 0.35f)
+        if (maxSparkSpan > 4.dp.toPx()) {
+            for (spark in tailSparks) {
+                val dist = spark.x * maxSparkSpan
+                val fade = 1f - dist / maxSparkSpan
+                val wobble = sin(TWO_PI * spark.twinkleSpeed * time + spark.phase)
+                drawCircle(
+                    color = lerp(activeColor, Color.White, 0.5f + 0.3f * wobble)
+                        .copy(alpha = (0.15f + 0.55f * fade) * (0.6f + 0.4f * wobble)),
+                    radius = spark.size * 1.6.dp.toPx() * (0.5f + 0.5f * fade),
+                    center = Offset(
+                        x = head.x - dir * dist,
+                        y = center.y + spark.yOffset * 6.dp.toPx() * (1f - fade * 0.4f) * (0.7f + 0.3f * wobble),
+                    ),
+                )
+            }
+        }
+
+        // A recurring meteor racing along the tail toward the head while playing.
+        if (isPlaying && tailLen > 12.dp.toPx()) {
+            val meteorFraction = (time * 2.1f) % 1f
+            val meteorX = head.x - dir * tailLen * (1f - meteorFraction)
+            drawGlowCircle(
+                color = Color.White.copy(alpha = 0.55f * meteorFraction),
+                radiusPx = 2.dp.toPx(),
+                center = Offset(meteorX, center.y),
+                blurRadiusPx = 5.dp.toPx(),
+            )
+        }
+    }
+
+    // The star itself: blurred halo + white-hot core + rotating 4-point flare.
+    val pulse = if (isPlaying) 0.8f + 0.2f * sin(TWO_PI * 2.3f * time) else 0.85f
+    drawGlowCircle(
+        color = activeColor.copy(alpha = 0.65f * pulse),
+        radiusPx = 6.dp.toPx() * pulse,
+        center = head,
+        blurRadiusPx = 12.dp.toPx(),
+    )
+    val flareAngle = if (isPlaying) sin(TWO_PI * time) * 0.35f else 0f
+    val flareLen = 8.dp.toPx() * pulse
+    val flareShort = flareLen * 0.55f
+    for (i in 0 until 4) {
+        val angle = flareAngle + i * (TWO_PI / 4f)
+        val len = if (i % 2 == 0) flareLen else flareShort
+        drawLine(
+            color = Color.White.copy(alpha = 0.85f * pulse),
+            start = head,
+            end = Offset(head.x + cos(angle) * len, head.y + sin(angle) * len),
+            strokeWidth = 1.4.dp.toPx(),
+            cap = StrokeCap.Round,
+        )
+    }
+    drawCircle(
+        color = Color.White,
+        radius = 2.8.dp.toPx(),
+        center = head,
+    )
+}
+
+/** Flowing northern-lights track for [SliderStyle.Aurora]. */
+private fun DrawScope.drawAuroraTrack(
+    fraction: Float,
+    activeColor: Color,
+    time: Float,
+    ribbons: List<RibbonSpec>,
+    path: androidx.compose.ui.graphics.Path,
+    isRtl: Boolean,
+) {
+    val sliderLeft = Offset(0f, center.y)
+    val sliderRight = Offset(size.width, center.y)
+    val sliderStart = if (isRtl) sliderRight else sliderLeft
+    val sliderEnd = if (isRtl) sliderLeft else sliderRight
+    val head = Offset(
+        x = sliderStart.x + (sliderEnd.x - sliderStart.x) * fraction,
+        y = center.y,
+    )
+
+    // Night-sky base line.
+    drawLine(
+        color = Color.White.copy(alpha = 0.12f),
+        start = sliderStart,
+        end = sliderEnd,
+        strokeWidth = 2.dp.toPx(),
+        cap = StrokeCap.Round,
+    )
+
+    if (fraction > 0.001f) {
+        val ampBase = 5.dp.toPx()
+        val strokePx = 2.6.dp.toPx()
+        val sampleStep = 6.dp.toPx()
+        val travelled = abs(head.x - sliderStart.x)
+        val samples = (travelled / sampleStep).toInt().coerceIn(2, 96)
+
+        for (ribbon in ribbons) {
+            path.reset()
+            for (s in 0..samples) {
+                val f = s.toFloat() / samples
+                val x = sliderStart.x + (head.x - sliderStart.x) * f
+                // Waves taper at both ends so the ribbon melts into start and playhead.
+                val taper = (sin(f * Math.PI).toFloat()).pow(0.7f)
+                val y = center.y + taper * ampBase * ribbon.amplitude *
+                    sin(TWO_PI * (f * size.width / (size.width * ribbon.wavelength)) +
+                        ribbon.phase + TWO_PI * ribbon.speed * time)
+                if (s == 0) path.moveTo(x, y) else path.lineTo(x, y)
+            }
+            // Soft glow pass under the crisp ribbon.
+            drawIntoCanvas { canvas ->
+                val paint = android.graphics.Paint().apply {
+                    isAntiAlias = true
+                    style = android.graphics.Paint.Style.STROKE
+                    strokeCap = android.graphics.Paint.Cap.ROUND
+                    strokeJoin = android.graphics.Paint.Join.ROUND
+                    strokeWidth = strokePx * 2.4f
+                    this.color = ribbon.color.copy(alpha = 0.20f).toArgb()
+                    maskFilter = android.graphics.BlurMaskFilter(
+                        6.dp.toPx(),
+                        android.graphics.BlurMaskFilter.Blur.NORMAL,
+                    )
+                }
+                canvas.nativeCanvas.drawPath(path.asAndroidPath(), paint)
+            }
+            drawPath(
+                path = path,
+                color = ribbon.color.copy(alpha = 0.55f),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(
+                    width = strokePx,
+                    cap = StrokeCap.Round,
+                    join = androidx.compose.ui.graphics.StrokeJoin.Round,
+                ),
+            )
+        }
+    }
+
+    // Playhead: cool moonlit orb with halo.
+    drawGlowCircle(
+        color = lerp(activeColor, Color.White, 0.4f).copy(alpha = 0.6f),
+        radiusPx = 5.dp.toPx(),
+        center = head,
+        blurRadiusPx = 9.dp.toPx(),
+    )
+    drawCircle(
+        color = lerp(activeColor, Color.White, 0.9f),
+        radius = 2.6.dp.toPx(),
+        center = head,
+    )
 }
 
 @Composable
@@ -1683,6 +2521,7 @@ fun PlayerControlsContent(
     currentFormat: FormatEntity? = null,
     onResetTimer: () -> Unit = {},
     controlsFaded: Boolean = false,
+    onVisualizerClick: (() -> Unit)? = null,
 ) {
     val currentSong by playerConnection.currentSong.collectAsState(initial = null)
     val currentSongLiked = currentSong?.song?.liked == true
@@ -1732,20 +2571,25 @@ fun PlayerControlsContent(
                     }
                 }
         ) {
-            PlayerTopActions(
-                mediaMetadata = mediaMetadata,
-                playerDesignStyle = playerDesignStyle,
-                textButtonColor = textButtonColor,
-                iconButtonColor = iconButtonColor,
-                textBackgroundColor = textBackgroundColor,
-                playerConnection = playerConnection,
-                navController = navController,
-                menuState = menuState,
-                state = state,
-                bottomSheetPageState = bottomSheetPageState,
-                context = context,
-                currentSongLiked = currentSongLiked
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                com.arturo254.opentune.ui.component.CastButton(tint = textBackgroundColor)
+                Spacer(modifier = Modifier.width(4.dp))
+                PlayerTopActions(
+                    mediaMetadata = mediaMetadata,
+                    playerDesignStyle = playerDesignStyle,
+                    textButtonColor = textButtonColor,
+                    iconButtonColor = iconButtonColor,
+                    textBackgroundColor = textBackgroundColor,
+                    playerConnection = playerConnection,
+                    navController = navController,
+                    menuState = menuState,
+                    state = state,
+                    bottomSheetPageState = bottomSheetPageState,
+                    context = context,
+                    currentSongLiked = currentSongLiked,
+                    onVisualizerClick = onVisualizerClick
+                )
+            }
         }
     }
 
@@ -1774,7 +2618,8 @@ fun PlayerControlsContent(
                 isPlaying = isPlaying,
                 textButtonColor = textButtonColor,
                 onValueChange = onSliderValueChange,
-                onValueChangeFinished = onSliderValueChangeFinished
+                onValueChangeFinished = onSliderValueChangeFinished,
+                songKey = mediaMetadata.id
             )
 
             Spacer(Modifier.height(4.dp))
@@ -2167,52 +3012,6 @@ fun PlayerBackground(
                             label = "glowProgress"
                         )
 
-                        fun rotatedColorAt(index: Int): Color {
-                            val size = colors.size
-                            val idx = index.toFloat() + progress * size
-                            val a = kotlin.math.floor(idx).toInt() % size
-                            val b = (a + 1) % size
-                            val frac = idx - kotlin.math.floor(idx)
-                            return androidx.compose.ui.graphics.lerp(colors.getOrElse(a) { Color.DarkGray }, colors.getOrElse(b) { Color.DarkGray }, frac)
-                        }
-
-                        fun oscillate(min: Float, max: Float, phase: Float, speed: Float = 1f): Float {
-                            // speed MUST be an integer to ensure seamless looping when progress wraps from 1f to 0f.
-                            val v = kotlin.math.sin(2f * kotlin.math.PI.toFloat() * (progress * speed + phase)).toFloat()
-                            return min + (max - min) * ((v + 1f) * 0.5f)
-                        }
-
-                        val color1 = rotatedColorAt(0)
-                        val color2 = rotatedColorAt(1)
-                        val color3 = rotatedColorAt(2)
-                        val color4 = rotatedColorAt(3)
-                        val color5 = rotatedColorAt(4)
-                        val color6 = rotatedColorAt(5)
-
-                        val o1x = oscillate(0.0f, 1.0f, 0.00f, 1.0f)
-                        val o1y = oscillate(0.0f, 0.5f, 0.07f, 1.0f)
-                        val r1 = oscillate(0.8f, 1.6f, 0.12f, 1.0f)
-
-                        val o2x = oscillate(1.0f, 0.0f, 0.2f, 1.0f)
-                        val o2y = oscillate(0.5f, 1.0f, 0.25f, 1.0f)
-                        val r2 = oscillate(0.7f, 1.5f, 0.18f, 1.0f)
-
-                        val o3x = oscillate(0.2f, 0.8f, 0.33f, 1.0f)
-                        val o3y = oscillate(0.8f, 0.2f, 0.36f, 1.0f)
-                        val r3 = oscillate(0.6f, 1.4f, 0.29f, 1.0f)
-
-                        val o4x = oscillate(0.3f, 0.7f, 0.44f, 1.0f)
-                        val o4y = oscillate(0.2f, 0.8f, 0.41f, 1.0f)
-                        val r4 = oscillate(0.9f, 1.7f, 0.47f, 1.0f)
-
-                        val o5x = oscillate(0.4f, 0.6f, 0.55f, 1.0f)
-                        val o5y = oscillate(0.0f, 1.0f, 0.51f, 1.0f)
-                        val r5 = oscillate(0.7f, 1.5f, 0.58f, 1.0f)
-
-                        val o6x = oscillate(0.0f, 1.0f, 0.66f, 1.0f)
-                        val o6y = oscillate(0.5f, 0.7f, 0.62f, 1.0f)
-                        val r6 = oscillate(0.8f, 1.8f, 0.69f, 1.0f)
-
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -2221,38 +3020,85 @@ fun PlayerBackground(
                                     val height = size.height
                                     val baseColor = Color(0xFF050505)
 
-                                    val brush1 = Brush.radialGradient(
-                                        colors = listOf(color1.copy(alpha = 0.85f), color1.copy(alpha = 0.5f), Color.Transparent),
-                                        center = Offset(width * o1x, height * o1y),
-                                        radius = width * r1
-                                    )
-                                    val brush2 = Brush.radialGradient(
-                                        colors = listOf(color2.copy(alpha = 0.8f), color2.copy(alpha = 0.45f), Color.Transparent),
-                                        center = Offset(width * o2x, height * o2y),
-                                        radius = width * r2
-                                    )
-                                    val brush3 = Brush.radialGradient(
-                                        colors = listOf(color3.copy(alpha = 0.75f), color3.copy(alpha = 0.4f), Color.Transparent),
-                                        center = Offset(width * o3x, height * o3y),
-                                        radius = width * r3
-                                    )
-                                    val brush4 = Brush.radialGradient(
-                                        colors = listOf(color4.copy(alpha = 0.7f), color4.copy(alpha = 0.35f), Color.Transparent),
-                                        center = Offset(width * o4x, height * o4y),
-                                        radius = width * r4
-                                    )
-                                    val brush5 = Brush.radialGradient(
-                                        colors = listOf(color5.copy(alpha = 0.65f), color5.copy(alpha = 0.3f), Color.Transparent),
-                                        center = Offset(width * o5x, height * o5y),
-                                        radius = width * r5
-                                    )
-                                    val brush6 = Brush.radialGradient(
-                                        colors = listOf(color6.copy(alpha = 0.6f), color6.copy(alpha = 0.25f), Color.Transparent),
-                                        center = Offset(width * o6x, height * o6y),
-                                        radius = width * r6
-                                    )
-
                                     onDrawBehind {
+                                        val p = progress
+
+                                        fun rotatedColorAt(index: Int): Color {
+                                            val size = colors.size
+                                            val idx = index.toFloat() + p * size
+                                            val a = kotlin.math.floor(idx).toInt() % size
+                                            val b = (a + 1) % size
+                                            val frac = idx - kotlin.math.floor(idx)
+                                            return androidx.compose.ui.graphics.lerp(colors.getOrElse(a) { Color.DarkGray }, colors.getOrElse(b) { Color.DarkGray }, frac)
+                                        }
+
+                                        fun oscillate(min: Float, max: Float, phase: Float, speed: Float = 1f): Float {
+                                            val v = kotlin.math.sin(2f * kotlin.math.PI.toFloat() * (p * speed + phase)).toFloat()
+                                            return min + (max - min) * ((v + 1f) * 0.5f)
+                                        }
+
+                                        val color1 = rotatedColorAt(0)
+                                        val color2 = rotatedColorAt(1)
+                                        val color3 = rotatedColorAt(2)
+                                        val color4 = rotatedColorAt(3)
+                                        val color5 = rotatedColorAt(4)
+                                        val color6 = rotatedColorAt(5)
+
+                                        val o1x = oscillate(0.0f, 1.0f, 0.00f, 1.0f)
+                                        val o1y = oscillate(0.0f, 0.5f, 0.07f, 1.0f)
+                                        val r1 = oscillate(0.8f, 1.6f, 0.12f, 1.0f)
+
+                                        val o2x = oscillate(1.0f, 0.0f, 0.2f, 1.0f)
+                                        val o2y = oscillate(0.5f, 1.0f, 0.25f, 1.0f)
+                                        val r2 = oscillate(0.7f, 1.5f, 0.18f, 1.0f)
+
+                                        val o3x = oscillate(0.2f, 0.8f, 0.33f, 1.0f)
+                                        val o3y = oscillate(0.8f, 0.2f, 0.36f, 1.0f)
+                                        val r3 = oscillate(0.6f, 1.4f, 0.29f, 1.0f)
+
+                                        val o4x = oscillate(0.3f, 0.7f, 0.44f, 1.0f)
+                                        val o4y = oscillate(0.2f, 0.8f, 0.41f, 1.0f)
+                                        val r4 = oscillate(0.9f, 1.7f, 0.47f, 1.0f)
+
+                                        val o5x = oscillate(0.4f, 0.6f, 0.55f, 1.0f)
+                                        val o5y = oscillate(0.0f, 1.0f, 0.51f, 1.0f)
+                                        val r5 = oscillate(0.7f, 1.5f, 0.58f, 1.0f)
+
+                                        val o6x = oscillate(0.0f, 1.0f, 0.66f, 1.0f)
+                                        val o6y = oscillate(0.5f, 0.7f, 0.62f, 1.0f)
+                                        val r6 = oscillate(0.8f, 1.8f, 0.69f, 1.0f)
+
+                                        val brush1 = Brush.radialGradient(
+                                            colors = listOf(color1.copy(alpha = 0.85f), color1.copy(alpha = 0.5f), Color.Transparent),
+                                            center = Offset(width * o1x, height * o1y),
+                                            radius = width * r1
+                                        )
+                                        val brush2 = Brush.radialGradient(
+                                            colors = listOf(color2.copy(alpha = 0.8f), color2.copy(alpha = 0.45f), Color.Transparent),
+                                            center = Offset(width * o2x, height * o2y),
+                                            radius = width * r2
+                                        )
+                                        val brush3 = Brush.radialGradient(
+                                            colors = listOf(color3.copy(alpha = 0.75f), color3.copy(alpha = 0.4f), Color.Transparent),
+                                            center = Offset(width * o3x, height * o3y),
+                                            radius = width * r3
+                                        )
+                                        val brush4 = Brush.radialGradient(
+                                            colors = listOf(color4.copy(alpha = 0.7f), color4.copy(alpha = 0.35f), Color.Transparent),
+                                            center = Offset(width * o4x, height * o4y),
+                                            radius = width * r4
+                                        )
+                                        val brush5 = Brush.radialGradient(
+                                            colors = listOf(color5.copy(alpha = 0.65f), color5.copy(alpha = 0.3f), Color.Transparent),
+                                            center = Offset(width * o5x, height * o5y),
+                                            radius = width * r5
+                                        )
+                                        val brush6 = Brush.radialGradient(
+                                            colors = listOf(color6.copy(alpha = 0.6f), color6.copy(alpha = 0.25f), Color.Transparent),
+                                            center = Offset(width * o6x, height * o6y),
+                                            radius = width * r6
+                                        )
+
                                         drawRect(color = baseColor)
                                         drawRect(brush = brush1)
                                         drawRect(brush = brush2)

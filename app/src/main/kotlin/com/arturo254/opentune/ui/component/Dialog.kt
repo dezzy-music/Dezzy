@@ -503,7 +503,8 @@ fun EditPlaylistDialog(
 
             val dir = java.io.File(context.filesDir, "custom_covers")
             if (!dir.exists()) dir.mkdirs()
-            val newFile = java.io.File(dir, "cover_${System.currentTimeMillis()}.jpg")
+            val filename = "cover_${System.currentTimeMillis()}_${java.util.UUID.randomUUID().toString().take(6)}.jpg"
+            val newFile = java.io.File(dir, filename)
 
             runCatching {
                 context.contentResolver.openInputStream(uri)?.use { input ->
@@ -516,21 +517,9 @@ fun EditPlaylistDialog(
                 if (old != null && old.startsWith("file://") && old != newUrl) {
                     runCatching { java.io.File(java.net.URI(old).path).delete() }
                 }
-                if (old != null && old.startsWith("content://") && old != uri.toString()) {
-                    releasePersistablePermissionIfPossible(old)
-                }
                 thumbnailUrl = newUrl
-            }.onFailure {
-                runCatching {
-                    context.contentResolver.takePersistableUriPermission(
-                        uri,
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    )
-                }
-                if (old != null && old != uri.toString()) {
-                    releasePersistablePermissionIfPossible(old)
-                }
-                thumbnailUrl = uri.toString()
+            }.onFailure { e ->
+                e.printStackTrace()
             }
         }
 

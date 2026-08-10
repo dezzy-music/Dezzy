@@ -47,6 +47,14 @@ enum class LyricsLayoutStyle(
         displayName = "Dezzy Style",
         description = "Personalización rápida de colores",
     ),
+    PaperPolaroid(
+        displayName = "Polaroid",
+        description = "Foto polaroid sobre papel de cuaderno",
+    ),
+    EntityCard(
+        displayName = "Tarjeta",
+        description = "Artista o playlist, estilo Spotify",
+    ),
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -105,4 +113,10 @@ data class LyricsCardConfig(
     val customBgColor: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF22201C),
     val customTextColor: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color.White,
     val customSecondaryTextColor: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color.Gray,
+
+    /** Fondo en degradado vertical (customBgColor → negro), estilo Spotify */
+    val customBgGradient: Boolean = false,
+
+    /** EntityCard: recorta la imagen en círculo (artista) en vez de cuadrada (playlist) */
+    val entityCircularImage: Boolean = false,
 )

@@ -26,7 +26,7 @@ import androidx.core.graphics.createBitmap
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.graphics.withClip
 import androidx.core.graphics.withTranslation
-import coil3.ImageLoader
+import coil3.imageLoader
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.toBitmap
@@ -38,6 +38,8 @@ import com.arturo254.opentune.ui.component.LyricsBackgroundType
 import com.arturo254.opentune.ui.component.LyricsCardConfig
 import com.arturo254.opentune.ui.component.LyricsGlassStyle
 import com.arturo254.opentune.ui.component.LyricsLayoutStyle
+import com.arturo254.opentune.ui.theme.getTypeface
+import com.arturo254.opentune.ui.utils.highRes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -56,6 +58,15 @@ object ComposeToImage {
         is Activity      -> this
         is ContextWrapper -> baseContext.findActivity()
         else             -> null
+    }
+
+    /**
+     * Tipografías (normal, bold) de la fuente elegida en Ajustes — todos los
+     * renderers las usan para que lo compartido coincida con la app.
+     */
+    private fun resolveTypefaces(context: Context, config: LyricsCardConfig): Pair<Typeface, Typeface> {
+        val base = getTypeface(context, config.fontName)
+        return base to Typeface.create(base, Typeface.BOLD)
     }
 
     private fun ensureSoftwareBitmap(bitmap: Bitmap): Bitmap {
@@ -149,10 +160,116 @@ object ComposeToImage {
     private suspend fun loadCoverArt(context: Context, url: String?): Bitmap? {
         if (url == null) return null
         return runCatching {
-            val loader  = ImageLoader(context)
-            val request = ImageRequest.Builder(context).data(url).size(512).allowHardware(false).build()
-            loader.execute(request).image?.toBitmap()
-        }.getOrNull()
+            // Las tarjetas se exportan a 1080 px y la imagen puede ocupar casi todo
+            // el ancho: pedirla a 512 obligaba a escalar hacia arriba y salía
+            // borrosa. `highRes()` además reescribe la URL de YouTube para que el
+            // servidor entregue la versión grande en vez de la miniatura.
+            val request = ImageRequest.Builder(context)
+                .data(url.highRes())
+                .size(720)
+                .allowHardware(false)
+                .build()
+            context.imageLoader.execute(request).image?.toBitmap()
+        }.getOrNull()?.let(::trimUniformBorders)
+    }
+
+    /**
+     * Recorta las bandas sólidas de los bordes (el pillarbox blanco o el letterbox
+     * negro con el que YouTube rellena las miniaturas cuando la imagen original no
+     * es cuadrada).
+     *
+     * Sin esto, las tarjetas de compartir heredaban esas bandas: la foto del artista
+     * salía como una franja estrecha en medio de un círculo blanco.
+     *
+     * Solo recorta si las bandas son claramente uniformes y no se come más de la
+     * mitad de la imagen, para no estropear portadas que legítimamente tengan un
+     * borde liso.
+     */
+    private fun trimUniformBorders(src: Bitmap): Bitmap {
+        val w = src.width
+        val h = src.height
+        if (w < 8 || h < 8) return src
+
+        // Tolerancia por canal: las bandas suelen ser planas, pero el JPEG
+        // introduce algo de ruido.
+        val tol = 12
+
+        fun sample(x: Int, y: Int) = src.getPixel(x, y)
+        fun similar(a: Int, b: Int): Boolean =
+            kotlin.math.abs(((a shr 16) and 0xFF) - ((b shr 16) and 0xFF)) <= tol &&
+                kotlin.math.abs(((a shr 8) and 0xFF) - ((b shr 8) and 0xFF)) <= tol &&
+                kotlin.math.abs((a and 0xFF) - (b and 0xFF)) <= tol
+
+        /** ¿Es toda la columna/fila del mismo color que la referencia? */
+        fun columnUniform(x: Int, ref: Int): Boolean {
+            var y = 0
+            while (y < h) {
+                if (!similar(sample(x, y), ref)) return false
+                y += maxOf(1, h / 24)   // muestreo: 24 puntos bastan y es ~24x más rápido
+            }
+            return true
+        }
+        fun rowUniform(y: Int, ref: Int): Boolean {
+            var x = 0
+            while (x < w) {
+                if (!similar(sample(x, y), ref)) return false
+                x += maxOf(1, w / 24)
+            }
+            return true
+        }
+
+        var left = 0
+        val leftRef = sample(0, h / 2)
+        while (left < w / 2 && columnUniform(left, leftRef)) left++
+
+        var right = w - 1
+        val rightRef = sample(w - 1, h / 2)
+        while (right > w / 2 && columnUniform(right, rightRef)) right--
+
+        var top = 0
+        val topRef = sample(w / 2, 0)
+        while (top < h / 2 && rowUniform(top, topRef)) top++
+
+        var bottom = h - 1
+        val bottomRef = sample(w / 2, h - 1)
+        while (bottom > h / 2 && rowUniform(bottom, bottomRef)) bottom--
+
+        val newW = right - left + 1
+        val newH = bottom - top + 1
+        // Nada que recortar, o el recorte es tan agresivo que probablemente
+        // estemos ante una imagen casi plana: se deja como está.
+        if (newW <= 0 || newH <= 0) return src
+        if (newW >= w && newH >= h) return src
+        if (newW < w / 3 || newH < h / 3) return src
+
+        return runCatching { Bitmap.createBitmap(src, left, top, newW, newH) }.getOrDefault(src)
+    }
+
+    /**
+     * Dibuja el bitmap llenando [dst] con recorte central (center-crop), en vez de
+     * estirarlo. Preserva la proporción: una imagen vertical ya no sale deformada
+     * ni deja huecos dentro del círculo/recuadro.
+     */
+    private fun Canvas.drawBitmapCropped(bitmap: Bitmap, dst: RectF) {
+        val bw = bitmap.width.toFloat()
+        val bh = bitmap.height.toFloat()
+        if (bw <= 0f || bh <= 0f) return
+
+        val dstRatio = dst.width() / dst.height()
+        val srcRatio = bw / bh
+
+        val src = if (srcRatio > dstRatio) {
+            // Más ancha que el destino: recortamos a los lados.
+            val newW = bh * dstRatio
+            val dx = (bw - newW) / 2f
+            android.graphics.Rect(dx.toInt(), 0, (dx + newW).toInt(), bh.toInt())
+        } else {
+            // Más alta: recortamos arriba y abajo.
+            val newH = bw / dstRatio
+            val dy = (bh - newH) / 2f
+            android.graphics.Rect(0, dy.toInt(), bw.toInt(), (dy + newH).toInt())
+        }
+        drawBitmap(bitmap, src, dst, Paint(Paint.FILTER_BITMAP_FLAG))
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -307,6 +424,8 @@ object ComposeToImage {
         showArtist: Boolean,
         mainTextColor: Int,
         secondaryTextColor: Int,
+        baseTypeface: Typeface = Typeface.DEFAULT,
+        boldTypeface: Typeface = Typeface.DEFAULT_BOLD,
     ) {
         val coverSize       = (cardSize * 0.16f)
         val imageCornerRadius = cardSize * 0.035f
@@ -315,7 +434,7 @@ object ComposeToImage {
         if (showCover && coverArt != null) {
             val rect = RectF(contentLeft, contentTop, contentLeft + coverSize, contentTop + coverSize)
             val path = Path().apply { addRoundRect(rect, imageCornerRadius, imageCornerRadius, Path.Direction.CW) }
-            canvas.withClip(path) { drawBitmap(coverArt, null, rect, null) }
+            canvas.withClip(path) { drawBitmapCropped(coverArt, rect) }
             canvas.drawRoundRect(rect, imageCornerRadius, imageCornerRadius, Paint().apply {
                 style = Paint.Style.STROKE; strokeWidth = 1f
                 color = android.graphics.Color.argb(38, 255, 255, 255); isAntiAlias = true
@@ -326,13 +445,13 @@ object ComposeToImage {
         val titlePaint = TextPaint().apply {
             color    = mainTextColor
             textSize = cardSize * 0.038f
-            typeface = Typeface.DEFAULT_BOLD
+            typeface = boldTypeface
             isAntiAlias = true; letterSpacing = -0.02f
         }
         val artistPaint = TextPaint().apply {
             color    = secondaryTextColor
             textSize = cardSize * 0.028f
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+            typeface = baseTypeface
             isAntiAlias = true
         }
 
@@ -370,6 +489,7 @@ object ComposeToImage {
         circleColor: Int,
         logoTint: Int,
         textColor: Int,
+        typeface: Typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL),
     ) {
         val baseSize  = cardSize.toFloat()
         val logoSize  = (baseSize * 0.045f).toInt()
@@ -383,7 +503,7 @@ object ComposeToImage {
         }
         val appNamePaint = TextPaint().apply {
             color    = textColor; textSize = baseSize * 0.028f
-            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            this.typeface = typeface
             isAntiAlias = true; letterSpacing = 0.02f
         }
         val circleRadius = logoSize * 0.55f
@@ -426,7 +546,468 @@ object ComposeToImage {
             LyricsLayoutStyle.BlurWash       -> renderBlurWash(context, coverArt, songTitle, artistName, lyrics, config, outputSize)
             LyricsLayoutStyle.StreamingModern -> renderStreamingModern(context, coverArt, songTitle, artistName, lyrics, config, outputSize)
             LyricsLayoutStyle.DezzyShare     -> renderDezzyShare(context, coverArt, songTitle, artistName, lyrics, config, outputSize)
+            LyricsLayoutStyle.PaperPolaroid  -> renderPaperPolaroid(context, coverArt, songTitle, artistName, config, outputSize)
+            LyricsLayoutStyle.EntityCard     -> renderEntityCard(context, coverArt, songTitle, artistName, config, outputSize)
         }
+    }
+
+    /** Pista mostrada en la tarjeta de playlist con listado. */
+    data class ShareTrack(val title: String, val artist: String, val thumbnailUrl: String?)
+
+    /**
+     * Tarjeta de PLAYLIST con listado (el tab "Playlist" del share, estilo Spotify):
+     * cabecera con la portada pequeña y el nombre, y debajo las primeras pistas con su
+     * miniatura. El branding va abajo a la derecha, como en la referencia.
+     */
+    suspend fun createPlaylistShareImage(
+        context: Context,
+        coverArtUrl: String?,
+        playlistName: String,
+        descriptor: String,
+        tracks: List<ShareTrack>,
+        config: LyricsCardConfig,
+        outputSize: Int = 1080,
+    ): Bitmap = withContext(Dispatchers.Default) {
+        val cover = loadCoverArt(context, coverArtUrl)
+        val visible = tracks.take(4)
+        val thumbs = visible.map { loadCoverArt(context, it.thumbnailUrl) }
+
+        val width = outputSize
+        val height = outputSize * 4 / 3
+        val (baseTf, boldTf) = resolveTypefaces(context, config)
+        val bitmap = createBitmap(width, height)
+        val canvas = Canvas(bitmap)
+        val w = width.toFloat()
+        val h = height.toFloat()
+
+        val bgColor = config.customBgColor.toArgb()
+        val mainColor = config.customTextColor.toArgb()
+        val secondaryClr = config.customSecondaryTextColor.toArgb()
+
+        canvas.drawRect(RectF(0f, 0f, w, h), Paint().apply {
+            isAntiAlias = true
+            if (config.customBgGradient) {
+                shader = android.graphics.LinearGradient(
+                    0f, 0f, 0f, h,
+                    bgColor, android.graphics.Color.BLACK,
+                    android.graphics.Shader.TileMode.CLAMP,
+                )
+            } else {
+                color = bgColor
+            }
+        })
+
+        val pad = w * 0.075f
+        // ── Cabecera: portada + nombre de la playlist ──
+        val headerArt = w * 0.30f
+        if (cover != null) {
+            val rect = RectF(pad, pad, pad + headerArt, pad + headerArt)
+            val path = Path().apply { addRoundRect(rect, w * 0.012f, w * 0.012f, Path.Direction.CW) }
+            canvas.withClip(path) { drawBitmapCropped(cover, rect) }
+        }
+        val headTextLeft = pad + headerArt + w * 0.045f
+        val headTextWidth = (w - pad - headTextLeft).toInt().coerceAtLeast(1)
+        val namePaint = TextPaint().apply {
+            color = mainColor; textSize = w * 0.058f
+            typeface = boldTf; isAntiAlias = true
+        }
+        val descPaint = TextPaint().apply {
+            color = secondaryClr; textSize = w * 0.038f
+            typeface = baseTf; isAntiAlias = true
+        }
+        fun clipped(text: String, paint: TextPaint, maxWidth: Int, lines: Int) =
+            StaticLayout.Builder.obtain(text, 0, text.length, paint, maxWidth)
+                .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                .setMaxLines(lines)
+                .setEllipsize(android.text.TextUtils.TruncateAt.END)
+                .setEllipsizedWidth(maxWidth)
+                .build()
+        val nameLayout = clipped(playlistName, namePaint, headTextWidth, 2)
+        val descLayout = clipped(descriptor, descPaint, headTextWidth, 1)
+        val headBlockH = nameLayout.height + w * 0.015f + descLayout.height
+        val headTextTop = pad + (headerArt - headBlockH) / 2f
+        canvas.withTranslation(headTextLeft, headTextTop) { nameLayout.draw(this) }
+        canvas.withTranslation(headTextLeft, headTextTop + nameLayout.height + w * 0.015f) {
+            descLayout.draw(this)
+        }
+
+        // ── Listado de pistas ──
+        val rowArt = w * 0.145f
+        val rowGap = w * 0.035f
+        var rowTop = pad + headerArt + w * 0.075f
+        val titlePaint = TextPaint().apply {
+            color = mainColor; textSize = w * 0.045f
+            typeface = boldTf; isAntiAlias = true
+        }
+        val artistPaint = TextPaint().apply {
+            color = secondaryClr; textSize = w * 0.036f
+            typeface = baseTf; isAntiAlias = true
+        }
+        visible.forEachIndexed { index, track ->
+            thumbs.getOrNull(index)?.let { thumb ->
+                val rect = RectF(pad, rowTop, pad + rowArt, rowTop + rowArt)
+                val path = Path().apply { addRoundRect(rect, w * 0.008f, w * 0.008f, Path.Direction.CW) }
+                canvas.withClip(path) { drawBitmapCropped(thumb, rect) }
+            }
+            val textLeft = pad + rowArt + w * 0.035f
+            val textWidth = (w - pad - textLeft).toInt().coerceAtLeast(1)
+            val tLayout = clipped(track.title, titlePaint, textWidth, 1)
+            val aLayout = clipped(track.artist, artistPaint, textWidth, 1)
+            val blockH = tLayout.height + w * 0.008f + aLayout.height
+            val textTop = rowTop + (rowArt - blockH) / 2f
+            canvas.withTranslation(textLeft, textTop) { tLayout.draw(this) }
+            canvas.withTranslation(textLeft, textTop + tLayout.height + w * 0.008f) { aLayout.draw(this) }
+            rowTop += rowArt + rowGap
+        }
+
+        // ── Branding abajo a la derecha ──
+        val brandH = w * 0.055f
+        val brandPaint = TextPaint().apply {
+            color = mainColor; textSize = w * 0.042f
+            typeface = boldTf; isAntiAlias = true
+        }
+        val brandText = "Dezzy"
+        val brandWidth = brandPaint.measureText(brandText)
+        val rowWidth = brandH + w * 0.018f + brandWidth
+        var bx = w - pad - rowWidth
+        val brandCenterY = h - pad - brandH / 2f
+        context.getDrawable(R.drawable.star)
+            ?.toBitmap(brandH.toInt(), brandH.toInt())
+            ?.let { star ->
+                canvas.drawBitmap(star, bx, brandCenterY - brandH / 2f, Paint().apply {
+                    colorFilter = PorterDuffColorFilter(mainColor, PorterDuff.Mode.SRC_IN)
+                    isAntiAlias = true
+                })
+            }
+        bx += brandH + w * 0.018f
+        canvas.drawText(
+            brandText, bx,
+            brandCenterY - (brandPaint.descent() + brandPaint.ascent()) / 2f,
+            brandPaint,
+        )
+
+        bitmap
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // RENDERER — EntityCard (artista / playlist), estilo Spotify
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Espejo 1:1 de la preview de `ShareBottomSheet` en modo entidad: lienzo 3:4 con
+     * el color de la paleta, y dentro una tarjeta oscura con la imagen (círculo para
+     * artista, cuadrada para playlist), el nombre, el descriptor ("Artista en Dezzy")
+     * y el branding abajo a la izquierda.
+     */
+    private fun renderEntityCard(
+        context: Context,
+        coverArt: Bitmap?,
+        name: String,
+        descriptor: String,
+        config: LyricsCardConfig,
+        cardSize: Int,
+    ): Bitmap {
+        val width = cardSize
+        val height = cardSize * 4 / 3
+        val (baseTf, boldTf) = resolveTypefaces(context, config)
+        val bitmap = createBitmap(width, height)
+        val canvas = Canvas(bitmap)
+        val w = width.toFloat()
+        val h = height.toFloat()
+
+        val bgColor = config.customBgColor.toArgb()
+        val mainColor = config.customTextColor.toArgb()
+        val secondaryClr = config.customSecondaryTextColor.toArgb()
+
+        // Fondo exterior (sólido o degradado color→negro)
+        canvas.drawRect(RectF(0f, 0f, w, h), Paint().apply {
+            isAntiAlias = true
+            if (config.customBgGradient) {
+                shader = android.graphics.LinearGradient(
+                    0f, 0f, 0f, h,
+                    bgColor, android.graphics.Color.BLACK,
+                    android.graphics.Shader.TileMode.CLAMP,
+                )
+            } else {
+                color = bgColor
+            }
+        })
+
+        // Tarjeta interior oscura, anclada arriba (deja aire abajo, como Spotify)
+        val outerPad = w * 0.085f
+        val innerCorner = w * 0.02f
+        val innerLeft = outerPad
+        val innerTop = outerPad
+        val innerRight = w - outerPad
+        val innerPad = w * 0.055f
+        val imageSize = (innerRight - innerLeft) - innerPad * 2
+
+        val namePaint = TextPaint().apply {
+            color = mainColor; textSize = w * 0.062f
+            typeface = boldTf; isAntiAlias = true
+        }
+        val descPaint = TextPaint().apply {
+            color = secondaryClr; textSize = w * 0.042f
+            typeface = baseTf; isAntiAlias = true
+        }
+        val textWidth = imageSize.toInt().coerceAtLeast(1)
+        fun line(text: String, paint: TextPaint) =
+            StaticLayout.Builder.obtain(text, 0, text.length, paint, textWidth)
+                .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                .setMaxLines(1)
+                .setEllipsize(android.text.TextUtils.TruncateAt.END)
+                .setEllipsizedWidth(textWidth)
+                .build()
+        val nameLayout = line(name, namePaint)
+        val descLayout = line(descriptor, descPaint)
+
+        val brandH = w * 0.055f
+        val innerBottom = innerTop + innerPad + imageSize + w * 0.05f +
+            nameLayout.height + w * 0.012f + descLayout.height + w * 0.05f + brandH + innerPad
+
+        canvas.drawRoundRect(
+            RectF(innerLeft, innerTop, innerRight, innerBottom),
+            innerCorner, innerCorner,
+            Paint().apply { isAntiAlias = true; color = android.graphics.Color.parseColor("#0B0B0B") },
+        )
+
+        // Imagen: círculo (artista) o cuadrada con esquinas suaves (playlist)
+        if (coverArt != null) {
+            val imgLeft = innerLeft + innerPad
+            val imgTop = innerTop + innerPad
+            val imgRect = RectF(imgLeft, imgTop, imgLeft + imageSize, imgTop + imageSize)
+            val path = Path().apply {
+                if (config.entityCircularImage) {
+                    addCircle(imgRect.centerX(), imgRect.centerY(), imageSize / 2f, Path.Direction.CW)
+                } else {
+                    addRoundRect(imgRect, w * 0.012f, w * 0.012f, Path.Direction.CW)
+                }
+            }
+            canvas.withClip(path) { drawBitmapCropped(coverArt, imgRect) }
+        }
+
+        // Nombre + descriptor, alineados a la izquierda bajo la imagen
+        val textLeft = innerLeft + innerPad
+        val nameTop = innerTop + innerPad + imageSize + w * 0.05f
+        canvas.withTranslation(textLeft, nameTop) { nameLayout.draw(this) }
+        val descTop = nameTop + nameLayout.height + w * 0.012f
+        canvas.withTranslation(textLeft, descTop) { descLayout.draw(this) }
+
+        // Branding "★ Dezzy" abajo a la izquierda de la tarjeta interior
+        val brandPaint = TextPaint().apply {
+            color = mainColor; textSize = w * 0.042f
+            typeface = boldTf; isAntiAlias = true
+        }
+        val brandCenterY = descTop + descLayout.height + w * 0.05f + brandH / 2f
+        var bx = textLeft
+        context.getDrawable(R.drawable.star)
+            ?.toBitmap(brandH.toInt(), brandH.toInt())
+            ?.let { star ->
+                canvas.drawBitmap(star, bx, brandCenterY - brandH / 2f, Paint().apply {
+                    colorFilter = PorterDuffColorFilter(mainColor, PorterDuff.Mode.SRC_IN)
+                    isAntiAlias = true
+                })
+            }
+        bx += brandH + w * 0.018f
+        canvas.drawText(
+            "Dezzy", bx,
+            brandCenterY - (brandPaint.descent() + brandPaint.ascent()) / 2f,
+            brandPaint,
+        )
+
+        return bitmap
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // RENDERER — Polaroid sobre papel de cuaderno (estilo foto pegada)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private fun renderPaperPolaroid(
+        context: Context,
+        coverArt: Bitmap?,
+        songTitle: String,
+        artistName: String,
+        config: LyricsCardConfig,
+        cardSize: Int,
+    ): Bitmap {
+        val (baseTf, boldTf) = resolveTypefaces(context, config)
+        val bmp = createBitmap(cardSize, cardSize)
+        val canvas = Canvas(bmp)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+
+        // ── Fondo: papel de cuaderno de color claro con líneas ──
+        canvas.drawColor(android.graphics.Color.parseColor("#F4F1E8"))
+        // Textura sutil (viñeta clara)
+        paint.shader = android.graphics.RadialGradient(
+            cardSize * 0.5f, cardSize * 0.4f, cardSize * 0.75f,
+            intArrayOf(android.graphics.Color.parseColor("#FBFAF4"), android.graphics.Color.parseColor("#EDE8DA")),
+            floatArrayOf(0f, 1f), Shader.TileMode.CLAMP,
+        )
+        canvas.drawRect(0f, 0f, cardSize.toFloat(), cardSize.toFloat(), paint)
+        paint.shader = null
+
+        // Líneas horizontales de cuaderno
+        val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = android.graphics.Color.parseColor("#22597EA8")
+            strokeWidth = cardSize * 0.0025f
+        }
+        val lineGap = cardSize * 0.055f
+        var ly = cardSize * 0.14f
+        while (ly < cardSize) {
+            canvas.drawLine(0f, ly, cardSize.toFloat(), ly, linePaint)
+            ly += lineGap
+        }
+        // Margen rojo vertical
+        canvas.drawLine(
+            cardSize * 0.12f, 0f, cardSize * 0.12f, cardSize.toFloat(),
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = android.graphics.Color.parseColor("#33D06A63")
+                strokeWidth = cardSize * 0.004f
+            },
+        )
+
+        // ── Garabatos dispersos (estrellitas y rayas a mano) ──
+        val doodle = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = android.graphics.Color.parseColor("#5566708A")
+            style = Paint.Style.STROKE
+            strokeWidth = cardSize * 0.006f
+            strokeCap = Paint.Cap.ROUND
+        }
+        drawSparkle(canvas, doodle, cardSize * 0.12f, cardSize * 0.12f, cardSize * 0.03f)
+        drawSparkle(canvas, doodle, cardSize * 0.90f, cardSize * 0.14f, cardSize * 0.024f)
+        drawHeart(canvas, doodle, cardSize * 0.90f, cardSize * 0.62f, cardSize * 0.03f)
+        drawSquiggle(canvas, doodle, cardSize * 0.10f, cardSize * 0.64f, cardSize * 0.09f)
+
+        // ── Papeles rotos/notas con garabatos, detrás de la polaroid (como Spotify) ──
+        drawPaperScrap(canvas, cardSize * 0.19f, cardSize * 0.26f, cardSize * 0.22f, cardSize * 0.17f, -14f, 0)
+        drawPaperScrap(canvas, cardSize * 0.84f, cardSize * 0.34f, cardSize * 0.17f, cardSize * 0.24f, 11f, 1)
+        drawPaperScrap(canvas, cardSize * 0.22f, cardSize * 0.83f, cardSize * 0.24f, cardSize * 0.16f, 7f, 2)
+
+        // ── Polaroid centrada, ligeramente rotada ──
+        canvas.save()
+        canvas.rotate(-4.5f, cardSize * 0.5f, cardSize * 0.5f)
+
+        val polW = cardSize * 0.58f
+        val polH = cardSize * 0.72f
+        val polLeft = (cardSize - polW) / 2f
+        val polTop = (cardSize - polH) / 2f - cardSize * 0.02f
+        val polRect = RectF(polLeft, polTop, polLeft + polW, polTop + polH)
+
+        // Sombra de la polaroid
+        paint.color = android.graphics.Color.parseColor("#33000000")
+        paint.setShadowLayer(cardSize * 0.03f, 0f, cardSize * 0.012f, android.graphics.Color.parseColor("#55000000"))
+        canvas.drawRect(polRect, Paint(paint).apply { color = android.graphics.Color.WHITE })
+        paint.clearShadowLayer()
+
+        // Marco blanco polaroid
+        paint.color = android.graphics.Color.WHITE
+        canvas.drawRect(polRect, paint)
+
+        // Foto (portada) dentro del marco
+        val pad = polW * 0.06f
+        val photo = RectF(polLeft + pad, polTop + pad, polLeft + polW - pad, polTop + polW - pad)
+        if (coverArt != null) {
+            canvas.save()
+            canvas.clipRect(photo)
+            val scale = maxOf(photo.width() / coverArt.width, photo.height() / coverArt.height)
+            val dw = coverArt.width * scale
+            val dh = coverArt.height * scale
+            val l = photo.centerX() - dw / 2f
+            val t = photo.centerY() - dh / 2f
+            canvas.drawBitmap(coverArt, null, RectF(l, t, l + dw, t + dh), Paint(Paint.FILTER_BITMAP_FLAG))
+            canvas.restore()
+        } else {
+            paint.color = android.graphics.Color.parseColor("#DDDDDD")
+            canvas.drawRect(photo, paint)
+        }
+
+        // Título + artista en la banda inferior de la polaroid
+        val titlePaint = TextPaint().apply {
+            color = android.graphics.Color.parseColor("#1A1A1A"); isAntiAlias = true
+            typeface = boldTf; textSize = polW * 0.10f
+        }
+        val artistPaint = TextPaint().apply {
+            color = android.graphics.Color.parseColor("#777777"); isAntiAlias = true
+            typeface = baseTf; textSize = polW * 0.072f
+        }
+        val bandTop = photo.bottom + polW * 0.06f
+        fun ellip(text: String, p: TextPaint) =
+            android.text.TextUtils.ellipsize(text, p, polW - pad * 2, android.text.TextUtils.TruncateAt.END).toString()
+        canvas.drawText(ellip(songTitle, titlePaint), photo.left, bandTop + titlePaint.textSize, titlePaint)
+        canvas.drawText(ellip(artistName, artistPaint), photo.left, bandTop + titlePaint.textSize + artistPaint.textSize * 1.5f, artistPaint)
+
+        // Marca "★ Dezzy" pequeña abajo a la derecha de la polaroid
+        val brandPaint = TextPaint().apply {
+            color = android.graphics.Color.parseColor("#999999"); isAntiAlias = true
+            typeface = boldTf; textSize = polW * 0.06f; textAlign = Paint.Align.RIGHT
+        }
+        canvas.drawText("★ Dezzy", polRect.right - pad, polRect.bottom - pad * 0.6f, brandPaint)
+
+        canvas.restore()
+        return bmp
+    }
+
+    /** Dibuja una estrellita de 4 puntas a mano alzada (garabato). */
+    private fun drawSparkle(canvas: Canvas, paint: Paint, cx: Float, cy: Float, r: Float) {
+        canvas.drawLine(cx, cy - r, cx, cy + r, paint)
+        canvas.drawLine(cx - r, cy, cx + r, cy, paint)
+        canvas.drawLine(cx - r * 0.55f, cy - r * 0.55f, cx + r * 0.55f, cy + r * 0.55f, paint)
+        canvas.drawLine(cx - r * 0.55f, cy + r * 0.55f, cx + r * 0.55f, cy - r * 0.55f, paint)
+    }
+
+    /** Corazón a mano alzada. */
+    private fun drawHeart(canvas: Canvas, paint: Paint, cx: Float, cy: Float, r: Float) {
+        val p = Path().apply {
+            moveTo(cx, cy + r * 0.7f)
+            cubicTo(cx - r * 1.4f, cy - r * 0.4f, cx - r * 0.5f, cy - r * 1.1f, cx, cy - r * 0.3f)
+            cubicTo(cx + r * 0.5f, cy - r * 1.1f, cx + r * 1.4f, cy - r * 0.4f, cx, cy + r * 0.7f)
+            close()
+        }
+        canvas.drawPath(p, paint)
+    }
+
+    /** Garabato ondulado (subrayado a mano). */
+    private fun drawSquiggle(canvas: Canvas, paint: Paint, cx: Float, cy: Float, w: Float) {
+        val p = Path().apply {
+            moveTo(cx, cy)
+            quadTo(cx + w * 0.25f, cy - w * 0.35f, cx + w * 0.5f, cy)
+            quadTo(cx + w * 0.75f, cy + w * 0.35f, cx + w, cy)
+        }
+        canvas.drawPath(p, paint)
+    }
+
+    /** Papel roto/nota con un garabato encima y una sombra suave (estilo scrapbook). */
+    private fun drawPaperScrap(
+        canvas: Canvas,
+        cx: Float, cy: Float, w: Float, h: Float, rotation: Float, doodle: Int,
+    ) {
+        canvas.save()
+        canvas.rotate(rotation, cx, cy)
+        val rect = RectF(cx - w / 2f, cy - h / 2f, cx + w / 2f, cy + h / 2f)
+        val paperPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = android.graphics.Color.parseColor("#FBFAF3")
+            setShadowLayer(w * 0.06f, 0f, w * 0.03f, android.graphics.Color.parseColor("#33000000"))
+        }
+        canvas.drawRoundRect(rect, w * 0.04f, w * 0.04f, paperPaint)
+        // líneas tenues del papelito
+        val faint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = android.graphics.Color.parseColor("#18597EA8"); strokeWidth = w * 0.012f
+        }
+        var yy = rect.top + h * 0.28f
+        while (yy < rect.bottom - h * 0.1f) {
+            canvas.drawLine(rect.left + w * 0.12f, yy, rect.right - w * 0.12f, yy, faint)
+            yy += h * 0.22f
+        }
+        val dood = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = android.graphics.Color.parseColor("#775B6B86")
+            style = Paint.Style.STROKE; strokeWidth = w * 0.028f; strokeCap = Paint.Cap.ROUND
+        }
+        when (doodle) {
+            0 -> drawSparkle(canvas, dood, cx, rect.top + h * 0.28f, h * 0.14f)
+            1 -> drawHeart(canvas, dood.apply { style = Paint.Style.FILL }, cx, cy, h * 0.16f)
+            else -> drawSquiggle(canvas, dood, rect.left + w * 0.2f, cy, w * 0.6f)
+        }
+        canvas.restore()
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -446,13 +1027,17 @@ object ComposeToImage {
         textColor: Int? = null,
         secondaryTextColor: Int? = null,
         glassStyle: LyricsGlassStyle? = null,
+        fontName: String = "POPPINS",
     ): Bitmap = createLyricsImageWithConfig(
         context    = context,
         coverArtUrl = coverArtUrl,
         songTitle  = songTitle,
         artistName = artistName,
         lyrics     = lyrics,
-        config     = LyricsCardConfig(glassStyle = glassStyle ?: LyricsGlassStyle.FrostedDark),
+        config     = LyricsCardConfig(
+            glassStyle = glassStyle ?: LyricsGlassStyle.FrostedDark,
+            fontName   = fontName,
+        ),
         outputSize = minOf(width, height),
     )
 
@@ -470,6 +1055,7 @@ object ComposeToImage {
         cardSize: Int,
     ): Bitmap {
         val style         = config.glassStyle
+        val (baseTf, boldTf) = resolveTypefaces(context, config)
         val bitmap        = createBitmap(cardSize, cardSize)
         val canvas        = Canvas(bitmap)
         val outerCorner   = cardSize * 0.06f
@@ -494,11 +1080,11 @@ object ComposeToImage {
             drawMetadataRow(canvas, coverArt, songTitle, artistName, cardSize,
                 contentLeft, contentTop, contentRight,
                 config.showCoverArt, config.showTitle, config.showArtist,
-                mainColor, secColor)
+                mainColor, secColor, baseTf, boldTf)
         }
 
         // Letras
-        val lyricsPaint    = TextPaint().apply { color = mainColor; typeface = Typeface.DEFAULT_BOLD; isAntiAlias = true; letterSpacing = -0.01f }
+        val lyricsPaint    = TextPaint().apply { color = mainColor; typeface = boldTf; isAntiAlias = true; letterSpacing = -0.01f }
         val lyricsMaxWidth = (panelRect.width() * 0.85f).toInt()
         val logoH          = (panelRect.height() * 0.09f)
         val lyricsTop      = panelRect.top + panelRect.height() * 0.24f
@@ -524,7 +1110,8 @@ object ComposeToImage {
                 y          = panelRect.bottom - contentPad * 0.4f,
                 circleColor = secColor,
                 logoTint    = if (style.isDark) 0xDD000000.toInt() else 0xE6FFFFFF.toInt(),
-                textColor   = secColor)
+                textColor   = secColor,
+                typeface    = baseTf)
         }
         return bitmap
     }
@@ -552,6 +1139,7 @@ object ComposeToImage {
             0xFF6366F1.toInt()
         else accentCompose.copy(alpha = 1f).toArgb()
 
+        val (baseTf, boldTf) = resolveTypefaces(context, config)
         val bitmap  = createBitmap(cardSize, cardSize)
         val canvas  = Canvas(bitmap)
         val corner  = cardSize * 0.06f
@@ -575,7 +1163,7 @@ object ComposeToImage {
         val quotePaint = TextPaint().apply {
             color    = (accent and 0x00FFFFFF) or 0x3F000000 // accent @ 25% alpha
             textSize = cardSize * 0.23f
-            typeface = Typeface.DEFAULT_BOLD
+            typeface = boldTf
             isAntiAlias = true
         }
         canvas.drawText("\u201C", padding, padding + quotePaint.textSize * 0.7f, quotePaint)
@@ -583,7 +1171,7 @@ object ComposeToImage {
         // Letras
         val lyricsPaint = TextPaint().apply {
             color    = mainColor
-            typeface = Typeface.DEFAULT_BOLD
+            typeface = boldTf
             isAntiAlias = true
             letterSpacing = -0.02f
         }
@@ -612,10 +1200,10 @@ object ComposeToImage {
         })
         val metaY = metaTop + padding * 0.8f
         val titlePaint = TextPaint().apply {
-            color = mainColor; textSize = cardSize * 0.036f; typeface = Typeface.DEFAULT_BOLD; isAntiAlias = true
+            color = mainColor; textSize = cardSize * 0.036f; typeface = boldTf; isAntiAlias = true
         }
         val artistPaint = TextPaint().apply {
-            color = secondaryClr; textSize = cardSize * 0.028f; isAntiAlias = true
+            color = secondaryClr; textSize = cardSize * 0.028f; typeface = baseTf; isAntiAlias = true
         }
         if (config.showTitle) canvas.drawText(songTitle, padding, metaY, titlePaint)
         if (config.showArtist) canvas.drawText(artistName, padding, metaY + cardSize * 0.044f, artistPaint)
@@ -624,7 +1212,7 @@ object ComposeToImage {
             drawBranding(context, canvas, cardSize,
                 x = padding, y = size - padding * 0.2f,
                 circleColor = secondaryClr, logoTint = if (isDark) 0xDD000000.toInt() else 0xE6FFFFFF.toInt(),
-                textColor = secondaryClr)
+                textColor = secondaryClr, typeface = baseTf)
         }
         return bitmap
     }
@@ -643,6 +1231,7 @@ object ComposeToImage {
         cardSize: Int,
     ): Bitmap {
         val style      = config.glassStyle
+        val (baseTf, boldTf) = resolveTypefaces(context, config)
         val mainColor  = style.textColor.toArgb()
         val secColor   = style.secondaryTextColor.toArgb()
         val bitmap     = createBitmap(cardSize, cardSize)
@@ -662,7 +1251,7 @@ object ComposeToImage {
             val artRect   = RectF(artLeft, artTop, artLeft + artSize, artTop + artSize)
             val artCorner = cardSize * 0.04f
             val path = Path().apply { addRoundRect(artRect, artCorner, artCorner, Path.Direction.CW) }
-            canvas.withClip(path) { drawBitmap(coverArt, null, artRect, null) }
+            canvas.withClip(path) { drawBitmapCropped(coverArt, artRect) }
             canvas.drawRoundRect(artRect, artCorner, artCorner, Paint().apply {
                 this.style = Paint.Style.STROKE; strokeWidth = 2f
                 color = android.graphics.Color.argb(51, 255, 255, 255); isAntiAlias = true
@@ -672,11 +1261,11 @@ object ComposeToImage {
         // Título y artista debajo de la carátula
         val artBottom = padding + size * 0.4f + padding * 0.5f
         val titlePaint = TextPaint().apply {
-            color = mainColor; textSize = cardSize * 0.042f; typeface = Typeface.DEFAULT_BOLD
+            color = mainColor; textSize = cardSize * 0.042f; typeface = boldTf
             textAlign = android.graphics.Paint.Align.CENTER; isAntiAlias = true; letterSpacing = -0.02f
         }
         val artistPaint = TextPaint().apply {
-            color = secColor; textSize = cardSize * 0.030f
+            color = secColor; textSize = cardSize * 0.030f; typeface = baseTf
             textAlign = android.graphics.Paint.Align.CENTER; isAntiAlias = true
         }
         if (config.showTitle) canvas.drawText(songTitle, size / 2f, artBottom, titlePaint)
@@ -690,7 +1279,7 @@ object ComposeToImage {
 
         // Letras en la parte inferior
         val lyricsPaint = TextPaint().apply {
-            color = mainColor; typeface = Typeface.DEFAULT_BOLD; isAntiAlias = true; letterSpacing = -0.01f
+            color = mainColor; typeface = boldTf; isAntiAlias = true; letterSpacing = -0.01f
         }
         val lyricsMaxWidth  = (size * 0.82f).toInt()
         val logoH           = cardSize * 0.09f
@@ -713,7 +1302,7 @@ object ComposeToImage {
             drawBranding(context, canvas, cardSize,
                 x = padding, y = size - padding * 0.2f,
                 circleColor = secColor, logoTint = if (style.isDark) 0xDD000000.toInt() else 0xE6FFFFFF.toInt(),
-                textColor = secColor)
+                textColor = secColor, typeface = baseTf)
         }
         return bitmap
     }
@@ -732,6 +1321,7 @@ object ComposeToImage {
         cardSize: Int,
     ): Bitmap {
         val style     = config.glassStyle
+        val (baseTf, boldTf) = resolveTypefaces(context, config)
         val mainColor = style.textColor.toArgb()
         val secColor  = style.secondaryTextColor.toArgb()
         val bitmap    = createBitmap(cardSize, cardSize)
@@ -753,11 +1343,11 @@ object ComposeToImage {
 
         // Metadatos arriba centrados
         val titlePaint = TextPaint().apply {
-            color = mainColor; textSize = cardSize * 0.038f; typeface = Typeface.DEFAULT_BOLD
+            color = mainColor; textSize = cardSize * 0.038f; typeface = boldTf
             textAlign = android.graphics.Paint.Align.CENTER; isAntiAlias = true; letterSpacing = 0.01f
         }
         val artistPaint = TextPaint().apply {
-            color = secColor; textSize = cardSize * 0.028f
+            color = secColor; textSize = cardSize * 0.028f; typeface = baseTf
             textAlign = android.graphics.Paint.Align.CENTER; isAntiAlias = true; letterSpacing = 0.04f
         }
         var headerBottom = padding
@@ -772,7 +1362,7 @@ object ComposeToImage {
 
         // Letra centrada en el espacio restante
         val lyricsPaint = TextPaint().apply {
-            color = mainColor; typeface = Typeface.DEFAULT_BOLD; isAntiAlias = true; letterSpacing = -0.02f
+            color = mainColor; typeface = boldTf; isAntiAlias = true; letterSpacing = -0.02f
         }
         val lyricsMaxWidth = (size * 0.82f).toInt()
         val logoH          = if (config.showBranding) cardSize * 0.09f else 0f
@@ -795,7 +1385,7 @@ object ComposeToImage {
             drawBranding(context, canvas, cardSize,
                 x = padding, y = size - padding * 0.2f,
                 circleColor = secColor, logoTint = if (style.isDark) 0xDD000000.toInt() else 0xE6FFFFFF.toInt(),
-                textColor = secColor)
+                textColor = secColor, typeface = baseTf)
         }
         return bitmap
     }
@@ -814,6 +1404,7 @@ object ComposeToImage {
         cardSize: Int,
     ): Bitmap {
         val style     = config.glassStyle
+        val (baseTf, boldTf) = resolveTypefaces(context, config)
         val mainColor = style.textColor.toArgb()
         val secColor  = style.secondaryTextColor.toArgb()
         val bitmap    = createBitmap(cardSize, cardSize)
@@ -842,7 +1433,7 @@ object ComposeToImage {
             drawMetadataRow(canvas, coverArt, songTitle, artistName, cardSize,
                 padding, padding, size - padding,
                 config.showCoverArt, config.showTitle, config.showArtist,
-                mainColor, secColor)
+                mainColor, secColor, baseTf, boldTf)
             padding + cardSize * 0.20f
         } else padding
 
@@ -858,7 +1449,7 @@ object ComposeToImage {
 
         // Letras dentro del panel
         val lyricsPaint = TextPaint().apply {
-            color = mainColor; typeface = Typeface.DEFAULT_BOLD; isAntiAlias = true; letterSpacing = -0.01f
+            color = mainColor; typeface = boldTf; isAntiAlias = true; letterSpacing = -0.01f
         }
         val innerPad       = panelRect.width() * 0.06f
         val lyricsMaxWidth = (panelRect.width() - innerPad * 2).toInt()
@@ -879,7 +1470,7 @@ object ComposeToImage {
             drawBranding(context, canvas, cardSize,
                 x = padding, y = size - padding * 0.2f,
                 circleColor = secColor, logoTint = if (style.isDark) 0xDD000000.toInt() else 0xE6FFFFFF.toInt(),
-                textColor = secColor)
+                textColor = secColor, typeface = baseTf)
         }
         return bitmap
     }
@@ -902,6 +1493,7 @@ object ComposeToImage {
             accentCompose == androidx.compose.ui.graphics.Color.White)
             0xFF6366F1.toInt() else accentCompose.copy(alpha = 1f).toArgb()
 
+        val (baseTf, boldTf) = resolveTypefaces(context, config)
         val mainColor = 0xFFFFFFFF.toInt()
         val secColor  = 0x8CFFFFFF.toInt()
         val bitmap    = createBitmap(cardSize, cardSize)
@@ -933,7 +1525,7 @@ object ComposeToImage {
             val artRect = RectF(padding, padding, padding + artSize, padding + artSize)
             val artCorner = cardSize * 0.025f
             val path = Path().apply { addRoundRect(artRect, artCorner, artCorner, Path.Direction.CW) }
-            canvas.withClip(path) { drawBitmap(coverArt, null, artRect, null) }
+            canvas.withClip(path) { drawBitmapCropped(coverArt, artRect) }
             canvas.drawRoundRect(artRect, artCorner, artCorner, Paint().apply {
                 this.style = Paint.Style.STROKE; strokeWidth = 1.5f
                 shader = LinearGradient(artRect.left, artRect.top, artRect.right, artRect.bottom,
@@ -944,10 +1536,10 @@ object ComposeToImage {
 
             val titlePaint = TextPaint().apply {
                 color = mainColor; textSize = cardSize * 0.036f
-                typeface = Typeface.DEFAULT_BOLD; isAntiAlias = true; letterSpacing = -0.02f
+                typeface = boldTf; isAntiAlias = true; letterSpacing = -0.02f
             }
             val artistPaint = TextPaint().apply {
-                color = secColor; textSize = cardSize * 0.026f; isAntiAlias = true; letterSpacing = 0.01f
+                color = secColor; textSize = cardSize * 0.026f; typeface = baseTf; isAntiAlias = true; letterSpacing = 0.01f
             }
             val textLeft  = padding + artSize + cardSize * 0.035f
             val imgCenter = padding + artSize / 2f
@@ -958,7 +1550,7 @@ object ComposeToImage {
         } else {
             val titlePaint = TextPaint().apply {
                 color = mainColor; textSize = cardSize * 0.036f
-                typeface = Typeface.DEFAULT_BOLD; isAntiAlias = true; letterSpacing = -0.02f
+                typeface = boldTf; isAntiAlias = true; letterSpacing = -0.02f
             }
             if (config.showTitle) {
                 canvas.drawText(songTitle, padding, padding + cardSize * 0.05f, titlePaint)
@@ -966,7 +1558,7 @@ object ComposeToImage {
             }
             if (config.showArtist) {
                 val artistPaint = TextPaint().apply {
-                    color = secColor; textSize = cardSize * 0.026f; isAntiAlias = true
+                    color = secColor; textSize = cardSize * 0.026f; typeface = baseTf; isAntiAlias = true
                 }
                 canvas.drawText(artistName, padding, headerY + cardSize * 0.04f, artistPaint)
                 headerY += cardSize * 0.05f
@@ -986,13 +1578,13 @@ object ComposeToImage {
         val quotePaint = TextPaint().apply {
             color    = (accentArgb and 0x00FFFFFF) or 0x8C000000.toInt()
             textSize = cardSize * 0.10f
-            typeface = Typeface.DEFAULT_BOLD; isAntiAlias = true
+            typeface = boldTf; isAntiAlias = true
         }
         canvas.drawText("\u201C", padding, headerY + quotePaint.textSize * 0.7f, quotePaint)
         val quoteH = quotePaint.textSize * 0.75f
 
         val lyricsPaint = TextPaint().apply {
-            color = mainColor; typeface = Typeface.DEFAULT_BOLD; isAntiAlias = true; letterSpacing = -0.02f
+            color = mainColor; typeface = boldTf; isAntiAlias = true; letterSpacing = -0.02f
         }
         val logoH          = if (config.showBranding) cardSize * 0.09f else 0f
         val lyricsMaxWidth = (size - padding * 2).toInt()
@@ -1014,7 +1606,8 @@ object ComposeToImage {
         if (config.showBranding) {
             drawBranding(context, canvas, cardSize,
                 x = padding, y = size - padding * 0.2f,
-                circleColor = secColor, logoTint = 0xDD000000.toInt(), textColor = secColor)
+                circleColor = secColor, logoTint = 0xDD000000.toInt(), textColor = secColor,
+                typeface = baseTf)
         }
         return bitmap
     }
@@ -1078,6 +1671,12 @@ object ComposeToImage {
     // RENDERER 7 — DezzyShare
     // ─────────────────────────────────────────────────────────────────────────
 
+    /**
+     * Mirrors ShareBottomSheet's preview card 1:1 so what the user shares is exactly what they
+     * saw: a 3:4 card in the chosen palette color, big centered cover, centered title/artist,
+     * and the "♪ Dezzy" branding row. (The old renderer drew an unrelated square lyrics card,
+     * which is why shared images didn't match the preview.)
+     */
     private fun renderDezzyShare(
         context: Context,
         coverArt: Bitmap?,
@@ -1087,100 +1686,191 @@ object ComposeToImage {
         config: LyricsCardConfig,
         cardSize: Int,
     ): Bitmap {
-        val bitmap  = createBitmap(cardSize, cardSize)
-        val canvas  = Canvas(bitmap)
-        val corner  = cardSize * 0.06f
-        val padding = cardSize * 0.07f
-        val size    = cardSize.toFloat()
+        val width  = cardSize
+        val height = cardSize * 4 / 3               // preview: aspectRatio(3f / 4f)
+        val (baseTf, boldTf) = resolveTypefaces(context, config)
+        val bitmap = createBitmap(width, height)
+        val canvas = Canvas(bitmap)
+        val w = width.toFloat()
+        val h = height.toFloat()
 
         val bgColor      = config.customBgColor.toArgb()
         val mainColor    = config.customTextColor.toArgb()
         val secondaryClr = config.customSecondaryTextColor.toArgb()
 
-        // Background
-        canvas.drawRoundRect(RectF(0f, 0f, size, size), corner, corner, Paint().apply {
-            color = bgColor; isAntiAlias = true
+        // Preview proportions relative to its ~300dp-wide card.
+        val corner  = w * 0.053f                    // RoundedCornerShape(16.dp)
+        val padding = w * 0.08f                     // padding(24.dp)
+
+        canvas.drawRoundRect(RectF(0f, 0f, w, h), corner, corner, Paint().apply {
+            isAntiAlias = true
+            if (config.customBgGradient) {
+                // Degradado estilo Spotify: el color de la paleta arriba → negro abajo.
+                shader = android.graphics.LinearGradient(
+                    0f, 0f, 0f, h,
+                    bgColor, android.graphics.Color.BLACK,
+                    android.graphics.Shader.TileMode.CLAMP,
+                )
+            } else {
+                color = bgColor
+            }
         })
 
-        // Top: Album art + Title + Artist
-        val artSize = cardSize * 0.16f
-        if (coverArt != null) {
-            val artRect = RectF(padding, padding, padding + artSize, padding + artSize)
-            val artCorner = cardSize * 0.02f
-            val path = Path().apply { addRoundRect(artRect, artCorner, artCorner, Path.Direction.CW) }
-            canvas.withClip(path) { drawBitmap(coverArt, null, artRect, null) }
+        val contentWidth = w - padding * 2
+
+        // ── Variante "Letra" (tab Letra del share): carátula pequeña arriba
+        //    con título/artista al lado, y la letra grande centrada ──
+        if (lyrics.isNotBlank()) {
+            val artSize = w * 0.15f
+            val headerTop = padding
+            if (coverArt != null) {
+                val artRect = RectF(padding, headerTop, padding + artSize, headerTop + artSize)
+                val artCorner = w * 0.02f
+                val path = Path().apply { addRoundRect(artRect, artCorner, artCorner, Path.Direction.CW) }
+                canvas.withClip(path) { drawBitmapCropped(coverArt, artRect) }
+            }
+            val headTextLeft = padding + artSize + w * 0.035f
+            val headTextWidth = (w - padding - headTextLeft).toInt().coerceAtLeast(1)
+            val headTitlePaint = TextPaint().apply {
+                color = mainColor; textSize = w * 0.05f
+                typeface = boldTf; isAntiAlias = true
+            }
+            val headArtistPaint = TextPaint().apply {
+                color = secondaryClr; textSize = w * 0.04f
+                typeface = baseTf; isAntiAlias = true
+            }
+            fun headLine(text: String, paint: TextPaint) =
+                StaticLayout.Builder.obtain(text, 0, text.length, paint, headTextWidth)
+                    .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                    .setMaxLines(1)
+                    .setEllipsize(android.text.TextUtils.TruncateAt.END)
+                    .setEllipsizedWidth(headTextWidth)
+                    .build()
+            val headTitle = headLine(songTitle, headTitlePaint)
+            val headArtist = headLine(artistName, headArtistPaint)
+            val headTextTop = headerTop + (artSize - headTitle.height - headArtist.height - w * 0.01f) / 2f
+            canvas.withTranslation(headTextLeft, headTextTop) { headTitle.draw(this) }
+            canvas.withTranslation(headTextLeft, headTextTop + headTitle.height + w * 0.01f) { headArtist.draw(this) }
+
+            // Letra centrada entre el header y el branding
+            val brandH = w * 0.06f
+            val lyricsTop = headerTop + artSize + w * 0.07f
+            val lyricsBottom = h - padding - brandH - w * 0.04f
+            val lyricsPaint = TextPaint().apply {
+                color = mainColor; typeface = boldTf
+                isAntiAlias = true; letterSpacing = -0.01f
+            }
+            val lyricsLayout = buildFittedLyricsLayout(
+                lyrics = lyrics,
+                paint = lyricsPaint,
+                maxWidth = (contentWidth * 0.96f).toInt(),
+                availableHeight = lyricsBottom - lyricsTop,
+                alignment = Layout.Alignment.ALIGN_NORMAL,
+                initialTextSize = w * 0.078f,
+            )
+            val lyricsY = lyricsTop + ((lyricsBottom - lyricsTop) - lyricsLayout.height).coerceAtLeast(0f) / 2f
+            canvas.withTranslation(padding, lyricsY) { lyricsLayout.draw(this) }
+
+            // Branding inferior (estrella + "Dezzy"), centrado
+            val brandPaintL = TextPaint().apply {
+                color = mainColor; textSize = w * 0.047f
+                typeface = boldTf; isAntiAlias = true
+            }
+            val noteSizeL = w * 0.053f
+            val brandTextL = "Dezzy"
+            val brandWidthL = brandPaintL.measureText(brandTextL)
+            val rowWidthL = noteSizeL + w * 0.02f + brandWidthL
+            var xL = (w - rowWidthL) / 2f
+            val rowCenterYL = h - padding - brandH / 2f
+            context.getDrawable(R.drawable.star)
+                ?.toBitmap(noteSizeL.toInt(), noteSizeL.toInt())
+                ?.let { star ->
+                    val starPaint = Paint().apply {
+                        colorFilter = PorterDuffColorFilter(mainColor, PorterDuff.Mode.SRC_IN)
+                        isAntiAlias = true
+                    }
+                    canvas.drawBitmap(star, xL, rowCenterYL - noteSizeL / 2f, starPaint)
+                }
+            xL += noteSizeL + w * 0.02f
+            val baselineL = rowCenterYL - (brandPaintL.descent() + brandPaintL.ascent()) / 2f
+            canvas.drawText(brandTextL, xL, baselineL, brandPaintL)
+
+            return bitmap
         }
 
-        val textStartX = if (coverArt != null) padding + artSize + cardSize * 0.05f else padding
+        // Measure every block first so the whole group can be vertically centered,
+        // exactly like the preview's verticalArrangement = Center.
         val titlePaint = TextPaint().apply {
-            color = mainColor; textSize = cardSize * 0.048f; typeface = Typeface.DEFAULT_BOLD; isAntiAlias = true; letterSpacing = -0.01f
+            color = mainColor; textSize = w * 0.073f      // 22.sp
+            typeface = boldTf; isAntiAlias = true
         }
         val artistPaint = TextPaint().apply {
-            color = secondaryClr; textSize = cardSize * 0.038f; typeface = Typeface.DEFAULT; isAntiAlias = true
+            color = secondaryClr; textSize = w * 0.053f   // 16.sp
+            typeface = baseTf; isAntiAlias = true
+        }
+        val brandPaint = TextPaint().apply {
+            color = mainColor; textSize = w * 0.047f      // 14.sp
+            typeface = boldTf; isAntiAlias = true
         }
 
-        val titleLayout = StaticLayout.Builder.obtain(songTitle, 0, songTitle.length, titlePaint, (size - textStartX - padding).toInt())
-            .setAlignment(Layout.Alignment.ALIGN_NORMAL).setMaxLines(1).build()
-        val artistLayout = StaticLayout.Builder.obtain(artistName, 0, artistName.length, artistPaint, (size - textStartX - padding).toInt())
-            .setAlignment(Layout.Alignment.ALIGN_NORMAL).setMaxLines(1).build()
+        fun singleLine(text: String, paint: TextPaint) =
+            StaticLayout.Builder.obtain(text, 0, text.length, paint, contentWidth.toInt())
+                .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                .setMaxLines(1)
+                .setEllipsize(android.text.TextUtils.TruncateAt.END)
+                .setEllipsizedWidth(contentWidth.toInt())
+                .build()
 
-        val headerHeight = titleLayout.height + artistLayout.height + cardSize * 0.01f
-        val headerY = padding + (artSize - headerHeight) / 2f
-        
-        canvas.withTranslation(textStartX, headerY) {
-            titleLayout.draw(this)
-            translate(0f, titleLayout.height.toFloat() + cardSize * 0.01f)
-            artistLayout.draw(this)
+        val titleLayout  = singleLine(songTitle, titlePaint)
+        val artistLayout = singleLine(artistName, artistPaint)
+
+        val coverSize  = contentWidth                 // fillMaxWidth().aspectRatio(1f)
+        val gapLarge   = w * 0.08f                    // Spacer(24.dp)
+        val gapSmall   = w * 0.013f                   // Spacer(4.dp)
+        val noteSize   = w * 0.053f                   // Icon 16.dp
+        val brandRowH  = maxOf(noteSize, brandPaint.textSize * 1.2f)
+
+        val totalContent = coverSize + gapLarge + titleLayout.height + gapSmall +
+            artistLayout.height + gapLarge + brandRowH
+        var y = (h - totalContent) / 2f
+
+        // Cover — full content width, rounded like the preview's RoundedCornerShape(12.dp).
+        if (coverArt != null) {
+            val artRect = RectF(padding, y, padding + coverSize, y + coverSize)
+            val artCorner = w * 0.04f
+            val path = Path().apply { addRoundRect(artRect, artCorner, artCorner, Path.Direction.CW) }
+            canvas.withClip(path) { drawBitmapCropped(coverArt, artRect) }
         }
+        y += coverSize + gapLarge
 
-        // Bottom: Branding
-        val logoSize = cardSize * 0.05f
-        val brandingY = size - padding - logoSize
-        val rawLogo = context.getDrawable(R.drawable.star)?.toBitmap(logoSize.toInt(), logoSize.toInt())
-        val logoPaint = Paint().apply {
-            colorFilter = PorterDuffColorFilter(secondaryClr, PorterDuff.Mode.SRC_IN); isAntiAlias = true
-        }
-        
-        // Circular background for logo
-        val circleRadius = logoSize * 0.7f
-        val circleX = padding + circleRadius
-        val circleY = brandingY + logoSize / 2f
-        canvas.drawCircle(circleX, circleY, circleRadius, Paint().apply {
-            color = (secondaryClr and 0x00FFFFFF) or 0x33000000; isAntiAlias = true // 20% opacity
-        })
-        
-        if (rawLogo != null) {
-            canvas.drawBitmap(rawLogo, circleX - logoSize / 2f, circleY - logoSize / 2f, logoPaint)
-        }
+        canvas.withTranslation(padding, y) { titleLayout.draw(this) }
+        y += titleLayout.height + gapSmall
 
-        val dezzyPaint = TextPaint().apply {
-            color = secondaryClr; textSize = cardSize * 0.038f; typeface = Typeface.DEFAULT_BOLD; isAntiAlias = true
-        }
-        canvas.drawText("Dezzy", circleX + circleRadius + cardSize * 0.03f, brandingY + logoSize * 0.8f, dezzyPaint)
+        canvas.withTranslation(padding, y) { artistLayout.draw(this) }
+        y += artistLayout.height + gapLarge
 
-        // Middle: Lyrics
-        val lyricsTop = padding + artSize + padding
-        val lyricsBottom = brandingY - padding
+        // Branding row (music note + "Dezzy"), centered as a unit like the preview.
+        val brandText = "Dezzy"
+        val brandTextWidth = brandPaint.measureText(brandText)
+        val noteGap = w * 0.02f                       // Spacer(6.dp)
+        val rowWidth = noteSize + noteGap + brandTextWidth
+        var x = (w - rowWidth) / 2f
+        val rowCenterY = y + brandRowH / 2f
 
-        val customTypeface = com.arturo254.opentune.ui.theme.getTypeface(context, config.fontName)
-
-        val lyricsPaint = TextPaint().apply {
-            color = mainColor; typeface = customTypeface; isAntiAlias = true; letterSpacing = -0.02f
-        }
-        val lyricsMaxWidth  = (size - padding * 2).toInt()
-        
-        val lyricsLayout = buildFittedLyricsLayout(
-            lyrics          = lyrics,
-            paint           = lyricsPaint,
-            maxWidth        = lyricsMaxWidth,
-            availableHeight = lyricsBottom - lyricsTop,
-            alignment       = Layout.Alignment.ALIGN_NORMAL,
-            initialTextSize = (cardSize * 0.065f) * config.textSizeMultiplier,
-            minTextSize     = 24f,
-        )
-        
-        val lyricsY = lyricsTop + (lyricsBottom - lyricsTop - lyricsLayout.height) / 2f
-        canvas.withTranslation(padding, lyricsY) { lyricsLayout.draw(this) }
+        // Star from the app logo (matches the preview's branding row).
+        context.getDrawable(R.drawable.star)
+            ?.toBitmap(noteSize.toInt(), noteSize.toInt())
+            ?.let { star ->
+                val starPaint = Paint().apply {
+                    colorFilter = PorterDuffColorFilter(mainColor, PorterDuff.Mode.SRC_IN)
+                    isAntiAlias = true
+                }
+                canvas.drawBitmap(star, x, rowCenterY - noteSize / 2f, starPaint)
+            }
+        x += noteSize + noteGap
+        // Baseline vertically centered against the icon.
+        val textBaseline = rowCenterY - (brandPaint.descent() + brandPaint.ascent()) / 2f
+        canvas.drawText(brandText, x, textBaseline, brandPaint)
 
         return bitmap
     }

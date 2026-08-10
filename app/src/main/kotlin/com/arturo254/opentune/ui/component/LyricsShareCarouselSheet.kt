@@ -45,7 +45,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.palette.graphics.Palette
-import coil3.ImageLoader
+import coil3.imageLoader
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.toBitmap
@@ -92,15 +92,59 @@ private val SecondaryTextColors = listOf(
 // API pública
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Qué texto se pinta en la tarjeta cuando la letra está traducida. */
+enum class LyricsShareTextMode(val label: String) {
+    Original("Original"),
+    Translated("Traducción"),
+    Both("Ambas"),
+}
+
+/**
+ * Combina letra original y traducción según el modo elegido.
+ *
+ * En [LyricsShareTextMode.Both] se intercalan línea a línea (original arriba,
+ * traducción debajo) porque ambos textos vienen de la MISMA selección de versos
+ * y por tanto están alineados; si por lo que sea no cuadran, se cae a los dos
+ * bloques separados en vez de emparejar versos que no se corresponden.
+ */
+fun buildLyricsShareText(
+    original: String,
+    translated: String?,
+    mode: LyricsShareTextMode,
+): String {
+    val trans = translated?.takeIf { it.isNotBlank() } ?: return original
+    return when (mode) {
+        LyricsShareTextMode.Original -> original
+        LyricsShareTextMode.Translated -> trans
+        LyricsShareTextMode.Both -> {
+            val originalLines = original.lines()
+            val translatedLines = trans.lines()
+            if (originalLines.size == translatedLines.size) {
+                originalLines.zip(translatedLines)
+                    .joinToString("\n") { (o, t) ->
+                        if (t.isBlank() || t.trim() == o.trim()) o else "$o\n$t"
+                    }
+            } else {
+                "$original\n\n$trans"
+            }
+        }
+    }
+}
+
 /**
  * Bottom sheet que permite al usuario:
  *  1. Previsualizar en tiempo real la tarjeta de letras.
- *  2. Seleccionar un layout en el carrusel horizontal.
- *  3. Elegir el estilo de vidrio/color.
- *  4. Ajustar tamaño de texto, alineación, visibilidad y padding.
- *  5. Compartir o guardar la configuración resultante.
+ *  2. Elegir entre letra original, traducción o ambas (si hay traducción).
+ *  3. Seleccionar un layout en el carrusel horizontal.
+ *  4. Elegir el estilo de vidrio/color.
+ *  5. Ajustar tamaño de texto, alineación, visibilidad y padding.
+ *  6. Compartir o guardar la configuración resultante.
  *
- * @param onShare  Se llama con el [LyricsCardConfig] final cuando el usuario pulsa "Compartir".
+ * @param translatedText Traducción de los mismos versos seleccionados, o null si
+ *                       la canción no está traducida. Solo cuando no es null
+ *                       aparece el selector Original / Traducción / Ambas.
+ * @param onShare  Se llama con el [LyricsCardConfig] final y el texto ya resuelto
+ *                 (original, traducción o ambas) cuando el usuario pulsa "Compartir".
  *                 El caller es responsable de capturar el composable como bitmap y lanzar el Intent.
  * @param onSave   Opcional. Si se provee, aparece el botón "Guardar".
  */
@@ -110,21 +154,29 @@ fun LyricsShareCarouselSheet(
     lyricText: String,
     mediaMetadata: MediaMetadata,
     initialConfig: LyricsCardConfig = LyricsCardConfig(),
+    translatedText: String? = null,
     onDismiss: () -> Unit,
-    onShare: (config: LyricsCardConfig) -> Unit,
-    onSave: ((config: LyricsCardConfig) -> Unit)? = null,
+    onShare: (config: LyricsCardConfig, text: String) -> Unit,
+    onSave: ((config: LyricsCardConfig, text: String) -> Unit)? = null,
 ) {
     var config by remember { mutableStateOf(initialConfig) }
+    val hasTranslation = !translatedText.isNullOrBlank()
+    var textMode by remember(translatedText) { mutableStateOf(LyricsShareTextMode.Original) }
+    // Lo que realmente se pinta y se comparte: el resto del sheet no distingue
+    // entre original y traducción, solo ve este texto.
+    val effectiveText = remember(lyricText, translatedText, textMode) {
+        buildLyricsShareText(lyricText, translatedText, textMode)
+    }
     var extractedColors by remember { mutableStateOf<List<Color>?>(null) }
+    var paletteGlassStyle by remember { mutableStateOf<LyricsGlassStyle?>(null) }
     val coverUrl = mediaMetadata.thumbnailUrl
     val context = LocalContext.current
     LaunchedEffect(coverUrl) {
         if (coverUrl != null) {
             withContext(Dispatchers.IO) {
                 try {
-                    val loader = ImageLoader(context)
-                    val req = ImageRequest.Builder(context).data(coverUrl).allowHardware(false).build()
-                    val result = loader.execute(req)
+                    val req = ImageRequest.Builder(context).data(coverUrl).size(200, 200).allowHardware(false).build()
+                    val result = context.imageLoader.execute(req)
                     val bmp = result.image?.toBitmap()
                     if (bmp != null) {
                         val palette = Palette.from(bmp).generate()
@@ -138,9 +190,32 @@ fun LyricsShareCarouselSheet(
                             palette.lightMutedSwatch
                         ).map { Color(it.rgb) }.distinct()
                         extractedColors = swatches.ifEmpty { null }
+                        paletteGlassStyle = LyricsGlassStyle.fromPalette(palette)
                     }
                 } catch (_: Exception) {}
             }
+        }
+    }
+
+    LaunchedEffect(extractedColors, paletteGlassStyle) {
+        var newConfig = config
+        extractedColors?.let { colors ->
+            if (colors.isNotEmpty()) {
+                val dominant = colors.first()
+                val vibrant = colors.getOrNull(1) ?: colors.first()
+                val secondary = colors.getOrNull(2) ?: colors.getOrNull(1) ?: colors.first()
+                newConfig = newConfig.copy(
+                    customBgColor = dominant,
+                    customTextColor = vibrant,
+                    customSecondaryTextColor = secondary
+                )
+            }
+        }
+        paletteGlassStyle?.let {
+            newConfig = newConfig.copy(glassStyle = it)
+        }
+        if (newConfig != config) {
+            config = newConfig
         }
     }
 
@@ -176,16 +251,38 @@ fun LyricsShareCarouselSheet(
             // ── Preview principal ─────────────────────────────────────────
             // AnimatedContent hace fade entre cambios de config
             AnimatedContent(
-                targetState  = config,
+                targetState  = config to effectiveText,
                 transitionSpec = { fadeIn(tween(200)) togetherWith fadeOut(tween(160)) },
                 label        = "lyrics_card_preview",
-            ) { previewConfig ->
+            ) { (previewConfig, previewText) ->
                 CardPreviewBox(
-                    lyricText     = lyricText,
+                    lyricText     = previewText,
                     mediaMetadata = mediaMetadata,
                     config        = previewConfig,
                     previewSizeDp = 264,
                 )
+            }
+
+            // ── Original / Traducción / Ambas ─────────────────────────────
+            // Solo aparece si la canción está traducida: si no, sobra ruido.
+            if (hasTranslation) {
+                Spacer(Modifier.height(18.dp))
+                SheetSectionLabel("Letra")
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    LyricsShareTextMode.values().forEach { mode ->
+                        FilterChip(
+                            selected = textMode == mode,
+                            onClick  = { textMode = mode },
+                            label    = { Text(mode.label) },
+                            shape    = RoundedCornerShape(12.dp),
+                        )
+                    }
+                }
             }
 
             Spacer(Modifier.height(22.dp))
@@ -200,10 +297,11 @@ fun LyricsShareCarouselSheet(
                     .padding(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                LyricsLayoutStyle.values().forEach { style ->
+                // EntityCard no se ofrece aquí: es el diseño del share de artista/playlist.
+                LyricsLayoutStyle.values().filter { it != LyricsLayoutStyle.EntityCard }.forEach { style ->
                     LayoutStyleThumbnail(
                         style         = style,
-                        lyricText     = lyricText,
+                        lyricText     = effectiveText,
                         mediaMetadata = mediaMetadata,
                         currentConfig = config,
                         isSelected    = config.layoutStyle == style,
@@ -214,44 +312,83 @@ fun LyricsShareCarouselSheet(
 
             Spacer(Modifier.height(18.dp))
 
-            AnimatedVisibility(
-                visible = config.layoutStyle == LyricsLayoutStyle.DezzyShare,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut()
-            ) {
-                Column {
-                    ColorSelectorRow(
-                        title = "Color del fondo",
-                        colors = currentBgColors,
-                        selectedColor = config.customBgColor,
-                        onColorSelected = { config = config.copy(customBgColor = it) }
-                    )
-                    Spacer(Modifier.height(20.dp))
-                    ColorSelectorRow(
-                        title = "Color del texto",
-                        colors = currentTextColors,
-                        selectedColor = config.customTextColor,
-                        onColorSelected = { config = config.copy(customTextColor = it) }
-                    )
-                    Spacer(Modifier.height(20.dp))
-                    ColorSelectorRow(
-                        title = "Color secundario del texto",
-                        colors = currentSecondaryColors,
-                        selectedColor = config.customSecondaryTextColor,
-                        onColorSelected = { config = config.copy(customSecondaryTextColor = it) }
-                    )
-                    Spacer(Modifier.height(18.dp))
-                }
+            // ── Paleta del álbum — visible para TODOS los layouts ──────────────────
+            // Para DezzyShare: aplica a customBgColor / customTextColor directamente.
+            // Para otros layouts: aplica al tinte del glassStyle activo.
+            if (currentBgColors.isNotEmpty()) {
+                SheetSectionLabel("🎨  Paleta del álbum")
+
+                ColorSelectorRow(
+                    title = "Color del fondo",
+                    colors = currentBgColors,
+                    selectedColor = config.customBgColor,
+                    onColorSelected = { color ->
+                        var newConfig = config.copy(customBgColor = color)
+                        if (config.layoutStyle != LyricsLayoutStyle.DezzyShare) {
+                            newConfig = newConfig.copy(
+                                glassStyle = config.glassStyle.copy(
+                                    surfaceTint = color.copy(alpha = 0.6f),
+                                    glassTint   = color.copy(alpha = 0.35f),
+                                    overlayColor = color,
+                                    name = "Personalizado"
+                                )
+                            )
+                        }
+                        config = newConfig
+                    }
+                )
+                Spacer(Modifier.height(14.dp))
+                ColorSelectorRow(
+                    title = "Color del texto",
+                    colors = currentTextColors,
+                    selectedColor = config.customTextColor,
+                    onColorSelected = { color ->
+                        var newConfig = config.copy(customTextColor = color)
+                        if (config.layoutStyle != LyricsLayoutStyle.DezzyShare) {
+                            newConfig = newConfig.copy(
+                                glassStyle = config.glassStyle.copy(
+                                    textColor = color,
+                                    secondaryTextColor = color.copy(alpha = 0.65f),
+                                    name = "Personalizado"
+                                )
+                            )
+                        }
+                        config = newConfig
+                    }
+                )
+                Spacer(Modifier.height(14.dp))
+                ColorSelectorRow(
+                    title = "Color secundario",
+                    colors = currentSecondaryColors,
+                    selectedColor = config.customSecondaryTextColor,
+                    onColorSelected = { color ->
+                        var newConfig = config.copy(customSecondaryTextColor = color)
+                        if (config.layoutStyle != LyricsLayoutStyle.DezzyShare) {
+                            newConfig = newConfig.copy(
+                                glassStyle = config.glassStyle.copy(
+                                    secondaryTextColor = color,
+                                    name = "Personalizado"
+                                )
+                            )
+                        }
+                        config = newConfig
+                    }
+                )
+                Spacer(Modifier.height(20.dp))
             }
 
+            // ── Glass style + customization (solo layouts que no son DezzyShare) ────
             AnimatedVisibility(
                 visible = config.layoutStyle != LyricsLayoutStyle.DezzyShare,
                 enter = expandVertically() + fadeIn(),
                 exit = shrinkVertically() + fadeOut()
             ) {
                 Column {
-                    // ── Selector de estilo de vidrio ──────────────────────────────
-                    SheetSectionLabel("Estilo")
+                    SheetSectionLabel("Estilo de vidrio")
+
+                    val presets = remember(paletteGlassStyle) {
+                        listOfNotNull(paletteGlassStyle) + LyricsGlassStyle.allPresets
+                    }
 
                     Row(
                         modifier = Modifier
@@ -260,7 +397,7 @@ fun LyricsShareCarouselSheet(
                             .padding(horizontal = 20.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        LyricsGlassStyle.allPresets.forEach { preset ->
+                        presets.forEach { preset ->
                             GlassStyleChip(
                                 preset     = preset,
                                 isSelected = config.glassStyle == preset,
@@ -271,7 +408,6 @@ fun LyricsShareCarouselSheet(
 
                     Spacer(Modifier.height(14.dp))
 
-                    // ── Panel de personalización (expandible) ─────────────────────
                     CustomizationPanel(
                         config        = config,
                         onConfigChange = { config = it },
@@ -293,7 +429,7 @@ fun LyricsShareCarouselSheet(
             ) {
                 if (onSave != null) {
                     OutlinedButton(
-                        onClick  = { onSave(config) },
+                        onClick  = { onSave(config, effectiveText) },
                         modifier = Modifier.weight(1f),
                         shape    = RoundedCornerShape(14.dp),
                     ) {
@@ -309,7 +445,7 @@ fun LyricsShareCarouselSheet(
                     }
                 }
                 Button(
-                    onClick  = { onShare(config) },
+                    onClick  = { onShare(config, effectiveText) },
                     modifier = Modifier.weight(1f),
                     shape    = RoundedCornerShape(14.dp),
                 ) {

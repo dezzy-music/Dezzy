@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.arturo254.opentune.innertube.models.WatchEndpoint
+import com.arturo254.opentune.models.MediaMetadata
 import com.arturo254.opentune.LocalPlayerAwareWindowInsets
 import com.arturo254.opentune.LocalPlayerConnection
 import com.arturo254.opentune.R
@@ -429,22 +430,35 @@ fun StatsScreen(
                                 if (song.id == mediaMetadata?.id) {
                                     playerConnection.player.togglePlayPause()
                                 } else {
+                                    val matchedSong = mostPlayedSongs.firstOrNull { it.id == song.id }
+                                    val preloadItem = matchedSong?.toMediaMetadata() ?: MediaMetadata(
+                                        id = song.id,
+                                        title = song.title,
+                                        artists = emptyList(),
+                                        duration = (song.timeListened?.toInt() ?: -1),
+                                        thumbnailUrl = song.thumbnailUrl
+                                    )
                                     playerConnection.playQueue(
                                         YouTubeQueue(
                                             endpoint = WatchEndpoint(song.id),
-                                            preloadItem = mostPlayedSongs[index].toMediaMetadata(),
+                                            preloadItem = preloadItem,
                                         ),
                                     )
                                 }
                             },
                             onLongClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                menuState.show {
-                                    SongMenu(
-                                        originalSong = mostPlayedSongs[index],
-                                        navController = navController,
-                                        onDismiss = menuState::dismiss,
-                                    )
+                                val originalSong = mostPlayedSongs.getOrNull(index)
+                                    ?.takeIf { it.id == song.id }
+                                    ?: mostPlayedSongs.firstOrNull { it.id == song.id }
+                                if (originalSong != null) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    menuState.show {
+                                        SongMenu(
+                                            originalSong = originalSong,
+                                            navController = navController,
+                                            onDismiss = menuState::dismiss,
+                                        )
+                                    }
                                 }
                             },
                         )
@@ -526,8 +540,8 @@ fun StatsScreen(
                                 joinByBullet(
                                     pluralStringResource(
                                         R.plurals.n_time,
-                                        album.songCountListened!!,
-                                        album.songCountListened
+                                        album.songCountListened ?: 0,
+                                        album.songCountListened ?: 0,
                                     ),
                                     makeTimeString(album.timeListened?.toLong()),
                                 ),

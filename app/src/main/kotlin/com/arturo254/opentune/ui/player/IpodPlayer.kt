@@ -70,11 +70,27 @@ fun IpodPlayer(
     onSliderPositionChange: (Long?) -> Unit,
     onQueueClick: () -> Unit,
     onMenuClick: () -> Unit,
+    onVisualizerClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
     val isPlaying by playerConnection.isPlaying.collectAsState()
+
+    // Compartir directo (tarjeta Canción/Letra/Canvas)
+    var showShareSheet by remember { mutableStateOf(false) }
+    val shareLyricsEntity by playerConnection.currentLyrics.collectAsState(initial = null)
+    if (showShareSheet) {
+        com.arturo254.opentune.ui.component.ShareBottomSheet(
+            title = mediaMetadata?.title ?: "",
+            subtitle = mediaMetadata?.artists?.joinToString { it.name } ?: "",
+            thumbnailUrl = mediaMetadata?.thumbnailUrl,
+            shareLink = "https://music.youtube.com/watch?v=${mediaMetadata?.id ?: ""}",
+            lyrics = shareLyricsEntity?.lyrics,
+            mediaId = mediaMetadata?.id,
+            onDismiss = { showShareSheet = false }
+        )
+    }
     
     val position by positionState
     val duration by durationState
@@ -135,16 +151,24 @@ fun IpodPlayer(
         }
     }
 
-    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val screenWidthDp = configuration.screenWidthDp.dp
+    val screenHeightDp = configuration.screenHeightDp.dp
 
-    // Dynamic LCD height transition
+    // Dynamic LCD height transition — clamped to the screen so it never overflows
+    // on short/small devices while keeping the tuned size on typical phones.
     val lcdHeight by animateDpAsState(
-        targetValue = if (isLandscape) 190.dp else if (showLyrics) 245.dp else 210.dp,
+        targetValue = (if (isLandscape) 190.dp else if (showLyrics) 245.dp else 210.dp)
+            .coerceAtMost(screenHeightDp * 0.42f),
         animationSpec = tween(durationMillis = 300),
         label = "LcdHeightAnimation"
     )
 
-    val clickWheelSize = if (isLandscape) 185.dp else 240.dp
+    // Click wheel scales down on narrow screens so it always fits; unchanged on
+    // typical/large phones.
+    val clickWheelSize = (if (isLandscape) 185.dp else 240.dp)
+        .coerceAtMost(screenWidthDp * 0.72f)
 
     val topBarColor = if (isDarkBody) Color.White else Color.Black
     val topBar = @Composable {
@@ -167,12 +191,40 @@ fun IpodPlayer(
                 color = topBarColor,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.ExtraBold,
-                fontFamily = FontFamily.Monospace
+                fontFamily = MaterialTheme.typography.bodyLarge.fontFamily
             )
 
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                com.arturo254.opentune.ui.component.CastButton(tint = topBarColor)
+
+                // Video musical · visualizador · compartir
+                IconButton(onClick = { playerConnection.enableVideoMode() }) {
+                    Icon(
+                        painter = painterResource(R.drawable.slow_motion_video),
+                        contentDescription = "Video",
+                        tint = topBarColor,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+                IconButton(onClick = onVisualizerClick) {
+                    Icon(
+                        painter = painterResource(R.drawable.auto_awesome),
+                        contentDescription = "Visualizador",
+                        tint = topBarColor,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+                IconButton(onClick = { showShareSheet = true }) {
+                    Icon(
+                        painter = painterResource(R.drawable.share),
+                        contentDescription = "Compartir",
+                        tint = topBarColor,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+
                 // Lyrics Button (Only visible for online songs)
                 if (!isLocalSong) {
                     IconButton(onClick = { showLyrics = !showLyrics }) {
@@ -246,9 +298,9 @@ fun IpodPlayer(
                         Text(
                             text = stringResource(R.string.now_playing),
                             color = Color.Black,
-                            fontSize = 10.sp,
+                            fontSize = 8.5.sp,
                             fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace
+                            fontFamily = MaterialTheme.typography.bodyLarge.fontFamily
                         )
 
                         // Battery Indicator
@@ -313,8 +365,8 @@ fun IpodPlayer(
                                             text = mediaMetadata?.title ?: "No Title",
                                             color = Color.Black,
                                             fontWeight = FontWeight.Bold,
-                                            fontFamily = FontFamily.Monospace,
-                                            fontSize = if (isLandscape) 9.sp else 11.sp,
+                                            fontFamily = MaterialTheme.typography.bodyLarge.fontFamily,
+                                            fontSize = if (isLandscape) 7.sp else 8.5.sp,
                                             maxLines = if (isLandscape) 1 else 2,
                                             overflow = TextOverflow.Ellipsis,
                                             textAlign = TextAlign.Center
@@ -326,8 +378,8 @@ fun IpodPlayer(
                                             text = mediaMetadata?.artists?.joinToString { it.name } ?: "Unknown",
                                             color = Color(0xFF2C3E50),
                                             fontWeight = FontWeight.SemiBold,
-                                            fontFamily = FontFamily.Monospace,
-                                            fontSize = if (isLandscape) 8.sp else 9.sp,
+                                            fontFamily = MaterialTheme.typography.bodyLarge.fontFamily,
+                                            fontSize = if (isLandscape) 6.sp else 7.5.sp,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
                                             textAlign = TextAlign.Center
@@ -361,13 +413,13 @@ fun IpodPlayer(
                                                 text = makeTimeString(position),
                                                 color = Color(0xFF2C3E50),
                                                 fontSize = 7.sp,
-                                                fontFamily = FontFamily.Monospace
+                                                fontFamily = MaterialTheme.typography.bodyLarge.fontFamily
                                             )
                                             Text(
                                                 text = makeTimeString(duration),
                                                 color = Color(0xFF2C3E50),
                                                 fontSize = 7.sp,
-                                                fontFamily = FontFamily.Monospace
+                                                fontFamily = MaterialTheme.typography.bodyLarge.fontFamily
                                             )
                                         }
                                     }
@@ -393,7 +445,11 @@ fun IpodPlayer(
                                         Lyrics(
                                             lyricsSyncOffset = 0,
                                             sliderPositionProvider = { sliderPosition },
-                                            modifier = Modifier.fillMaxSize()
+                                            modifier = Modifier.fillMaxSize(),
+                                            // Proporcional a la tipografía retro del iPod
+                                            // (título 8.5sp / artista 7.5sp) en vez del
+                                            // tamaño global de letras (26sp por defecto).
+                                            textSizeOverride = if (isLandscape) 8f else 10f,
                                         )
                                     }
                                 }
@@ -429,8 +485,8 @@ fun IpodPlayer(
                                             text = mediaMetadata?.title ?: "No Title",
                                             color = Color.Black,
                                             fontWeight = FontWeight.Bold,
-                                            fontFamily = FontFamily.Monospace,
-                                            fontSize = if (isLandscape) 14.sp else 17.sp,
+                                            fontFamily = MaterialTheme.typography.bodyLarge.fontFamily,
+                                            fontSize = if (isLandscape) 9.sp else 10.5.sp,
                                             maxLines = if (isLandscape) 1 else 2,
                                             overflow = TextOverflow.Ellipsis
                                         )
@@ -441,8 +497,8 @@ fun IpodPlayer(
                                             text = mediaMetadata?.artists?.joinToString { it.name } ?: "Unknown Artist",
                                             color = Color(0xFF2C3E50),
                                             fontWeight = FontWeight.SemiBold,
-                                            fontFamily = FontFamily.Monospace,
-                                            fontSize = if (isLandscape) 11.sp else 13.sp,
+                                            fontFamily = MaterialTheme.typography.bodyLarge.fontFamily,
+                                            fontSize = if (isLandscape) 7.5.sp else 8.5.sp,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
@@ -473,14 +529,14 @@ fun IpodPlayer(
                                             Text(
                                                 text = makeTimeString(position),
                                                 color = Color(0xFF2C3E50),
-                                                fontSize = if (isLandscape) 9.sp else 11.sp,
-                                                fontFamily = FontFamily.Monospace
+                                                fontSize = if (isLandscape) 7.5.sp else 8.5.sp,
+                                                fontFamily = MaterialTheme.typography.bodyLarge.fontFamily
                                             )
                                             Text(
                                                 text = makeTimeString(duration),
                                                 color = Color(0xFF2C3E50),
-                                                fontSize = if (isLandscape) 9.sp else 11.sp,
-                                                fontFamily = FontFamily.Monospace
+                                                fontSize = if (isLandscape) 7.5.sp else 8.5.sp,
+                                                fontFamily = MaterialTheme.typography.bodyLarge.fontFamily
                                             )
                                         }
                                     }
@@ -589,8 +645,8 @@ fun IpodPlayer(
                     text = "MENU",
                     color = wheelTextColor,
                     fontWeight = FontWeight.Bold,
-                    fontSize = if (isLandscape) 11.sp else 13.sp,
-                    fontFamily = FontFamily.Monospace,
+                    fontSize = if (isLandscape) 10.sp else 11.sp,
+                    fontFamily = MaterialTheme.typography.bodyLarge.fontFamily,
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .padding(top = if (isLandscape) 10.dp else 16.dp)
@@ -759,8 +815,8 @@ private fun BatteryIndicator(
     ) {
         Text(
             text = "$level%",
-            fontSize = 9.sp,
-            fontFamily = FontFamily.Monospace,
+            fontSize = 8.sp,
+            fontFamily = MaterialTheme.typography.bodyLarge.fontFamily,
             fontWeight = FontWeight.Bold,
             color = Color.Black,
             modifier = Modifier.padding(end = 4.dp)

@@ -59,7 +59,7 @@ import java.util.concurrent.Executor
 import kotlin.coroutines.resume
 
 private const val TAG = "MusicDatabase"
-private const val CURRENT_VERSION = 28
+private const val CURRENT_VERSION = 30
 
 class MusicDatabase(
     private val delegate: InternalDatabase,
@@ -67,18 +67,30 @@ class MusicDatabase(
     val openHelper: SupportSQLiteOpenHelper
         get() = delegate.openHelper
 
+    // Los try/catch no son decorativos: una excepción dentro de un executor
+    // muere sin handler y mata el proceso entero. Un fallo de escritura en
+    // background (constraint, datos corruptos de InnerTube…) no justifica
+    // tumbar la app.
     fun query(block: MusicDatabase.() -> Unit) =
         with(delegate) {
             queryExecutor.execute {
-                block(this@MusicDatabase)
+                try {
+                    block(this@MusicDatabase)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Fallo en query en background", e)
+                }
             }
         }
 
     fun transaction(block: MusicDatabase.() -> Unit) =
         with(delegate) {
             transactionExecutor.execute {
-                runInTransaction {
-                    block(this@MusicDatabase)
+                try {
+                    runInTransaction {
+                        block(this@MusicDatabase)
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Fallo en transaction en background", e)
                 }
             }
         }
@@ -224,6 +236,18 @@ abstract class InternalDatabase : RoomDatabase() {
 private class DatabaseCallback : RoomDatabase.Callback() {
     override fun onOpen(db: SupportSQLiteDatabase) {
         super.onOpen(db)
+
+        // SÍNCRONO a propósito: si se hiciera en el executor de abajo habría una
+        // carrera con la primera consulta, y basta con que una lectura llegue
+        // antes para que la app vuelva a caerse. Son UPDATEs sobre tablas
+        // pequeñas y sin NULLs no tocan ninguna fila, así que el coste al abrir
+        // es despreciable.
+        runCatching { repairNullNotNullColumns(db) }
+            .onFailure { Log.e(TAG, "No se pudieron reparar los NULL", it) }
+
+        runCatching { repairForeignKeyOrphans(db) }
+            .onFailure { Log.e(TAG, "No se pudieron limpiar filas huérfanas", it) }
+
         java.util.concurrent.Executors.newSingleThreadExecutor().execute {
             try {
                 db.query("PRAGMA busy_timeout = 60000").close()
@@ -232,7 +256,7 @@ private class DatabaseCallback : RoomDatabase.Callback() {
                 db.query("PRAGMA synchronous = NORMAL").close()
                 db.query("PRAGMA temp_store = MEMORY").close()
                 db.query("PRAGMA mmap_size = 268435456").close()
-                
+
                 cleanupDuplicatePlaylistsOnOpen(db)
                 ensurePlaylistBrowseIdIndex(db)
             } catch (e: Exception) {
@@ -241,6 +265,125 @@ private class DatabaseCallback : RoomDatabase.Callback() {
         }
     }
     
+    /**
+     * Repara filas con NULL en columnas que Room considera NOT NULL.
+     *
+     * Room lee esas columnas con `getText()`, que exige un valor no nulo: al
+     * encontrarse un NULL revienta con un `NullPointerException` opaco dentro del
+     * driver de SQLite (el crash de la pantalla de Estadísticas, que leía
+     * `artist.name`). El origen fueron escrituras antiguas con datos incompletos
+     * de InnerTube; en release R8 elimina los null-checks de Kotlin y el nulo
+     * llegaba hasta la base.
+     *
+     * Ya no se generan filas así (ver DatabaseDao.update), pero las que quedaron
+     * guardadas seguirían rompiendo la app, así que se sanean al abrir. Es barato:
+     * sin NULLs, cada UPDATE no toca ninguna fila.
+     */
+    private fun repairNullNotNullColumns(db: SupportSQLiteDatabase) {
+        // Recorre el esquema real en vez de una lista fija de columnas: el primer
+        // intento solo saneaba `artist.name` y la app seguía cayendo por
+        // `artist.lastUpdateTime`, que también es NOT NULL. Preguntando a SQLite
+        // por sus propias columnas se cubren todas, incluidas las que se añadan
+        // en el futuro.
+        val tables = mutableListOf<String>()
+        runCatching {
+            db.query(
+                "SELECT name FROM sqlite_master WHERE type='table' " +
+                    "AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'android_%' " +
+                    "AND name <> 'room_master_table'"
+            ).use { c ->
+                while (c.moveToNext()) tables += c.getString(0)
+            }
+        }.onFailure {
+            Log.w(TAG, "No se pudo listar las tablas para reparar NULLs", it)
+            return
+        }
+
+        var repaired = 0
+        tables.forEach { table ->
+            runCatching {
+                data class Col(val name: String, val type: String)
+                val cols = mutableListOf<Col>()
+                db.query("PRAGMA table_info(`$table`)").use { c ->
+                    val nameIdx = c.getColumnIndex("name")
+                    val typeIdx = c.getColumnIndex("type")
+                    val notNullIdx = c.getColumnIndex("notnull")
+                    while (c.moveToNext()) {
+                        if (c.getInt(notNullIdx) == 1) {
+                            cols += Col(c.getString(nameIdx), c.getString(typeIdx).uppercase())
+                        }
+                    }
+                }
+                cols.forEach { col ->
+                    // Valor de relleno según el tipo declarado. Las fechas se
+                    // guardan como INTEGER (epoch millis), así que 0 es válido y
+                    // el conversor lo entiende.
+                    val fallback = when {
+                        col.type.contains("INT") -> "0"
+                        col.type.contains("REAL") ||
+                            col.type.contains("FLOA") ||
+                            col.type.contains("DOUB") -> "0.0"
+                        col.type.contains("BLOB") -> "x''"
+                        else -> "''"
+                    }
+                    runCatching {
+                        db.execSQL(
+                            "UPDATE `$table` SET `${col.name}` = $fallback WHERE `${col.name}` IS NULL"
+                        )
+                        repaired++
+                    }
+                }
+            }.onFailure { Log.w(TAG, "No se pudo reparar la tabla $table", it) }
+        }
+        Log.i(TAG, "repairNullNotNullColumns: revisadas ${tables.size} tablas, $repaired columnas")
+    }
+
+    /**
+     * Borra filas hijas cuya fila padre ya no existe (p. ej. eventos de una
+     * canción borrada de `song`).
+     *
+     * Las FK con CASCADE deberían impedirlas, pero las migraciones y la
+     * reconciliación de esquema corren con `foreign_keys=OFF`, y un backup
+     * restaurado se copia tal cual, así que pueden colarse. Room mapea esas
+     * filas a relaciones no-nulas (`EventWithSong.song`) y lanza
+     * "Relationship item 'song' was expected to be NON-NULL": era el crash del
+     * botón de Estadísticas — `firstEvent()` lee el evento MÁS antiguo, el más
+     * propenso a quedar huérfano — y también tumbaba la Home vía
+     * `lastListenEvent()`. Es un throw explícito de Room, así que revienta
+     * igual en release.
+     *
+     * SÍNCRONO por la misma razón que [repairNullNotNullColumns]: basta con que
+     * una lectura llegue antes para que la app vuelva a caerse. Sin huérfanos,
+     * `PRAGMA foreign_key_check` solo recorre los índices de las FK y no borra
+     * nada.
+     */
+    private fun repairForeignKeyOrphans(db: SupportSQLiteDatabase) {
+        // Columnas del pragma: table, rowid, parent, fkid. rowid solo sería
+        // NULL en tablas WITHOUT ROWID, que este esquema no usa.
+        val orphansByTable = mutableMapOf<String, MutableList<Long>>()
+        db.query("PRAGMA foreign_key_check").use { c ->
+            while (c.moveToNext()) {
+                if (!c.isNull(1)) {
+                    orphansByTable.getOrPut(c.getString(0)) { mutableListOf() } += c.getLong(1)
+                }
+            }
+        }
+        if (orphansByTable.isEmpty()) return
+
+        orphansByTable.forEach { (table, rowIds) ->
+            rowIds.chunked(500).forEach { chunk ->
+                runCatching {
+                    db.execSQL("DELETE FROM `$table` WHERE rowid IN (${chunk.joinToString(",")})")
+                }.onFailure { Log.w(TAG, "No se pudieron borrar huérfanos de $table", it) }
+            }
+        }
+        Log.i(
+            TAG,
+            "repairForeignKeyOrphans: " +
+                orphansByTable.entries.joinToString { "${it.key}=${it.value.size}" },
+        )
+    }
+
     private fun cleanupDuplicatePlaylistsOnOpen(db: SupportSQLiteDatabase) {
         try {
             db.execSQL("""

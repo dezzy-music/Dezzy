@@ -67,6 +67,9 @@ import androidx.compose.ui.zIndex
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
@@ -90,7 +93,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.palette.graphics.Palette
-import coil3.ImageLoader
+import coil3.imageLoader
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.toBitmap
@@ -104,7 +107,11 @@ import com.arturo254.opentune.constants.LyricsScrollKey
 import com.arturo254.opentune.constants.LyricsTextSizeKey
 import com.arturo254.opentune.constants.PlayerBackgroundStyle
 import com.arturo254.opentune.constants.PlayerBackgroundStyleKey
+import com.arturo254.opentune.constants.LyricsTextPositionKey
+import com.arturo254.opentune.ui.screens.settings.LyricsPosition
 import com.arturo254.opentune.constants.OpenRouterApiKey
+import com.arturo254.opentune.constants.DeeplApiKey
+import com.arturo254.opentune.constants.DeeplFormalityKey
 import com.arturo254.opentune.constants.OpenRouterBaseUrlKey
 import com.arturo254.opentune.constants.OpenRouterModelKey
 import com.arturo254.opentune.constants.AutoTranslateLyricsKey
@@ -115,6 +122,8 @@ import com.arturo254.opentune.LocalDatabase
 import com.arturo254.opentune.lyrics.LyricsTranslationHelper
 import com.arturo254.opentune.lyrics.LanguageDetectionHelper
 import com.arturo254.opentune.constants.UseSystemFontKey
+import com.arturo254.opentune.constants.LyricsV2Style
+import com.arturo254.opentune.constants.LyricsV2StyleKey
 import com.arturo254.opentune.db.entities.LyricsEntity.Companion.LYRICS_NOT_FOUND
 import com.arturo254.opentune.lyrics.LyricsEntry
 import com.arturo254.opentune.lyrics.LyricsUtils.findCurrentLineIndex
@@ -177,6 +186,7 @@ private val HEAD_LYRICS_ENTRY = LyricsEntry(time = 0L, text = "")
 fun LyricsV2(
     sliderPositionProvider: () -> Long?,
     modifier: Modifier = Modifier,
+    gradientColors: List<Color> = emptyList(),
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
     val player = playerConnection.player
@@ -194,18 +204,33 @@ fun LyricsV2(
     val (romanizeJapanese) = rememberPreference(LyricsRomanizeJapaneseKey, defaultValue = true)
     val (romanizeKorean) = rememberPreference(LyricsRomanizeKoreanKey, defaultValue = true)
     val (useSystemFont) = rememberPreference(UseSystemFontKey, defaultValue = false)
+    val (appFontName) = rememberPreference(com.arturo254.opentune.constants.FontFamilyKey, defaultValue = "POPPINS")
+    val shareFontName = if (useSystemFont) "SYSTEM" else appFontName
     val lyricsFontFamily = androidx.compose.material3.MaterialTheme.typography.headlineMedium.fontFamily
     val playerBackground by rememberEnumPreference(PlayerBackgroundStyleKey, PlayerBackgroundStyle.DEFAULT)
+    val lyricsV2Style by rememberEnumPreference(LyricsV2StyleKey, LyricsV2Style.LIQUID_FLOW)
+    val (lyricsTextPositionStr) = rememberPreference(LyricsTextPositionKey, defaultValue = LyricsPosition.LEFT.name)
+    val lyricsTextPosition = LyricsPosition.values().firstOrNull { it.name == lyricsTextPositionStr } ?: LyricsPosition.LEFT
 
     val database = LocalDatabase.current
     val openRouterApiKey by rememberPreference(OpenRouterApiKey, "")
     val openRouterBaseUrl by rememberPreference(OpenRouterBaseUrlKey, "https://openrouter.ai/api/v1/chat/completions")
     val openRouterModel by rememberPreference(OpenRouterModelKey, "mistralai/mistral-small-3.1-24b-instruct:free")
+    val deeplApiKey by rememberPreference(DeeplApiKey, "")
+    val deeplFormality by rememberPreference(DeeplFormalityKey, "default")
     val autoTranslateLyrics by rememberPreference(AutoTranslateLyricsKey, false)
     val autoTranslateLyricsMismatch by rememberPreference(AutoTranslateLyricsMismatchKey, false)
     val translateLanguage by rememberPreference(TranslateLanguageKey, "en")
     val translateMode by rememberPreference(TranslateModeKey, "Literal")
     val aiProvider by rememberPreference(com.arturo254.opentune.constants.AiProviderKey, "OpenRouter")
+    val effectiveApiKey = remember(aiProvider, openRouterApiKey, deeplApiKey) {
+        when (aiProvider) {
+            "DeepL" -> deeplApiKey
+            // Proveedores sin clave: traductor gratuito online y modo offline (ML Kit)
+            "FreeOnline", "Offline" -> "free"
+            else -> openRouterApiKey
+        }
+    }
 
     // ── Text colour derived from background style ──
     val textColor = if (playerBackground == PlayerBackgroundStyle.DEFAULT)
@@ -225,6 +250,9 @@ fun LyricsV2(
     var shareDialogData by remember {
         mutableStateOf<Triple<String, String, String>?>(null)
     }
+    // Traducción de los MISMOS versos seleccionados, si la canción está traducida.
+    // Habilita el selector Original / Traducción / Ambas del sheet de compartir.
+    var shareTranslatedText by remember { mutableStateOf<String?>(null) }
     var showColorPickerDialog by remember { mutableStateOf(false) }
     var selectedGlassStyle by remember { mutableStateOf(LyricsGlassStyle.FrostedDark) }
     var paletteGlassStyle by remember { mutableStateOf<LyricsGlassStyle?>(null) }
@@ -462,10 +490,10 @@ fun LyricsV2(
             LyricsTranslationHelper.cancelTranslation()
         }
     }
-    
-    LaunchedEffect(true, entriesWithWords.size, openRouterApiKey) {
+
+    LaunchedEffect(entriesWithWords.size, effectiveApiKey, aiProvider) {
         LyricsTranslationHelper.manualTrigger.collect {
-             if (entriesWithWords.isNotEmpty() && openRouterApiKey.isNotBlank()) {
+             if (entriesWithWords.isNotEmpty() && effectiveApiKey.isNotBlank()) {
                      LyricsTranslationHelper.translateLyrics(
                          lyrics = entriesWithWords,
                          targetLanguage = translateLanguage,
@@ -476,15 +504,17 @@ fun LyricsV2(
                          scope = scope,
                          context = context,
                          database = database,
-                         provider = aiProvider
+                         provider = aiProvider,
+                         deeplApiKey = deeplApiKey,
+                         deeplFormality = deeplFormality
                      )
-             } else if (openRouterApiKey.isBlank()) {
-                 Toast.makeText(context, context.getString(R.string.ai_api_key_required), Toast.LENGTH_SHORT).show()
+             } else if (effectiveApiKey.isBlank()) {
+                  Toast.makeText(context, context.getString(R.string.ai_api_key_required), Toast.LENGTH_SHORT).show()
              }
         }
     }
 
-    LaunchedEffect(entriesWithWords, autoTranslateLyrics, autoTranslateLyricsMismatch, openRouterApiKey, translateMode, translateLanguage) {
+    LaunchedEffect(entriesWithWords, autoTranslateLyrics, autoTranslateLyricsMismatch, effectiveApiKey, aiProvider, translateMode, translateLanguage) {
         if (entriesWithWords.isNotEmpty()) {
             val targetLang = if (autoTranslateLyricsMismatch) java.util.Locale.getDefault().language else translateLanguage
             val hasCached = LyricsTranslationHelper.applyCachedTranslations(entriesWithWords, translateMode, targetLang, database)
@@ -496,7 +526,7 @@ fun LyricsV2(
                 return@LaunchedEffect
             }
             
-            if (!hasCached && openRouterApiKey.isNotBlank()) {
+            if (!hasCached && effectiveApiKey.isNotBlank()) {
                 val needsTranslation = entriesWithWords.any { it.translatedTextFlow.value == null && it.text.isNotBlank() }
                 if (needsTranslation) {
                     var shouldTranslate = true
@@ -525,7 +555,9 @@ fun LyricsV2(
                             scope = scope,
                             context = context,
                             database = database,
-                            provider = aiProvider
+                            provider = aiProvider,
+                            deeplApiKey = deeplApiKey,
+                            deeplFormality = deeplFormality
                         )
                     }
                 }
@@ -691,17 +723,16 @@ fun LyricsV2(
                     return@itemsIndexed
                 }
 
-                // ── Agent-based positioning ──
-                // v1 or null -> Start, v2 -> End, others -> Center
-                val textAlign = when (item.agent?.lowercase()) {
-                    "v1", null -> TextAlign.Start
-                    "v2" -> TextAlign.End
-                    else -> TextAlign.Center
+                // ── Preference-based positioning ──
+                val textAlign = when (lyricsTextPosition) {
+                    LyricsPosition.LEFT -> TextAlign.Start
+                    LyricsPosition.CENTER -> TextAlign.Center
+                    LyricsPosition.RIGHT -> TextAlign.End
                 }
-                val horizontalAlignment = when (item.agent?.lowercase()) {
-                    "v1", null -> Alignment.Start
-                    "v2" -> Alignment.End
-                    else -> Alignment.CenterHorizontally
+                val horizontalAlignment = when (lyricsTextPosition) {
+                    LyricsPosition.LEFT -> Alignment.Start
+                    LyricsPosition.CENTER -> Alignment.CenterHorizontally
+                    LyricsPosition.RIGHT -> Alignment.End
                 }
 
                 val isActive = isSynced && index == currentLineIndex
@@ -792,6 +823,7 @@ fun LyricsV2(
                             isLineAllBackground = isAllBackground,
                             textAlign = textAlign,
                             lyricsFontFamily = lyricsFontFamily,
+                            lyricsV2Style = lyricsV2Style,
                         )
                     } else {
                         // ── Plain text rendering ──
@@ -921,9 +953,17 @@ fun LyricsV2(
                                 .clickable(enabled = selectedIndices.isNotEmpty()) {
                                     if (selectedIndices.isNotEmpty()) {
                                         val sortedIndices = selectedIndices.sorted()
-                                        val selectedLyricsText = sortedIndices
-                                            .mapNotNull { entriesWithWords.getOrNull(it)?.text }
-                                            .joinToString("\n")
+                                        val selectedEntries = sortedIndices
+                                            .mapNotNull { entriesWithWords.getOrNull(it) }
+                                        val selectedLyricsText = selectedEntries
+                                            .joinToString("\n") { it.text }
+                                        // Una línea por verso seleccionado (vacía si ese verso
+                                        // no tiene traducción) para poder intercalarlas.
+                                        val selectedTranslation = selectedEntries
+                                            .map { it.translatedTextFlow.value.orEmpty() }
+                                        shareTranslatedText = selectedTranslation
+                                            .takeIf { list -> list.any { it.isNotBlank() } }
+                                            ?.joinToString("\n")
 
                                         if (selectedLyricsText.isNotBlank()) {
                                             shareDialogData = Triple(
@@ -969,12 +1009,13 @@ fun LyricsV2(
                     LyricsShareCarouselSheet(
                         lyricText = lyricText,
                         mediaMetadata = metadata,
-                        initialConfig = LyricsCardConfig(),
+                        initialConfig = LyricsCardConfig(fontName = shareFontName),
+                        translatedText = shareTranslatedText,
                         onDismiss = {
                             showShareCarouselSheet = false
                             shareDialogData = null
                         },
-                        onShare = { config ->
+                        onShare = { config, shareText ->
 
                             showShareCarouselSheet = false
                             shareDialogData = null
@@ -988,7 +1029,7 @@ fun LyricsV2(
                                             coverArtUrl = metadata.thumbnailUrl,
                                             songTitle = title,
                                             artistName = artist,
-                                            lyrics = lyricText,
+                                            lyrics = shareText,
                                             config = config,
                                             outputSize = 1080,
                                         )
@@ -1011,7 +1052,7 @@ fun LyricsV2(
                                 }
                             }
                         },
-                        onSave = { config ->
+                        onSave = { config, shareText ->
 
                             scope.launch {
                                 runCatching {
@@ -1022,7 +1063,7 @@ fun LyricsV2(
                                                 coverArtUrl = metadata.thumbnailUrl,
                                                 songTitle = title,
                                                 artistName = artist,
-                                                lyrics = lyricText,
+                                                lyrics = shareText,
                                                 config = config,
                                                 outputSize = 1080,
                                             )
@@ -1166,9 +1207,8 @@ fun LyricsV2(
             if (coverUrl != null) {
                 withContext(Dispatchers.IO) {
                     try {
-                        val loader = ImageLoader(context)
-                        val req = ImageRequest.Builder(context).data(coverUrl).allowHardware(false).build()
-                        val result = loader.execute(req)
+                        val req = ImageRequest.Builder(context).data(coverUrl).size(200, 200).allowHardware(false).build()
+                        val result = context.imageLoader.execute(req)
                         val bmp = result.image?.toBitmap()
                         if (bmp != null) {
                             val palette = Palette.from(bmp).generate()
@@ -1300,6 +1340,7 @@ fun LyricsV2(
                                         width = exportSize,
                                         height = exportSize,
                                         glassStyle = selectedGlassStyle,
+                                        fontName = shareFontName,
                                     )
                                     val timestamp = System.currentTimeMillis()
                                     val filename = "lyrics_$timestamp"
@@ -1348,6 +1389,7 @@ private fun LyricsLineV2(
     isLineAllBackground: Boolean,
     textAlign: TextAlign,
     lyricsFontFamily: FontFamily?,
+    lyricsV2Style: LyricsV2Style,
 ) {
     val arrangement = when (textAlign) {
         TextAlign.Center -> Arrangement.Center
@@ -1393,6 +1435,7 @@ private fun LyricsLineV2(
                     fontSize = if (isLineAllBackground) baseFontSize * 0.82f else baseFontSize,
                     isBackground = isLineAllBackground,
                     lyricsFontFamily = lyricsFontFamily,
+                    v2Style = lyricsV2Style,
                 )
             }
         }
@@ -1431,6 +1474,7 @@ private fun LyricsLineV2(
                     fontSize = baseFontSize * 0.65f, // ~65% size of main text
                     isBackground = true, // Force dimmer styling inside AnimatedWordV2
                     lyricsFontFamily = lyricsFontFamily,
+                    v2Style = lyricsV2Style,
                 )
             }
         }
@@ -1454,6 +1498,7 @@ private fun AnimatedWordV2(
     fontSize: Float,
     isBackground: Boolean,
     lyricsFontFamily: FontFamily?,
+    v2Style: LyricsV2Style,
 ) {
     val wordStartMs = (word.startTime * 1000).toLong()
     val wordEndMs = (word.endTime * 1000).toLong()
@@ -1470,39 +1515,94 @@ private fun AnimatedWordV2(
     }
 
     // ── Bounce and Float animation ──
-    // Subtle scale up peaking halfway through the word. Exact timing sync!
     val sinProgress = kotlin.math.sin(progress * kotlin.math.PI).toFloat()
-    val wordScale = 1f + (0.015f * sinProgress)
 
-    // Float is only applied when the word is actively sung, making it pop from the line.
-    // We use animateFloatAsState so that when it finishes (and drops to 0f), 
-    // it smoothly decays back into place rather than a harsh mathematical snap.
-    val targetFloat = if (isWordActive) -4f * sinProgress else 0f
+    val wordScale = when (v2Style) {
+        LyricsV2Style.DEPTH_3D -> {
+            val targetScale = if (isWordActive) 1.12f else if (isLineActive) 1.0f else 0.88f
+            val animScale by androidx.compose.animation.core.animateFloatAsState(
+                targetValue = targetScale,
+                animationSpec = androidx.compose.animation.core.spring(
+                    dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+                    stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow,
+                ),
+                label = "wordScaleDepth3d"
+            )
+            animScale
+        }
+        LyricsV2Style.BOUNCE -> {
+            val targetScale = if (isWordActive) 1.15f else 1.0f
+            val animScale by androidx.compose.animation.core.animateFloatAsState(
+                targetValue = targetScale,
+                animationSpec = androidx.compose.animation.core.spring(
+                    dampingRatio = androidx.compose.animation.core.Spring.DampingRatioHighBouncy,
+                    stiffness = androidx.compose.animation.core.Spring.StiffnessMedium,
+                ),
+                label = "wordScaleBounce"
+            )
+            animScale
+        }
+        LyricsV2Style.MINIMAL_FADE -> 1f
+        else -> 1f + (0.015f * sinProgress)
+    }
+
+    // Float offset
+    val targetFloat = if (isWordActive &&
+        v2Style != LyricsV2Style.MINIMAL_FADE &&
+        v2Style != LyricsV2Style.SPOTLIGHT &&
+        v2Style != LyricsV2Style.DEPTH_3D &&
+        v2Style != LyricsV2Style.TYPEWRITER &&
+        v2Style != LyricsV2Style.HEAT_MAP
+    ) -4f else 0f
+
     val floatOffset by androidx.compose.animation.core.animateFloatAsState(
         targetValue = targetFloat,
-        animationSpec = androidx.compose.animation.core.tween(
-            durationMillis = if (isWordActive) 50 else 350,
-            easing = androidx.compose.animation.core.FastOutSlowInEasing
-        )
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+            stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow,
+        ),
+        label = "wordFloat"
     )
 
     // ── Glow intensity ──
-    // "lines and words that are done animating shouldnt continue to glow"
-    // Make glow build up faster: reach max intensity at 50% progress
     val glowProgress = (progress * 2f).coerceAtMost(1f)
-    val glowAlpha = if (isWordActive) glowProgress * 0.95f else 0f
-    val glowRadius = if (isWordActive) glowProgress * 35f else 0f
+    val glowAlpha = if (isWordActive) {
+        if (v2Style == LyricsV2Style.SPOTLIGHT) glowProgress * 0.98f else glowProgress * 0.95f
+    } else 0f
+    val glowRadius = if (isWordActive) {
+        if (v2Style == LyricsV2Style.SPOTLIGHT) glowProgress * 50f else glowProgress * 35f
+    } else 0f
+
+    val hasGlow = v2Style == LyricsV2Style.LIQUID_FLOW || v2Style == LyricsV2Style.SPOTLIGHT || v2Style == LyricsV2Style.GLASS_CARDS
+    val finalGlowAlpha = if (hasGlow) glowAlpha else 0f
+    val finalGlowRadius = if (hasGlow) glowRadius else 0f
 
     val actualFontSize = if (isBackground) fontSize * 0.85f else fontSize
-    val fontWeight = FontWeight.SemiBold // Consistent weight — no thin→bold jump
+    val fontWeight = FontWeight.SemiBold
 
-    // ── Two-layer rendering: dim base + liquid fill overlay ──
+    val customInactiveAlpha = if (v2Style == LyricsV2Style.SPOTLIGHT) inactiveAlpha * 0.3f else inactiveAlpha
+
+    // Glass card background alpha
+    val glassCardAlpha by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (isWordActive && v2Style == LyricsV2Style.GLASS_CARDS) 0.15f else 0f,
+        label = "glassCardAlpha"
+    )
+
+    // ── Two-layer rendering: dim base + custom overlay ──
     Box(
         modifier = Modifier
             .graphicsLayer {
                 translationY = floatOffset * density
                 scaleX = wordScale
                 scaleY = wordScale
+            }
+            .drawBehind {
+                if (glassCardAlpha > 0f) {
+                    drawRoundRect(
+                        color = Color.White.copy(alpha = glassCardAlpha),
+                        cornerRadius = CornerRadius(6.dp.toPx(), 6.dp.toPx())
+                    )
+                }
             }
     ) {
         // Layer 1: Base text (always dimmed)
@@ -1515,11 +1615,74 @@ private fun AnimatedWordV2(
                 lineHeight = (actualFontSize * 1.35f).sp,
                 fontFamily = lyricsFontFamily ?: MaterialTheme.typography.headlineMedium.fontFamily,
             ),
-            color = textColor.copy(alpha = if (isBackground) inactiveAlpha * 0.7f else inactiveAlpha),
+            color = textColor.copy(alpha = if (isBackground) customInactiveAlpha * 0.7f else customInactiveAlpha),
         )
 
-        // Layer 2: Filled overlay with liquid sweep mask + glow
+        // Layer 2: Filled overlay
         if (isWordComplete || isWordActive || isLinePast) {
+            val activeColor = when (v2Style) {
+                LyricsV2Style.HEAT_MAP -> {
+                    when {
+                        progress < 0.5f -> androidx.compose.ui.graphics.lerp(Color(0xFF00E5FF), Color(0xFFFF9100), progress * 2f)
+                        else -> androidx.compose.ui.graphics.lerp(Color(0xFFFF9100), Color.White, (progress - 0.5f) * 2f)
+                    }
+                }
+                LyricsV2Style.CHROMATIC -> {
+                    getRainbowColor(((wordIndex * 0.15f) + progress) % 1f)
+                }
+                else -> textColor
+            }
+
+            val overlayModifier = when {
+                isWordActive && !isWordComplete -> {
+                    when (v2Style) {
+                        LyricsV2Style.LIQUID_FLOW -> {
+                            Modifier
+                                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                                .drawWithContent {
+                                    drawContent()
+                                    val edgeWidth = 8.dp.toPx()
+                                    val center = (size.width + edgeWidth * 2) * progress - edgeWidth
+                                    drawRect(
+                                        brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
+                                            colors = listOf(Color.Black, Color.Transparent),
+                                            startX = center - edgeWidth,
+                                            endX = center + edgeWidth,
+                                        ),
+                                        blendMode = BlendMode.DstIn,
+                                    )
+                                }
+                        }
+                        LyricsV2Style.GEOMETRIC -> {
+                            Modifier
+                                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                                .drawWithContent {
+                                    drawContent()
+                                    val edgeWidth = 1.dp.toPx()
+                                    val center = (size.width + edgeWidth * 2) * progress - edgeWidth
+                                    drawRect(
+                                        brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
+                                            colors = listOf(Color.Black, Color.Transparent),
+                                            startX = center - edgeWidth,
+                                            endX = center + edgeWidth,
+                                        ),
+                                        blendMode = BlendMode.DstIn,
+                                    )
+                                }
+                        }
+                        LyricsV2Style.TYPEWRITER -> {
+                            Modifier.drawWithContent {
+                                clipRect(right = size.width * progress) {
+                                    this@drawWithContent.drawContent()
+                                }
+                            }
+                        }
+                        else -> Modifier
+                    }
+                }
+                else -> Modifier
+            }
+
             Text(
                 text = word.text,
                 style = MaterialTheme.typography.headlineMedium.copy(
@@ -1528,37 +1691,36 @@ private fun AnimatedWordV2(
                     fontStyle = FontStyle.Normal,
                     lineHeight = (actualFontSize * 1.35f).sp,
                     fontFamily = lyricsFontFamily ?: MaterialTheme.typography.headlineMedium.fontFamily,
-                    shadow = if (glowAlpha > 0f) {
+                    shadow = if (finalGlowAlpha > 0f) {
                         Shadow(
-                            color = textColor.copy(alpha = glowAlpha),
+                            color = activeColor.copy(alpha = finalGlowAlpha),
                             offset = Offset.Zero,
-                            blurRadius = glowRadius.coerceAtLeast(1f),
+                            blurRadius = finalGlowRadius.coerceAtLeast(1f),
                         )
                     } else null,
                 ),
-                color = textColor.copy(
+                color = activeColor.copy(
                     alpha = if (isBackground) 0.75f else 1f
                 ),
-                modifier = if (isWordActive && !isWordComplete) {
-                    Modifier
-                        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                        .drawWithContent {
-                            drawContent()
-                            val edgeWidth = 8.dp.toPx()
-                            val center = (size.width + edgeWidth * 2) * progress - edgeWidth
-                            drawRect(
-                                brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
-                                    colors = listOf(Color.Black, Color.Transparent),
-                                    startX = center - edgeWidth,
-                                    endX = center + edgeWidth,
-                                ),
-                                blendMode = BlendMode.DstIn,
-                            )
-                        }
-                } else {
-                    Modifier
-                }
+                modifier = overlayModifier
             )
         }
     }
+}
+
+private fun getRainbowColor(progress: Float): Color {
+    val colors = listOf(
+        Color(0xFFFF0000), // Red
+        Color(0xFFFF7F00), // Orange
+        Color(0xFFFFFF00), // Yellow
+        Color(0xFF00FF00), // Green
+        Color(0xFF0000FF), // Blue
+        Color(0xFF4B0082), // Indigo
+        Color(0xFF9400D3)  // Violet
+    )
+    val size = colors.size
+    val scaledProgress = progress * (size - 1)
+    val index = scaledProgress.toInt().coerceIn(0, size - 2)
+    val fraction = scaledProgress - index
+    return androidx.compose.ui.graphics.lerp(colors[index], colors[index + 1], fraction)
 }

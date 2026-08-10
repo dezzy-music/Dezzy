@@ -121,6 +121,8 @@ object SpotifyProfileCache {
             cachedFollowedArtists.isNotEmpty()
         ) return cachedFollowedArtists.take(limit)
 
+        SpotifyTokenManager.ensureAuthenticated()
+
         followedArtistsMutex.withLock {
             if (System.currentTimeMillis() - followedArtistsRefreshMs < FOLLOWED_ARTISTS_TTL_MS &&
                 cachedFollowedArtists.isNotEmpty()
@@ -318,6 +320,11 @@ object SpotifyProfileCache {
         if (System.currentTimeMillis() - lastRefreshMs < effectiveTtl() &&
             cachedTracks.isNotEmpty()
         ) return
+
+        // Spotify.accessToken is only in-memory, populated during a live login; on a fresh
+        // process (app restart) it's null even though the token is still valid in DataStore.
+        // Hydrate it here or every REST/GQL call below fails with "Not authenticated".
+        SpotifyTokenManager.ensureAuthenticated()
 
         refreshMutex.withLock {
             // Double-check after acquiring lock

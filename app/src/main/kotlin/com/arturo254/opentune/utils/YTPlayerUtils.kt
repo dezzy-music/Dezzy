@@ -108,9 +108,38 @@ object YTPlayerUtils {
     private val streamUrlCache = ConcurrentHashMap<String, CachedStreamUrl>()
     private val failedStreamClientsUntil = ConcurrentHashMap<String, Long>()
 
+    // Bot-detected non-web clients are backed off globally (across all videos) for a short window,
+    // so subsequent songs skip the clients that just got flagged instead of re-sweeping all of them.
+    // Web clients are never backed off here: they are the ones that recover once a genuine poToken
+    // is in place.
+    private const val BOT_DETECTION_BACKOFF_MS = 5 * 60 * 1000L
+    private val botDetectedClientsUntil = ConcurrentHashMap<String, Long>()
+
     fun invalidateCachedStreamUrls(videoId: String) {
         val prefix = "$videoId:"
         streamUrlCache.keys.removeIf { it.startsWith(prefix) }
+    }
+
+    private fun markClientBotDetected(clientName: String) {
+        if (StreamClientUtils.isWebClient(clientName)) return
+        botDetectedClientsUntil[normalizeStreamClientKey(clientName)] =
+            System.currentTimeMillis() + BOT_DETECTION_BACKOFF_MS
+    }
+
+    private fun isClientBotBackedOff(clientName: String): Boolean {
+        val key = normalizeStreamClientKey(clientName)
+        if (key.isEmpty()) return false
+        val until = botDetectedClientsUntil[key] ?: return false
+        if (until <= System.currentTimeMillis()) {
+            botDetectedClientsUntil.remove(key)
+            return false
+        }
+        return true
+    }
+
+    /** Cleared after a successful poToken refresh so recovered clients can be tried again. */
+    fun clearBotDetectionBackoff() {
+        botDetectedClientsUntil.clear()
     }
 
     fun markStreamClientFailed(videoId: String, clientKey: String?, httpStatusCode: Int?) {
@@ -159,6 +188,78 @@ object YTPlayerUtils {
         val streamUrl: String,
         val streamExpiresInSeconds: Int,
     )
+
+    /**
+     * A muxed (video+audio in one stream) format resolved for "watch the music video" mode.
+     * Deliberately simpler than [PlaybackData]: no separate adaptive audio track to merge, no
+     * validation round-trip, no persistent-cache integration — this is a self-contained URL meant
+     * to feed a standalone player instance (see MusicService's video mode), so it can't corrupt
+     * the audio playback cache/pipeline no matter what goes wrong.
+     */
+    data class VideoPlaybackData(
+        val format: PlayerResponse.StreamingData.Format,
+        val streamUrl: String,
+        val streamExpiresInSeconds: Int,
+    )
+
+    private val VIDEO_MODE_CLIENTS: List<YouTubeClient> = listOf(ANDROID_VR_NO_AUTH, WEB_REMIX, IOS, ANDROID_MUSIC)
+
+    /**
+     * Resolves a muxed (progressive, single-file) video+audio stream for "watch the music video"
+     * mode. YouTube only serves muxed formats up to 720p (itag 22) / 360p (itag 18) — true 1080p+
+     * requires merging separate adaptive video-only and audio-only tracks, which this deliberately
+     * does not do: video mode runs on its own standalone player (see MusicService), so keeping its
+     * resolution path this simple means it can never destabilize the hardened main audio pipeline.
+     */
+    suspend fun videoPlaybackDataForPlayback(
+        videoId: String,
+        playlistId: String? = null,
+        maxHeight: Int = 720,
+    ): Result<VideoPlaybackData> = runCatching {
+        var lastError: Throwable? = null
+        for (client in VIDEO_MODE_CLIENTS) {
+            try {
+                val signatureTimestamp = if (client.useSignatureTimestamp) getSignatureTimestampOrNull(videoId) else null
+                val response = YouTube.player(videoId, playlistId, client, signatureTimestamp).getOrNull() ?: continue
+                if (response.playabilityStatus.status != "OK") continue
+
+                val candidates = selectMuxedFormatCandidates(response, maxHeight)
+                for (candidate in candidates.take(4)) {
+                    val cacheKey = buildCacheKey(videoId, candidate.itag)
+                    val cached = streamUrlCache[cacheKey]
+                    val url =
+                        if (cached != null && cached.expiresAtMs > System.currentTimeMillis()) {
+                            cached.url
+                        } else {
+                            findUrlOrNull(candidate, videoId, client) ?: continue
+                        }
+                    val expiresIn = response.streamingData?.expiresInSeconds ?: continue
+                    streamUrlCache[cacheKey] =
+                        CachedStreamUrl(url, System.currentTimeMillis() + expiresIn * 1000L)
+                    return@runCatching VideoPlaybackData(candidate, url, expiresIn)
+                }
+            } catch (e: Exception) {
+                lastError = e
+            }
+        }
+        throw lastError ?: IllegalStateException("No muxed video stream available for $videoId")
+    }
+
+    private fun selectMuxedFormatCandidates(
+        playerResponse: PlayerResponse,
+        maxHeight: Int,
+    ): List<PlayerResponse.StreamingData.Format> =
+        playerResponse.streamingData
+            ?.formats
+            ?.asSequence()
+            ?.filter { it.url != null || it.signatureCipher != null || it.cipher != null }
+            ?.filter { (it.height ?: 0) in 1..maxHeight }
+            ?.sortedWith(
+                compareByDescending<PlayerResponse.StreamingData.Format> { it.url != null }
+                    .thenByDescending { it.height ?: 0 }
+                    .thenByDescending { it.bitrate },
+            )?.toList()
+            .orEmpty()
     /**
      * Custom player response intended to use for playback.
      * Metadata like audioConfig and videoDetails are from [MAIN_CLIENT].
@@ -173,7 +274,9 @@ object YTPlayerUtils {
         // if provided, this preference overrides ConnectivityManager.isActiveNetworkMetered
         networkMetered: Boolean? = null,
         avoidCodecs: Set<String> = emptySet(),
+        isCancelled: (() -> Boolean)? = null,
     ): Result<PlaybackData> = runCatching {
+        if (isCancelled?.invoke() == true) throw kotlin.coroutines.cancellation.CancellationException("Playback was cancelled")
         val attempts =
             when (audioQuality) {
                 AudioQuality.HIGHEST -> listOf(AudioQuality.HIGHEST, AudioQuality.HIGH)
@@ -183,6 +286,7 @@ object YTPlayerUtils {
 
         var lastError: Throwable? = null
         for (attempt in attempts) {
+            if (isCancelled?.invoke() == true) throw kotlin.coroutines.cancellation.CancellationException("Playback was cancelled")
             val attemptResult =
                 runCatching {
                     playerResponseForPlaybackOnce(
@@ -193,6 +297,7 @@ object YTPlayerUtils {
                         preferredStreamClient = preferredStreamClient,
                         networkMetered = networkMetered,
                         avoidCodecs = avoidCodecs,
+                        isCancelled = isCancelled,
                     )
                 }
             if (attemptResult.isSuccess) return@runCatching attemptResult.getOrThrow()
@@ -209,10 +314,16 @@ object YTPlayerUtils {
         preferredStreamClient: PlayerStreamClient,
         networkMetered: Boolean?,
         avoidCodecs: Set<String>,
+        isCancelled: (() -> Boolean)? = null,
     ): PlaybackData {
+        if (isCancelled?.invoke() == true) throw kotlin.coroutines.cancellation.CancellationException("Playback was cancelled")
         Timber.tag(logTag).i("Fetching player response for videoId: $videoId, playlistId: $playlistId")
-        val signatureTimestamp = getSignatureTimestampOrNull(videoId)
-        Timber.tag(logTag).v("Signature timestamp: $signatureTimestamp")
+        // Resolving the signature timestamp downloads and evaluates YouTube's JS player via
+        // NewPipeExtractor, which is slow and fragile. InnerTube only sends it for clients with
+        // useSignatureTimestamp = true, so resolve it lazily and only for those clients.
+        val lazySignatureTimestamp = lazy { getSignatureTimestampOrNull(videoId) }
+        fun signatureTimestampFor(client: YouTubeClient): Int? =
+            if (client.useSignatureTimestamp) lazySignatureTimestamp.value else null
 
         val isLoggedIn = YouTube.cookie != null
         val sessionId = if (isLoggedIn) YouTube.dataSyncId else YouTube.visitorData
@@ -241,12 +352,17 @@ object YTPlayerUtils {
                 PlayerStreamClient.ANDROID_MUSIC -> ANDROID_MUSIC
             }
 
-        val metadataClient =
-            preferredYouTubeClient.takeIf { preferredStreamClient == PlayerStreamClient.ANDROID_VR } ?: MAIN_CLIENT
+        // ANDROID_VR is the primary client for metadata AND stream: since it is also first in the
+        // stream client list below, the metadata response gets reused for the stream attempt, making
+        // the happy path a single /player request with no signature timestamp and no web PoToken.
+        // (WEB_REMIX metadata has nicer loudnessDb, but the extra request + JS-player download is
+        // exactly the latency being cut here; the fallback path still reaches WEB_REMIX if needed.)
+        val metadataClient = ANDROID_VR_NO_AUTH
 
+        if (isCancelled?.invoke() == true) throw kotlin.coroutines.cancellation.CancellationException("Playback was cancelled")
         Timber.tag(logTag).i("Fetching metadata response using client: ${metadataClient.clientName}")
         val metadataPlayerResponse =
-            YouTube.player(videoId, playlistId, metadataClient, signatureTimestamp).getOrThrow()
+            YouTube.player(videoId, playlistId, metadataClient, signatureTimestampFor(metadataClient)).getOrThrow()
         val audioConfig = metadataPlayerResponse.playerConfig?.audioConfig
         val videoDetails = metadataPlayerResponse.videoDetails
         val playbackTracking = metadataPlayerResponse.playbackTracking
@@ -254,21 +370,27 @@ object YTPlayerUtils {
 
         val streamClients =
             buildList {
-                add(preferredYouTubeClient)
+                add(ANDROID_VR_NO_AUTH)        // primary/priority: fastest direct-URL path
+                add(preferredYouTubeClient)     // the user's configured client comes next
                 addAll(orderedFallbackClients)
-                if (preferredYouTubeClient != MAIN_CLIENT) add(MAIN_CLIENT)
+                add(MAIN_CLIENT)
             }.distinct().filterNot { client ->
                 val blocked = isStreamClientTemporarilyBlocked(videoId, client.clientName)
                 if (blocked) {
                     Timber.tag(logTag).w("Temporarily blocked stream client for $videoId: ${client.clientName}")
                 }
-                blocked
+                val botBackedOff = isClientBotBackedOff(client.clientName)
+                if (botBackedOff) {
+                    Timber.tag(logTag).w("Skipping recently bot-detected client: ${client.clientName}")
+                }
+                blocked || botBackedOff
             }
 
         val botDetectedClients = mutableSetOf<String>()
         var gateFailure: PlaybackGateFailure? = null
 
         for ((index, client) in streamClients.withIndex()) {
+            if (isCancelled?.invoke() == true) throw kotlin.coroutines.cancellation.CancellationException("Playback was cancelled")
             format = null
             streamUrl = null
             streamExpiresInSeconds = null
@@ -288,7 +410,7 @@ object YTPlayerUtils {
                     metadataPlayerResponse
                 } else {
                     Timber.tag(logTag).i("Fetching player response for fallback client: ${client.clientName}")
-                    YouTube.player(videoId, playlistId, client, signatureTimestamp).getOrNull()
+                    YouTube.player(videoId, playlistId, client, signatureTimestampFor(client)).getOrNull()
                 }
 
             if (streamPlayerResponse == null) continue
@@ -308,6 +430,7 @@ object YTPlayerUtils {
                     )
                 } else if (isBotDetection) {
                     botDetectedClients.add(client.clientName)
+                    markClientBotDetected(client.clientName)
                 }
                 continue
             }
@@ -353,6 +476,14 @@ object YTPlayerUtils {
             Timber.tag(logTag).i("Format found: ${format.mimeType}, bitrate: ${format.bitrate}")
             Timber.tag(logTag).v("Stream expires in: $streamExpiresInSeconds seconds")
 
+            // ANDROID_VR direct URLs are reliable and are the primary fast path, so skip the extra
+            // validation round-trip. If such a URL does 403 at playback time, MusicService marks the
+            // client failed and re-extracts, so this stays recoverable.
+            if (canSkipStreamValidation(client, format)) {
+                Timber.tag(logTag).i("Skipping stream validation for fast direct-URL client: ${client.clientName}")
+                break
+            }
+
             val valid = validateStatus(streamUrl, client.userAgent)
             if (valid) {
                 Timber.tag(logTag).i("Stream validated successfully with client: ${client.clientName}")
@@ -379,6 +510,8 @@ object YTPlayerUtils {
             }
             if (botDetectedClients.isNotEmpty()) {
                 Timber.tag(logTag).e("Bot detection triggered on clients: $botDetectedClients - all clients failed")
+                // Ask the BotGuard pipeline to mint a fresh session poToken for the next attempt.
+                com.arturo254.opentune.playback.potoken.PlaybackPoTokenController.onBotDetected()
                 throw PlaybackException(
                     "Sign in to confirm you're not a bot",
                     null,
@@ -553,6 +686,14 @@ object YTPlayerUtils {
 
     private fun isCipheredFormat(format: PlayerResponse.StreamingData.Format): Boolean {
         return format.url == null && (format.signatureCipher != null || format.cipher != null)
+    }
+
+    private fun canSkipStreamValidation(
+        client: YouTubeClient,
+        format: PlayerResponse.StreamingData.Format,
+    ): Boolean {
+        // Only the ANDROID_VR fast path (real, ready-to-play direct URLs) is trusted without probing.
+        return client.clientName == "ANDROID_VR" && format.url != null
     }
 
     private fun shouldSkipCipheredWebCandidate(

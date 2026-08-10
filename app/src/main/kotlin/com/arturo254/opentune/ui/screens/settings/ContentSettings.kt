@@ -32,6 +32,8 @@ import com.arturo254.opentune.R
 import com.arturo254.opentune.constants.*
 import com.arturo254.opentune.ui.component.*
 import com.arturo254.opentune.ui.utils.backToMain
+import com.arturo254.opentune.ui.utils.rememberAdaptiveSidePadding
+import androidx.compose.foundation.layout.padding
 import com.arturo254.opentune.utils.rememberEnumPreference
 import com.arturo254.opentune.utils.rememberPreference
 import com.arturo254.opentune.utils.setAppLocale
@@ -78,7 +80,8 @@ fun ContentSettings(
     Column(
         Modifier
             .windowInsetsPadding(LocalPlayerAwareWindowInsets.current)
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = rememberAdaptiveSidePadding()),
     ) {
         PreferenceGroupTitle(title = stringResource(R.string.general))
         ListPreference(

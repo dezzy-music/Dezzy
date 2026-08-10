@@ -171,6 +171,22 @@ fun BackupAndRestore(
             if (uri != null) viewModel.restore(context, uri)
         }
 
+    // ── Exportación a formatos abiertos ───────────────────────────────────────
+    // El "scope" se fija al pulsar cada opción y lo lee el callback del selector
+    // de archivo, que es común a todas.
+    var exportScope by remember { mutableStateOf(BackupRestoreViewModel.ExportScope.LikedSongs) }
+    var exportAsM3u by remember { mutableStateOf(false) }
+
+    val exportCsvLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
+            if (uri != null) viewModel.exportLibrary(context, uri, exportScope, exportAsM3u)
+        }
+
+    val exportM3uLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("audio/x-mpegurl")) { uri ->
+            if (uri != null) viewModel.exportLibrary(context, uri, exportScope, exportAsM3u)
+        }
+
     val importPlaylistFromCsv =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri == null) return@rememberLauncherForActivityResult
@@ -598,6 +614,99 @@ fun BackupAndRestore(
                         }
                     }
                 }
+            }
+
+            // ── Export library (open formats) ─────────────────────────────────
+            item {
+                Material3SettingsGroup(
+                    title = stringResource(R.string.export_library),
+                    items = listOf(
+                        Material3SettingsItem(
+                            icon = painterResource(R.drawable.playlist_add),
+                            title = {
+                                Text(
+                                    text = stringResource(R.string.export_liked_songs),
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                            },
+                            description = {
+                                Text(
+                                    text = "CSV",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            },
+                            onClick = {
+                                exportScope = BackupRestoreViewModel.ExportScope.LikedSongs
+                                exportAsM3u = false
+                                exportCsvLauncher.launch("dezzy_me_gusta.csv")
+                            },
+                        ),
+                        Material3SettingsItem(
+                            icon = painterResource(R.drawable.playlist_add),
+                            title = {
+                                Text(
+                                    text = stringResource(R.string.export_all_songs),
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                            },
+                            description = {
+                                Text(
+                                    text = "CSV",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            },
+                            onClick = {
+                                exportScope = BackupRestoreViewModel.ExportScope.AllSongs
+                                exportAsM3u = false
+                                exportCsvLauncher.launch("dezzy_biblioteca.csv")
+                            },
+                        ),
+                        Material3SettingsItem(
+                            icon = painterResource(R.drawable.playlist_add),
+                            title = {
+                                Text(
+                                    text = stringResource(R.string.export_playlists),
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                            },
+                            description = {
+                                Text(
+                                    text = "CSV",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            },
+                            onClick = {
+                                exportScope = BackupRestoreViewModel.ExportScope.Playlists
+                                exportAsM3u = false
+                                exportCsvLauncher.launch("dezzy_playlists.csv")
+                            },
+                        ),
+                        Material3SettingsItem(
+                            icon = painterResource(R.drawable.playlist_add),
+                            title = {
+                                Text(
+                                    text = stringResource(R.string.export_liked_songs_m3u),
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                            },
+                            description = {
+                                Text(
+                                    text = "M3U",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            },
+                            onClick = {
+                                exportScope = BackupRestoreViewModel.ExportScope.LikedSongs
+                                exportAsM3u = true
+                                exportM3uLauncher.launch("dezzy_me_gusta.m3u")
+                            },
+                        ),
+                    )
+                )
             }
 
             // ── Import playlist ───────────────────────────────────────────────

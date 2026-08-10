@@ -78,6 +78,74 @@ class HomeViewModel @Inject constructor(
     val recentActivity = MutableStateFlow<List<YTItem>?>(null)
     val recentPlaylistsDb = MutableStateFlow<List<Playlist>?>(null)
 
+    // ── Dezzy hero: última escucha, racha de días, minutos de hoy y mixes ──
+
+    val lastListenEvent = database.lastListenEvent()
+        // Un evento huérfano (canción borrada de `song`) hace que Room lance al
+        // mapear EventWithSong.song y tumbaba la Home entera. La BD se sanea al
+        // abrir (repairForeignKeyOrphans); esto cubre cualquier resto.
+        .catch { e ->
+            reportException(e)
+            emit(null)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val todayListenMinutes = database.playTimeSince(
+        java.time.LocalDate.now().atStartOfDay().toInstant(java.time.ZoneOffset.UTC).toEpochMilli(),
+    ).map { (it / 60_000L).toInt() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val listenStreakDays = database.listenTimestamps(
+        java.time.LocalDate.now().minusDays(120).atStartOfDay()
+            .toInstant(java.time.ZoneOffset.UTC).toEpochMilli(),
+    ).map { stamps ->
+        // Los timestamps se guardan como hora de pared local (ver Converters):
+        // basta con quedarse con la fecha y contar días consecutivos hasta hoy
+        // (la racha sigue viva si lo último fue ayer y hoy aún no escuchas).
+        val days = stamps.mapTo(sortedSetOf()) { it.toLocalDate() }
+        var cursor = java.time.LocalDate.now()
+        if (cursor !in days && cursor.minusDays(1) in days) cursor = cursor.minusDays(1)
+        var streak = 0
+        while (cursor in days) {
+            streak++
+            cursor = cursor.minusDays(1)
+        }
+        streak
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val genreMixes = MutableStateFlow<List<GenreMix>>(emptyList())
+
+    private fun loadGenreMixes() {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val cache = com.arturo254.opentune.utils.GenreClassifier.loadCache(context)
+                val pool = database.mostPlayedSongs(0, limit = 250).first()
+                val grouped = pool.groupBy { s ->
+                    cache[s.id]
+                        ?: com.arturo254.opentune.utils.GenreClassifier.classifyText(
+                            s.song.title,
+                            s.artists.joinToString(" ") { it.name },
+                            s.album?.title,
+                        )
+                        ?: com.arturo254.opentune.utils.GenreClassifier.UNKNOWN
+                }
+                genreMixes.value = grouped
+                    .filterKeys { it != com.arturo254.opentune.utils.GenreClassifier.UNKNOWN }
+                    .filterValues { it.size >= 4 }
+                    .entries
+                    .sortedByDescending { it.value.size }
+                    .take(3)
+                    .map { (key, songs) ->
+                        GenreMix(
+                            key = key,
+                            name = com.arturo254.opentune.utils.GenreClassifier.displayName(key),
+                            songs = songs,
+                        )
+                    }
+            }.onFailure { Timber.w(it, "No se pudieron armar los mixes por género") }
+        }
+    }
+
     val allLocalItems = combine(
         quickPicks,
         forgottenFavorites,
@@ -407,6 +475,8 @@ class HomeViewModel @Inject constructor(
             load()
         }
 
+        loadGenreMixes()
+
         viewModelScope.launch(Dispatchers.IO) {
             context.dataStore.data
                 .map { it[SpeedDialSongIdsKey].orEmpty() }
@@ -500,3 +570,10 @@ class HomeViewModel @Inject constructor(
         }
     }
 }
+
+/** Mix automático por género para el hero de la home (carátulas = primeras canciones). */
+data class GenreMix(
+    val key: String,
+    val name: String,
+    val songs: List<Song>,
+)

@@ -21,6 +21,10 @@
 #-renamesourcefileattribute SourceFile
 
 ## Kotlin Serialization
+-keep @kotlinx.serialization.Serializable class * { *; }
+-keep class *$$serializer { *; }
+-keepclassmembers class *$$serializer { *; }
+
 # Keep `Companion` object fields of serializable classes.
 # This avoids serializer lookup through `getDeclaredClasses` as done for named companion objects.
 -if @kotlinx.serialization.Serializable class **
@@ -63,6 +67,10 @@
 ## Rules for NewPipeExtractor
 -keep class org.schabi.newpipe.extractor.services.youtube.protos.** { *; }
 -keep class org.schabi.newpipe.extractor.timeago.patterns.** { *; }
+# Keep the YouTube extractor (esp. YoutubeSignatureUtils.FUNCTION_REGEXES) un-obfuscated so the
+# runtime reflection patch in NewPipe.kt (signature deobfuscation) works in minified release builds.
+-keep class org.schabi.newpipe.extractor.services.youtube.** { *; }
+-keepclassmembers class org.schabi.newpipe.extractor.services.youtube.** { *; }
 -keep class org.mozilla.javascript.** { *; }
 -keep class org.mozilla.javascript.engine.** { *; }
 -dontwarn org.mozilla.javascript.JavaToJSONConverters
@@ -96,11 +104,10 @@
 
 ## Queue Persistence Rules
 # Keep queue-related classes to prevent serialization issues in release builds
--keep class com.arturo254.opentune.models.PersistQueue { *; }
--keep class com.arturo254.opentune.models.PersistPlayerState { *; }
--keep class com.arturo254.opentune.models.QueueData { *; }
--keep class com.arturo254.opentune.models.QueueType { *; }
+-keep class com.arturo254.opentune.models.** { *; }
+-keep class com.arturo254.opentune.innertube.models.** { *; }
 -keep class com.arturo254.opentune.playback.queues.** { *; }
+
 
 # Keep serialization methods for queue persistence
 -keepclassmembers class * implements java.io.Serializable {

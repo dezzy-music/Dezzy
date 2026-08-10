@@ -52,6 +52,15 @@ class BubbleService : Service() {
     private lateinit var expandedView: View
     private var isExpanded = false
 
+    /** True once both overlay views were successfully attached to the window. */
+    private var viewsAdded = false
+
+    /** Guards the self-restarting pulse animation against running after teardown. */
+    private var destroyed = false
+
+    /** True while the update receiver is registered (onCreate may bail before registering). */
+    private var receiverRegistered = false
+
     private var currentTitle = ""
     private var currentArtist = ""
     private var currentIsPlaying = false
@@ -64,6 +73,43 @@ class BubbleService : Service() {
     private val handler = Handler(Looper.getMainLooper())
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
+    /** elapsedRealtime() when [currentPosition] was last received, for live extrapolation. */
+    private var positionAnchorElapsedMs = 0L
+
+    /**
+     * Advances the expanded panel's progress bar once per second while playing, so the bar
+     * moves live between service broadcasts instead of freezing until the next player event.
+     */
+    private val progressTicker = object : Runnable {
+        override fun run() {
+            if (destroyed) return
+            if (currentIsPlaying && isExpanded) updateProgressBar()
+            handler.postDelayed(this, 1000L)
+        }
+    }
+
+    /** Position to show right now: last reported position plus elapsed time while playing. */
+    private fun shownPositionMs(): Long {
+        val extra = if (currentIsPlaying && positionAnchorElapsedMs > 0L) {
+            android.os.SystemClock.elapsedRealtime() - positionAnchorElapsedMs
+        } else 0L
+        val pos = currentPosition + extra
+        return if (currentDuration > 0) pos.coerceAtMost(currentDuration) else pos
+    }
+
+    private fun updateProgressBar() {
+        if (destroyed || !viewsAdded) return
+        val progressView = expandedView.findViewWithTag<View>("progressBar") ?: return
+        if (currentDuration > 0) {
+            val ratio = (shownPositionMs().toFloat() / currentDuration.toFloat()).coerceIn(0f, 1f)
+            val parentWidth = (progressView.parent as View).width
+            if (parentWidth > 0) {
+                progressView.layoutParams.width = (parentWidth * ratio).toInt()
+                progressView.requestLayout()
+            }
+        }
+    }
+
     private val updateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             intent ?: return
@@ -72,6 +118,7 @@ class BubbleService : Service() {
             currentIsPlaying = intent.getBooleanExtra(EXTRA_IS_PLAYING, false)
             currentPosition = intent.getLongExtra(EXTRA_POSITION, 0L)
             currentDuration = intent.getLongExtra(EXTRA_DURATION, 0L)
+            positionAnchorElapsedMs = android.os.SystemClock.elapsedRealtime()
             val artUrl = intent.getStringExtra(EXTRA_ART_URL)
 
             updateExpandedUI()
@@ -82,6 +129,7 @@ class BubbleService : Service() {
                     try {
                         val request = ImageRequest.Builder(this@BubbleService)
                             .data(artUrl)
+                            .size(200, 200)
                             .build()
                         
                         val result = imageLoader.execute(request)
@@ -97,6 +145,8 @@ class BubbleService : Service() {
                         val color2 = adjustAlpha(vibrant, 0.6f)
                         val color3 = adjustAlpha(muted, 0.7f)
 
+                        // Recycle old art bitmap before assigning new one
+                        val oldBitmap = currentArtBitmap
                         withContext(Dispatchers.Main) {
                             currentArtBitmap = bitmap
                             accentColor = vibrant
@@ -105,6 +155,7 @@ class BubbleService : Service() {
                             updateExpandedUI()
                             updateBubblePlayState()
                         }
+                        oldBitmap?.recycle()
                     } catch (_: Exception) {}
                 }
             }
@@ -121,9 +172,27 @@ class BubbleService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        // The overlay permission can be revoked while the preference is still enabled (or the
+        // system may restart this service on its own); adding a TYPE_APPLICATION_OVERLAY view
+        // without it throws BadTokenException and crashes the whole app. Bail out gracefully.
+        if (!android.provider.Settings.canDrawOverlays(this)) {
+            stopSelf()
+            return
+        }
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        createBubbleView()
-        createExpandedView()
+        try {
+            createBubbleView()
+            createExpandedView()
+            viewsAdded = true
+        } catch (e: Exception) {
+            // Some OEMs still reject the window (secure screens, revoked mid-flight, etc.).
+            // A missing bubble is always better than a crash loop.
+            try {
+                if (::bubbleView.isInitialized) windowManager.removeView(bubbleView)
+            } catch (_: Exception) {}
+            stopSelf()
+            return
+        }
 
         val filter = IntentFilter(ACTION_UPDATE)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -131,7 +200,18 @@ class BubbleService : Service() {
         } else {
             registerReceiver(updateReceiver, filter)
         }
+        receiverRegistered = true
+
+        handler.post(progressTicker)
     }
+
+    /**
+     * NOT_STICKY: the bubble's lifecycle is owned by MusicService's preference collector. With
+     * the default START_STICKY, the system resurrected this service on its own after process
+     * death — without MusicService, without track data, and possibly without the overlay
+     * permission — which was a reliable source of delayed crashes.
+     */
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_NOT_STICKY
 
     @SuppressLint("ClickableViewAccessibility")
     private fun createBubbleView() {
@@ -196,7 +276,9 @@ class BubbleService : Service() {
                     if (java.lang.Math.abs(dx) > 10 || java.lang.Math.abs(dy) > 10) moved = true
                     params.x = initialX + dx.toInt()
                     params.y = initialY + dy.toInt()
-                    windowManager.updateViewLayout(bubbleView, params)
+                    // View can be detached mid-drag (service stopping, permission revoked):
+                    // updateViewLayout then throws IllegalArgumentException.
+                    runCatching { windowManager.updateViewLayout(bubbleView, params) }
                     true
                 }
                 MotionEvent.ACTION_UP -> {
@@ -207,7 +289,7 @@ class BubbleService : Service() {
                         val screenWidth = resources.displayMetrics.widthPixels
                         val finalX = if (params.x + size / 2 < screenWidth / 2) 0 else screenWidth - size
                         params.x = finalX
-                        windowManager.updateViewLayout(bubbleView, params)
+                        runCatching { windowManager.updateViewLayout(bubbleView, params) }
                     }
                     true
                 }
@@ -403,6 +485,7 @@ class BubbleService : Service() {
     }
 
     private fun updateExpandedUI() {
+        if (destroyed || !viewsAdded) return
         expandedView.findViewWithTag<TextView>("title")?.text =
             currentTitle.ifBlank { "Dezzy" }
         expandedView.findViewWithTag<TextView>("artist")?.text =
@@ -411,16 +494,8 @@ class BubbleService : Service() {
             if (currentIsPlaying) R.drawable.pause else R.drawable.play
         )
         
-        val progressView = expandedView.findViewWithTag<View>("progressBar")
-        if (progressView != null && currentDuration > 0) {
-            val ratio = currentPosition.toFloat() / currentDuration.toFloat()
-            val parentWidth = (progressView.parent as View).width
-            if (parentWidth > 0) {
-                progressView.layoutParams.width = (parentWidth * ratio).toInt()
-                progressView.requestLayout()
-            }
-        }
-        
+        updateProgressBar()
+
         gradientColors?.let { colors ->
             val gd = GradientDrawable(GradientDrawable.Orientation.TL_BR, colors)
             gd.cornerRadius = 28 * resources.displayMetrics.density
@@ -434,12 +509,15 @@ class BubbleService : Service() {
     }
 
     private fun updateBubblePlayState() {
+        if (destroyed || !viewsAdded) return
         val pulse = bubbleView.findViewWithTag<View>("pulse") ?: return
         if (currentIsPlaying) {
-            (pulse.background as? GradientDrawable)?.apply {
+            // mutate(): setBackgroundResource shares one constant state between the bubble and
+            // the pulse view, so an un-mutated setStroke would tint every user of the drawable.
+            (pulse.background?.mutate() as? GradientDrawable)?.apply {
                 setStroke((1.5 * resources.displayMetrics.density).toInt(), accentColor)
             }
-            
+
             pulse.alpha = 0.6f
             pulse.scaleX = 1f
             pulse.scaleY = 1f
@@ -448,7 +526,13 @@ class BubbleService : Service() {
                 .scaleX(1.4f)
                 .scaleY(1.4f)
                 .setDuration(1200)
-                .withEndAction { updateBubblePlayState() }
+                .withEndAction {
+                    // cancel() also fires end actions on some API levels; re-check state so the
+                    // loop can't keep re-arming itself while paused or after teardown.
+                    if (!destroyed && currentIsPlaying && pulse.isAttachedToWindow) {
+                        updateBubblePlayState()
+                    }
+                }
                 .start()
         } else {
             pulse.animate().cancel()
@@ -457,10 +541,11 @@ class BubbleService : Service() {
     }
 
     private fun updateBubbleArt() {
+        if (destroyed || !viewsAdded) return
         currentArtBitmap?.let { bitmap ->
             bubbleView.findViewWithTag<ImageView>("art")?.setImageBitmap(bitmap)
-            
-            (bubbleView.findViewWithTag<View>("art")?.background as? GradientDrawable)?.apply {
+
+            (bubbleView.findViewWithTag<View>("art")?.background?.mutate() as? GradientDrawable)?.apply {
                 setStroke((1.5 * resources.displayMetrics.density).toInt(), accentColor)
             }
         }
@@ -476,10 +561,24 @@ class BubbleService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        destroyed = true
+        handler.removeCallbacks(progressTicker)
         scope.cancel()
-        try { unregisterReceiver(updateReceiver) } catch (_: Exception) {}
-        try { windowManager.removeView(bubbleView) } catch (_: Exception) {}
-        try { windowManager.removeView(expandedView) } catch (_: Exception) {}
+        if (receiverRegistered) {
+            try { unregisterReceiver(updateReceiver) } catch (_: Exception) {}
+        }
+        // onCreate may have bailed before the lateinit views/windowManager were initialized
+        // (missing overlay permission); touching them here crashed with
+        // UninitializedPropertyAccessException.
+        if (::bubbleView.isInitialized) {
+            try { bubbleView.findViewWithTag<View>("pulse")?.animate()?.cancel() } catch (_: Exception) {}
+            try { bubbleView.animate().cancel() } catch (_: Exception) {}
+            try { windowManager.removeView(bubbleView) } catch (_: Exception) {}
+        }
+        if (::expandedView.isInitialized) {
+            try { expandedView.animate().cancel() } catch (_: Exception) {}
+            try { windowManager.removeView(expandedView) } catch (_: Exception) {}
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null

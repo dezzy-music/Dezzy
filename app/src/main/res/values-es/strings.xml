@@ -79,6 +79,22 @@
     <string name="remove_download">Quitar descarga</string>
     <string name="import_playlist">Importar lista de reproducción</string>
     <string name="import_failed">Fallo al importar</string>
+    <string name="social_network">Red social</string>
+    <string name="social_friends">Amigos</string>
+    <string name="social_friends_desc">Encuentra gente, chatea y comparte música</string>
+    <string name="social_community">Comunidad</string>
+    <string name="social_community_desc">Mira qué están escuchando tus amigos</string>
+    <string name="widget_music_description">Controles de la canción en curso</string>
+    <string name="export_library">Exportar biblioteca</string>
+    <string name="export_liked_songs">Canciones que me gustan</string>
+    <string name="export_liked_songs_m3u">Me gusta como lista</string>
+    <string name="export_all_songs">Todas las canciones</string>
+    <string name="export_playlists">Todas las playlists</string>
+    <string name="export_in_progress">Exportando…</string>
+    <string name="export_step_reading">Leyendo la biblioteca…</string>
+    <string name="export_step_writing">Escribiendo el archivo…</string>
+    <string name="export_success">Biblioteca exportada</string>
+    <string name="export_failed">Fallo al exportar</string>
     <string name="update_button">Actualizar</string>
     <string name="add_to_playlist">Añadir a lista de reproducción</string>
     <string name="view_artist">Ver artista</string>
@@ -351,6 +367,18 @@
     <string name="center">Centro</string>
     <string name="right">Derecha</string>
     <string name="player_slider_style">Estilo de control deslizante del reproductor</string>
+    <string name="slider_style_standard">Estándar</string>
+    <string name="slider_style_wavy">Ondulado</string>
+    <string name="slider_style_thick">Grueso</string>
+    <string name="slider_style_circular">Circular</string>
+    <string name="slider_style_simple">Simple</string>
+    <string name="slider_style_neon_glow">Brillo de neón</string>
+    <string name="slider_style_capsule">Cápsula</string>
+    <string name="slider_style_double_line">Línea doble</string>
+    <string name="slider_style_dotted">Puntos</string>
+    <string name="slider_style_waveform">Onda de audio</string>
+    <string name="slider_style_shooting_star">Estrella fugaz</string>
+    <string name="slider_style_aurora">Aurora boreal</string>
     <string name="default_">Por defecto</string>
     <string name="squiggly">Ondulado</string>
     <string name="misc">Varios</string>
@@ -412,6 +440,9 @@
     <string name="eq_system">Sistema</string>
     <string name="eq_flat">Plano</string>
     <string name="eq_profiles">Perfiles</string>
+    <string name="eq_auto_genre">Automático por género</string>
+    <string name="eq_auto_genre_hint">Ajusta las bandas según el género de la canción que suena</string>
+    <string name="eq_auto_genre_detected">Género detectado: %1$s</string>
     <string name="eq_manage">Administrar</string>
     <string name="eq_system_preset">Preajuste del sistema</string>
     <string name="eq_manual">Manual</string>
@@ -525,6 +556,10 @@
     <string name="release_notes_unavailable">Las notas de la versión no están disponibles</string>
     <string name="update_text">Actualizar</string>
     <string name="translate">Traducir</string>
+    <string name="translate_playlist">Traducir playlist</string>
+    <string name="translating_playlist_progress">Traduciendo playlist (%1$d/%2$d)...</string>
+    <string name="playlist_translation_done">Traducción de playlist completada (%1$d/%2$d canciones)</string>
+    <string name="playlist_translation_no_lyrics">No se encontraron letras para traducir</string>
     <string name="language_label">Idioma</string>
     <string name="lyrics">Letras</string>
     <string name="translation_success">Traducción guardada</string>
@@ -740,4 +775,15 @@
 
     <string name="aod_screen_title">Always On Display</string>
 
+    <string name="lyrics_v2_style">Estilo de animación de letras V2</string>
+    <string name="lyrics_v2_style_liquid_flow">Flujo líquido</string>
+    <string name="lyrics_v2_style_spotlight">Foco de luz</string>
+    <string name="lyrics_v2_style_depth_3d">Profundidad 3D</string>
+    <string name="lyrics_v2_style_chromatic">Cromático</string>
+    <string name="lyrics_v2_style_glass_cards">Tarjetas de cristal</string>
+    <string name="lyrics_v2_style_geometric">Geométrico</string>
+    <string name="lyrics_v2_style_typewriter">Máquina de escribir</string>
+    <string name="lyrics_v2_style_heat_map">Mapa de calor</string>
+    <string name="lyrics_v2_style_minimal_fade">Desvanecimiento mínimo</string>
+    <string name="lyrics_v2_style_bounce">Rebote</string>
 </resources>

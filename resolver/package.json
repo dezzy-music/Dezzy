@@ -1,0 +1,13 @@
+{
+  "name": "dezzy-lossless-resolver",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Resolver lossless propio de Dezzy Music: descarga FLAC real (Deezer) sin depender del backend cerrado de SpotiFLAC.",
+  "type": "commonjs",
+  "dependencies": {
+    "egoroof-blowfish": "^4.0.1"
+  },
+  "engines": {
+    "node": "22.x"
+  }
+}

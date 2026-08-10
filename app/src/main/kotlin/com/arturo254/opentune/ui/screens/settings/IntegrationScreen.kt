@@ -33,6 +33,7 @@ import com.arturo254.opentune.R
 import com.arturo254.opentune.ui.component.PreferenceGroupTitle
 import com.arturo254.opentune.constants.ListenBrainzEnabledKey
 import com.arturo254.opentune.constants.ListenBrainzTokenKey
+import com.arturo254.opentune.constants.OmegaMathUserIdKey
 import com.arturo254.opentune.ui.component.IconButton
 import com.arturo254.opentune.ui.component.InfoLabel
 import com.arturo254.opentune.ui.component.PreferenceEntry
@@ -51,8 +52,10 @@ fun IntegrationScreen(
 
     val (listenBrainzEnabled, onListenBrainzEnabledChange) = rememberPreference(ListenBrainzEnabledKey, false)
     val (listenBrainzToken, onListenBrainzTokenChange) = rememberPreference(ListenBrainzTokenKey, "")
+    val (omegaMathUserId, onOmegaMathUserIdChange) = rememberPreference(OmegaMathUserIdKey, "c45199ab-55c3-4102-9ac3-23b3bd1a8a53")
 
     var showListenBrainzTokenEditor = remember { mutableStateOf(false) }
+    var showOmegaMathUserIdEditor = remember { mutableStateOf(false) }
 
     Column(
         Modifier
@@ -78,7 +81,13 @@ fun IntegrationScreen(
                 navController.navigate("settings/discord")
             },
         )
-
+        PreferenceEntry(
+            title = { Text("Spotify") },
+            icon = { Icon(painterResource(R.drawable.login), null) },
+            onClick = {
+                navController.navigate("settings/spotify")
+            },
+        )
         PreferenceGroupTitle(
             title = stringResource(R.string.scrobbling),
         )

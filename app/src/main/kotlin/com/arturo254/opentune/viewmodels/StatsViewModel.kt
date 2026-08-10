@@ -19,6 +19,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
@@ -60,6 +61,14 @@ constructor(
                             statToPeriod(selection, t - 1)
                         },
                     )
+                    // El catch va sobre el flow interno para que un fallo con un
+                    // periodo no rompa el flatMapLatest: al cambiar de chip se
+                    // vuelve a consultar. Con datos irrecuperables la pantalla
+                    // queda vacía en vez de tumbar la app.
+                    .catch { e ->
+                        reportException(e)
+                        emit(emptyList())
+                    }
             }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     val mostPlayedSongs =
@@ -83,6 +92,10 @@ constructor(
                             statToPeriod(selection, t - 1)
                         },
                     )
+                    .catch { e ->
+                        reportException(e)
+                        emit(emptyList())
+                    }
             }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     val mostPlayedArtists =
@@ -105,8 +118,14 @@ constructor(
                         } else {
                             statToPeriod(selection, t - 1)
                         },
-                    ).map { artists ->
-                        artists.filter { it.artist.isYouTubeArtist }
+                    )
+                    // Sin filtrar por isYouTubeArtist: si el artista más
+                    // escuchado de un mes era local (id que no empieza por UC),
+                    // el destacado y la lista de ese mes desaparecían. El
+                    // refresco de red del init sí se limita a YouTube.
+                    .catch { e ->
+                        reportException(e)
+                        emit(emptyList())
                     }
             }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
@@ -130,11 +149,23 @@ constructor(
                         statToPeriod(selection, t - 1)
                     },
                 )
+                    .catch { e ->
+                        reportException(e)
+                        emit(emptyList())
+                    }
             }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     val firstEvent =
         database
             .firstEvent()
+            // Si el evento más antiguo quedó huérfano (canción borrada), Room
+            // lanza al mapear EventWithSong.song. La BD lo sanea al abrir
+            // (repairForeignKeyOrphans), pero si algo se cuela la pantalla debe
+            // seguir abriendo.
+            .catch { e ->
+                reportException(e)
+                emit(null)
+            }
             .stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     init {
@@ -142,6 +173,7 @@ constructor(
             mostPlayedArtists.collect { artists ->
                 artists
                     .map { it.artist }
+                    .filter { it.isYouTubeArtist }
                     .filter {
                         it.thumbnailUrl == null || Duration.between(
                             it.lastUpdateTime,

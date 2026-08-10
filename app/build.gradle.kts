@@ -34,7 +34,7 @@ fun fetchGitCommitHash(): String {
     // Fallback: Obtener del repositorio remoto de GitHub sin dependencias externas
     return try {
         println("Fetching latest commit from GitHub API...")
-        val url = URL("https://api.github.com/repos/Arturo254/OpenTune/commits/master")
+        val url = URL("https://api.github.com/repos/dezzy-music/Dezzy/commits/master")
         val connection = url.openConnection() as HttpURLConnection
         connection.requestMethod = "GET"
         connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
@@ -74,6 +74,16 @@ if (localPropertiesFile.exists()) {
     localProperties.load(localPropertiesFile.inputStream())
 }
 
+// Release signing: local dev reads app/keystore/keystore.properties (gitignored, never
+// committed); CI supplies STORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD as env vars instead.
+val keystoreProperties = Properties()
+val keystorePropertiesFile = file("keystore/keystore.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(keystorePropertiesFile.inputStream())
+}
+fun signingProp(propKey: String, envKey: String): String? =
+    keystoreProperties.getProperty(propKey) ?: System.getenv(envKey)
+
 val gitCommit = fetchGitCommitHash()
 
 android {
@@ -81,11 +91,11 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.Arturo254.opentune"
+        applicationId = "com.dezzy.music"
         minSdk = 26
         targetSdk = 36
-        versionCode = 130
-        versionName = "3.0.3"
+        versionCode = 137
+        versionName = "3.0.6"
 //        versionName = "3.0.2-$gitCommit"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -145,15 +155,15 @@ android {
     signingConfigs {
         create("release") {
             storeFile = file("keystore/release.keystore")
-            storePassword = System.getenv("STORE_PASSWORD")
-            keyAlias = System.getenv("KEY_ALIAS")
-            keyPassword = System.getenv("KEY_PASSWORD")
+            storePassword = signingProp("storePassword", "STORE_PASSWORD")
+            keyAlias = signingProp("keyAlias", "KEY_ALIAS")
+            keyPassword = signingProp("keyPassword", "KEY_PASSWORD")
         }
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -269,6 +279,9 @@ dependencies {
     implementation(libs.media3.session)
     implementation(libs.media3.okhttp)
     implementation("androidx.media3:media3-ui:${libs.versions.media3.get()}")
+    implementation(libs.media3.cast)
+    implementation(libs.androidx.mediarouter)
+    implementation(libs.play.services.cast.framework)
     implementation(libs.squigglyslider)
 
     implementation(libs.room.runtime)
@@ -292,6 +305,7 @@ dependencies {
     implementation(project(":simpmusic"))
     implementation(project(":canvas"))
     implementation(project(":shazamkit"))
+    implementation(project(":artistvideo"))
     implementation("com.github.Kyant0:m3color:2025.4")
     implementation(libs.compose.cloudy)
 
@@ -308,9 +322,15 @@ dependencies {
     coreLibraryDesugaring(libs.desugaring)
 
     implementation(libs.timber)
+    implementation(libs.jaudiotagger)
+    implementation(libs.androidx.browser)
     testImplementation(libs.junit)
     implementation("com.github.therealbush:translator:1.1.1")
     implementation("com.google.mlkit:language-id:17.0.6")
+    // Traducción offline on-device (letras sin IA); cada modelo de idioma pesa ~30 MB
+    implementation("com.google.mlkit:translate:17.0.3")
+    // Music Map (native, keyless OpenStreetMap tiles)
+    implementation("org.osmdroid:osmdroid-android:6.1.20")
     implementation("androidx.lifecycle:lifecycle-process:2.10.0")
     implementation("androidx.compose.material3.adaptive:adaptive:1.2.0")
     implementation("net.jthink:jaudiotagger:3.0.1")

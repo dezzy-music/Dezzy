@@ -495,10 +495,11 @@ class ListenTogetherClient @Inject constructor(
         _messages.value = emptyList()
         _typingUsers.value = emptySet()
         _pendingJoinRequests.value = emptyList()
+        _pendingSuggestions.value = emptyList()
         _bufferingUsers.value = emptyList()
         clearPersistedSession()
         reconnectAttempts = 0
-        
+
         scope.launch { _events.emit(ListenTogetherEvent.Disconnected) }
     }
 
@@ -877,9 +878,20 @@ class ListenTogetherClient @Inject constructor(
                     val payload = codec.decodePayload(msgType, payloadBytes, detectedFormat) as? KickedPayload ?: return
                     log(LogLevel.WARNING, "Kicked from room", payload.reason)
                     releaseWakeLock()
+                    // Full teardown, including the persisted session: leaving it around made the
+                    // client auto-reconnect to the very room it was kicked from on next launch.
                     sessionToken = null
+                    storedRoomCode = null
+                    storedUsername = null
+                    wasHost = false
                     _roomState.value = null
                     _role.value = RoomRole.NONE
+                    _messages.value = emptyList()
+                    _typingUsers.value = emptySet()
+                    _pendingJoinRequests.value = emptyList()
+                    _pendingSuggestions.value = emptyList()
+                    _bufferingUsers.value = emptyList()
+                    clearPersistedSession()
                     scope.launch { _events.emit(ListenTogetherEvent.Kicked(payload.reason)) }
                 }
                 
@@ -888,30 +900,44 @@ class ListenTogetherClient @Inject constructor(
                     val state = _roomState.value ?: return
                     log(LogLevel.DEBUG, "Playback sync", "Action: ${payload.action}")
                     
+                    // Refresh lastUpdate on every position-bearing action: consumers extrapolate
+                    // the live position as `position + (now - lastUpdate)`, so keeping the stale
+                    // join-time timestamp made every extrapolation wildly wrong.
                     when (payload.action) {
                         PlaybackActions.PLAY -> {
                             _roomState.value = state.copy(
                                 isPlaying = true,
-                                position = payload.position ?: state.position
+                                position = payload.position ?: state.position,
+                                lastUpdate = System.currentTimeMillis()
                             )
                         }
                         PlaybackActions.PAUSE -> {
                             _roomState.value = state.copy(
                                 isPlaying = false,
-                                position = payload.position ?: state.position
+                                position = payload.position ?: state.position,
+                                lastUpdate = System.currentTimeMillis()
                             )
                         }
                         PlaybackActions.SEEK -> {
                             _roomState.value = state.copy(
-                                position = payload.position ?: state.position
+                                position = payload.position ?: state.position,
+                                lastUpdate = System.currentTimeMillis()
                             )
                         }
                         PlaybackActions.CHANGE_TRACK -> {
                             _roomState.value = state.copy(
                                 currentTrack = payload.trackInfo,
                                 isPlaying = false,
-                                position = 0
+                                position = 0,
+                                lastUpdate = System.currentTimeMillis()
                             )
+                        }
+                        PlaybackActions.SYNC_QUEUE -> {
+                            // Defined by the protocol but previously ignored, leaving the room's
+                            // queue stale after a full queue sync.
+                            payload.queue?.let { q ->
+                                _roomState.value = state.copy(queue = q)
+                            }
                         }
                         PlaybackActions.QUEUE_ADD -> {
                             val ti = payload.trackInfo
@@ -1189,8 +1215,9 @@ class ListenTogetherClient @Inject constructor(
         _messages.value = emptyList()
         _typingUsers.value = emptySet()
         _pendingJoinRequests.value = emptyList()
+        _pendingSuggestions.value = emptyList()
         _bufferingUsers.value = emptyList()
-        
+
         clearPersistedSession()
         releaseWakeLock()
     }
@@ -1244,9 +1271,16 @@ class ListenTogetherClient @Inject constructor(
         queueTitle: String? = null,
         volume: Float? = null
     ) {
-        if (_role.value != RoomRole.HOST) {
-            log(LogLevel.ERROR, "Cannot control playback", "Not host")
+        if (!isInRoom) {
+            log(LogLevel.ERROR, "Cannot control playback", "Not in room")
             return
+        }
+        // Guests may also send playback actions: they are *requests* the server relays and the
+        // host's player applies (subject to the room settings). The old hard HOST-only guard
+        // silently dropped every guest control request — MusicService.requestTogetherControl is
+        // guest-only, so guest control was impossible even when the host allowed it.
+        if (_role.value != RoomRole.HOST) {
+            log(LogLevel.INFO, "Sending playback action as guest request", action)
         }
         sendMessage(
             MessageTypes.PLAYBACK_ACTION,

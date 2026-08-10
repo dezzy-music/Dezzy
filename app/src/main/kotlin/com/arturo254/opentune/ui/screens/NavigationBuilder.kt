@@ -78,12 +78,14 @@ import com.arturo254.opentune.ui.screens.settings.DiscordSettings
 import com.arturo254.opentune.ui.screens.settings.DebugSettings
 import com.arturo254.opentune.ui.screens.settings.IntegrationScreen
 import com.arturo254.opentune.ui.screens.settings.LastFMSettings
+import com.arturo254.opentune.ui.screens.settings.LosslessSettings
 import com.arturo254.opentune.ui.screens.settings.MusicTogetherScreen
 import com.arturo254.opentune.ui.screens.settings.PalettePickerScreen
 import com.arturo254.opentune.ui.screens.settings.PlayerSettings
 import com.arturo254.opentune.ui.screens.settings.PoTokenScreen
 import com.arturo254.opentune.ui.screens.settings.PrivacySettings
 import com.arturo254.opentune.ui.screens.settings.SettingsScreen
+import com.arturo254.opentune.ui.screens.settings.SpotifySettings
 import com.arturo254.opentune.ui.screens.settings.StorageSettings
 import com.arturo254.opentune.ui.screens.settings.ThemeCreatorScreen
 import com.arturo254.opentune.ui.screens.settings.UpdateScreen
@@ -92,6 +94,8 @@ import com.arturo254.opentune.ui.screens.musicrecognition.MusicRecognitionScreen
 import com.arturo254.opentune.ui.screens.settings.AODSettings
 import com.arturo254.opentune.ui.screens.settings.AiSettings
 import com.arturo254.opentune.ui.screens.SpotifyLoginScreen
+import com.arturo254.opentune.ui.screens.MusicMapScreen
+import com.arturo254.opentune.ui.screens.settings.PublicRoomsScreen
 
 import com.arturo254.opentune.ui.utils.ShowMediaInfo
 import com.arturo254.opentune.utils.rememberEnumPreference
@@ -104,7 +108,21 @@ fun NavGraphBuilder.navigationBuilder(
     latestVersionName: String,
 ) {
     composable(Screens.Home.route) {
-        HomeScreen(navController)
+        // Share the Activity-scoped HomeViewModel that MainActivity already creates
+        // (for the shuffle button and account avatar). Scoping this one to the nav
+        // entry spawned a SECOND instance whose init re-ran the entire home feed
+        // load (network + DB) on every cold start.
+        val activity = generateSequence(androidx.compose.ui.platform.LocalContext.current) {
+            (it as? android.content.ContextWrapper)?.baseContext
+        }.filterIsInstance<androidx.activity.ComponentActivity>().firstOrNull()
+        HomeScreen(
+            navController,
+            viewModel = if (activity != null) {
+                androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel(viewModelStoreOwner = activity)
+            } else {
+                androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
+            },
+        )
     }
     composable(
         Screens.Library.route,
@@ -134,6 +152,47 @@ fun NavGraphBuilder.navigationBuilder(
     }
     composable("charts_screen") {
         ChartsScreen(navController)
+    }
+    composable("music_map") {
+        com.arturo254.opentune.ui.screens.musicmap.MusicMapScreen(navController)
+    }
+    composable("social") {
+        com.arturo254.opentune.ui.screens.social.SocialScreen(navController)
+    }
+    composable("feed") {
+        com.arturo254.opentune.ui.screens.social.FeedScreen(navController)
+    }
+    // Red social musical: actividad de amigos en vivo + feed de música compartida.
+    composable("community") {
+        com.arturo254.opentune.ui.screens.social.MusicFeedScreen(navController)
+    }
+    // Bandeja de mensajes (estilo Instagram DMs).
+    composable("messages") {
+        com.arturo254.opentune.ui.screens.social.MessagesInboxScreen(navController)
+    }
+    // Perfil propio estilo Threads (vista); la edición vive en /edit.
+    composable("social/profile") {
+        com.arturo254.opentune.ui.screens.social.MyProfileScreen(navController)
+    }
+    composable("social/profile/edit") {
+        com.arturo254.opentune.ui.screens.social.ProfileScreen(navController)
+    }
+    // Perfil musical de otro usuario (top artistas/canciones, seguir).
+    composable("social/profile/{userId}") { backStackEntry ->
+        com.arturo254.opentune.ui.screens.social.MusicProfileScreen(
+            navController = navController,
+            userId = backStackEntry.arguments?.getString("userId").orEmpty(),
+        )
+    }
+    composable("chat/{friendId}/{friendName}") { backStackEntry ->
+        val friendId = backStackEntry.arguments?.getString("friendId").orEmpty()
+        val friendName = backStackEntry.arguments?.getString("friendName")
+            ?.let { runCatching { java.net.URLDecoder.decode(it, "UTF-8") }.getOrDefault(it) }
+            .orEmpty()
+        com.arturo254.opentune.ui.screens.social.ChatScreen(navController, friendId, friendName)
+    }
+    composable("public_rooms") {
+        PublicRoomsScreen(navController, scrollBehavior)
     }
     composable(
         route = "browse/{browseId}",
@@ -201,6 +260,17 @@ fun NavGraphBuilder.navigationBuilder(
             ),
     ) {
         ArtistScreen(navController, scrollBehavior)
+    }
+    composable(
+        route = "songdna/{artistId}",
+        arguments = listOf(
+            navArgument("artistId") { type = NavType.StringType },
+        ),
+    ) { backStackEntry ->
+        com.arturo254.opentune.ui.screens.SongDnaScreen(
+            navController = navController,
+            artistId = backStackEntry.arguments?.getString("artistId").orEmpty(),
+        )
     }
     composable(
         route = "artist/{artistId}/songs",
@@ -365,6 +435,33 @@ fun NavGraphBuilder.navigationBuilder(
     }
     composable("settings/integration") {
         IntegrationScreen(navController, scrollBehavior)
+    }
+    composable("settings/lossless") {
+        LosslessSettings(navController, scrollBehavior)
+    }
+    composable(
+        "lossless?query={query}",
+        arguments = listOf(
+            navArgument("query") {
+                type = NavType.StringType
+                defaultValue = ""
+            },
+        ),
+    ) { entry ->
+        LosslessScreen(
+            navController = navController,
+            scrollBehavior = scrollBehavior,
+            initialQuery = entry.arguments?.getString("query").orEmpty(),
+        )
+    }
+    composable("lossless/downloads") {
+        LosslessDownloadsScreen(navController, scrollBehavior)
+    }
+    composable("settings/spotify") {
+        SpotifySettings(navController, scrollBehavior)
+    }
+    composable("settings/spotify/preload") {
+        com.arturo254.opentune.ui.screens.settings.SpotifyPreloadScreen(navController)
     }
     composable("settings/music_together") {
         MusicTogetherScreen(navController, scrollBehavior)

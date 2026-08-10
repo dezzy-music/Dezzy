@@ -214,3 +214,42 @@ sealed interface ControlAction {
         val shuffleEnabled: Boolean,
     ) : ControlAction
 }
+
+@Serializable
+@SerialName("vote_request")
+@Immutable
+data class VoteRequest(
+    val sessionId: String,
+    val participantId: String,
+    val voteId: String,
+    val track: TogetherTrack,
+) : TogetherMessage
+
+@Serializable
+@SerialName("vote_response")
+@Immutable
+data class VoteResponse(
+    val sessionId: String,
+    val participantId: String,
+    val voteId: String,
+    val upvote: Boolean,
+) : TogetherMessage
+
+@Serializable
+@SerialName("vote_result")
+@Immutable
+data class VoteResult(
+    val sessionId: String,
+    val voteId: String,
+    val accepted: Boolean,
+    val upvotes: Int,
+    val downvotes: Int,
+    val track: TogetherTrack,
+) : TogetherMessage
+
+@Serializable
+@SerialName("room_list")
+@Immutable
+data class RoomListMessage(
+    val rooms: List<com.arturo254.opentune.together.TogetherPublicRoom>,
+) : TogetherMessage

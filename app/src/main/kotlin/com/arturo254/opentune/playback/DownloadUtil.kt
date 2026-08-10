@@ -76,6 +76,14 @@ constructor(
             .proxy(YouTube.streamProxy)
             .followRedirects(true)
             .followSslRedirects(true)
+            .dispatcher(
+                okhttp3.Dispatcher().apply {
+                    // OkHttp defaults to 5 concurrent requests per host, which would silently
+                    // serialize most of ParallelRangeDataSource's chunk requests to googlevideo.
+                    maxRequestsPerHost = 12
+                    maxRequests = 24
+                },
+            )
             .addInterceptor { chain ->
                 val request = chain.request()
                 val host = request.url.host
@@ -103,35 +111,44 @@ constructor(
 
     val downloads = MutableStateFlow<Map<String, Download>>(emptyMap())
 
+    // Source of truth for download states. The listener below mutates this map in place and
+    // pokes `downloadsDirty`; a single collector publishes throttled immutable snapshots into
+    // `downloads`. The old code did `map.toMutableMap()` on EVERY onDownloadChanged event —
+    // with thousands of queued downloads (Spotify preload) that's an O(N) full-map copy per
+    // event on DownloadManager's main-thread handler, which OOM'd low-RAM devices
+    // (java.lang.OutOfMemoryError in HashMap.resize on a 128 MB heap).
+    private val downloadsMap = ConcurrentHashMap<String, Download>()
+    // replay = 1 so a tick emitted before the collector subscribes isn't lost.
+    private val downloadsDirty = MutableSharedFlow<Unit>(
+        replay = 1,
+        onBufferOverflow = kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST,
+    )
+
     private val dataSourceFactory =
         ResolvingDataSource.Factory(
             CacheDataSource
                 .Factory()
                 .setCache(playerCache)
                 .setUpstreamDataSourceFactory(
-                    OkHttpDataSource.Factory(
+                    // Downloads specifically (not live playback) fetch each song as several
+                    // concurrent byte-range requests — googlevideo throttles per-connection, so
+                    // this multiplies real throughput instead of hitting one connection's cap.
+                    ParallelRangeDataSource.Factory(
                         mediaOkHttpClient,
+                        context.cacheDir,
                     ),
                 ),
         ) { dataSpec ->
             val mediaId = dataSpec.key ?: error("No media id")
             val length = if (dataSpec.length >= 0) dataSpec.length else 1
-            if (playerCache.cacheSpace > 500 * 1024 * 1024L) {
-                kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO) {
-                    playerCache.keys.shuffled().take(10).forEach { key ->
-                        playerCache.getCachedSpans(key).sumOf { it.length }
-                    }
-                }
-            }
             if (playerCache.isCached(mediaId, dataSpec.position, length)) {
                 return@Factory dataSpec
             }
             songUrlCache[mediaId]?.takeIf { it.second > System.currentTimeMillis() }?.let {
                 return@Factory dataSpec.withUri(it.first.toUri())
             }
-            // withTimeout(30s) prevents indefinite thread blocking when YouTube is slow (P2 fix)
             val playbackData = runBlocking(Dispatchers.IO) {
-                withTimeout(30_000L) {
+                withTimeout(15_000L) {
                     val networkMeteredPref = context.dataStore.get(NetworkMeteredKey, true)
                     YTPlayerUtils.playerResponseForPlayback(
                         mediaId,
@@ -151,13 +168,13 @@ constructor(
                         id = mediaId,
                         itag = format.itag,
                         mimeType = format.mimeType.split(";")[0],
-                        codecs = format.mimeType.split("codecs=")[1].removeSurrounding("\""),
+                        codecs = format.mimeType.split("codecs=").getOrNull(1)?.removeSurrounding("\"") ?: "",
                         bitrate = format.bitrate,
                         sampleRate = format.audioSampleRate,
-                        contentLength = format.contentLength!!,
+                        contentLength = format.contentLength ?: 0L,
                         loudnessDb = playbackData.audioConfig?.loudnessDb,
                         perceptualLoudnessDb = playbackData.audioConfig?.perceptualLoudnessDb,
-                        playbackUrl = playbackData.playbackTracking?.videostatsPlaybackUrl?.baseUrl
+                        playbackUrl = playbackData.streamUrl
                     ),
                 )
 
@@ -224,30 +241,47 @@ constructor(
                         download: Download,
                         finalException: Exception?,
                     ) {
-                        downloads.update { map ->
-                            map.toMutableMap().apply {
-                                set(download.request.id, download)
-                            }
-                        }
+                        // O(1) and allocation-free on the DownloadManager handler thread;
+                        // snapshot publishing happens throttled on internalScope.
+                        downloadsMap[download.request.id] = download
+                        downloadsDirty.tryEmit(Unit)
                         if (download.state == Download.STATE_COMPLETED) {
-                            // Use stable internalScope instead of fire-and-forget CoroutineScope (P5 fix)
                             internalScope.launch {
-                                downloadExporter.get().processDownload(download.request.id, false)
+                                val exportEnabled = context.dataStore.get(
+                                    com.arturo254.opentune.constants.ExportDownloadsToMusicKey, false
+                                )
+                                downloadExporter.get().processDownload(download.request.id, exportEnabled)
                             }
                         }
+                    }
+
+                    override fun onDownloadRemoved(
+                        downloadManager: DownloadManager,
+                        download: Download,
+                    ) {
+                        downloadsMap.remove(download.request.id)
+                        downloadsDirty.tryEmit(Unit)
                     }
                 }
             )
         }
 
     init {
-        CoroutineScope(Dispatchers.IO).launch {
-            val result = mutableMapOf<String, Download>()
+        internalScope.launch {
             val cursor = downloadManager.downloadIndex.getDownloads()
             while (cursor.moveToNext()) {
-                result[cursor.download.request.id] = cursor.download
+                downloadsMap[cursor.download.request.id] = cursor.download
             }
-            downloads.value = result
+            downloadsDirty.tryEmit(Unit)
+        }
+        // Coalesces bursts of download events into at most ~2 snapshots per second.
+        // The 1-slot DROP_OLDEST buffer means any events arriving during the delay
+        // collapse into a single pending tick, so the last state is always published.
+        internalScope.launch {
+            downloadsDirty.collect {
+                downloads.value = HashMap(downloadsMap)
+                delay(500)
+            }
         }
     }
 

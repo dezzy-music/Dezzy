@@ -71,6 +71,7 @@ import com.arturo254.opentune.R
 import com.arturo254.opentune.constants.ArtistSeparatorsKey
 import com.arturo254.opentune.constants.ExternalDownloaderEnabledKey
 import com.arturo254.opentune.constants.ExternalDownloaderPackageKey
+import com.arturo254.opentune.lossless.LosslessEnabledKey
 import com.arturo254.opentune.constants.ListItemHeight
 import com.arturo254.opentune.constants.ListThumbnailSize
 import com.arturo254.opentune.constants.ThumbnailCornerRadius
@@ -118,6 +119,7 @@ fun YouTubeSongMenu(
     val (artistSeparators) = rememberPreference(ArtistSeparatorsKey, defaultValue = ",;/&")
     val (externalDownloaderEnabled) = rememberPreference(ExternalDownloaderEnabledKey, defaultValue = false)
     val (externalDownloaderPackage) = rememberPreference(ExternalDownloaderPackageKey, defaultValue = "")
+    val (losslessEnabled) = rememberPreference(LosslessEnabledKey, defaultValue = false)
 
     // Split artists by configured separators
     data class SplitArtist(
@@ -303,6 +305,7 @@ fun YouTubeSongMenu(
                     subtitle = song.artists.joinToString { it.name },
                     thumbnailUrl = song.thumbnail,
                     shareLink = song.shareLink ?: "https://music.youtube.com/watch?v=${song.id}",
+                    mediaId = song.id,
                     onDismiss = { showShareDialog = false; onDismiss() }
                 )
             }
@@ -569,6 +572,27 @@ fun YouTubeSongMenu(
                             Toast.makeText(context, context.getString(R.string.external_downloader_not_installed), Toast.LENGTH_SHORT).show()
                         }
                     }
+                )
+            }
+        }
+        if (losslessEnabled) {
+            item {
+                ListItem(
+                    headlineContent = { Text(text = "Descargar en FLAC (lossless)") },
+                    leadingContent = {
+                        Icon(
+                            painter = painterResource(R.drawable.download),
+                            contentDescription = null,
+                        )
+                    },
+                    modifier = Modifier.clickable {
+                        onDismiss()
+                        val query = listOfNotNull(
+                            song.title,
+                            song.artists.firstOrNull()?.name,
+                        ).joinToString(" ")
+                        navController.navigate("lossless?query=${android.net.Uri.encode(query)}")
+                    },
                 )
             }
         }

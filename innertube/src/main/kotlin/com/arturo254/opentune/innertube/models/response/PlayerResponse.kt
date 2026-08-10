@@ -84,6 +84,9 @@ data class PlayerResponse(
         val musicVideoType: String?,
         val viewCount: String,
         val thumbnail: Thumbnails,
+        // Tags del video (los sellos suelen incluir el género: "reggaeton", "bachata"…).
+        // Se usa para clasificar la biblioteca por géneros.
+        val keywords: List<String>? = null,
     )
 
     @Serializable

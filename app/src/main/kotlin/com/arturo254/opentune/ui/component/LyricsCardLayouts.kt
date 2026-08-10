@@ -19,7 +19,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -210,6 +213,77 @@ fun LyricsCardByLayout(
         LyricsLayoutStyle.BlurWash       -> BlurWashLayout(lyricText, mediaMetadata, config, modifier)
         LyricsLayoutStyle.StreamingModern -> StreamingModernLayout(lyricText, mediaMetadata, config, modifier)
         LyricsLayoutStyle.DezzyShare     -> DezzyShareLayout(lyricText, mediaMetadata, config, modifier)
+        LyricsLayoutStyle.PaperPolaroid  -> PaperPolaroidLayout(mediaMetadata, modifier)
+        // EntityCard es exclusivo del share de artista/playlist: no es una tarjeta de
+        // letra, así que en el carrusel de letras cae al estilo por defecto.
+        LyricsLayoutStyle.EntityCard     -> DezzyShareLayout(lyricText, mediaMetadata, config, modifier)
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Polaroid sobre papel de cuaderno — preview del carrusel
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun PaperPolaroidLayout(
+    mediaMetadata: MediaMetadata,
+    modifier: Modifier = Modifier,
+) {
+    val artworkPainter = rememberArtworkPainter(mediaMetadata.thumbnailUrl)
+    val lineColor = Color(0x22597EA8)
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF4F1E8))
+            .drawBehind {
+                var y = size.height * 0.14f
+                val gap = size.height * 0.055f
+                while (y < size.height) {
+                    drawLine(lineColor, Offset(0f, y), Offset(size.width, y), strokeWidth = size.minDimension * 0.0025f)
+                    y += gap
+                }
+                drawLine(
+                    Color(0x33D06A63),
+                    Offset(size.width * 0.12f, 0f),
+                    Offset(size.width * 0.12f, size.height),
+                    strokeWidth = size.minDimension * 0.004f,
+                )
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(0.58f)
+                .graphicsLayer { rotationZ = -4.5f }
+                .background(Color.White)
+                .padding(top = 14.dp, start = 14.dp, end = 14.dp, bottom = 22.dp),
+            horizontalAlignment = Alignment.Start,
+        ) {
+            Image(
+                painter = artworkPainter,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f),
+            )
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text = mediaMetadata.title,
+                color = Color(0xFF1A1A1A),
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
+            Text(
+                text = mediaMetadata.artists.joinToString { it.name },
+                color = Color(0xFF777777),
+                fontSize = 13.sp,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 

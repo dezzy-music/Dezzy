@@ -63,6 +63,7 @@ fun LibraryScreen(navController: NavController) {
                         LibraryFilter.SONGS to stringResource(R.string.filter_songs),
                         LibraryFilter.ALBUMS to stringResource(R.string.filter_albums),
                         LibraryFilter.ARTISTS to stringResource(R.string.filter_artists),
+                        LibraryFilter.GENRES to "Géneros",
                     ),
                     currentValue = filterType,
                     onValueUpdate = {
@@ -78,6 +79,7 @@ fun LibraryScreen(navController: NavController) {
                         LibraryFilter.SONGS to R.drawable.music_note,
                         LibraryFilter.ALBUMS to R.drawable.album,
                         LibraryFilter.ARTISTS to R.drawable.person,
+                        LibraryFilter.GENRES to R.drawable.tag,
                     ),
                     modifier = Modifier.weight(1f),
                 )
@@ -229,6 +231,7 @@ fun LibraryScreen(navController: NavController) {
                 navController,
                 { filterType = LibraryFilter.LIBRARY })
 
+            LibraryFilter.GENRES -> LibraryGenresScreen(navController, filterContent)
             LibraryFilter.ARTISTS -> LibraryArtistsScreen(
                 navController,
                 { filterType = LibraryFilter.LIBRARY })

@@ -35,6 +35,7 @@ include(":betterlyrics")
 include(":kizzy")
 include(":canvas")
 include(":shazamkit")
+include(":artistvideo")
 
 // Use a local copy of NewPipe Extractor by uncommenting the lines below.
 // We assume, that OpenTune and NewPipe Extractor have the same parent directory.

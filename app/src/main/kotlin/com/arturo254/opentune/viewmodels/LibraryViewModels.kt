@@ -111,7 +111,9 @@ constructor(
                             downloadUtil.downloads
                         ) { songs, downloads ->
                             songs.filter {
-                                downloads[it.id]?.state == Download.STATE_COMPLETED
+                                // Descargas de streaming + archivos locales descargados (lossless).
+                                downloads[it.id]?.state == Download.STATE_COMPLETED ||
+                                    (it.song.isLocal && it.song.dateDownload != null)
                             }.let { filteredSongs ->
                                 when (sortType) {
                                     SongSortType.CREATE_DATE -> filteredSongs.sortedBy {

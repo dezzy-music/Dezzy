@@ -74,6 +74,13 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import coil3.compose.AsyncImage
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialShapes
+import androidx.compose.material3.toShape
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import com.arturo254.opentune.LocalPlayerConnection
 import com.arturo254.opentune.R
 import com.arturo254.opentune.canvas.models.CanvasArtwork
@@ -89,6 +96,7 @@ import com.arturo254.opentune.constants.MaxCanvasCacheSizeKey
 import com.arturo254.opentune.constants.ThumbnailCornerRadiusKey
 import com.arturo254.opentune.constants.CropThumbnailToSquareKey
 import com.arturo254.opentune.constants.HidePlayerThumbnailKey
+import com.arturo254.opentune.constants.RotatingThumbnailKey
 import com.arturo254.opentune.extensions.metadata
 import com.arturo254.opentune.extensions.toMediaItem
 import com.arturo254.opentune.ui.utils.highRes
@@ -113,7 +121,7 @@ import android.content.Context
 import android.view.HapticFeedbackConstants
 
 object CanvasArtworkPlaybackCache {
-    private const val defaultMaxSize = 256
+    private const val defaultMaxSize = -1
     private const val PERSIST_FILE = "canvas_artwork_cache.json"
     private const val PERSIST_DEBOUNCE_MS = 2_000L
 
@@ -139,21 +147,23 @@ object CanvasArtworkPlaybackCache {
 
     @Synchronized
     fun get(mediaId: String): CanvasArtwork? {
-        if (maxSize <= 0) return null
+        if (maxSize == 0) return null
         return map[mediaId]
     }
 
     @Synchronized
     fun put(mediaId: String, artwork: CanvasArtwork) {
         val limit = maxSize
-        if (limit <= 0) return
+        if (limit == 0) return
         if (mediaId.isBlank()) return
         map[mediaId] = artwork
-        while (map.size > limit) {
-            val it = map.entries.iterator()
-            if (it.hasNext()) {
-                it.next()
-                it.remove()
+        if (limit > 0) {
+            while (map.size > limit) {
+                val it = map.entries.iterator()
+                if (it.hasNext()) {
+                    it.next()
+                    it.remove()
+                }
             }
         }
         schedulePersist()
@@ -170,12 +180,13 @@ object CanvasArtworkPlaybackCache {
 
     @Synchronized
     fun setMaxSize(value: Int) {
-        maxSize = value.coerceAtLeast(0)
+        maxSize = value
         if (maxSize == 0) {
             map.clear()
             schedulePersist()
             return
         }
+        if (maxSize < 0) return
         var evicted = false
         while (map.size > maxSize) {
             val it = map.entries.iterator()
@@ -268,14 +279,23 @@ fun Thumbnail(
     val view = LocalView.current
 
     val hidePlayerThumbnail by rememberPreference(HidePlayerThumbnailKey, false)
-    val archiveTuneCanvasEnabled by rememberPreference(OpenTuneCanvasKey, false)
+    // Canvas in classic styles (V1–V6): honors the legacy OpenTuneCanvas toggle OR the
+    // unified CanvasMode selector (APPLE by default) used by the standalone players, so
+    // canvases show up in every player style with one setting.
+    val legacyCanvasEnabled by rememberPreference(OpenTuneCanvasKey, false)
+    val canvasMode by rememberEnumPreference(
+        com.arturo254.opentune.constants.CanvasModeKey,
+        defaultValue = com.arturo254.opentune.constants.CanvasMode.APPLE_WITH_FALLBACK,
+    )
+    val archiveTuneCanvasEnabled = legacyCanvasEnabled ||
+        canvasMode != com.arturo254.opentune.constants.CanvasMode.NONE
     val playerDesignStyle by rememberEnumPreference(
         key = PlayerDesignStyleKey,
         defaultValue = PlayerDesignStyle.V4,
     )
     val (maxCanvasCacheSize, _) = rememberPreference(
         key = MaxCanvasCacheSizeKey,
-        defaultValue = 256,
+        defaultValue = -1,
     )
     val (thumbnailCornerRadius, _) = rememberPreference(
         key = ThumbnailCornerRadiusKey,
@@ -291,7 +311,8 @@ fun Thumbnail(
         defaultValue = PlayerBackgroundStyle.DEFAULT
     )
 
-    val textBackgroundColor = when (playerBackground) {
+    val isPremiumPlayer = playerDesignStyle == PlayerDesignStyle.APPLE_MUSIC || playerDesignStyle == PlayerDesignStyle.LIVE_MESH
+    val textBackgroundColor = if (isPremiumPlayer) Color.White else when (playerBackground) {
         PlayerBackgroundStyle.DEFAULT -> MaterialTheme.colorScheme.onBackground
         PlayerBackgroundStyle.BLUR -> Color.White
         PlayerBackgroundStyle.GRADIENT -> Color.White
@@ -486,6 +507,29 @@ fun Thumbnail(
                     }
                 }
 
+                // Canción/Video pill (YouTube-Music-style) for the classic styles + Expressive,
+                // anchored between the header and the artwork — never over the status bar.
+                if (playerDesignStyle == PlayerDesignStyle.V1 ||
+                    playerDesignStyle == PlayerDesignStyle.V2 ||
+                    playerDesignStyle == PlayerDesignStyle.V3 ||
+                    playerDesignStyle == PlayerDesignStyle.V4 ||
+                    playerDesignStyle == PlayerDesignStyle.V6
+                ) {
+                    // Canvas de la canción actual para el botón de Video inteligente
+                    val toggleCanvas = rememberPlaybackCanvas(
+                        mediaId = mediaMetadata?.id,
+                        title = mediaMetadata?.title,
+                        artist = mediaMetadata?.artists?.firstOrNull()?.name,
+                        albumTitle = mediaMetadata?.album?.title,
+                        durationMs = playerConnection.player.duration.coerceAtLeast(0L),
+                    )
+                    SongVideoToggle(
+                        playerConnection = playerConnection,
+                        canvas = toggleCanvas,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+
                 // Thumbnail content
                 BoxWithConstraints(
                     contentAlignment = Alignment.Center,
@@ -493,6 +537,7 @@ fun Thumbnail(
                 ) {
                     val horizontalLazyGridItemWidth = maxWidth * horizontalLazyGridItemWidthFactor
                     val containerMaxWidth = maxWidth
+                    val containerMaxHeight = maxHeight
 
                     LazyHorizontalGrid(
                         state = thumbnailLazyGridState,
@@ -509,6 +554,18 @@ fun Thumbnail(
                             contentType = { "thumbnailPage" },
                         ) { page ->
                             val item = page.mediaItem
+                            val rotatingThumbnail by rememberPreference(RotatingThumbnailKey, defaultValue = false)
+                            val isCurrentItem = item.mediaId == currentMediaItem?.mediaId
+                            val infiniteTransition = rememberInfiniteTransition(label = "ThumbnailRotation")
+                            val rotation by infiniteTransition.animateFloat(
+                                initialValue = 0f,
+                                targetValue = if (isPlaying && rotatingThumbnail && isCurrentItem) 360f else 0f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(20000, easing = LinearEasing),
+                                    repeatMode = androidx.compose.animation.core.RepeatMode.Restart
+                                ),
+                                label = "Rotation"
+                            )
                             val incrementalSeekSkipEnabled by rememberPreference(SeekExtraSeconds, defaultValue = false)
                             var skipMultiplier by remember { mutableStateOf(1) }
                             var lastTapTime by remember { mutableLongStateOf(0L) }
@@ -523,9 +580,12 @@ fun Thumbnail(
                                         playerDesignStyle != PlayerDesignStyle.V7 &&
                                         item.mediaId.isNotBlank() &&
                                         item.mediaId == currentMediaItem?.mediaId
-                            var canvasArtwork by remember(item.mediaId) { mutableStateOf<CanvasArtwork?>(null) }
-                            var canvasFetchedAtMs by remember(item.mediaId) { mutableLongStateOf(0L) }
-                            var canvasFetchInFlight by remember(item.mediaId) { mutableStateOf(false) }
+                            // Keyed by (id, canvasMode): switching the canvas source clears the
+                            // shown artwork and resets the in-flight flag (a cancelled fetch of
+                            // the other source used to leave it stuck, blocking the new fetch).
+                            var canvasArtwork by remember(item.mediaId, canvasMode) { mutableStateOf<CanvasArtwork?>(null) }
+                            var canvasFetchedAtMs by remember(item.mediaId, canvasMode) { mutableLongStateOf(0L) }
+                            var canvasFetchInFlight by remember(item.mediaId, canvasMode) { mutableStateOf(false) }
 
                             LaunchedEffect(shouldAnimateCanvas) {
                                 if (!shouldAnimateCanvas) {
@@ -535,16 +595,49 @@ fun Thumbnail(
                                 }
                             }
 
-                            LaunchedEffect(shouldAnimateCanvas, item.mediaId) {
+                            LaunchedEffect(shouldAnimateCanvas, item.mediaId, canvasMode) {
                                 if (!shouldAnimateCanvas) return@LaunchedEffect
+                                val expectedCanvasSource =
+                                    if (canvasMode == com.arturo254.opentune.constants.CanvasMode.SPOTIFY || canvasMode == com.arturo254.opentune.constants.CanvasMode.SPOTIFY_WITH_FALLBACK) {
+                                        CanvasArtwork.SOURCE_SPOTIFY
+                                    } else {
+                                        CanvasArtwork.SOURCE_APPLE
+                                    }
 
+                                // ── 1. Check in-memory/disk cache (includes entries saved by DezzyPlayer),
+                                //       accepting only entries that match the selected canvas source ──
                                 CanvasArtworkPlaybackCache.get(item.mediaId)?.let { cached ->
-                                    canvasArtwork = cached
+                                    if (cached.isLocalFile || cached.source == expectedCanvasSource) {
+                                        canvasArtwork = cached
+                                        canvasFetchedAtMs = System.currentTimeMillis()
+                                        canvasFetchInFlight = false
+                                        return@LaunchedEffect
+                                    }
+                                    // Cached canvas is from the other source — refetch below.
+                                }
+
+                                // ── 2. Check local downloaded canvas file before hitting the network ──
+                                val localCanvasFile = java.io.File(context.filesDir, "canvas/${item.mediaId}.mp4")
+                                if (localCanvasFile.exists() && localCanvasFile.length() > 0) {
+                                    val localPath = "file://${localCanvasFile.absolutePath}"
+                                    val localArtwork = com.arturo254.opentune.canvas.models.CanvasArtwork(
+                                        name = itemMetadata?.title ?: item.mediaMetadata.title?.toString(),
+                                        artist = itemMetadata?.artists?.firstOrNull()?.name
+                                            ?: item.mediaMetadata.artist?.toString(),
+                                        animated = localPath,
+                                        animatedVertical = localPath,
+                                        videoUrl = localPath,
+                                        videoUrlVertical = localPath
+                                    )
+                                    canvasArtwork = localArtwork
                                     canvasFetchedAtMs = System.currentTimeMillis()
                                     canvasFetchInFlight = false
+                                    // Save to cache so next time we skip even the file check
+                                    CanvasArtworkPlaybackCache.put(item.mediaId, localArtwork)
                                     return@LaunchedEffect
                                 }
 
+                                // ── 3. Fetch remotely ──
                                 val songTitleRaw =
                                     itemMetadata?.title
                                         ?.takeIf { it.isNotBlank() }
@@ -569,6 +662,17 @@ fun Thumbnail(
                                             artistNameRaw = artistNameRaw,
                                             storefront = storefront,
                                             requireVertical = false,
+                                            albumTitle = itemMetadata?.album?.title,
+                                            durationSeconds = item.mediaMetadata.durationMs
+                                                ?.takeIf { it > 0L }
+                                                ?.let { (it / 1000).toInt() },
+                                            // Respeta la fuente elegida: antes siempre pedía la
+                                            // cadena de Apple aunque el usuario tuviera Spotify.
+                                            spotifyCanvasEnabled =
+                                                canvasMode == com.arturo254.opentune.constants.CanvasMode.SPOTIFY || canvasMode == com.arturo254.opentune.constants.CanvasMode.SPOTIFY_WITH_FALLBACK,
+                                            spotifyTrackId = com.arturo254.opentune.spotify.SpotifyMatchFileCache
+                                                .getMatchByYouTubeId(item.mediaId)?.spotifyId,
+                                            allowFallback = canvasMode == com.arturo254.opentune.constants.CanvasMode.APPLE_WITH_FALLBACK || canvasMode == com.arturo254.opentune.constants.CanvasMode.SPOTIFY_WITH_FALLBACK,
                                         )
                                     }
                                 canvasArtwork = fetched as CanvasArtwork?
@@ -628,8 +732,20 @@ fun Thumbnail(
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(containerMaxWidth - (PlayerHorizontalPadding * 2))
-                                        .clip(RoundedCornerShape(thumbnailCornerRadius.dp))
+                                        .size(minOf(containerMaxWidth, containerMaxHeight) - (PlayerHorizontalPadding * 2))
+                                        .graphicsLayer {
+                                            rotationZ = rotation
+                                        }
+                                        .clip(
+                                            if (rotatingThumbnail) {
+                                                MaterialShapes.Clover8Leaf.toShape()
+                                            } else {
+                                                RoundedCornerShape(thumbnailCornerRadius.dp)
+                                            }
+                                        )
+                                        .graphicsLayer {
+                                            rotationZ = -rotation
+                                        }
                                 ) {
                                     if (hidePlayerThumbnail) {
                                         // Show app logo when thumbnail is hidden

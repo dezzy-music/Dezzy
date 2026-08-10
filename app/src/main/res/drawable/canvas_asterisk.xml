@@ -1,0 +1,26 @@
+<!--
+  AI Canvas icon family — "asterisk"
+  A typographic 6-point burst: three rounded capsules crossed at 60°.
+  24x24 grid · solid fill · tinted at use-site.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <group android:pivotX="12" android:pivotY="12" android:rotation="0">
+        <path
+            android:fillColor="@android:color/white"
+            android:pathData="M10.8,4.2 Q10.8,3 12,3 Q13.2,3 13.2,4.2 L13.2,19.8 Q13.2,21 12,21 Q10.8,21 10.8,19.8 Z" />
+    </group>
+    <group android:pivotX="12" android:pivotY="12" android:rotation="60">
+        <path
+            android:fillColor="@android:color/white"
+            android:pathData="M10.8,4.2 Q10.8,3 12,3 Q13.2,3 13.2,4.2 L13.2,19.8 Q13.2,21 12,21 Q10.8,21 10.8,19.8 Z" />
+    </group>
+    <group android:pivotX="12" android:pivotY="12" android:rotation="120">
+        <path
+            android:fillColor="@android:color/white"
+            android:pathData="M10.8,4.2 Q10.8,3 12,3 Q13.2,3 13.2,4.2 L13.2,19.8 Q13.2,21 12,21 Q10.8,21 10.8,19.8 Z" />
+    </group>
+</vector>

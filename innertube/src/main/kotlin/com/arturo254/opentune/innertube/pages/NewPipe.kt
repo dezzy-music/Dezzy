@@ -25,6 +25,8 @@ import java.io.IOException
 import java.net.Proxy
 import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
+import java.lang.reflect.Field
+import java.util.regex.Pattern
 
 private class NewPipeDownloaderImpl(proxy: Proxy?) : Downloader() {
 
@@ -87,6 +89,51 @@ object NewPipeUtils {
 
     init {
         NewPipe.init(NewPipeDownloaderImpl(YouTube.proxy))
+        patchNewPipeRegexes()
+    }
+
+    private fun patchNewPipeRegexes() {
+        try {
+            val clazz = Class.forName("org.schabi.newpipe.extractor.services.youtube.YoutubeSignatureUtils")
+            val field = clazz.getDeclaredField("FUNCTION_REGEXES")
+            field.isAccessible = true
+
+            val newPatterns = arrayOf(
+                Pattern.compile("\\b([a-zA-Z0-9_$]+)\\((\\d+,\\d+,)[a-zA-Z0-9_$]+\\(\\d+,\\d+,[a-zA-Z0-9_$]+(?:\\.s)?\\)\\)"),
+                Pattern.compile("\\b([a-zA-Z0-9_$]+)\\((\\d+,)[a-zA-Z0-9_$]+\\(\\d+,\\d+,[a-zA-Z0-9_$]+(?:\\.s)?\\)\\)"),
+                Pattern.compile("\\b([a-zA-Z0-9_$]+)\\([a-zA-Z0-9_$]+\\(\\d+,\\d+,[a-zA-Z0-9_$]+(?:\\.s)?\\)\\)"),
+                Pattern.compile("\\b([a-zA-Z0-9_$]+)\\((\\d+,\\d+,)[a-zA-Z0-9_$]+\\([a-zA-Z0-9_$]+(?:\\.s)?\\)\\)"),
+                Pattern.compile("\\b([a-zA-Z0-9_$]+)\\((\\d+,)[a-zA-Z0-9_$]+\\([a-zA-Z0-9_$]+(?:\\.s)?\\)\\)"),
+                Pattern.compile("\\b([a-zA-Z0-9_$]+)\\([a-zA-Z0-9_$]+\\([a-zA-Z0-9_$]+(?:\\.s)?\\)\\)")
+            )
+
+            @Suppress("UNCHECKED_CAST")
+            val originalRegexes = field.get(null) as Array<Pattern>
+
+            // Construct new array with our patterns at the beginning
+            val combinedRegexes = newPatterns + originalRegexes
+
+            try {
+                // Try setting field directly
+                field.set(null, combinedRegexes)
+                println("[OpenTune] Successfully patched YoutubeSignatureUtils.FUNCTION_REGEXES field directly")
+            } catch (e: Exception) {
+                println("[OpenTune] Failed to set YoutubeSignatureUtils.FUNCTION_REGEXES field directly, falling back to mutating array elements: ${e.message}")
+                // Fallback: Mutate elements of the original array
+                if (originalRegexes.size >= newPatterns.size) {
+                    for (i in newPatterns.indices) {
+                        originalRegexes[i] = newPatterns[i]
+                    }
+                    println("[OpenTune] Successfully mutated original YoutubeSignatureUtils.FUNCTION_REGEXES array elements")
+                } else if (originalRegexes.isNotEmpty()) {
+                    originalRegexes[0] = newPatterns[0]
+                    println("[OpenTune] Successfully mutated first element of YoutubeSignatureUtils.FUNCTION_REGEXES array")
+                }
+            }
+        } catch (e: Exception) {
+            System.err.println("[OpenTune] Error patching YoutubeSignatureUtils.FUNCTION_REGEXES: ${e.message}")
+            e.printStackTrace()
+        }
     }
 
     fun getSignatureTimestamp(videoId: String): Result<Int> = runCatching {
@@ -103,7 +150,11 @@ object NewPipeUtils {
             val directUrl = format.url
             if (directUrl != null) {
                 val resolvedDirectUrl =
-                    if (directUrl.toHttpUrlOrNull()?.queryParameter("n")?.isNotBlank() == true) {
+                    if (client?.clientName == "ANDROID_VR") {
+                        // ANDROID_VR streams are served unthrottled without the n-parameter
+                        // transformation, so skip the JS player round-trip entirely.
+                        directUrl
+                    } else if (directUrl.toHttpUrlOrNull()?.queryParameter("n")?.isNotBlank() == true) {
                         runCatching {
                             retryWithBackoff(
                                 maxAttempts = 3,

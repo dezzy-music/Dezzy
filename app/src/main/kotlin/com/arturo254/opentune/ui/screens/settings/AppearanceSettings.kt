@@ -10,6 +10,13 @@ package com.arturo254.opentune.ui.screens.settings
 
 import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,8 +28,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,6 +52,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -87,14 +99,24 @@ import com.arturo254.opentune.constants.SwipeThumbnailKey
 import com.arturo254.opentune.constants.SwipeSensitivityKey
 import com.arturo254.opentune.constants.SwipeToSongKey
 import com.arturo254.opentune.constants.HidePlayerThumbnailKey
-import com.arturo254.opentune.constants.OpenTuneCanvasKey
+import com.arturo254.opentune.constants.CanvasModeKey
+import com.arturo254.opentune.constants.CanvasMode
 import com.arturo254.opentune.constants.ThumbnailCornerRadiusKey
 import com.arturo254.opentune.constants.CropThumbnailToSquareKey
 import com.arturo254.opentune.constants.DisableBlurKey
 import com.arturo254.opentune.constants.LiquidGlassNavBarKey
 import com.arturo254.opentune.constants.UseLyricsV2Key
+import com.arturo254.opentune.constants.LyricsV2Style
+import com.arturo254.opentune.constants.LyricsV2StyleKey
 import com.arturo254.opentune.constants.FontFamilyKey
 import com.arturo254.opentune.constants.EnableBubbleKey
+import com.arturo254.opentune.constants.ShowCodecOnPlayerKey
+import com.arturo254.opentune.constants.ShowCommentButtonKey
+import com.arturo254.opentune.constants.HideStatusBarOnFullscreenKey
+import com.arturo254.opentune.constants.RotatingThumbnailKey
+import com.arturo254.opentune.constants.AppleMusicLyricsBlurKey
+import com.arturo254.opentune.constants.LyricsStandardBlurKey
+import com.arturo254.opentune.constants.MiniPlayerBackgroundStyleKey
 import com.arturo254.opentune.ui.component.DefaultDialog
 import com.arturo254.opentune.ui.component.EnumListPreference
 import com.arturo254.opentune.ui.component.IconButton
@@ -105,6 +127,7 @@ import com.arturo254.opentune.ui.component.SwitchPreference
 import com.arturo254.opentune.ui.component.ThumbnailCornerRadiusSelectorButton
 import com.arturo254.opentune.ui.player.StyledPlaybackSlider
 import com.arturo254.opentune.ui.utils.backToMain
+import com.arturo254.opentune.ui.utils.rememberAdaptiveSidePadding
 import com.arturo254.opentune.utils.rememberEnumPreference
 import com.arturo254.opentune.utils.rememberPreference
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -121,6 +144,8 @@ import com.arturo254.opentune.constants.VideoWallpaperLandscapeUriKey
 import com.arturo254.opentune.constants.VideoWallpaperOpacityKey
 import com.arturo254.opentune.constants.KeepPlayerScreenAwakeKey
 import com.arturo254.opentune.constants.HomeInactivityFadeKey
+import com.arturo254.opentune.constants.ShowArtistVideoKey
+import com.arturo254.opentune.constants.ShowArtistBackgroundVideoKey
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -254,9 +279,14 @@ fun AppearanceSettings(
         HidePlayerThumbnailKey,
         defaultValue = false
     )
-    val (OpenTuneCanvasEnabled, onOpenTuneCanvasEnabledChange) = rememberPreference(
-        OpenTuneCanvasKey,
-        defaultValue = false
+
+    val (canvasMode, onCanvasModeChange) = rememberEnumPreference(
+        CanvasModeKey,
+        defaultValue = CanvasMode.APPLE
+    )
+    val (artistCanvasMode, onArtistCanvasModeChange) = rememberEnumPreference(
+        com.arturo254.opentune.constants.ArtistCanvasModeKey,
+        defaultValue = com.arturo254.opentune.constants.ArtistCanvasMode.APPLE
     )
     val (thumbnailCornerRadius, onThumbnailCornerRadiusChange) = rememberPreference(
         key = ThumbnailCornerRadiusKey,
@@ -297,8 +327,49 @@ fun AppearanceSettings(
     val (lyricsTextSize, onLyricsTextSizeChange) = rememberPreference(LyricsTextSizeKey, defaultValue = 26f)
     val (lyricsLineSpacing, onLyricsLineSpacingChange) = rememberPreference(LyricsLineSpacingKey, defaultValue = 1.3f)
     val (useLyricsV2, onUseLyricsV2Change) = rememberPreference(UseLyricsV2Key, defaultValue = false)
+    val (lyricsV2Style, onLyricsV2StyleChange) = rememberEnumPreference(
+        LyricsV2StyleKey,
+        defaultValue = LyricsV2Style.LIQUID_FLOW
+    )
     val (keepPlayerScreenAwake, onKeepPlayerScreenAwakeChange) = rememberPreference(KeepPlayerScreenAwakeKey, defaultValue = false)
     val (homeInactivityFade, onHomeInactivityFadeChange) = rememberPreference(HomeInactivityFadeKey, defaultValue = true)
+    val (showArtistVideo, onShowArtistVideoChange) = rememberPreference(
+        ShowArtistVideoKey,
+        defaultValue = true
+    )
+    val (showArtistBackgroundVideo, onShowArtistBackgroundVideoChange) = rememberPreference(
+        ShowArtistBackgroundVideoKey,
+        defaultValue = true
+    )
+
+    val (showCodecOnPlayer, onShowCodecOnPlayerChange) = rememberPreference(
+        ShowCodecOnPlayerKey,
+        defaultValue = true
+    )
+    val (showCommentButton, onShowCommentButtonChange) = rememberPreference(
+        ShowCommentButtonKey,
+        defaultValue = true
+    )
+    val (hideStatusBarOnFullscreen, onHideStatusBarOnFullscreenChange) = rememberPreference(
+        HideStatusBarOnFullscreenKey,
+        defaultValue = false
+    )
+    val (rotatingThumbnail, onRotatingThumbnailChange) = rememberPreference(
+        RotatingThumbnailKey,
+        defaultValue = false
+    )
+    val (appleMusicLyricsBlur, onAppleMusicLyricsBlurChange) = rememberPreference(
+        AppleMusicLyricsBlurKey,
+        defaultValue = true
+    )
+    val (lyricsStandardBlur, onLyricsStandardBlurChange) = rememberPreference(
+        LyricsStandardBlurKey,
+        defaultValue = false
+    )
+    val (miniPlayerBackgroundStyle, onMiniPlayerBackgroundStyleChange) = rememberPreference(
+        MiniPlayerBackgroundStyleKey,
+        defaultValue = "DEFAULT"
+    )
 
     val (sliderStyle, onSliderStyleChange) = rememberEnumPreference(
         SliderStyleKey,
@@ -383,7 +454,14 @@ fun AppearanceSettings(
                 SliderStyle.Wavy,
                 SliderStyle.Thick,
                 SliderStyle.Circular,
-                SliderStyle.Simple
+                SliderStyle.Simple,
+                SliderStyle.NeonGlow,
+                SliderStyle.Capsule,
+                SliderStyle.DoubleLine,
+                SliderStyle.Dotted,
+                SliderStyle.Waveform,
+                SliderStyle.ShootingStar,
+                SliderStyle.Aurora
             )
         }
         DefaultDialog(
@@ -429,7 +507,8 @@ fun AppearanceSettings(
     Column(
         Modifier
             .windowInsetsPadding(LocalPlayerAwareWindowInsets.current)
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = rememberAdaptiveSidePadding()),
     ) {
         PreferenceGroupTitle(
             title = stringResource(R.string.theme),
@@ -541,26 +620,7 @@ fun AppearanceSettings(
             title = stringResource(R.string.player),
         )
 
-        EnumListPreference(
-            title = { Text(stringResource(R.string.player_design_style)) },
-            icon = { Icon(painterResource(R.drawable.palette), null) },
-            selectedValue = playerDesignStyle,
-            onValueSelected = onPlayerDesignStyleChange,
-            valueText = {
-                when (it) {
-                    PlayerDesignStyle.V1 -> stringResource(R.string.player_design_v1)
-                    PlayerDesignStyle.V2 -> stringResource(R.string.player_design_v2)
-                    PlayerDesignStyle.V3 -> stringResource(R.string.player_design_v3)
-                    PlayerDesignStyle.V4 -> stringResource(R.string.player_design_v4)
-                    PlayerDesignStyle.V5 -> stringResource(R.string.player_design_v5)
-                    PlayerDesignStyle.V6 -> stringResource(R.string.player_design_v6)
-                    PlayerDesignStyle.V7 -> stringResource(R.string.player_design_v7)
-                    PlayerDesignStyle.IPOD -> "iPod Classic"
-                    PlayerDesignStyle.SPOTIFY -> "Spotify"
-                    PlayerDesignStyle.CAR -> "Modo Coche"
-                }
-            },
-        )
+
 
         SwitchPreference(
             title = { Text("Mantener pantalla encendida") },
@@ -590,32 +650,88 @@ fun AppearanceSettings(
 
 
         EnumListPreference(
-            title = { Text(stringResource(R.string.player_background_style)) },
-            icon = { Icon(painterResource(R.drawable.gradient), null) },
-            selectedValue = playerBackground,
-            onValueSelected = onPlayerBackgroundChange,
+            title = { Text(stringResource(R.string.player_design_style)) },
+            icon = { Icon(painterResource(R.drawable.play), null) },
+            selectedValue = playerDesignStyle,
+            onValueSelected = onPlayerDesignStyleChange,
             valueText = {
                 when (it) {
-                    PlayerBackgroundStyle.DEFAULT -> stringResource(R.string.follow_theme)
-                    PlayerBackgroundStyle.GRADIENT -> stringResource(R.string.gradient)
-                        PlayerBackgroundStyle.CUSTOM -> stringResource(R.string.custom)
-                    PlayerBackgroundStyle.BLUR -> stringResource(R.string.player_background_blur)
-                    PlayerBackgroundStyle.COLORING -> stringResource(R.string.coloring)
-                    PlayerBackgroundStyle.BLUR_GRADIENT -> stringResource(R.string.blur_gradient)
-                    PlayerBackgroundStyle.GLOW -> stringResource(R.string.glow)
-                    PlayerBackgroundStyle.GLOW_ANIMATED -> "Glow Animated"
+                    PlayerDesignStyle.V1 -> stringResource(R.string.player_design_v1)
+                    PlayerDesignStyle.V2 -> stringResource(R.string.player_design_v2)
+                    PlayerDesignStyle.V3 -> stringResource(R.string.player_design_v3)
+                    PlayerDesignStyle.V4 -> stringResource(R.string.player_design_v4)
+                    PlayerDesignStyle.V5 -> stringResource(R.string.player_design_v5)
+                    PlayerDesignStyle.V6 -> stringResource(R.string.player_design_v6)
+                    PlayerDesignStyle.V7 -> "Deezer"
+                    PlayerDesignStyle.IPOD -> "iPod"
+                    PlayerDesignStyle.SPOTIFY -> "Spotify"
+                    PlayerDesignStyle.CAR -> "Car Mode"
+                    PlayerDesignStyle.APPLE_MUSIC -> stringResource(R.string.player_background_apple_music)
+                    PlayerDesignStyle.LIVE_MESH -> "Dezzy Style"
                 }
             },
         )
 
-        // When custom background is selected, show a direct link to customize it
-        if (playerBackground == PlayerBackgroundStyle.CUSTOM) {
-            PreferenceEntry(
-                title = { Text(stringResource(R.string.customized_background)) },
-                icon = { Icon(painterResource(R.drawable.image), null) },
-                onClick = { navController.navigate("customize_background") }
-            )
+        // Standalone player styles (Deezer, iPod, Spotify, Car Mode, Apple Music, Live Mesh)
+        // draw their own fixed backgrounds by design, so the background-style option is hidden
+        // for them — it can't be personalized.
+        val standaloneBackgroundStyles = setOf(
+            PlayerDesignStyle.V7,
+            PlayerDesignStyle.IPOD,
+            PlayerDesignStyle.SPOTIFY,
+            PlayerDesignStyle.CAR,
+            PlayerDesignStyle.APPLE_MUSIC,
+            PlayerDesignStyle.LIVE_MESH,
+        )
+        AnimatedVisibility(visible = playerDesignStyle !in standaloneBackgroundStyles) {
+            Column {
+                EnumListPreference(
+                    title = { Text(stringResource(R.string.player_background_style)) },
+                    icon = { Icon(painterResource(R.drawable.gradient), null) },
+                    selectedValue = playerBackground,
+                    onValueSelected = onPlayerBackgroundChange,
+                    valueText = {
+                        when (it) {
+                            PlayerBackgroundStyle.DEFAULT -> stringResource(R.string.follow_theme)
+                            PlayerBackgroundStyle.GRADIENT -> stringResource(R.string.gradient)
+                            PlayerBackgroundStyle.CUSTOM -> stringResource(R.string.custom)
+                            PlayerBackgroundStyle.BLUR -> stringResource(R.string.player_background_blur)
+                            PlayerBackgroundStyle.COLORING -> stringResource(R.string.coloring)
+                            PlayerBackgroundStyle.BLUR_GRADIENT -> stringResource(R.string.blur_gradient)
+                            PlayerBackgroundStyle.GLOW -> stringResource(R.string.glow)
+                            PlayerBackgroundStyle.GLOW_ANIMATED -> "Glow Animated"
+                        }
+                    },
+                )
+
+                // When custom background is selected, show a direct link to customize it
+                if (playerBackground == PlayerBackgroundStyle.CUSTOM) {
+                    PreferenceEntry(
+                        title = { Text(stringResource(R.string.customized_background)) },
+                        icon = { Icon(painterResource(R.drawable.image), null) },
+                        onClick = { navController.navigate("customize_background") }
+                    )
+                }
+            }
         }
+
+        ListPreference(
+            title = { Text(stringResource(R.string.miniplayer_background_style)) },
+            icon = { Icon(painterResource(R.drawable.gradient), null) },
+            selectedValue = miniPlayerBackgroundStyle,
+            values = listOf("DEFAULT", "BLUR", "GRADIENT", "GLOW_ANIMATED", "LIVE_MESH"),
+            valueText = {
+                when (it) {
+                    "DEFAULT" -> "Default"
+                    "BLUR" -> "Blur"
+                    "GRADIENT" -> "Gradient"
+                    "GLOW_ANIMATED" -> "Glow Animated"
+                    "LIVE_MESH" -> "Dezzy Style"
+                    else -> it
+                }
+            },
+            onValueSelected = onMiniPlayerBackgroundStyleChange,
+        )
 
         SwitchPreference(
             title = { Text(stringResource(R.string.hide_player_thumbnail)) },
@@ -625,12 +741,76 @@ fun AppearanceSettings(
             onCheckedChange = onHidePlayerThumbnailChange
         )
 
+        // Canvas selector — available for every player style that renders a canvas
+        // (all except the iPod and Car Mode players, which have no canvas surface).
+        val canvasCapable = playerDesignStyle != PlayerDesignStyle.IPOD &&
+            playerDesignStyle != PlayerDesignStyle.CAR
+        AnimatedVisibility(visible = canvasCapable) {
+            Column {
+                EnumListPreference(
+                    title = { Text("Canvas de Canciones") },
+                    icon = { Icon(painterResource(R.drawable.motion_photos_on), null) },
+                    selectedValue = canvasMode,
+                    onValueSelected = onCanvasModeChange,
+                    valueText = {
+                        when (it) {
+                            CanvasMode.APPLE_WITH_FALLBACK -> "Apple Music + Fallback de Video"
+                            CanvasMode.APPLE -> "Apple Music"
+                            CanvasMode.SPOTIFY_WITH_FALLBACK -> "Spotify + Fallback de Video"
+                            CanvasMode.SPOTIFY -> "Spotify"
+                            CanvasMode.NONE -> "Desactivado"
+                        }
+                    }
+                )
+                AnimatedVisibility(visible = canvasMode == CanvasMode.SPOTIFY || canvasMode == CanvasMode.SPOTIFY_WITH_FALLBACK) {
+                    Text(
+                        text = "El Canvas de Spotify solo funciona si has iniciado sesión en Spotify.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 56.dp, end = 16.dp, bottom = 8.dp)
+                    )
+                }
+
+                Spacer(Modifier.height(4.dp))
+
+                EnumListPreference(
+                    title = { Text("Canvas de Artistas") },
+                    icon = { Icon(painterResource(R.drawable.artist), null) },
+                    selectedValue = artistCanvasMode,
+                    onValueSelected = onArtistCanvasModeChange,
+                    valueText = {
+                        when (it) {
+                            com.arturo254.opentune.constants.ArtistCanvasMode.APPLE_WITH_FALLBACK -> "Apple Music + Fallback de Video"
+                            com.arturo254.opentune.constants.ArtistCanvasMode.APPLE -> "Apple Music"
+                            com.arturo254.opentune.constants.ArtistCanvasMode.NONE -> "Desactivado"
+                        }
+                    }
+                )
+            }
+        }
+
         SwitchPreference(
-            title = { Text(stringResource(R.string.Dezzy_canvas)) },
-            description = stringResource(R.string.Dezzy_canvas_desc),
+            title = { Text(stringResource(R.string.rotating_thumbnail)) },
+            description = stringResource(R.string.rotating_thumbnail_desc),
             icon = { Icon(painterResource(R.drawable.motion_photos_on), null) },
-            checked = OpenTuneCanvasEnabled,
-            onCheckedChange = onOpenTuneCanvasEnabledChange
+            checked = rotatingThumbnail,
+            onCheckedChange = onRotatingThumbnailChange
+        )
+
+        SwitchPreference(
+            title = { Text(stringResource(R.string.show_comment_button)) },
+            description = stringResource(R.string.show_comment_button_description),
+            icon = { Icon(painterResource(R.drawable.lyrics_bubble), null) },
+            checked = showCommentButton,
+            onCheckedChange = onShowCommentButtonChange
+        )
+
+        SwitchPreference(
+            title = { Text(stringResource(R.string.show_codec_on_player)) },
+            description = stringResource(R.string.show_codec_on_player_desc),
+            icon = { Icon(painterResource(R.drawable.graphic_eq), null) },
+            checked = showCodecOnPlayer,
+            onCheckedChange = onShowCodecOnPlayerChange
         )
       
 
@@ -765,6 +945,29 @@ fun AppearanceSettings(
             onCheckedChange = onUseLyricsV2Change,
         )
 
+        if (useLyricsV2) {
+            EnumListPreference(
+                title = { Text(stringResource(R.string.lyrics_v2_style)) },
+                icon = { Icon(painterResource(R.drawable.lyrics), null) },
+                selectedValue = lyricsV2Style,
+                onValueSelected = onLyricsV2StyleChange,
+                valueText = {
+                    when (it) {
+                        LyricsV2Style.LIQUID_FLOW -> stringResource(R.string.lyrics_v2_style_liquid_flow)
+                        LyricsV2Style.SPOTLIGHT -> stringResource(R.string.lyrics_v2_style_spotlight)
+                        LyricsV2Style.DEPTH_3D -> stringResource(R.string.lyrics_v2_style_depth_3d)
+                        LyricsV2Style.CHROMATIC -> stringResource(R.string.lyrics_v2_style_chromatic)
+                        LyricsV2Style.GLASS_CARDS -> stringResource(R.string.lyrics_v2_style_glass_cards)
+                        LyricsV2Style.GEOMETRIC -> stringResource(R.string.lyrics_v2_style_geometric)
+                        LyricsV2Style.TYPEWRITER -> stringResource(R.string.lyrics_v2_style_typewriter)
+                        LyricsV2Style.HEAT_MAP -> stringResource(R.string.lyrics_v2_style_heat_map)
+                        LyricsV2Style.MINIMAL_FADE -> stringResource(R.string.lyrics_v2_style_minimal_fade)
+                        LyricsV2Style.BOUNCE -> stringResource(R.string.lyrics_v2_style_bounce)
+                    }
+                }
+            )
+        }
+
         EnumListPreference(
             title = { Text(stringResource(R.string.lyrics_text_position)) },
             icon = { Icon(painterResource(R.drawable.lyrics), null) },
@@ -779,8 +982,15 @@ fun AppearanceSettings(
             },
         )
 
-        // Lyrics Animation Style preference removed - GLOW is now forced by default
-
+        EnumListPreference(
+            title = { Text("Lyrics Animation Style") },
+            icon = { Icon(painterResource(R.drawable.lyrics), null) },
+            selectedValue = lyricsAnimation,
+            onValueSelected = onLyricsAnimationChange,
+            valueText = {
+                it.name.lowercase().replaceFirstChar { char -> char.uppercase() }
+            },
+        )
         SwitchPreference(
             title = { Text(stringResource(R.string.lyrics_click_change)) },
             icon = { Icon(painterResource(R.drawable.lyrics), null) },
@@ -793,6 +1003,30 @@ fun AppearanceSettings(
             icon = { Icon(painterResource(R.drawable.lyrics), null) },
             checked = lyricsScroll,
             onCheckedChange = onLyricsScrollChange,
+        )
+
+        SwitchPreference(
+            title = { Text(stringResource(R.string.apple_music_lyrics_blur)) },
+            description = stringResource(R.string.apple_music_lyrics_blur_desc),
+            icon = { Icon(painterResource(R.drawable.blur_on), null) },
+            checked = appleMusicLyricsBlur,
+            onCheckedChange = onAppleMusicLyricsBlurChange,
+        )
+
+        SwitchPreference(
+            title = { Text(stringResource(R.string.standard_lyrics_blur)) },
+            description = stringResource(R.string.standard_lyrics_blur_desc),
+            icon = { Icon(painterResource(R.drawable.blur_on), null) },
+            checked = lyricsStandardBlur,
+            onCheckedChange = onLyricsStandardBlurChange,
+        )
+
+        SwitchPreference(
+            title = { Text(stringResource(R.string.hide_status_bar_on_fullscreen)) },
+            description = stringResource(R.string.hide_status_bar_on_fullscreen_desc),
+            icon = { Icon(painterResource(R.drawable.fullscreen), null) },
+            checked = hideStatusBarOnFullscreen,
+            onCheckedChange = onHideStatusBarOnFullscreenChange,
         )
 
         var showLyricsTextSizeDialog by rememberSaveable { mutableStateOf(false) }
@@ -965,7 +1199,7 @@ fun AppearanceSettings(
             selectedValue = defaultChip,
             values = listOf(
                 LibraryFilter.LIBRARY, LibraryFilter.PLAYLISTS, LibraryFilter.SONGS,
-                LibraryFilter.ALBUMS, LibraryFilter.ARTISTS
+                LibraryFilter.ALBUMS, LibraryFilter.ARTISTS, LibraryFilter.GENRES
             ),
             valueText = {
                 when (it) {
@@ -973,6 +1207,7 @@ fun AppearanceSettings(
                     LibraryFilter.ARTISTS -> stringResource(R.string.artists)
                     LibraryFilter.ALBUMS -> stringResource(R.string.albums)
                     LibraryFilter.PLAYLISTS -> stringResource(R.string.playlists)
+                    LibraryFilter.GENRES -> "Géneros"
                     LibraryFilter.LIBRARY -> stringResource(R.string.filter_library)
                 }
             },
@@ -1088,6 +1323,26 @@ fun AppearanceSettings(
             icon = { Icon(painterResource(R.drawable.cached), null) },
             checked = showCachedPlaylist,
             onCheckedChange = onShowCachedPlaylistChange
+        )
+
+        PreferenceGroupTitle(
+            title = stringResource(R.string.artist_profile_settings)
+        )
+
+        SwitchPreference(
+            title = { Text(stringResource(R.string.show_artist_video)) },
+            description = stringResource(R.string.show_artist_video_desc),
+            icon = { Icon(painterResource(R.drawable.motion_photos_on), null) },
+            checked = showArtistVideo,
+            onCheckedChange = onShowArtistVideoChange,
+        )
+
+        SwitchPreference(
+            title = { Text(stringResource(R.string.show_artist_background_video)) },
+            description = stringResource(R.string.show_artist_background_video_desc),
+            icon = { Icon(painterResource(R.drawable.slow_motion_video), null) },
+            checked = showArtistBackgroundVideo,
+            onCheckedChange = onShowArtistBackgroundVideoChange,
         )
 
         PreferenceGroupTitle(
@@ -1212,41 +1467,111 @@ private fun SliderStyleOptionCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var sliderValue by remember {
-        mutableFloatStateOf(0.5f)
+    // Dynamic, self-animating preview so each style feels "alive" in the picker.
+    val infiniteTransition = rememberInfiniteTransition(label = "sliderPreview")
+    val animatedValue by infiniteTransition.animateFloat(
+        initialValue = 0.12f,
+        targetValue = 0.88f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2600),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "sliderPreviewValue",
+    )
+
+    val scale by animateFloatAsState(
+        targetValue = if (selected) 1.03f else 1f,
+        animationSpec = tween(220),
+        label = "cardScale",
+    )
+    val borderColor by animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.primary
+        else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+        animationSpec = tween(220),
+        label = "cardBorder",
+    )
+    val borderWidth = if (selected) 2.dp else 1.dp
+
+    val containerBrush = if (selected) {
+        Brush.verticalGradient(
+            listOf(
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
+                MaterialTheme.colorScheme.surfaceContainerHigh,
+            )
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(
+                MaterialTheme.colorScheme.surfaceContainerHigh,
+                MaterialTheme.colorScheme.surfaceContainer,
+            )
+        )
     }
 
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+    Box(
         modifier = modifier
             .aspectRatio(1f)
-            .clip(RoundedCornerShape(16.dp))
-            .border(
-                1.dp,
-                if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
-                RoundedCornerShape(16.dp)
-            )
+            .scale(scale)
+            .clip(RoundedCornerShape(20.dp))
+            .background(containerBrush)
+            .border(borderWidth, borderColor, RoundedCornerShape(20.dp))
             .clickable(onClick = onClick)
-            .padding(16.dp)
+            .padding(14.dp)
     ) {
-        StyledPlaybackSlider(
-            sliderStyle = sliderStyle,
-            value = sliderValue,
-            valueRange = 0f..1f,
-            onValueChange = { sliderValue = it },
-            onValueChangeFinished = {},
-            activeColor = MaterialTheme.colorScheme.primary,
-            isPlaying = true,
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            StyledPlaybackSlider(
+                sliderStyle = sliderStyle,
+                value = animatedValue,
+                valueRange = 0f..1f,
+                onValueChange = {},
+                onValueChangeFinished = {},
+                activeColor = MaterialTheme.colorScheme.primary,
+                isPlaying = true,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            )
+
+            Text(
+                text = sliderStyleLabel(sliderStyle),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                color = if (selected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        // Transparent overlay so a tap anywhere selects the card, even over the
+        // (non-interactive) slider preview which would otherwise swallow the touch.
+        Box(
             modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
+                .matchParentSize()
+                .clickable(onClick = onClick)
         )
 
-        Text(
-            text = sliderStyleLabel(sliderStyle),
-            style = MaterialTheme.typography.labelLarge
-        )
+        AnimatedVisibility(
+            visible = selected,
+            modifier = Modifier.align(Alignment.TopEnd),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(22.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.check),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(14.dp),
+                )
+            }
+        }
     }
 }
 
@@ -1258,6 +1583,13 @@ private fun sliderStyleLabel(sliderStyle: SliderStyle): String {
         SliderStyle.Thick -> stringResource(R.string.slider_style_thick)
         SliderStyle.Circular -> stringResource(R.string.slider_style_circular)
         SliderStyle.Simple -> stringResource(R.string.slider_style_simple)
+        SliderStyle.NeonGlow -> stringResource(R.string.slider_style_neon_glow)
+        SliderStyle.Capsule -> stringResource(R.string.slider_style_capsule)
+        SliderStyle.DoubleLine -> stringResource(R.string.slider_style_double_line)
+        SliderStyle.Dotted -> stringResource(R.string.slider_style_dotted)
+        SliderStyle.Waveform -> stringResource(R.string.slider_style_waveform)
+        SliderStyle.ShootingStar -> stringResource(R.string.slider_style_shooting_star)
+        SliderStyle.Aurora -> stringResource(R.string.slider_style_aurora)
     }
 }
 

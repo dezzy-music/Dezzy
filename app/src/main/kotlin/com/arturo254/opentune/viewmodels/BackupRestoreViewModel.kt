@@ -31,6 +31,7 @@ import com.arturo254.opentune.extensions.zipInputStream
 import com.arturo254.opentune.extensions.zipOutputStream
 import com.arturo254.opentune.playback.MusicService
 import com.arturo254.opentune.playback.MusicService.Companion.PERSISTENT_QUEUE_FILE
+import com.arturo254.opentune.utils.LibraryExporter
 import com.arturo254.opentune.utils.dataStore
 import com.arturo254.opentune.utils.reportException
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -664,6 +665,90 @@ class BackupRestoreViewModel @Inject constructor(
         }
 
         return songs
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Exportación a formatos abiertos (CSV / M3U)
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /** Qué parte de la biblioteca se exporta. */
+    enum class ExportScope { LikedSongs, AllSongs, Playlists }
+
+    /**
+     * Vuelca la biblioteca a un archivo de texto abierto. A diferencia del .backup
+     * (ZIP con la base de datos, pensado para restaurar en la propia app), esto sirve
+     * para migrar a otro reproductor o revisar los datos en una hoja de cálculo.
+     */
+    fun exportLibrary(
+        context: Context,
+        uri: Uri,
+        scope: ExportScope,
+        asM3u: Boolean,
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val title = context.getString(R.string.export_in_progress)
+            try {
+                emitProgress(title, context.getString(R.string.export_step_reading), 0, true)
+
+                val content = when (scope) {
+                    ExportScope.LikedSongs -> {
+                        val songs = database.likedSongsByCreateDateAsc().first()
+                        if (asM3u) LibraryExporter.songsToM3u(songs)
+                        else LibraryExporter.songsToCsv(songs)
+                    }
+
+                    ExportScope.AllSongs -> {
+                        val songs = database.allSongs().first()
+                        if (asM3u) LibraryExporter.songsToM3u(songs)
+                        else LibraryExporter.songsToCsv(songs)
+                    }
+
+                    ExportScope.Playlists -> {
+                        val playlists = database.playlistsByCreateDateAsc().first()
+                        val withSongs = playlists.map { playlist ->
+                            val songs = database.playlistSongs(playlist.id).first().map { it.song }
+                            playlist.playlist.name to songs
+                        }
+                        if (asM3u) {
+                            // Un M3U no tiene concepto de varias listas: se concatenan
+                            // con un comentario por lista para no perder el nombre.
+                            buildString {
+                                appendLine("#EXTM3U")
+                                withSongs.forEach { (name, songs) ->
+                                    appendLine("# $name")
+                                    appendLine(
+                                        LibraryExporter.songsToM3u(songs).removePrefix("#EXTM3U\n").trimEnd()
+                                    )
+                                }
+                            }
+                        } else {
+                            LibraryExporter.playlistsToCsv(withSongs)
+                        }
+                    }
+                }
+
+                emitProgress(title, context.getString(R.string.export_step_writing), 60, false)
+                context.applicationContext.contentResolver.openOutputStream(uri)?.use { out ->
+                    out.write(content.toByteArray(Charsets.UTF_8))
+                } ?: throw IllegalStateException("Failed to open output stream")
+
+                emitProgress(title, context.getString(R.string.export_step_writing), 100, false)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, R.string.export_success, Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                reportException(e)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        context,
+                        e.message ?: context.getString(R.string.export_failed),
+                        Toast.LENGTH_LONG,
+                    ).show()
+                }
+            } finally {
+                _backupRestoreProgress.value = null
+            }
+        }
     }
 
     // ──────────────────────────────────────────────────────────────────────────

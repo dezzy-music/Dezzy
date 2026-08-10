@@ -63,6 +63,12 @@ import com.arturo254.opentune.constants.AudioCrossfadeDurationKey
 import com.arturo254.opentune.constants.PlayerStreamClient
 import com.arturo254.opentune.constants.PlayerStreamClientKey
 import com.arturo254.opentune.constants.SeekExtraSeconds
+import com.arturo254.opentune.constants.CastVideoKey
+import com.arturo254.opentune.constants.VideoKeepModeOnSongChangeKey
+import com.arturo254.opentune.constants.VideoMaxQualityKey
+import com.arturo254.opentune.constants.VideoQuality
+import com.arturo254.opentune.constants.VideoResizeMode
+import com.arturo254.opentune.constants.VideoResizeModeKey
 import com.arturo254.opentune.ui.component.ArtistSeparatorsDialog
 import com.arturo254.opentune.ui.component.TagsManagementDialog
 import com.arturo254.opentune.ui.component.TextFieldDialog
@@ -75,6 +81,7 @@ import com.arturo254.opentune.ui.component.SliderPreference
 import com.arturo254.opentune.ui.component.CrossfadeSliderPreference
 import com.arturo254.opentune.ui.component.SwitchPreference
 import com.arturo254.opentune.ui.utils.backToMain
+import com.arturo254.opentune.ui.utils.rememberAdaptiveSidePadding
 import com.arturo254.opentune.utils.rememberEnumPreference
 import com.arturo254.opentune.utils.rememberPreference
 import com.arturo254.opentune.LocalDatabase
@@ -153,6 +160,22 @@ fun PlayerSettings(
         ArtistSeparatorsKey,
         defaultValue = ",;/&"
     )
+    val (videoMaxQuality, onVideoMaxQualityChange) = rememberEnumPreference(
+        VideoMaxQualityKey,
+        defaultValue = VideoQuality.P720
+    )
+    val (videoResizeMode, onVideoResizeModeChange) = rememberEnumPreference(
+        VideoResizeModeKey,
+        defaultValue = VideoResizeMode.FIT
+    )
+    val (videoKeepMode, onVideoKeepModeChange) = rememberPreference(
+        VideoKeepModeOnSongChangeKey,
+        defaultValue = false
+    )
+    val (castVideo, onCastVideoChange) = rememberPreference(
+        CastVideoKey,
+        defaultValue = false
+    )
     val (externalDownloaderEnabled, onExternalDownloaderEnabledChange) = rememberPreference(
         ExternalDownloaderEnabledKey,
         defaultValue = false
@@ -209,7 +232,14 @@ fun PlayerSettings(
             onDismiss = { showPlayerStreamClientDialog = false },
             modifier = Modifier.padding(horizontal = 8.dp),
         ) {
-            items(listOf(PlayerStreamClient.ANDROID_VR, PlayerStreamClient.WEB_REMIX)) { value ->
+            items(
+                listOf(
+                    PlayerStreamClient.ANDROID_VR,
+                    PlayerStreamClient.IOS,
+                    PlayerStreamClient.ANDROID_MUSIC,
+                    PlayerStreamClient.WEB_REMIX,
+                )
+            ) { value ->
                 Row(
                     modifier =
                     Modifier
@@ -229,7 +259,10 @@ fun PlayerSettings(
                             text =
                             when (value) {
                                 PlayerStreamClient.ANDROID_VR -> stringResource(R.string.player_stream_client_android_vr)
-                                else -> stringResource(R.string.player_stream_client_web_remix)
+                                PlayerStreamClient.IOS -> "iOS"
+                                PlayerStreamClient.ANDROID_MUSIC -> "Android Music"
+                                PlayerStreamClient.WEB_REMIX -> stringResource(R.string.player_stream_client_web_remix)
+                                else -> value.name
                             },
                             style = MaterialTheme.typography.bodyLarge,
                         )
@@ -238,7 +271,10 @@ fun PlayerSettings(
                             text =
                             when (value) {
                                 PlayerStreamClient.ANDROID_VR -> stringResource(R.string.player_stream_client_android_vr_desc)
-                                else -> stringResource(R.string.player_stream_client_web_remix_desc)
+                                PlayerStreamClient.IOS -> "Streams sin cifrar: evita el descifrado de firma (roto por cambios de YouTube) y suele pasar la verificación de bot. Recomendado si no reproduce."
+                                PlayerStreamClient.ANDROID_MUSIC -> "Cliente de Android Music. Alternativa sin cifrado si iOS falla."
+                                PlayerStreamClient.WEB_REMIX -> stringResource(R.string.player_stream_client_web_remix_desc)
+                                else -> ""
                             },
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.secondary,
@@ -253,6 +289,7 @@ fun PlayerSettings(
         Modifier
             .windowInsetsPadding(LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom))
             .verticalScroll(rememberScrollState())
+            .padding(horizontal = rememberAdaptiveSidePadding())
     ) {
         Spacer(
             Modifier.windowInsetsPadding(
@@ -363,6 +400,55 @@ fun PlayerSettings(
             icon = { Icon(painterResource(R.drawable.bluetooth), null) },
             checked = autoStartOnBluetooth,
             onCheckedChange = onAutoStartOnBluetoothChange
+        )
+
+        PreferenceGroupTitle(
+            title = stringResource(R.string.video_playback)
+        )
+
+        EnumListPreference(
+            title = { Text(stringResource(R.string.video_quality)) },
+            icon = { Icon(painterResource(R.drawable.slow_motion_video), null) },
+            selectedValue = videoMaxQuality,
+            onValueSelected = onVideoMaxQualityChange,
+            valueText = {
+                when (it) {
+                    VideoQuality.P360 -> "360p"
+                    VideoQuality.P480 -> "480p"
+                    VideoQuality.P720 -> "720p"
+                    VideoQuality.P1080 -> "1080p"
+                }
+            }
+        )
+
+        EnumListPreference(
+            title = { Text(stringResource(R.string.video_resize_mode)) },
+            icon = { Icon(painterResource(R.drawable.fullscreen), null) },
+            selectedValue = videoResizeMode,
+            onValueSelected = onVideoResizeModeChange,
+            valueText = {
+                when (it) {
+                    VideoResizeMode.FIT -> stringResource(R.string.video_resize_fit)
+                    VideoResizeMode.CROP -> stringResource(R.string.video_resize_crop)
+                    VideoResizeMode.FILL -> stringResource(R.string.video_resize_fill)
+                }
+            }
+        )
+
+        SwitchPreference(
+            title = { Text(stringResource(R.string.video_keep_mode)) },
+            description = stringResource(R.string.video_keep_mode_desc),
+            icon = { Icon(painterResource(R.drawable.skip_next), null) },
+            checked = videoKeepMode,
+            onCheckedChange = onVideoKeepModeChange
+        )
+
+        SwitchPreference(
+            title = { Text(stringResource(R.string.cast_video)) },
+            description = stringResource(R.string.cast_video_desc),
+            icon = { Icon(painterResource(R.drawable.cast), null) },
+            checked = castVideo,
+            onCheckedChange = onCastVideoChange
         )
 
         PreferenceGroupTitle(

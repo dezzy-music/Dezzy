@@ -68,7 +68,8 @@ data class UpdateInfo(
 )
 
 private const val APK_ASSET_NAME = "app-universal-release.apk"
-private const val NIGHTLY_JSON_URL = "https://pub-2218e6bbd5b948e1b5d882cf4d92086d.r2.dev/update.json"
+private const val STABLE_JSON_URL = "https://dezzy.space/update.json"
+private const val NIGHTLY_JSON_URL = "https://dezzy.space/update-nightly.json"
 
 private data class ReleasesNetworkResult(
     val status: HttpStatusCode,
@@ -81,6 +82,9 @@ object Updater {
     private const val ReleaseCacheCheckIntervalMs: Long = 6 * 60 * 60 * 1000L
     var lastCheckTime = -1L
         private set
+
+    var cachedStableDownloadUrl: String = "https://pub-815e6afa49994827a0d0cab5f802a819.r2.dev/app-universal-gms-release.apk"
+    var cachedNightlyDownloadUrl: String = "https://pub-2218e6bbd5b948e1b5d882cf4d92086d.r2.dev/app-universal-release.apk"
 
     private var cachedNightlyInfo: NightlyInfo? = null
 
@@ -177,6 +181,8 @@ object Updater {
         parseSemVerOrNull(release.tagName) ?: parseSemVerOrNull(release.name)
 
     internal fun isSameVersion(a: String, b: String): Boolean {
+        return true // Temporarily hidden for future integration
+        /*
         val aSemVer = parseSemVerOrNull(a)
         val bSemVer = parseSemVerOrNull(b)
         return if (aSemVer != null && bSemVer != null) {
@@ -187,6 +193,7 @@ object Updater {
         } else {
             a.trim() == b.trim()
         }
+        */
     }
 
     internal fun findLatestRelease(releases: List<ReleaseInfo>): ReleaseInfo? {
@@ -240,7 +247,7 @@ object Updater {
         cachedEtag: String?,
     ): ReleasesNetworkResult {
         val response: HttpResponse =
-            client.get("https://api.github.com/repos/Arturo254/OpenTune/releases?per_page=$perPage") {
+            client.get("https://api.github.com/repos/dezzy-music/Dezzy/releases?per_page=$perPage") {
                 headers {
                     append("Accept", "application/vnd.github+json")
                     append("User-Agent", "OpenTune")
@@ -273,29 +280,175 @@ object Updater {
         return runCatching { UpdateChannel.valueOf(channelName) }.getOrDefault(UpdateChannel.STABLE)
     }
 
-    private suspend fun fetchNightlyJson(): Result<NightlyInfo> = runCatching {
-        val response = client.get(NIGHTLY_JSON_URL) {
-            headers {
-                append("Accept", "application/json")
-                append("User-Agent", "OpenTune")
-            }
-        }.bodyAsText()
-        val json = JSONObject(response)
+    private val okHttpClient = okhttp3.OkHttpClient.Builder()
+        .followRedirects(true)
+        .followSslRedirects(true)
+        .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+        .build()
 
-        // El JSON está en /nightly/update.json pero el APK debe servirse sin /nightly/
-        val rawApkUrl = json.optString("apkUrl", "")
-        val fixedApkUrl = rawApkUrl.replace(
-            "https://pub-2218e6bbd5b948e1b5d882cf4d92086d.r2.dev/",
-            "https://pub-2218e6bbd5b948e1b5d882cf4d92086d.r2.dev/"
-        )
+    private suspend fun fetchJsonUrl(url: String, fallbackUrl: String? = null): String {
+        return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val urls = listOfNotNull(url, fallbackUrl)
+            var lastException: Exception? = null
+            for (u in urls) {
+                try {
+                    val request = okhttp3.Request.Builder()
+                        .url(u)
+                        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                        .header("Accept", "application/json, text/plain, */*")
+                        .build()
+                    val response = okHttpClient.newCall(request).execute()
+                    if (response.isSuccessful) {
+                        val body = response.body?.string()
+                        if (!body.isNullOrBlank()) return@withContext body
+                    }
+                } catch (e: Exception) {
+                    lastException = e
+                }
+            }
+            throw lastException ?: java.io.IOException("Failed to fetch JSON from $url")
+        }
+    }
+
+    private suspend fun fetchNightlyJson(): Result<NightlyInfo> = runCatching {
+        // Primary: GitHub Releases API
+        try {
+            val request = okhttp3.Request.Builder()
+                .url("https://api.github.com/repos/dezzy-music/Dezzy/releases")
+                .header("User-Agent", "OpenTune-App")
+                .header("Accept", "application/vnd.github.v3+json")
+                .build()
+            val response = okHttpClient.newCall(request).execute()
+            if (response.isSuccessful) {
+                val bodyStr = response.body?.string()
+                if (!bodyStr.isNullOrBlank()) {
+                    val releasesArray = JSONArray(bodyStr)
+                    if (releasesArray.length() > 0) {
+                        val firstRelease = releasesArray.getJSONObject(0)
+                        val tagName = firstRelease.optString("tag_name", "3.0.6").removePrefix("v")
+                        val assets = firstRelease.optJSONArray("assets")
+                        var apkUrlVal = ""
+                        if (assets != null && assets.length() > 0) {
+                            apkUrlVal = assets.getJSONObject(0).optString("browser_download_url", "")
+                        }
+                        if (apkUrlVal.isBlank()) {
+                            apkUrlVal = "https://github.com/dezzy-music/Dezzy/releases/download/$tagName/app-universal-release.apk"
+                        }
+                        cachedNightlyDownloadUrl = apkUrlVal
+                        return@runCatching NightlyInfo(
+                            versionName = tagName,
+                            apkUrl = apkUrlVal,
+                            changelog = firstRelease.optString("body", ""),
+                            publishedAt = firstRelease.optString("published_at", "")
+                        )
+                    }
+                }
+            }
+        } catch (_: Exception) { }
+
+        // Fallback: dezzy.space
+        val response = try {
+            fetchJsonUrl(
+                NIGHTLY_JSON_URL,
+                "https://pub-2218e6bbd5b948e1b5d882cf4d92086d.r2.dev/app-universal-release.apk"
+            )
+        } catch (e: Exception) {
+            return@runCatching NightlyInfo(
+                versionName = BuildConfig.VERSION_NAME,
+                apkUrl = cachedNightlyDownloadUrl,
+                changelog = null,
+                publishedAt = ""
+            )
+        }
+
+        val json = JSONObject(response)
+        val assets = json.optJSONArray("assets")
+        val firstAssetUrl = if (assets != null && assets.length() > 0) {
+            assets.getJSONObject(0).optString("url")
+        } else {
+            ""
+        }
+        val apkUrlVal = firstAssetUrl.ifEmpty { cachedNightlyDownloadUrl }
+        cachedNightlyDownloadUrl = apkUrlVal
 
         NightlyInfo(
-            versionName = json.optString("versionName", "unknown"),
-            apkUrl = fixedApkUrl.ifEmpty {
-                "https://pub-2218e6bbd5b948e1b5d882cf4d92086d.r2.dev/app-universal-release.apk"
-            },
-            changelog = json.optString("changelog", "").takeIf { it.isNotEmpty() },
-            publishedAt = json.optString("publishedAt", "")
+            versionName = json.optString("name", BuildConfig.VERSION_NAME),
+            apkUrl = apkUrlVal,
+            changelog = json.optString("description", "").takeIf { it.isNotEmpty() },
+            publishedAt = json.optString("date", "")
+        )
+    }
+
+    private suspend fun fetchStableJson(): Result<ReleaseInfo> = runCatching {
+        // Primary: GitHub Releases API (most reliable, guaranteed up to date)
+        try {
+            val request = okhttp3.Request.Builder()
+                .url("https://api.github.com/repos/dezzy-music/Dezzy/releases/latest")
+                .header("User-Agent", "OpenTune-App")
+                .header("Accept", "application/vnd.github.v3+json")
+                .build()
+            val response = okHttpClient.newCall(request).execute()
+            if (response.isSuccessful) {
+                val bodyStr = response.body?.string()
+                if (!bodyStr.isNullOrBlank()) {
+                    val json = JSONObject(bodyStr)
+                    val tagName = json.optString("tag_name", "3.0.6").removePrefix("v")
+                    val name = json.optString("name", tagName)
+                    val body = json.optString("body", "")
+                    val publishedAt = json.optString("published_at", "")
+                    val assets = json.optJSONArray("assets")
+                    var downloadUrl = ""
+                    if (assets != null && assets.length() > 0) {
+                        downloadUrl = assets.getJSONObject(0).optString("browser_download_url", "")
+                    }
+                    if (downloadUrl.isBlank()) {
+                        downloadUrl = "https://github.com/dezzy-music/Dezzy/releases/download/$tagName/app-universal-release.apk"
+                    }
+                    cachedStableDownloadUrl = downloadUrl
+                    return@runCatching ReleaseInfo(
+                        tagName = tagName,
+                        name = name,
+                        body = body,
+                        publishedAt = publishedAt,
+                        htmlUrl = downloadUrl
+                    )
+                }
+            }
+        } catch (_: Exception) { }
+
+        // Fallback: dezzy.space
+        val response = try {
+            fetchJsonUrl(
+                STABLE_JSON_URL,
+                "https://pub-815e6afa49994827a0d0cab5f802a819.r2.dev/app-universal-gms-release.apk"
+            )
+        } catch (e: Exception) {
+            return@runCatching ReleaseInfo(
+                tagName = BuildConfig.VERSION_NAME,
+                name = BuildConfig.VERSION_NAME,
+                body = null,
+                publishedAt = "",
+                htmlUrl = cachedStableDownloadUrl
+            )
+        }
+
+        val json = JSONObject(response)
+        val assets = json.optJSONArray("assets")
+        val firstAssetUrl = if (assets != null && assets.length() > 0) {
+            assets.getJSONObject(0).optString("url")
+        } else {
+            ""
+        }
+        val apkUrlVal = firstAssetUrl.ifEmpty { cachedStableDownloadUrl }
+        cachedStableDownloadUrl = apkUrlVal
+
+        ReleaseInfo(
+            tagName = json.optString("version", BuildConfig.VERSION_NAME),
+            name = json.optString("name", BuildConfig.VERSION_NAME),
+            body = json.optString("description", "").takeIf { it.isNotEmpty() },
+            publishedAt = json.optString("date", ""),
+            htmlUrl = apkUrlVal
         )
     }
 
@@ -332,9 +485,7 @@ object Updater {
     suspend fun getLatestReleaseInfo(): Result<ReleaseInfo> = runCatching {
         when (getCurrentUpdateChannel()) {
             UpdateChannel.STABLE -> {
-                val releases = getAllReleases().getOrThrow()
-                val latest = findLatestRelease(releases)
-                    ?: throw IllegalStateException("No releases found")
+                val latest = fetchStableJson().getOrThrow()
                 lastCheckTime = System.currentTimeMillis()
                 latest
             }
@@ -358,8 +509,8 @@ object Updater {
      * Comprueba si hay una versión más reciente que [currentVersionName].
      *
      * - Detecta el canal activo automáticamente.
-     * - STABLE: Reutiliza la caché existente (ETag / DataStore).
-     * - NIGHTLY: Consulta el JSON remoto de Cloudflare R2.
+     * - STABLE: Consulta el JSON remoto de dezzy.space.
+     * - NIGHTLY: Consulta el JSON remoto de dezzy.space.
      * - Devuelve `null` dentro del [Result] cuando ya se tiene la versión más
      *   reciente instalada.
      */
@@ -379,7 +530,7 @@ object Updater {
 
         if (isSameVersion(latestVersionName, currentVersionName)) return null
 
-        val downloadUrl = resolveApkDownloadUrl(latest.tagName)
+        val downloadUrl = latest.htmlUrl
 
         return UpdateInfo(
             tagName        = latest.tagName,
@@ -409,64 +560,18 @@ object Updater {
     }
 
     /**
-     * Consulta los assets del release [tagName] y devuelve la URL de descarga
-     * de `app-universal-release.apk`. Si la llamada falla o el asset no está listado,
-     * usa la URL canónica de GitHub como fallback.
+     * Devuelve la URL de descarga de fallback para la etiqueta dada.
      */
     private suspend fun resolveApkDownloadUrl(tagName: String): String {
-        val fallback =
-            "https://github.com/Arturo254/OpenTune/releases/download/$tagName/$APK_ASSET_NAME"
-
-        return runCatching {
-            val response = client.get(
-                "https://api.github.com/repos/Arturo254/OpenTune/releases/tags/$tagName"
-            ) {
-                headers {
-                    append("Accept", "application/vnd.github+json")
-                    append("User-Agent", "OpenTune")
-                }
-            }.bodyAsText()
-
-            val assets = JSONObject(response).optJSONArray("assets") ?: return@runCatching fallback
-
-            for (i in 0 until assets.length()) {
-                val asset = assets.getJSONObject(i)
-                if (asset.optString("name").equals(APK_ASSET_NAME, ignoreCase = true)) {
-                    return@runCatching asset.optString("browser_download_url", fallback)
-                }
-            }
-            fallback
-        }.getOrDefault(fallback)
+        return cachedStableDownloadUrl
     }
 
     // ─────────────────────────────────────────────────────────────────────────
 
     suspend fun getCommitHistory(count: Int = 20, branch: String = "master"): Result<List<GitCommit>> =
         runCatching {
-            val response =
-                client.get("https://api.github.com/repos/Arturo254/OpenTune/commits?sha=$branch&per_page=$count") {
-                    headers {
-                        append("Accept", "application/vnd.github+json")
-                        append("User-Agent", "OpenTune")
-                    }
-                }.bodyAsText()
-            val jsonArray = JSONArray(response)
-            val commits = mutableListOf<GitCommit>()
-            for (i in 0 until jsonArray.length()) {
-                val commitObj = jsonArray.getJSONObject(i)
-                val commit = commitObj.getJSONObject("commit")
-                val authorObj = commit.optJSONObject("author")
-                commits.add(
-                    GitCommit(
-                        sha = commitObj.optString("sha", "").take(7),
-                        message = commit.optString("message", "").lines().firstOrNull() ?: "",
-                        author = authorObj?.optString("name", "Unknown") ?: "Unknown",
-                        date = authorObj?.optString("date", "") ?: "",
-                        url = commitObj.optString("html_url", "")
-                    )
-                )
-            }
-            commits
+            // Deshabilitado para no depender de la API de GitHub rate-limited.
+            emptyList<GitCommit>()
         }
 
     fun getLatestDownloadUrl(): String {
@@ -474,13 +579,8 @@ object Updater {
             kotlin.runCatching { getCurrentUpdateChannel() }.getOrDefault(UpdateChannel.STABLE)
         }
         return when (channel) {
-            UpdateChannel.STABLE -> {
-                "https://github.com/Arturo254/OpenTune/releases/latest/download/$APK_ASSET_NAME"
-            }
-            UpdateChannel.NIGHTLY -> {
-                cachedNightlyInfo?.apkUrl
-                    ?: "https://pub-2218e6bbd5b948e1b5d882cf4d92086d.r2.dev/app-universal-release.apk"
-            }
+            UpdateChannel.STABLE -> cachedStableDownloadUrl
+            UpdateChannel.NIGHTLY -> cachedNightlyDownloadUrl
         }
     }
 
@@ -492,81 +592,8 @@ object Updater {
             if (getCurrentUpdateChannel() == UpdateChannel.NIGHTLY) {
                 return@runCatching emptyList()
             }
-
-            val now = System.currentTimeMillis()
-            val cachedJson = App.instance.dataStore.getAsync(GitHubReleasesJsonKey)
-            val cachedEtag = App.instance.dataStore.getAsync(GitHubReleasesEtagKey)
-            val lastCheckedAt = App.instance.dataStore.getAsync(GitHubReleasesLastCheckedAtKey, 0L)
-            val cachedFingerprint = App.instance.dataStore.getAsync(GitHubReleasesFingerprintKey)
-
-            val cachedReleases =
-                cachedJson
-                    ?.takeIf { it.isNotBlank() }
-                    ?.let { runCatching { parseReleasesJson(it) }.getOrNull() }
-
-            val shouldCheckNetwork =
-                forceRefresh || cachedJson.isNullOrBlank() || (now - lastCheckedAt) >= ReleaseCacheCheckIntervalMs
-
-            if (!shouldCheckNetwork) {
-                lastCheckTime = now
-                return@runCatching cachedReleases ?: emptyList()
-            }
-
-            val networkResult = runCatching {
-                fetchReleasesNetwork(perPage = perPage, cachedEtag = cachedEtag)
-            }.getOrNull()
-
-            if (networkResult == null) {
-                val fallback = cachedReleases
-                if (fallback != null) {
-                    lastCheckTime = now
-                    return@runCatching fallback
-                }
-                throw IllegalStateException("Failed to fetch releases")
-            }
-
-            when {
-                networkResult.status == HttpStatusCode.NotModified -> {
-                    App.instance.dataStore.edit { settings ->
-                        settings[GitHubReleasesLastCheckedAtKey] = now
-                        networkResult.etag?.let { settings[GitHubReleasesEtagKey] = it }
-                    }
-                    val fallback = cachedReleases
-                    if (fallback != null) {
-                        lastCheckTime = now
-                        return@runCatching fallback
-                    }
-                    throw IllegalStateException("Release cache is empty")
-                }
-
-                networkResult.status.value in 200..299 && !networkResult.body.isNullOrBlank() -> {
-                    val networkBody = networkResult.body
-                    val releases = parseReleasesJson(networkBody)
-                    val newFingerprint = getTopReleaseFingerprint(releases)
-                    val hasPayloadChanged = cachedJson != networkBody
-                    val hasTopReleaseChanged = cachedFingerprint != newFingerprint
-
-                    App.instance.dataStore.edit { settings ->
-                        settings[GitHubReleasesLastCheckedAtKey] = now
-                        networkResult.etag?.let { settings[GitHubReleasesEtagKey] = it }
-                        if (hasPayloadChanged || hasTopReleaseChanged || cachedJson.isNullOrBlank()) {
-                            settings[GitHubReleasesJsonKey] = networkBody
-                            settings[GitHubReleasesFingerprintKey] = newFingerprint
-                        }
-                    }
-                    lastCheckTime = now
-                    releases
-                }
-
-                else -> {
-                    val fallback = cachedReleases
-                    if (fallback != null) {
-                        lastCheckTime = now
-                        fallback
-                    } else {
-                        throw IllegalStateException("Failed to fetch releases: HTTP ${networkResult.status.value}")
-                    }
-                }
-            }
+            val stableRelease = fetchStableJson().getOrThrow()
+            lastCheckTime = System.currentTimeMillis()
+            listOf(stableRelease)
         }
 }

@@ -12,6 +12,7 @@ import com.arturo254.opentune.api.OpenRouterService
 import com.arturo254.opentune.constants.LanguageCodeToName
 import com.arturo254.opentune.db.MusicDatabase
 import com.arturo254.opentune.db.entities.LyricsTranslationEntity
+import com.arturo254.opentune.utils.SimpleTranslator
 import com.arturo254.opentune.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,6 +26,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Locale
 
 object LyricsTranslationHelper {
@@ -139,9 +141,10 @@ object LyricsTranslationHelper {
         customSystemPrompt: String = ""
     ) {
         translationJob?.cancel()
-        
-        // Check network connectivity before starting
-        if (!isNetworkAvailable(context)) {
+
+        // Check network connectivity before starting.
+        // El modo Offline (ML Kit) no necesita red una vez descargado el modelo.
+        if (provider != "Offline" && !isNetworkAvailable(context)) {
             _status.value = TranslationStatus.Error(context.getString(R.string.error_no_internet))
             return
         }
@@ -153,9 +156,11 @@ object LyricsTranslationHelper {
         
         translationJob = scope.launch(Dispatchers.IO) {
             try {
-                // Validate inputs based on provider
+                // Validate inputs based on provider.
+                // Los proveedores gratuitos (FreeOnline/Offline) no requieren clave.
+                val requiresApiKey = provider != "FreeOnline" && provider != "Offline"
                 val effectiveApiKey = if (provider == "DeepL") deeplApiKey else apiKey
-                if (effectiveApiKey.isBlank()) {
+                if (requiresApiKey && effectiveApiKey.isBlank()) {
                     _status.value = TranslationStatus.Error(context.getString(R.string.ai_error_api_key_required))
                     return@launch
                 }
@@ -192,6 +197,16 @@ object LyricsTranslationHelper {
                     ?: targetLanguage
 
                 val result = when (provider) {
+                    // Traductor gratuito online (endpoint gtx, sin API key)
+                    "FreeOnline" -> SimpleTranslator.translateLines(
+                        lines = nonEmptyEntries.map { it.second.text },
+                        targetLang = targetLanguage,
+                    )
+                    // Traducción on-device con ML Kit (sin internet, sin clave)
+                    "Offline" -> OfflineTranslationService.translateLines(
+                        lines = nonEmptyEntries.map { it.second.text },
+                        targetLanguageCode = targetLanguage,
+                    )
                     "DeepL" -> DeepLService.translate(
                         text = fullText,
                         targetLanguage = targetLanguage,
@@ -225,6 +240,17 @@ object LyricsTranslationHelper {
                             apiKey = apiKey,
                             baseUrl = "https://api.groq.com/openai/v1/chat/completions",
                             model = model,
+                            mode = mode,
+                            customSystemPrompt = customSystemPrompt
+                        )
+                    }
+                    "Nvidia" -> {
+                        OpenRouterService.translate(
+                            text = fullText,
+                            targetLanguage = fullLanguageName,
+                            apiKey = apiKey,
+                            baseUrl = "https://integrate.api.nvidia.com/v1/chat/completions",
+                            model = model.ifBlank { "meta/llama-3.1-70b-instruct" },
                             mode = mode,
                             customSystemPrompt = customSystemPrompt
                         )
@@ -317,6 +343,140 @@ object LyricsTranslationHelper {
                     _status.value = TranslationStatus.Error(errorMessage)
                 }
             }
+        }
+    }
+
+    suspend fun prefetchTranslation(
+        lyrics: List<LyricsEntry>,
+        targetLanguage: String,
+        apiKey: String,
+        baseUrl: String,
+        model: String,
+        mode: String,
+        context: Context,
+        database: MusicDatabase,
+        provider: String = "OpenRouter",
+        deeplApiKey: String = "",
+        deeplFormality: String = "default",
+        customSystemPrompt: String = ""
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            if (provider != "Offline" && !isNetworkAvailable(context)) {
+                return@withContext Result.failure(Exception("No network connection available for pre-fetching translation"))
+            }
+
+            if (lyrics.isEmpty()) {
+                return@withContext Result.failure(Exception("No lyrics entries to translate"))
+            }
+
+            val nonEmptyEntries = lyrics.mapIndexedNotNull { index, entry ->
+                if (entry.text.isNotBlank()) index to entry else null
+            }
+
+            if (nonEmptyEntries.isEmpty()) {
+                return@withContext Result.failure(Exception("Lyrics text is empty"))
+            }
+
+            val fullText = nonEmptyEntries.joinToString("\n") { it.second.text }
+            val cacheKey = getCacheKey(fullText, mode, targetLanguage)
+
+            // Convert language code to full language name
+            val fullLanguageName = LanguageCodeToName[targetLanguage] 
+                ?: try {
+                    Locale.forLanguageTag(targetLanguage).displayLanguage.takeIf { it.isNotBlank() && it != targetLanguage }
+                } catch (e: Exception) { null }
+                ?: targetLanguage
+
+            val result = when (provider) {
+                "FreeOnline" -> SimpleTranslator.translateLines(
+                    lines = nonEmptyEntries.map { it.second.text },
+                    targetLang = targetLanguage,
+                )
+                "Offline" -> OfflineTranslationService.translateLines(
+                    lines = nonEmptyEntries.map { it.second.text },
+                    targetLanguageCode = targetLanguage,
+                )
+                "DeepL" -> DeepLService.translate(
+                    text = fullText,
+                    targetLanguage = targetLanguage,
+                    apiKey = deeplApiKey,
+                    formality = deeplFormality
+                )
+                "Mistral" -> MistralService.translate(
+                    text = fullText,
+                    targetLanguage = fullLanguageName,
+                    apiKey = apiKey,
+                    model = model,
+                    mode = mode,
+                    customSystemPrompt = customSystemPrompt
+                )
+                "Gemini", "OpenAI", "Perplexity", "Claude", "XAi" -> {
+                    OpenRouterService.translate(
+                        text = fullText,
+                        targetLanguage = fullLanguageName,
+                        apiKey = apiKey,
+                        baseUrl = baseUrl,
+                        model = model,
+                        mode = mode,
+                        customSystemPrompt = customSystemPrompt
+                    )
+                }
+                "Groq" -> {
+                    OpenRouterService.translate(
+                        text = fullText,
+                        targetLanguage = fullLanguageName,
+                        apiKey = apiKey,
+                        baseUrl = "https://api.groq.com/openai/v1/chat/completions",
+                        model = model,
+                        mode = mode,
+                        customSystemPrompt = customSystemPrompt
+                    )
+                }
+                "Nvidia" -> {
+                    OpenRouterService.translate(
+                        text = fullText,
+                        targetLanguage = fullLanguageName,
+                        apiKey = apiKey,
+                        baseUrl = "https://integrate.api.nvidia.com/v1/chat/completions",
+                        model = model.ifBlank { "meta/llama-3.1-70b-instruct" },
+                        mode = mode,
+                        customSystemPrompt = customSystemPrompt
+                    )
+                }
+                else -> {
+                    OpenRouterService.translate(
+                        text = fullText,
+                        targetLanguage = fullLanguageName,
+                        apiKey = apiKey,
+                        baseUrl = baseUrl,
+                        model = model,
+                        mode = mode,
+                        customSystemPrompt = customSystemPrompt
+                    )
+                }
+            }
+
+            result.fold(
+                onSuccess = { translatedLines ->
+                    translationCache[cacheKey] = translatedLines
+                    try {
+                        database.upsert(
+                            LyricsTranslationEntity(
+                                cacheKey = cacheKey,
+                                translatedLyrics = translatedLines.joinToString("\n")
+                            )
+                        )
+                        Result.success(Unit)
+                    } catch (e: Exception) {
+                        Result.failure(e)
+                    }
+                },
+                onFailure = {
+                    Result.failure(it)
+                }
+            )
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 

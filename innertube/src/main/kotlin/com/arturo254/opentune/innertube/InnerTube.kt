@@ -6,6 +6,7 @@
 
 package com.arturo254.opentune.innertube
 
+import kotlinx.serialization.Serializable
 import com.arturo254.opentune.innertube.models.Context
 import com.arturo254.opentune.innertube.models.MediaInfo
 import com.arturo254.opentune.innertube.models.ReturnYouTubeDislikeResponse
@@ -393,13 +394,14 @@ class InnerTube {
         params: String? = null,
         continuation: String? = null,
         setLogin: Boolean = false,
+        localeOverride: YouTubeLocale? = null,
     ) = withRetry {
         httpClient.post("browse") {
             ytClient(client, setLogin = setLogin || useLoginForBrowse)
             setBody(
                 BrowseBody(
                     context = client.toContext(
-                        locale,
+                        localeOverride ?: locale,
                         visitorData,
                         if (setLogin || useLoginForBrowse) dataSyncId else null
                     ),
@@ -431,6 +433,60 @@ class InnerTube {
                     index = index,
                     params = params,
                     continuation = continuation
+                )
+            )
+        }
+    }
+
+    /**
+     * Same as [next] but targets the standard YouTube API endpoint (www.youtube.com)
+     * instead of YouTube Music. Required for comment endpoints which only exist on YouTube.
+     */
+    suspend fun nextYouTube(
+        client: YouTubeClient,
+        videoId: String?,
+        playlistId: String?,
+        playlistSetVideoId: String?,
+        index: Int?,
+        params: String?,
+        continuation: String? = null,
+        setLogin: Boolean = false,
+    ) = withRetry {
+        httpClient.post("${YouTubeClient.API_URL_YOUTUBE}next") {
+            ytClient(client, setLogin = setLogin)
+            setBody(
+                NextBody(
+                    context = client.toContext(queueLocale, visitorData, dataSyncId),
+                    videoId = videoId,
+                    playlistId = playlistId,
+                    playlistSetVideoId = playlistSetVideoId,
+                    index = index,
+                    params = params,
+                    continuation = continuation
+                )
+            )
+        }
+    }
+
+    @Serializable
+    data class CreateCommentBody(
+        val context: Context,
+        val commentText: String,
+        val createCommentParams: String? = null,
+    )
+
+    suspend fun createComment(
+        client: YouTubeClient,
+        commentText: String,
+        createCommentParams: String? = null,
+    ) = withRetry {
+        httpClient.post("${YouTubeClient.API_URL_YOUTUBE}comment/create_comment") {
+            ytClient(client, setLogin = true)
+            setBody(
+                CreateCommentBody(
+                    context = client.toContext(queueLocale, visitorData, dataSyncId),
+                    commentText = commentText,
+                    createCommentParams = createCommentParams
                 )
             )
         }

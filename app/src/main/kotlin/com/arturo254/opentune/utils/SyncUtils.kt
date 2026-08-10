@@ -213,7 +213,12 @@ class SyncUtils @Inject constructor(
                             if (!isSyncStillEnabled(gen)) return@withTransaction
                             if (dbSong == null) {
                                 insert(song.toMediaMetadata()) { it.copy(liked = true, likedDate = timestamp) }
-                            } else if (!dbSong.song.liked || dbSong.song.likedDate != timestamp) {
+                            } else if (!dbSong.song.liked) {
+                                // Solo likes NUEVOS reciben timestamp. Antes se
+                                // re-estampaba likedDate de TODO en cada sync,
+                                // corrompiendo la fecha real del like y enterrando
+                                // al fondo de la lista lo likeado localmente
+                                // (p. ej. la música importada).
                                 update(dbSong.song.copy(liked = true, likedDate = timestamp))
                             }
                         }
@@ -246,7 +251,9 @@ class SyncUtils @Inject constructor(
             val localSongs = database.songsByNameAsc().first()
 
             if (!isSyncStillEnabled(gen)) return@onSuccess
-            localSongs.filterNot { it.id in remoteIds }
+            // Las canciones locales importadas no existen en YouTube: nunca
+            // deben salir de la biblioteca por no estar en la librería remota.
+            localSongs.filterNot { it.id in remoteIds || it.song.isLocal }
                 .forEach { database.update(it.song.copy(inLibrary = null)) }
 
             remoteSongs.forEach { song ->

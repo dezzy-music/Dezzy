@@ -60,6 +60,13 @@ import com.arturo254.opentune.ui.menu.YouTubeSongMenu
 import com.arturo254.opentune.ui.utils.SnapLayoutInfoProvider
 import com.arturo254.opentune.viewmodels.ChartsViewModel
 import com.arturo254.opentune.viewmodels.ExploreViewModel
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.material3.OutlinedCard
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -109,6 +116,53 @@ fun ExploreScreen(
                     LocalPlayerAwareWindowInsets.current.asPaddingValues().calculateTopPadding(),
                 ),
             )
+
+            // ── Feature Banners ──────────────────────────────────────────────
+            // NOTE: the Music Map banner is intentionally hidden for now — the screen and
+            // route ("music_map") stay in place for upcoming integrations.
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                // Public Rooms banner
+                OutlinedCard(
+                    onClick = { navController.navigate("public_rooms") },
+                    modifier = Modifier.weight(1f),
+                    border = BorderStroke(1.dp, Color(0xFF81C784).copy(alpha = 0.4f)),
+                    colors = androidx.compose.material3.CardDefaults.outlinedCardColors(
+                        containerColor = Color(0xFF81C784).copy(alpha = 0.05f),
+                    ),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(Color(0xFF1B5E20).copy(alpha = 0.12f), Color(0xFF81C784).copy(alpha = 0.06f))
+                                )
+                            )
+                            .padding(12.dp),
+                    ) {
+                        Column {
+                            Text("🌐", fontSize = 28.sp)
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = "Salas Públicas",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(
+                                text = "Escucha con el mundo",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            )
+                        }
+                    }
+                }
+            }
+
 
             if (isChartsLoading || chartsPage == null || explorePage == null) {
                 ShimmerHost {

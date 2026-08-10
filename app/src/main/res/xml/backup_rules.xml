@@ -9,4 +9,8 @@
     <exclude
         domain="database"
         path="exoplayer_internal.db" />
+    <!-- DataStore holds session tokens (Supabase, YouTube, Discord); never back it up -->
+    <exclude
+        domain="file"
+        path="./datastore" />
 </full-backup-content>

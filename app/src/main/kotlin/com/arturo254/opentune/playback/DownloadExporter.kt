@@ -14,7 +14,12 @@ import com.arturo254.opentune.models.toMediaMetadata
 import com.arturo254.opentune.utils.reportException
 import com.arturo254.opentune.ui.utils.resize
 import com.arturo254.opentune.utils.toArtworkHash
+import coil3.imageLoader
+import coil3.request.ImageRequest
+import coil3.disk.DiskCache
+import okio.Path
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.firstOrNull
 import okhttp3.OkHttpClient
@@ -24,9 +29,24 @@ import org.jaudiotagger.tag.images.AndroidArtwork
 import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
-import java.net.URL
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.arturo254.opentune.utils.dataStore
+import java.util.Locale
+import com.arturo254.opentune.ui.player.fetchCanvasArtworkForPlayback
+import com.arturo254.opentune.constants.EnableSpotifyCanvasKey
+import com.arturo254.opentune.innertube.YouTube
+
+import com.arturo254.opentune.constants.TranslateLyricsKey
+import com.arturo254.opentune.constants.AiProviderKey
+import com.arturo254.opentune.constants.OpenRouterApiKey
+import com.arturo254.opentune.constants.DeeplApiKey
+import com.arturo254.opentune.constants.OpenRouterBaseUrlKey
+import com.arturo254.opentune.constants.OpenRouterModelKey
+import com.arturo254.opentune.constants.TranslateModeKey
+import com.arturo254.opentune.constants.TranslateLanguageKey
+import com.arturo254.opentune.lyrics.LyricsTranslationHelper
+import kotlinx.coroutines.flow.first
 
 @Singleton
 class DownloadExporter
@@ -37,6 +57,14 @@ constructor(
     private val lyricsHelper: LyricsHelper,
     @com.arturo254.opentune.di.DownloadCache private val downloadCache: androidx.media3.datasource.cache.Cache,
 ) {
+    private val okHttpClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .proxy(YouTube.streamProxy)
+            .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+            .build()
+    }
+
     /**
      * Processes a completed download:
      * 1. Fetches lyrics and saves them to the database (Global Lyrics).
@@ -44,11 +72,29 @@ constructor(
      */
     suspend fun processDownload(songId: String, exportToFile: Boolean) = withContext(Dispatchers.IO) {
         try {
-            Timber.tag("DownloadExporter").e("Starting processDownload for songId: $songId, exportToFile: $exportToFile")
-            val isVideo = songId.endsWith("_video")
-            val originalSongId = if (isVideo) songId.removeSuffix("_video") else songId
-            val song = database.getSongById(originalSongId) ?: return@withContext
-            
+            Timber.tag(TAG).d("Starting processDownload for songId: $songId, exportToFile: $exportToFile")
+            val isVideo = false
+            val originalSongId = songId
+            // The DownloadManager.Listener callback that triggers this fires from
+            // DownloadUtil's async database.transaction { insert(...) } — that write can still be
+            // in flight when a download completes near-instantly (e.g. audio already sat in the
+            // player cache from prior playback), so the row may not be visible yet. Retry briefly
+            // instead of silently abandoning all lyrics/artwork/export post-processing for this song.
+            var songLookup = database.getSongById(originalSongId)
+            if (songLookup == null) {
+                Timber.tag(TAG).w("Song $originalSongId not found on first lookup, retrying...")
+                for (attempt in 0 until 3) {
+                    delay(300L * (attempt + 1))
+                    songLookup = database.getSongById(originalSongId)
+                    if (songLookup != null) break
+                }
+            }
+            if (songLookup == null) {
+                Timber.tag(TAG).e("Song $originalSongId still not found after retries, abandoning post-download processing")
+                return@withContext
+            }
+            val song = songLookup
+
             var lyricsFetched: String? = null
 
             // 1. Global Lyrics: Fetch and save to database (Only for audio!)
@@ -65,34 +111,147 @@ constructor(
                     }
                     lyricsFetched = lyricsResult
                     Timber.tag(TAG).d("Global lyrics saved to database for $originalSongId")
+
+                    // AI Lyrics Translation download / pre-fetch
+                    try {
+                        val prefs = context.dataStore.data.first()
+                        val translateEnabled = prefs[TranslateLyricsKey] ?: false
+                        if (translateEnabled) {
+                            val aiProvider = prefs[AiProviderKey] ?: "OpenRouter"
+                            val openRouterApiKey = prefs[OpenRouterApiKey] ?: ""
+                            val deeplApiKey = prefs[DeeplApiKey] ?: ""
+                            val apiKey = if (aiProvider == "DeepL") deeplApiKey else openRouterApiKey
+                            
+                            if (apiKey.isNotBlank()) {
+                                val openRouterBaseUrl = prefs[OpenRouterBaseUrlKey] ?: "https://openrouter.ai/api/v1/chat/completions"
+                                val openRouterModel = prefs[OpenRouterModelKey] ?: "mistralai/mistral-small-3.1-24b-instruct:free"
+                                val translateMode = prefs[TranslateModeKey] ?: "Literal"
+                                val translateLanguage = prefs[TranslateLanguageKey] ?: "en"
+
+                                val parsedLines = com.arturo254.opentune.lyrics.LyricsUtils.parseLyrics(lyricsResult)
+                                if (parsedLines.isNotEmpty()) {
+                                    val lyricsTextForCache = parsedLines.filter { it.text.isNotBlank() }.joinToString("\n") { it.text }
+                                    
+                                    val modesToPrefetch = mutableSetOf("Literal", "Emotional")
+                                    if (translateMode != "Literal" && translateMode != "Emotional") {
+                                        modesToPrefetch.add(translateMode)
+                                    }
+
+                                    for (mode in modesToPrefetch) {
+                                        val cacheKey = "${lyricsTextForCache.hashCode()}_${mode}_$translateLanguage"
+                                        val existingTranslation = database.getLyricsTranslation(cacheKey)
+                                        if (existingTranslation == null) {
+                                            Timber.tag(TAG).d("Pre-fetching AI lyrics translation ($mode) for $originalSongId")
+                                            try {
+                                                LyricsTranslationHelper.prefetchTranslation(
+                                                    lyrics = parsedLines,
+                                                    targetLanguage = translateLanguage,
+                                                    apiKey = openRouterApiKey,
+                                                    baseUrl = openRouterBaseUrl,
+                                                    model = openRouterModel,
+                                                    mode = mode,
+                                                    context = context,
+                                                    database = database,
+                                                    provider = aiProvider,
+                                                    deeplApiKey = deeplApiKey,
+                                                    deeplFormality = "default",
+                                                    customSystemPrompt = ""
+                                                )
+                                            } catch (e: Exception) {
+                                                Timber.tag(TAG).w(e, "Failed to pre-fetch translation ($mode) for $originalSongId")
+                                            }
+                                        } else {
+                                            Timber.tag(TAG).d("AI lyrics translation ($mode) already exists in cache for $originalSongId")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Timber.tag(TAG).w(e, "Failed to pre-fetch AI lyrics translation for $originalSongId")
+                    }
                 }
             }
 
             // 2. Always cache artwork locally for offline mini player display.
             if (!isVideo) {
                 val songEntity = song.song
-                songEntity.thumbnailUrl?.resize(512, 512)?.let { url ->
-                    try {
-                        val secureUrl = url.replace("http://", "https://")
-                        val connection = URL(secureUrl).openConnection().apply {
-                            setRequestProperty(
-                                "User-Agent",
-                                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-                            )
-                            connectTimeout = 10000
-                            readTimeout = 10000
+                val hash = songEntity.thumbnailUrl?.toArtworkHash()
+                if (hash != null) {
+                    val artworkDir = File(context.filesDir, "artwork").also { it.mkdirs() }
+                    val artworkFile = File(artworkDir, "$hash.jpg")
+                    if (!artworkFile.exists() || artworkFile.length() == 0L) {
+                        songEntity.thumbnailUrl?.resize(512, 512)?.let { url ->
+                            val bytes = getArtworkBytes(context, url)
+                            if (bytes != null) {
+                                try {
+                                    artworkFile.writeBytes(bytes)
+                                    Timber.tag(TAG).d("Artwork cached locally for offline use: ${artworkFile.absolutePath}")
+                                } catch (e: Exception) {
+                                    Timber.tag(TAG).w(e, "Failed to write artwork file locally for $originalSongId")
+                                }
+                            }
                         }
-                        val bytes = connection.getInputStream().use { it.readBytes() }
-                        val artworkDir = File(context.filesDir, "artwork").also { it.mkdirs() }
-                        val hash = songEntity.thumbnailUrl!!.toArtworkHash()
-                        val artworkFile = File(artworkDir, "$hash.jpg")
-                        artworkFile.writeBytes(bytes)
-                        Timber.tag(TAG).d("Artwork cached locally for offline use: ${artworkFile.absolutePath}")
-                    } catch (e: Exception) {
-                        Timber.tag(TAG).w(e, "Failed to cache artwork locally for $originalSongId")
                     }
                 }
             }
+
+            // 3. Download and cache the Canvas video file for offline playback
+            if (!isVideo) {
+                try {
+                    val localCanvasFile = File(context.filesDir, "canvas/$originalSongId.mp4")
+                    if (!localCanvasFile.exists() || localCanvasFile.length() == 0L) {
+                        val storefront = run {
+                            val country = Locale.getDefault().country
+                            if (country.length == 2) country.lowercase(Locale.ROOT) else "us"
+                        }
+                        val prefs = context.dataStore.data.first()
+                        val canvasActiveForSpotify = prefs[EnableSpotifyCanvasKey] == true
+                        val songEntity = song.song
+                        val artistName = song.artists.joinToString { it.name }.ifEmpty { "Unknown Artist" }
+                        
+                        val canvasArtwork = fetchCanvasArtworkForPlayback(
+                            songTitleRaw = songEntity.title,
+                            artistNameRaw = artistName,
+                            storefront = storefront,
+                            requireVertical = false,
+                            albumTitle = song.album?.title,
+                            durationSeconds = songEntity.duration.takeIf { it > 0 },
+                            spotifyCanvasEnabled = canvasActiveForSpotify
+                        )
+                        
+                        val canvasUrl = canvasArtwork?.preferredVerticalAnimationUrl ?: canvasArtwork?.preferredAnimationUrl
+                        if (!canvasUrl.isNullOrBlank()) {
+                            Timber.tag(TAG).d("Found canvas URL for offline pre-fetch: $canvasUrl")
+                            if (!canvasUrl.contains(".m3u8", ignoreCase = true)) {
+                                val request = okhttp3.Request.Builder()
+                                    .url(canvasUrl)
+                                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+                                    .build()
+                                okHttpClient.newCall(request).execute().use { response ->
+                                    if (response.isSuccessful) {
+                                        val body = response.body
+                                        if (body != null) {
+                                            localCanvasFile.parentFile?.mkdirs()
+                                            localCanvasFile.outputStream().use { output ->
+                                                body.byteStream().copyTo(output)
+                                            }
+                                            Timber.tag(TAG).d("Canvas downloaded successfully to ${localCanvasFile.absolutePath}")
+                                        }
+                                    } else {
+                                        Timber.tag(TAG).w("Failed to download canvas, response code: ${response.code}")
+                                    }
+                                }
+                            } else {
+                                Timber.tag(TAG).d("Canvas is HLS (.m3u8), skipping direct file download.")
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Timber.tag(TAG).w(e, "Failed to download canvas for $originalSongId")
+                }
+            }
+
 
             if (!exportToFile) return@withContext
 
@@ -129,6 +288,13 @@ constructor(
             
             val destFile = File(musicDir, "$baseName.$extension")
             val lrcFile = File(musicDir, "$baseName.lrc")
+            // Proper MediaStore MIME (audio/m4a is non-standard; m4a is an MP4 container).
+            val audioMime = when (extension) {
+                "m4a" -> "audio/mp4"
+                "webm" -> "audio/webm"
+                "mp4" -> if (isVideo) "video/mp4" else "audio/mp4"
+                else -> "audio/mpeg"
+            }
 
             val upstreamFactory = OkHttpDataSource.Factory(
                 OkHttpClient.Builder()
@@ -154,57 +320,60 @@ constructor(
                 .setKey(songId)
                 .build()
 
+            // Write to a PRIVATE temp file first, so we can embed ID3 tags + cover art
+            // BEFORE publishing. On Android Q+ the public file is a MediaStore content
+            // URI that jaudiotagger can't open by path — the old code tagged a raw public
+            // path that doesn't exist there, so exported files had no tags/cover at all.
+            val tempFile = File(context.cacheDir, "export_${System.currentTimeMillis()}.$extension")
             try {
                 dataSource.open(dataSpec)
-                
-                val outputStream = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                    val contentValues = android.content.ContentValues().apply {
-                        put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, destFile.name)
-                        put(android.provider.MediaStore.MediaColumns.MIME_TYPE, if (isVideo) "video/$extension" else "audio/$extension")
-                        put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_MUSIC + "/Dezzy")
-                    }
-                    val uri = context.contentResolver.insert(
-                        if (isVideo) android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI 
-                        else android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, 
-                        contentValues
-                    )
-                    if (uri != null) context.contentResolver.openOutputStream(uri) else FileOutputStream(destFile)
-                } else {
-                    FileOutputStream(destFile)
-                }
-                
-                outputStream?.use { output ->
+                FileOutputStream(tempFile).use { output ->
                     val buffer = ByteArray(8192)
                     var bytesRead: Int
                     while (dataSource.read(buffer, 0, buffer.size).also { bytesRead = it } != -1) {
                         output.write(buffer, 0, bytesRead)
                     }
                 }
-                
-                if (!isVideo) {
-                    var artworkBytes: ByteArray? = if (cachedArtworkFile.exists()) {
-                        cachedArtworkFile.readBytes()
-                    } else {
-                        null
-                    }
+                dataSource.close()
 
-                    if (artworkBytes == null) {
-                        songEntity.thumbnailUrl?.resize(1200, 1200)?.let { url ->
-                            try {
-                                val secureUrl = url.replace("http://", "https://")
-                                val connection = URL(secureUrl).openConnection().apply {
-                                    setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-                                    connectTimeout = 10000
-                                    readTimeout = 10000
-                                }
-                                artworkBytes = connection.getInputStream().use { it.readBytes() }
-                            } catch (e: Exception) {
-                                Timber.tag(TAG).w(e, "Failed to download artwork for ${songEntity.id}")
-                            }
+                // Resolve artwork once (embedded tag + sidecar .jpg).
+                var artworkBytes: ByteArray? = if (!isVideo && cachedArtworkFile.exists()) {
+                    cachedArtworkFile.readBytes().takeIf { it.isNotEmpty() }
+                } else null
+                if (!isVideo && artworkBytes == null) {
+                    songEntity.thumbnailUrl?.resize(1200, 1200)?.let { url ->
+                        artworkBytes = getArtworkBytes(context, url)
+                    }
+                }
+
+                // Embed tags + cover into the temp file before publishing.
+                if (!isVideo) tagFile(tempFile, song, artworkBytes)
+
+                // Publish the tagged file to the public Music/Dezzy folder.
+                val published: Boolean = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    val contentValues = android.content.ContentValues().apply {
+                        put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, "$baseName.$extension")
+                        put(android.provider.MediaStore.MediaColumns.MIME_TYPE, audioMime)
+                        put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_MUSIC + "/Dezzy")
+                    }
+                    val collection = if (isVideo)
+                        android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+                    else android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+                    val uri = context.contentResolver.insert(collection, contentValues)
+                    if (uri != null) {
+                        context.contentResolver.openOutputStream(uri)?.use { out ->
+                            tempFile.inputStream().use { it.copyTo(out) }
                         }
-                    }
+                        true
+                    } else false
+                } else {
+                    if (!musicDir.exists()) musicDir.mkdirs()
+                    tempFile.copyTo(destFile, overwrite = true)
+                    true
+                }
 
-                    // Save .jpg cover file
+                if (!isVideo && published) {
+                    // Save .jpg cover sidecar
                     artworkBytes?.let { bytes ->
                         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
                             val values = android.content.ContentValues().apply {
@@ -216,13 +385,9 @@ constructor(
                                 context.contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
                             }
                         } else {
-                            val coverFile = File(musicDir, "$baseName.jpg")
-                            coverFile.writeBytes(bytes)
+                            File(musicDir, "$baseName.jpg").writeBytes(bytes)
                         }
                     }
-
-                    // Set ID3 Tags and Embed Cover Art
-                    tagFile(destFile, song, artworkBytes)
 
                     // Save .lrc file
                     lyricsFetched?.let { lyrics ->
@@ -237,7 +402,6 @@ constructor(
                                     context.contentResolver.openOutputStream(uri)?.use { it.write(lyrics.toByteArray()) }
                                 }
                             } catch (e: Exception) {
-                                // Fallback to direct file write if MediaStore fails
                                 lrcFile.writeText(lyrics)
                             }
                         } else {
@@ -245,23 +409,22 @@ constructor(
                         }
                     }
                 }
-                
-                Timber.tag(TAG).i("File $songId exported successfully to ${destFile.absolutePath}")
+
+                Timber.tag(TAG).i("File $songId exported successfully (published=$published)")
                 withContext(Dispatchers.Main) {
                     android.widget.Toast.makeText(context, "Descarga guardada en Música/Dezzy", android.widget.Toast.LENGTH_SHORT).show()
                 }
 
-                val filesToScan = mutableListOf(destFile.absolutePath)
-                if (!isVideo) {
-                    File(musicDir, "$baseName.jpg").takeIf { it.exists() }?.let { filesToScan.add(it.absolutePath) }
-                    lrcFile.takeIf { it.exists() }?.let { filesToScan.add(it.absolutePath) }
-                }
-                MediaScannerConnection.scanFile(
-                    context,
-                    filesToScan.toTypedArray(),
-                    null
-                ) { path, uri ->
-                    Timber.tag(TAG).d("MediaScanner indexed: $path -> $uri")
+                // Pre-Q writes go straight to the filesystem, so a media scan surfaces them.
+                if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q) {
+                    val filesToScan = mutableListOf(destFile.absolutePath)
+                    if (!isVideo) {
+                        File(musicDir, "$baseName.jpg").takeIf { it.exists() }?.let { filesToScan.add(it.absolutePath) }
+                        lrcFile.takeIf { it.exists() }?.let { filesToScan.add(it.absolutePath) }
+                    }
+                    MediaScannerConnection.scanFile(context, filesToScan.toTypedArray(), null) { path, uri ->
+                        Timber.tag(TAG).d("MediaScanner indexed: $path -> $uri")
+                    }
                 }
 
             } catch (e: Exception) {
@@ -271,7 +434,8 @@ constructor(
                 }
                 reportException(e)
             } finally {
-                dataSource.close()
+                runCatching { dataSource.close() }
+                runCatching { if (tempFile.exists()) tempFile.delete() }
             }
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "Failed to process download $songId")
@@ -315,6 +479,44 @@ constructor(
             Timber.tag(TAG).e(e, "Failed to tag file for ${song.id} (likely unsupported format for tagging)")
             reportException(e)
         }
+    }
+
+    private suspend fun getArtworkBytes(context: Context, url: String): ByteArray? {
+        try {
+            val secureUrl = url.replace("http://", "https://")
+            
+            // 1. Try to fetch from Coil's disk cache
+            val imageLoader = context.imageLoader
+            val diskCache = imageLoader.diskCache
+            if (diskCache != null) {
+                val snapshot = diskCache.openSnapshot(secureUrl) ?: diskCache.openSnapshot(url)
+                snapshot?.use { snap ->
+                    val bytes = snap.data.toFile().readBytes()
+                    if (bytes.isNotEmpty()) {
+                        Timber.tag(TAG).d("Artwork loaded from Coil disk cache: $url")
+                        return bytes
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Timber.tag(TAG).d("Could not load artwork from Coil disk cache: ${e.message}")
+        }
+
+        // 2. Fallback to network request via shared OkHttpClient (respects proxy, consistent with rest of app)
+        try {
+            val secureUrl = url.replace("http://", "https://")
+            val request = okhttp3.Request.Builder()
+                .url(secureUrl)
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+                .build()
+            val bytes = okHttpClient.newCall(request).execute().use { response ->
+                response.body?.bytes()
+            }
+            if (bytes != null && bytes.isNotEmpty()) return bytes
+        } catch (e: Exception) {
+            Timber.tag(TAG).w(e, "Failed to download artwork from network: $url")
+        }
+        return null
     }
 
     companion object {

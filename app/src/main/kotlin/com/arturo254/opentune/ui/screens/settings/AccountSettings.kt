@@ -272,10 +272,28 @@ fun AccountSettings(
 
                 SettingsClickableItem(
                     icon = painterResource(R.drawable.login), // Or an appropriate icon
-                    title = "Iniciar sesión con Spotify", // Or a string resource if available
+                    title = "Spotify",
                     onClick = {
                         onClose()
-                        navController.navigate("settings/spotify/login")
+                        // Routes through the Spotify settings hub (shows current login state and
+                        // exposes it there was previously no way to reach after logging in) rather
+                        // than straight to the login WebView.
+                        navController.navigate("settings/spotify")
+                    }
+                )
+
+                HorizontalDivider(
+                    modifier = Modifier.padding(start = 56.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                )
+
+                SettingsClickableItem(
+                    icon = painterResource(R.drawable.download),
+                    title = "Descarga lossless",
+                    subtitle = "FLAC / Hi-Res",
+                    onClick = {
+                        onClose()
+                        navController.navigate("settings/lossless")
                     }
                 )
             }

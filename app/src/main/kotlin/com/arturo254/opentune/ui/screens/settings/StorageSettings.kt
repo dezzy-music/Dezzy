@@ -52,6 +52,7 @@ import com.arturo254.opentune.constants.MaxCanvasCacheSizeKey
 import com.arturo254.opentune.constants.MaxImageCacheSizeKey
 import com.arturo254.opentune.constants.MaxSongCacheSizeKey
 import com.arturo254.opentune.constants.MaxParallelDownloadsKey
+import com.arturo254.opentune.constants.ExportDownloadsToMusicKey
 import com.arturo254.opentune.constants.SmartTrimmerKey
 import com.arturo254.opentune.extensions.directorySizeBytes
 import com.arturo254.opentune.extensions.tryOrNull
@@ -91,24 +92,32 @@ fun StorageSettings(
     )
     val (maxImageCacheSize, onMaxImageCacheSizeChange) = rememberPreference(
         key = MaxImageCacheSizeKey,
-        defaultValue = 512
+        defaultValue = -1
     )
     val (maxSongCacheSize, onMaxSongCacheSizeChange) = rememberPreference(
         key = MaxSongCacheSizeKey,
-        defaultValue = 1024
+        defaultValue = -1
     )
     val (maxCanvasCacheSize, onMaxCanvasCacheSizeChange) = rememberPreference(
         key = MaxCanvasCacheSizeKey,
-        defaultValue = 256,
+        defaultValue = -1,
     )
     val (maxParallelDownloads, onMaxParallelDownloadsChange) = rememberPreference(
         key = MaxParallelDownloadsKey,
         defaultValue = 1,
     )
+    val (exportDownloadsToMusic, onExportDownloadsToMusicChange) = rememberPreference(
+        key = ExportDownloadsToMusicKey,
+        defaultValue = false,
+    )
     var clearCacheDialog by remember { mutableStateOf(false) }
     var clearDownloads by remember { mutableStateOf(false) }
     var clearImageCacheDialog by remember { mutableStateOf(false) }
     var clearCanvasCacheDialog by remember { mutableStateOf(false) }
+
+    var pendingTrimSongCache by remember { mutableStateOf<Int?>(null) }
+    var pendingTrimImageCache by remember { mutableStateOf<Int?>(null) }
+    var pendingTrimCanvasCache by remember { mutableStateOf<Int?>(null) }
 
     var imageCacheSize by remember {
         mutableStateOf(imageDiskCache.size)
@@ -238,6 +247,13 @@ fun StorageSettings(
                     valueText = { "$it" },
                     onValueSelected = onMaxParallelDownloadsChange,
                 )
+                SwitchPreference(
+                    title = { Text(stringResource(R.string.export_downloads_to_music)) },
+                    description = stringResource(R.string.export_downloads_to_music_desc),
+                    icon = { Icon(painterResource(R.drawable.ic_download), null) },
+                    checked = exportDownloadsToMusic,
+                    onCheckedChange = onExportDownloadsToMusicChange,
+                )
                 PreferenceEntry(
                     title = { Text(stringResource(R.string.clear_all_downloads)) },
                     onClick = { clearDownloads = true },
@@ -286,7 +302,13 @@ fun StorageSettings(
                             else -> formatFileSize(it * 1024 * 1024L)
                         }
                     },
-                    onValueSelected = onMaxSongCacheSizeChange,
+                    onValueSelected = { newLimit ->
+                        if (newLimit != -1 && (playerCacheSize / (1024 * 1024L)) > newLimit) {
+                            pendingTrimSongCache = newLimit
+                        } else {
+                            onMaxSongCacheSizeChange(newLimit)
+                        }
+                    },
                 )
                 PreferenceEntry(
                     title = { Text(stringResource(R.string.clear_song_cache)) },
@@ -314,6 +336,21 @@ fun StorageSettings(
             )
         }
 
+        if (pendingTrimSongCache != null) {
+            ActionPromptDialog(
+                title = stringResource(R.string.max_cache_size),
+                onDismiss = { pendingTrimSongCache = null },
+                onConfirm = {
+                    onMaxSongCacheSizeChange(pendingTrimSongCache!!)
+                    pendingTrimSongCache = null
+                },
+                onCancel = { pendingTrimSongCache = null },
+                content = {
+                    Text(text = "Se eliminarán los elementos necesarios para igualar el límite seleccionado.")
+                }
+            )
+        }
+
         // --- Section: Image cache ---
         CacheCard(
             icon = R.drawable.image,
@@ -328,14 +365,21 @@ fun StorageSettings(
                 ListPreference(
                     title = { Text(stringResource(R.string.max_cache_size)) },
                     selectedValue = maxImageCacheSize,
-                    values = listOf(0, 128, 256, 512, 1024, 2048, 4096, 8192),
+                    values = listOf(0, 128, 256, 512, 1024, 2048, 4096, 8192, -1),
                     valueText = {
                         when (it) {
                             0 -> stringResource(R.string.disable)
+                            -1 -> stringResource(R.string.unlimited)
                             else -> formatFileSize(it * 1024 * 1024L)
                         }
                     },
-                    onValueSelected = onMaxImageCacheSizeChange,
+                    onValueSelected = { newLimit ->
+                        if (newLimit != -1 && (imageCacheSize / (1024 * 1024L)) > newLimit) {
+                            pendingTrimImageCache = newLimit
+                        } else {
+                            onMaxImageCacheSizeChange(newLimit)
+                        }
+                    },
                 )
                 PreferenceEntry(
                     title = { Text(stringResource(R.string.clear_image_cache)) },
@@ -362,6 +406,21 @@ fun StorageSettings(
             )
         }
 
+        if (pendingTrimImageCache != null) {
+            ActionPromptDialog(
+                title = stringResource(R.string.max_cache_size),
+                onDismiss = { pendingTrimImageCache = null },
+                onConfirm = {
+                    onMaxImageCacheSizeChange(pendingTrimImageCache!!)
+                    pendingTrimImageCache = null
+                },
+                onCancel = { pendingTrimImageCache = null },
+                content = {
+                    Text(text = "Se eliminarán los elementos necesarios para igualar el límite seleccionado.")
+                }
+            )
+        }
+
         // --- Section: Canvas cache ---
         CacheCard(
             icon = R.drawable.motion_photos_on,
@@ -380,14 +439,21 @@ fun StorageSettings(
                 ListPreference(
                     title = { Text(stringResource(R.string.max_cache_size)) },
                     selectedValue = maxCanvasCacheSize,
-                    values = listOf(0, 64, 128, 256, 512, 1024),
+                    values = listOf(0, 64, 128, 256, 512, 1024, -1),
                     valueText = {
                         when (it) {
                             0 -> stringResource(R.string.disable)
+                            -1 -> stringResource(R.string.unlimited)
                             else -> stringResource(R.string.canvas_cache_items, it)
                         }
                     },
-                    onValueSelected = onMaxCanvasCacheSizeChange,
+                    onValueSelected = { newLimit ->
+                        if (newLimit != -1 && canvasCacheSize > newLimit) {
+                            pendingTrimCanvasCache = newLimit
+                        } else {
+                            onMaxCanvasCacheSizeChange(newLimit)
+                        }
+                    },
                 )
                 PreferenceEntry(
                     title = { Text(stringResource(R.string.clear_canvas_cache)) },
@@ -407,6 +473,21 @@ fun StorageSettings(
                 onCancel = { clearCanvasCacheDialog = false },
                 content = {
                     Text(text = stringResource(R.string.clear_canvas_cache_dialog))
+                }
+            )
+        }
+
+        if (pendingTrimCanvasCache != null) {
+            ActionPromptDialog(
+                title = stringResource(R.string.max_cache_size),
+                onDismiss = { pendingTrimCanvasCache = null },
+                onConfirm = {
+                    onMaxCanvasCacheSizeChange(pendingTrimCanvasCache!!)
+                    pendingTrimCanvasCache = null
+                },
+                onCancel = { pendingTrimCanvasCache = null },
+                content = {
+                    Text(text = "Se eliminarán los elementos necesarios para igualar el límite seleccionado.")
                 }
             )
         }

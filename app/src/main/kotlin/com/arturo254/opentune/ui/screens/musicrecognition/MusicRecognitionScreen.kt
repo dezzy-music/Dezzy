@@ -121,11 +121,24 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.arturo254.opentune.LocalPlayerConnection
 import com.arturo254.opentune.R
+import com.arturo254.opentune.innertube.YouTube
+import com.arturo254.opentune.innertube.models.SongItem
+import com.arturo254.opentune.models.toMediaMetadata
+import com.arturo254.opentune.playback.PlayerConnection
+import com.arturo254.opentune.playback.queues.YouTubeQueue
 import com.arturo254.opentune.shazamkit.Shazam
 import com.arturo254.opentune.shazamkit.ShazamSignatureGenerator
 import com.arturo254.opentune.shazamkit.models.RecognitionResult
 import com.arturo254.opentune.ui.utils.appBarScrollBehavior
+import android.widget.Toast
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.style.TextAlign
 
 @SuppressLint("LocalContextGetResourceValueCall", "UnrememberedGetBackStackEntry")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -136,9 +149,33 @@ fun MusicRecognitionScreen(
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
+    val playerConnection = LocalPlayerConnection.current
 
     var state by remember { mutableStateOf<MusicRecognitionState>(MusicRecognitionState.Ready) }
     var recognitionJob by remember { mutableStateOf<Job?>(null) }
+    // Historial de reconocimientos: se lee reactivo para que aparezca al instante
+    // la coincidencia que se acaba de guardar.
+    val history by RecognitionHistory.flow(context).collectAsStateWithLifecycle(initialValue = emptyList())
+
+    // Resuelve la coincidencia en YouTube Music y la reproduce en Dezzy. Si no se
+    // encuentra, cae a la búsqueda para que el usuario no quede sin nada.
+    fun playInApp(title: String, artist: String) {
+        val connection = playerConnection
+        if (connection == null) {
+            navController.navigate("search/${Uri.encode("$title $artist".trim())}")
+            return
+        }
+        scope.launch {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            val song = resolveSong(title, artist)
+            if (song != null) {
+                connection.playQueue(YouTubeQueue.radio(song.toMediaMetadata()))
+            } else {
+                Toast.makeText(context, context.getString(R.string.music_recognition_not_on_youtube), Toast.LENGTH_SHORT).show()
+                navController.navigate("search/${Uri.encode("$title $artist".trim())}")
+            }
+        }
+    }
     val backStackEntry =
         remember(navController) { navController.getBackStackEntry(MusicRecognitionRoute) }
     val autoStartRequestId by backStackEntry.savedStateHandle
@@ -208,6 +245,13 @@ fun MusicRecognitionScreen(
         if (autoStartRequestId == 0L) return@LaunchedEffect
         backStackEntry.savedStateHandle[MusicRecognitionAutoStartRequestKey] = 0L
         startOrRequestPermission()
+    }
+
+    // Cada coincidencia nueva se archiva en el historial (una sola vez por
+    // resultado, de ahí la clave sobre el trackId).
+    val successResult = (state as? MusicRecognitionState.Success)?.result
+    LaunchedEffect(successResult?.trackId) {
+        successResult?.let { RecognitionHistory.add(context, it) }
     }
 
     val scrollBehavior = appBarScrollBehavior()
@@ -310,17 +354,20 @@ fun MusicRecognitionScreen(
                             ResultFirstSheet(
                                 result = target.result,
                                 isWide = useWideContent,
+                                onPlay = { playInApp(target.result.title, target.result.artist) },
                                 onSearch = {
                                     val query =
                                         "${target.result.title} ${target.result.artist}".trim()
                                     navController.navigate("search/${Uri.encode(query)}")
                                 },
+                                onShare = { shareRecognition(context, target.result) },
                                 onListenAgain = { startOrRequestPermission() },
                             )
                         }
                         else -> {
                             RecognitionListenPane(
                                 state = target,
+                                history = history,
                                 onStart = {
                                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     startOrRequestPermission()
@@ -329,6 +376,8 @@ fun MusicRecognitionScreen(
                                 onRequestPermission = {
                                     requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                                 },
+                                onHistoryPlay = { entry -> playInApp(entry.title, entry.artist) },
+                                onHistoryClear = { scope.launch { RecognitionHistory.clear(context) } },
                             )
                         }
                     }
@@ -343,9 +392,12 @@ fun MusicRecognitionScreen(
 @Composable
 private fun RecognitionListenPane(
     state: MusicRecognitionState,
+    history: List<RecognitionEntry>,
     onStart: () -> Unit,
     onCancel: () -> Unit,
     onRequestPermission: () -> Unit,
+    onHistoryPlay: (RecognitionEntry) -> Unit,
+    onHistoryClear: () -> Unit,
 ) {
     val isListening = state is MusicRecognitionState.Listening
     val isProcessing = state is MusicRecognitionState.Processing
@@ -451,6 +503,87 @@ private fun RecognitionListenPane(
                 Text(stringResource(R.string.cancel))
             }
         }
+
+        // Historial: solo cuando no está trabajando, para no distraer del orbe.
+        AnimatedVisibility(
+            visible = !isBusy && state is MusicRecognitionState.Ready && history.isNotEmpty(),
+            enter = fadeIn(tween(180)),
+            exit = fadeOut(tween(120)),
+        ) {
+            RecognitionHistorySection(
+                history = history,
+                onPlay = onHistoryPlay,
+                onClear = onHistoryClear,
+            )
+        }
+    }
+}
+
+/** Carrusel de reconocimientos recientes; tocar uno lo reproduce en Dezzy. */
+@Composable
+private fun RecognitionHistorySection(
+    history: List<RecognitionEntry>,
+    onPlay: (RecognitionEntry) -> Unit,
+    onClear: () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth().padding(top = 28.dp)) {
+        HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHighest)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.music_recognition_recent),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = onClear, shapes = ButtonDefaults.shapes()) {
+                Text(stringResource(R.string.clear))
+            }
+        }
+        LazyRow(
+            contentPadding = PaddingValues(vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(history, key = { "${it.title}_${it.artist}_${it.recognizedAt}" }) { entry ->
+                RecognitionHistoryCard(entry = entry, onClick = { onPlay(entry) })
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecognitionHistoryCard(entry: RecognitionEntry, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .width(112.dp)
+            .clip(MaterialTheme.shapes.large)
+            .clickable(onClick = onClick),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        CoverArt(coverUrl = entry.coverUrl, modifier = Modifier.size(112.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = entry.title,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text(
+            text = entry.artist,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 
@@ -539,6 +672,37 @@ private suspend fun runRecognitionFlow(
             }
         },
     )
+}
+
+/**
+ * Busca la coincidencia en YouTube Music (filtro de canciones) y devuelve la
+ * primera pista, o null si no hay red o no aparece. Se usa tanto para reproducir
+ * el resultado como para reproducir una entrada del historial.
+ */
+private suspend fun resolveSong(title: String, artist: String): SongItem? =
+    withContext(Dispatchers.IO) {
+        runCatching {
+            YouTube.search("$title $artist".trim(), YouTube.SearchFilter.FILTER_SONG)
+                .getOrNull()
+                ?.items
+                ?.filterIsInstance<SongItem>()
+                ?.firstOrNull()
+        }.getOrNull()
+    }
+
+/** Comparte el resultado por el selector del sistema (enlace de Shazam si lo hay). */
+private fun shareRecognition(context: android.content.Context, result: RecognitionResult) {
+    val text = buildString {
+        append(result.title)
+        append(" — ")
+        append(result.artist)
+        result.shazamUrl?.takeIf { it.isNotBlank() }?.let { append("\n").append(it) }
+    }
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, text)
+    }
+    context.startActivity(Intent.createChooser(intent, context.getString(R.string.share)))
 }
 
 private fun buildMetadata(result: RecognitionResult): String {
@@ -642,7 +806,9 @@ private fun IdleHeader() {
 private fun ResultFirstSheet(
     result: RecognitionResult,
     isWide: Boolean,
+    onPlay: () -> Unit,
     onSearch: () -> Unit,
+    onShare: () -> Unit,
     onListenAgain: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -751,7 +917,9 @@ private fun ResultFirstSheet(
         Spacer(modifier = Modifier.height(14.dp))
 
         SuccessActions(
+            onPlay = onPlay,
             onSearch = onSearch,
+            onShare = onShare,
             onListenAgain = onListenAgain,
         )
     }
@@ -1066,68 +1234,96 @@ private fun FailureCard(
 
 @Composable
 private fun SuccessActions(
+    onPlay: () -> Unit,
     onSearch: () -> Unit,
+    onShare: () -> Unit,
     onListenAgain: () -> Unit,
 ) {
-    Row(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        ToggleButton(
-            checked = false,
-            onCheckedChange = { onListenAgain() },
+        // Acción principal: reproducir la coincidencia en Dezzy.
+        Button(
+            onClick = onPlay,
             modifier = Modifier
-                .weight(1f)
-                .heightIn(min = 48.dp),
-            shapes = ButtonGroupDefaults.connectedLeadingButtonShapes(),
-            colors = ToggleButtonDefaults.toggleButtonColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                checkedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                checkedContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            ),
+                .fillMaxWidth()
+                .heightIn(min = 52.dp),
+            shapes = ButtonDefaults.shapes(),
         ) {
             Icon(
-                painter = painterResource(R.drawable.replay),
+                painter = painterResource(R.drawable.play),
                 contentDescription = null,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(20.dp),
             )
             Spacer(modifier = Modifier.width(10.dp))
             Text(
-                text = stringResource(R.string.music_recognition_listen_again),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                softWrap = false,
+                text = stringResource(R.string.music_recognition_play_in_app),
+                fontWeight = FontWeight.SemiBold,
             )
         }
 
-        ToggleButton(
-            checked = false,
-            onCheckedChange = { onSearch() },
-            modifier = Modifier
-                .weight(1f)
-                .heightIn(min = 48.dp),
-            colors = ToggleButtonDefaults.toggleButtonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                checkedContainerColor = MaterialTheme.colorScheme.primary,
-                checkedContentColor = MaterialTheme.colorScheme.onPrimary,
-            ),
-            shapes = ButtonGroupDefaults.connectedTrailingButtonShapes(),
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
         ) {
-            Icon(
-                painter = painterResource(R.drawable.search),
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
+            SecondaryAction(
+                iconRes = R.drawable.replay,
+                label = stringResource(R.string.music_recognition_listen_again),
+                onClick = onListenAgain,
+                modifier = Modifier.weight(1f),
+                shapes = ButtonGroupDefaults.connectedLeadingButtonShapes(),
             )
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = stringResource(R.string.search),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                softWrap = false,
+            SecondaryAction(
+                iconRes = R.drawable.share,
+                label = stringResource(R.string.share),
+                onClick = onShare,
+                modifier = Modifier.weight(1f),
+                shapes = ButtonGroupDefaults.connectedMiddleButtonShapes(),
+            )
+            SecondaryAction(
+                iconRes = R.drawable.search,
+                label = stringResource(R.string.search),
+                onClick = onSearch,
+                modifier = Modifier.weight(1f),
+                shapes = ButtonGroupDefaults.connectedTrailingButtonShapes(),
             )
         }
+    }
+}
+
+@Composable
+private fun SecondaryAction(
+    iconRes: Int,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    shapes: androidx.compose.material3.ToggleButtonShapes,
+) {
+    ToggleButton(
+        checked = false,
+        onCheckedChange = { onClick() },
+        modifier = modifier.heightIn(min = 48.dp),
+        shapes = shapes,
+        colors = ToggleButtonDefaults.toggleButtonColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            checkedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+            checkedContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        ),
+    ) {
+        Icon(
+            painter = painterResource(iconRes),
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = label,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            softWrap = false,
+        )
     }
 }
 

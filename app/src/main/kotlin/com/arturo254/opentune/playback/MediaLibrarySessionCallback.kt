@@ -62,6 +62,31 @@ constructor(
     var toggleLike: () -> Unit = {}
     var toggleStartRadio: () -> Unit = {}
     var toggleLibrary: () -> Unit = {}
+    var onPlaybackResumptionHandler: (suspend (MediaSession) -> MediaSession.MediaItemsWithStartPosition)? = null
+
+    override fun onPlaybackResumption(
+        mediaSession: MediaSession,
+        controller: MediaSession.ControllerInfo,
+    ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+        val handler = onPlaybackResumptionHandler
+        return if (handler != null) {
+            scope.future {
+                handler.invoke(mediaSession)
+            }
+        } else {
+            val player = mediaSession.player
+            val items = (0 until player.mediaItemCount).map { player.getMediaItemAt(it) }
+            val index = player.currentMediaItemIndex.coerceIn(0, (items.size - 1).coerceAtLeast(0))
+            val position = player.currentPosition.coerceAtLeast(0L)
+            Futures.immediateFuture(
+                MediaSession.MediaItemsWithStartPosition(
+                    items,
+                    index,
+                    position,
+                )
+            )
+        }
+    }
 
     private fun browsableExtras(
         browsableHint: Int = CONTENT_STYLE_GRID_ITEM,

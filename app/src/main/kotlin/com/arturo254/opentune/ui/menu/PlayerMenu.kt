@@ -105,6 +105,8 @@ import com.arturo254.opentune.constants.EqualizerBandLevelsMbKey
 import com.arturo254.opentune.constants.EqualizerBassBoostEnabledKey
 import com.arturo254.opentune.constants.EqualizerBassBoostStrengthKey
 import com.arturo254.opentune.constants.EqualizerCustomProfilesJsonKey
+import com.arturo254.opentune.constants.EqualizerAutoGenreKey
+import com.arturo254.opentune.constants.EqualizerDetectedGenreKey
 import com.arturo254.opentune.constants.EqualizerEnabledKey
 import com.arturo254.opentune.constants.EqualizerOutputGainEnabledKey
 import com.arturo254.opentune.constants.EqualizerOutputGainMbKey
@@ -116,6 +118,7 @@ import com.arturo254.opentune.models.MediaMetadata
 import com.arturo254.opentune.playback.EqProfile
 import com.arturo254.opentune.playback.EqProfilesPayload
 import com.arturo254.opentune.playback.EqualizerJson
+import com.arturo254.opentune.utils.GenreClassifier
 import com.arturo254.opentune.playback.ExoDownloadService
 import com.arturo254.opentune.ui.component.BottomSheetState
 import com.arturo254.opentune.ui.component.ListDialog
@@ -1061,6 +1064,8 @@ fun EqualizerDialog(onDismiss: () -> Unit, openSystemEqualizer: () -> Unit) {
     val (virtualizerEnabled, setVirtualizerEnabled) = rememberPreference(EqualizerVirtualizerEnabledKey, defaultValue = false)
     val (virtualizerStrength, setVirtualizerStrength) = rememberPreference(EqualizerVirtualizerStrengthKey, defaultValue = 0)
     val (customProfilesJson, setCustomProfilesJson) = rememberPreference(EqualizerCustomProfilesJsonKey, defaultValue = "")
+    val (autoGenre, setAutoGenre) = rememberPreference(EqualizerAutoGenreKey, defaultValue = false)
+    val (detectedGenre) = rememberPreference(EqualizerDetectedGenreKey, defaultValue = "")
 
     val caps = eqCapabilities
     val bandCount = caps?.bandCount ?: 0
@@ -1225,6 +1230,47 @@ fun EqualizerDialog(onDismiss: () -> Unit, openSystemEqualizer: () -> Unit) {
                                 FilterChip(selected = selectedProfileId == "system:$index", onClick = { playerConnection.service.applySystemEqPreset(index); setSelectedProfileId("system:$index") }, label = { Text(text = name, maxLines = 1, overflow = TextOverflow.Ellipsis) }, colors = FilterChipDefaults.filterChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh), border = null)
                                 Spacer(Modifier.width(8.dp))
                             }
+                        }
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+
+                    // ── Ajuste automático por género ──
+                    EqSection(title = stringResource(R.string.eq_auto_genre)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.eq_auto_genre_hint),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                if (autoGenre && detectedGenre.isNotBlank()) {
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(
+                                        text = stringResource(
+                                            R.string.eq_auto_genre_detected,
+                                            GenreClassifier.displayName(detectedGenre),
+                                        ),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Switch(
+                                checked = autoGenre,
+                                onCheckedChange = { setAutoGenre(it); if (it) setEqEnabled(true) },
+                                thumbContent = {
+                                    Icon(
+                                        painter = painterResource(id = if (autoGenre) R.drawable.check else R.drawable.close),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(SwitchDefaults.IconSize),
+                                    )
+                                },
+                            )
                         }
                     }
 

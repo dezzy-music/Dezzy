@@ -42,15 +42,16 @@ object SpotifyTokenManager {
         val settings = dataStore.data.first()
         val accessToken = settings[SpotifyAccessTokenKey] ?: ""
         val expiry = settings[SpotifyTokenExpiryKey] ?: 0L
+        val spDc = settings[SpotifySpDcKey] ?: ""
 
-        if (accessToken.isEmpty()) {
-            Timber.d("SpotifyTokenManager: no token stored")
-            return false
-        }
-
-        if (System.currentTimeMillis() < expiry) {
+        if (accessToken.isNotEmpty() && System.currentTimeMillis() < expiry) {
             Spotify.accessToken = accessToken
             return true
+        }
+
+        if (spDc.isEmpty()) {
+            Timber.w("SpotifyTokenManager: token expired or empty, and no sp_dc cookie available")
+            return false
         }
 
         return refreshMutex.withLock {
@@ -65,16 +66,16 @@ object SpotifyTokenManager {
                 return@withLock true
             }
 
-            val spDc = freshSettings[SpotifySpDcKey] ?: ""
-            val spKey = freshSettings[SpotifySpKeyKey] ?: ""
-            if (spDc.isEmpty()) {
-                Timber.w("SpotifyTokenManager: no sp_dc cookie available")
+            val freshSpDc = freshSettings[SpotifySpDcKey] ?: ""
+            val freshSpKey = freshSettings[SpotifySpKeyKey] ?: ""
+            if (freshSpDc.isEmpty()) {
+                Timber.w("SpotifyTokenManager: no sp_dc cookie available under lock")
                 return@withLock false
             }
 
-            Timber.d("SpotifyTokenManager: token expired, refreshing via cookie...")
+            Timber.d("SpotifyTokenManager: token empty or expired, fetching/refreshing via cookie...")
 
-            SpotifyAuth.fetchAccessToken(spDc, spKey).fold(
+            SpotifyAuth.fetchAccessToken(freshSpDc, freshSpKey).fold(
                 onSuccess = { token ->
                     Spotify.accessToken = token.accessToken
                     dataStore.edit { prefs ->

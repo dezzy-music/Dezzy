@@ -15,6 +15,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -36,6 +37,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -385,6 +388,7 @@ fun AlbumScreen(
     // Estados para descarga de carátula
     var downloadingCover by remember { mutableStateOf(false) }
     var showQualityDialog by remember { mutableStateOf(false) }
+    var showShareSheet by remember { mutableStateOf(false) }
 
     // Extract gradient colors from album cover
     LaunchedEffect(albumWithSongs?.album?.thumbnailUrl) {
@@ -811,6 +815,9 @@ fun AlbumScreen(
                                 }
                             }
 
+                            val playBtnContainer = MaterialTheme.colorScheme.primary
+                            val playBtnContent = if (playBtnContainer.luminance() > 0.5f) Color.Black else Color.White
+
                             // Play Button
                             Button(
                                 onClick = {
@@ -819,16 +826,33 @@ fun AlbumScreen(
                                         LocalAlbumRadio(albumWithSongs),
                                     )
                                 },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = playBtnContainer,
+                                    contentColor = playBtnContent,
+                                ),
                                 shape = RoundedCornerShape(24.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp),
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(48.dp)
                             ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.play),
-                                    contentDescription = stringResource(R.string.play),
-                                    modifier = Modifier.size(24.dp)
-                                )
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.play),
+                                        contentDescription = stringResource(R.string.play),
+                                        tint = playBtnContent,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.play),
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = playBtnContent,
+                                        maxLines = 1
+                                    )
+                                }
                             }
 
                             // Shuffle Button
@@ -839,16 +863,33 @@ fun AlbumScreen(
                                         LocalAlbumRadio(albumWithSongs.copy(songs = albumWithSongs.songs.shuffled())),
                                     )
                                 },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = playBtnContainer,
+                                    contentColor = playBtnContent,
+                                ),
                                 shape = RoundedCornerShape(24.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp),
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(48.dp)
                             ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.shuffle),
-                                    contentDescription = stringResource(R.string.shuffle),
-                                    modifier = Modifier.size(24.dp)
-                                )
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.shuffle),
+                                        contentDescription = stringResource(R.string.shuffle),
+                                        tint = playBtnContent,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.shuffle),
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = playBtnContent,
+                                        maxLines = 1
+                                    )
+                                }
                             }
 
                             // Download Button
@@ -926,6 +967,26 @@ fun AlbumScreen(
                                             )
                                         }
                                     }
+                                }
+                            }
+
+                            // Share Album Button
+                            Surface(
+                                onClick = { showShareSheet = true },
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                modifier = Modifier.size(48.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.share),
+                                        contentDescription = "Compartir álbum",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(24.dp)
+                                    )
                                 }
                             }
 
@@ -1355,6 +1416,20 @@ fun AlbumScreen(
                         }
                     }
                 }
+            )
+        }
+
+        if (showShareSheet && albumWithSongs != null) {
+            val album = albumWithSongs!!.album
+            val artistsText = albumWithSongs!!.artists.joinToString { it.name }
+            val albumShareUrl = "https://music.youtube.com/playlist?list=${album.playlistId ?: album.id}"
+            com.arturo254.opentune.ui.component.ShareBottomSheet(
+                title = album.title,
+                subtitle = artistsText,
+                thumbnailUrl = album.thumbnailUrl,
+                shareLink = albumShareUrl,
+                entity = com.arturo254.opentune.ui.component.ShareEntity.Album,
+                onDismiss = { showShareSheet = false }
             )
         }
     }

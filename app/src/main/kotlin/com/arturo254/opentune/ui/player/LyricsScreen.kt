@@ -68,6 +68,8 @@ import com.arturo254.opentune.LocalPlayerConnection
 import com.arturo254.opentune.R
 import com.arturo254.opentune.constants.PlayerBackgroundStyle
 import com.arturo254.opentune.constants.PlayerBackgroundStyleKey
+import com.arturo254.opentune.constants.PlayerDesignStyle
+import com.arturo254.opentune.constants.PlayerDesignStyleKey
 import com.arturo254.opentune.constants.SliderStyle
 import com.arturo254.opentune.constants.SliderStyleKey
 import com.arturo254.opentune.db.entities.LyricsEntity
@@ -107,6 +109,7 @@ fun LyricsScreen(
     navController: NavController,
     onBackClick: () -> Unit,
     lyricsSyncOffset: Int,
+    onCanvasClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
@@ -164,6 +167,7 @@ fun LyricsScreen(
     val isLoading = playbackState == STATE_BUFFERING || sliderPosition != null
 
     val playerBackground by rememberEnumPreference(PlayerBackgroundStyleKey, PlayerBackgroundStyle.DEFAULT)
+    val playerDesignStyle by rememberEnumPreference(PlayerDesignStyleKey, PlayerDesignStyle.V1)
     val (disableBlur) = rememberPreference(DisableBlurKey, true)
     val (blurRadius) = rememberPreference(BlurRadiusKey, 36f)
 
@@ -228,7 +232,8 @@ fun LyricsScreen(
         }
     }
 
-    val textBackgroundColor = when (playerBackground) {
+    val isPremiumPlayer = playerDesignStyle == PlayerDesignStyle.APPLE_MUSIC || playerDesignStyle == PlayerDesignStyle.LIVE_MESH
+    val textBackgroundColor = if (isPremiumPlayer) Color.White else when (playerBackground) {
         PlayerBackgroundStyle.DEFAULT -> MaterialTheme.colorScheme.onBackground
         PlayerBackgroundStyle.BLUR -> Color.White
         PlayerBackgroundStyle.GRADIENT -> Color.White
@@ -239,7 +244,7 @@ fun LyricsScreen(
         PlayerBackgroundStyle.CUSTOM -> Color.White
     }
 
-    val icBackgroundColor = when (playerBackground) {
+    val icBackgroundColor = if (isPremiumPlayer) Color.Black else when (playerBackground) {
         PlayerBackgroundStyle.DEFAULT -> MaterialTheme.colorScheme.surface
         PlayerBackgroundStyle.BLUR -> Color.Black
         PlayerBackgroundStyle.GRADIENT -> Color.Black
@@ -335,33 +340,54 @@ fun LyricsScreen(
                             )
                         }
                         
-                        // More button (right)
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = ripple(
-                                        bounded = true,
-                                        radius = 16.dp
-                                    )
+                        // Canvas + More buttons (right)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (onCanvasClick != null) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = ripple(bounded = true, radius = 16.dp)
+                                        ) { onCanvasClick() },
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    menuState.show {
-                                        LyricsMenu(
-                                            lyricsProvider = { currentLyrics },
-                                            mediaMetadataProvider = { mediaMetadata },
-                                            onDismiss = menuState::dismiss
+                                    Icon(
+                                        painter = painterResource(R.drawable.canvas_spark),
+                                        contentDescription = "AI Canvas",
+                                        tint = textBackgroundColor,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.size(4.dp))
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = ripple(
+                                            bounded = true,
+                                            radius = 16.dp
                                         )
-                                    }
-                                },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.more_horiz),
-                                contentDescription = stringResource(R.string.more_options),
-                                tint = textBackgroundColor,
-                                modifier = Modifier.size(20.dp)
-                            )
+                                    ) {
+                                        menuState.show {
+                                            LyricsMenu(
+                                                lyricsProvider = { currentLyrics },
+                                                mediaMetadataProvider = { mediaMetadata },
+                                                onDismiss = menuState::dismiss
+                                            )
+                                        }
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.more_horiz),
+                                    contentDescription = stringResource(R.string.more_options),
+                                    tint = textBackgroundColor,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
                     }
                     
@@ -369,41 +395,42 @@ fun LyricsScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxSize()
+                            .padding(bottom = 8.dp)
                     ) {
-                        // Right side - Lyrics only
+                        // Left side - Lyrics (generous width & centered)
                         Column(
                             modifier = Modifier
-                                .weight(1f)
+                                .weight(1.4f)
                                 .fillMaxSize()
                         ) {
-                            // Lyrics content - centered in landscape
                             Box(
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp),
-                                contentAlignment = Alignment.Center  // Center lyrics in landscape
+                                    .fillMaxSize()
+                                    .padding(horizontal = 20.dp),
+                                contentAlignment = Alignment.Center
                             ) {
                                 if (useLyricsV2) {
                                     LyricsV2(
-                                        sliderPositionProvider = { sliderPosition }
+                                        sliderPositionProvider = { sliderPosition },
+                                        gradientColors = gradientColors,
                                     )
                                 } else {
                                     Lyrics(
                                         sliderPositionProvider = { sliderPosition },
                                         lyricsSyncOffset = lyricsSyncOffset,
                                         modifier = modifier,
+                                        gradientColors = gradientColors,
                                     )
                                 }
                             }
                         }
                         
-                        // Left side - Controls only (from slider to volume)
+                        // Right side - Playback controls & slider
                         Column(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxSize()
-                                .padding(horizontal = 48.dp),
+                                .padding(horizontal = 24.dp),
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
@@ -424,6 +451,7 @@ fun LyricsScreen(
                                 },
                                 activeColor = textBackgroundColor,
                                 isPlaying = isPlaying,
+                                songKey = mediaMetadata.id,
                                 modifier = Modifier.fillMaxWidth()
                             )
 
@@ -645,33 +673,54 @@ fun LyricsScreen(
                             )
                         }
                         
-                        // More button (right)
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = ripple(
-                                        bounded = true,
-                                        radius = 16.dp
-                                    )
+                        // Canvas + More buttons (right)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (onCanvasClick != null) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = ripple(bounded = true, radius = 16.dp)
+                                        ) { onCanvasClick() },
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    menuState.show {
-                                        LyricsMenu(
-                                            lyricsProvider = { currentLyrics },
-                                            mediaMetadataProvider = { mediaMetadata },
-                                            onDismiss = menuState::dismiss
+                                    Icon(
+                                        painter = painterResource(R.drawable.canvas_spark),
+                                        contentDescription = "AI Canvas",
+                                        tint = textBackgroundColor,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.size(4.dp))
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = ripple(
+                                            bounded = true,
+                                            radius = 16.dp
                                         )
-                                    }
-                                },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.more_horiz),
-                                contentDescription = stringResource(R.string.more_options),
-                                tint = textBackgroundColor,
-                                modifier = Modifier.size(20.dp)
-                            )
+                                    ) {
+                                        menuState.show {
+                                            LyricsMenu(
+                                                lyricsProvider = { currentLyrics },
+                                                mediaMetadataProvider = { mediaMetadata },
+                                                onDismiss = menuState::dismiss
+                                            )
+                                        }
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.more_horiz),
+                                    contentDescription = stringResource(R.string.more_options),
+                                    tint = textBackgroundColor,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
                     }
 
@@ -684,13 +733,15 @@ fun LyricsScreen(
                     ) {
                         if (useLyricsV2) {
                             LyricsV2(
-                                sliderPositionProvider = { sliderPosition }
+                                sliderPositionProvider = { sliderPosition },
+                                gradientColors = gradientColors,
                             )
                         } else {
                             Lyrics(
                                 sliderPositionProvider = { sliderPosition },
                                 lyricsSyncOffset = lyricsSyncOffset,
                                 modifier = modifier,
+                                gradientColors = gradientColors,
                             )
                         }
                     }
@@ -716,6 +767,7 @@ fun LyricsScreen(
                             },
                             activeColor = textBackgroundColor,
                             isPlaying = isPlaying,
+                            songKey = mediaMetadata.id,
                             modifier = Modifier.fillMaxWidth()
                         )
 

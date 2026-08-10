@@ -24,6 +24,7 @@ data class NextResult(
     val relatedEndpoint: BrowseEndpoint? = null,
     val continuation: String?,
     val endpoint: WatchEndpoint, // current or continuation next endpoint
+    val commentsContinuation: String? = null,
 )
 
 object NextPage {

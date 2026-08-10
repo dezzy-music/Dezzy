@@ -33,11 +33,14 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.ListItem
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -65,6 +68,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.arturo254.opentune.social.DezzySocial
+import com.arturo254.opentune.social.SupabaseAuth
 import androidx.media3.exoplayer.offline.Download
 import androidx.media3.exoplayer.offline.DownloadRequest
 import androidx.media3.exoplayer.offline.DownloadService
@@ -79,6 +84,7 @@ import com.arturo254.opentune.R
 import com.arturo254.opentune.constants.ArtistSeparatorsKey
 import com.arturo254.opentune.constants.ExternalDownloaderEnabledKey
 import com.arturo254.opentune.constants.ExternalDownloaderPackageKey
+import com.arturo254.opentune.lossless.LosslessEnabledKey
 import com.arturo254.opentune.constants.ListThumbnailSize
 import com.arturo254.opentune.constants.SpeedDialSongIdsKey
 import com.arturo254.opentune.db.entities.ArtistEntity
@@ -139,6 +145,7 @@ fun SongMenu(
     val (artistSeparators) = rememberPreference(ArtistSeparatorsKey, defaultValue = ",;/&")
     val (externalDownloaderEnabled) = rememberPreference(ExternalDownloaderEnabledKey, defaultValue = false)
     val (externalDownloaderPackage) = rememberPreference(ExternalDownloaderPackageKey, defaultValue = "")
+    val (losslessEnabled) = rememberPreference(LosslessEnabledKey, defaultValue = false)
     val (speedDialSongIds, onSpeedDialSongIdsChange) = rememberPreference(SpeedDialSongIdsKey, "")
     val speedDialSongs = remember(speedDialSongIds) {
         speedDialSongIds
@@ -188,6 +195,48 @@ fun SongMenu(
 
     var showEditDialog by rememberSaveable {
         mutableStateOf(false)
+    }
+
+    // ── MODS: personalización por canción (título + carátula), revertible ──
+    var showModDialog by rememberSaveable { mutableStateOf(false) }
+    var modTitleField by rememberSaveable(song.id) { mutableStateOf(song.song.title) }
+    val modCoverPickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            coroutineScope.launch {
+                com.arturo254.opentune.utils.SongMods.setCover(context, database, song, uri)
+                    .onSuccess { Toast.makeText(context, "Carátula personalizada ✓", Toast.LENGTH_SHORT).show() }
+                    .onFailure { Toast.makeText(context, "No se pudo cambiar la carátula", Toast.LENGTH_SHORT).show() }
+            }
+        }
+    }
+
+    if (showModDialog) {
+        com.arturo254.opentune.ui.menu.SongModDialog(
+            currentTitle = modTitleField,
+            thumbnailUrl = song.song.thumbnailUrl,
+            isModded = song.song.isModded,
+            onTitleChange = { modTitleField = it },
+            onChangeCover = { modCoverPickerLauncher.launch("image/*") },
+            onReset = {
+                coroutineScope.launch {
+                    com.arturo254.opentune.utils.SongMods.reset(context, database, song)
+                    modTitleField = song.song.modOriginalTitle ?: song.song.title
+                    Toast.makeText(context, "Mod revertido", Toast.LENGTH_SHORT).show()
+                    showModDialog = false
+                    onDismiss()
+                }
+            },
+            onSave = {
+                coroutineScope.launch {
+                    com.arturo254.opentune.utils.SongMods.setTitle(database, song, modTitleField)
+                    showModDialog = false
+                    onDismiss()
+                }
+            },
+            onDismiss = { showModDialog = false },
+        )
     }
 
     val TextFieldValueSaver: Saver<TextFieldValue, *> = Saver(
@@ -275,7 +324,64 @@ fun SongMenu(
             subtitle = song.artists.joinToString { it.name },
             thumbnailUrl = song.song.thumbnailUrl,
             shareLink = "https://music.youtube.com/watch?v=${song.song.id}",
+            mediaId = song.song.id,
             onDismiss = { showShareDialog = false; onDismiss() }
+        )
+    }
+
+    // Compartir a amigos estilo Spotify (enviar por mensaje directo + sistema).
+    var showShareToFriends by rememberSaveable { mutableStateOf(false) }
+    if (showShareToFriends) {
+        com.arturo254.opentune.ui.screens.social.ShareSongSheet(
+            videoId = song.song.id,
+            title = song.song.title,
+            artist = song.artists.joinToString { it.name }.ifBlank { null },
+            artworkUrl = song.song.thumbnailUrl,
+            onDismiss = { showShareToFriends = false; onDismiss() },
+        )
+    }
+
+    // Comentar la pista: alimenta "Pistas más comentadas" de la Comunidad.
+    var showCommentDialog by rememberSaveable { mutableStateOf(false) }
+    if (showCommentDialog) {
+        var commentText by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { showCommentDialog = false },
+            title = { Text("Comentar pista") },
+            text = {
+                OutlinedTextField(
+                    value = commentText,
+                    onValueChange = { commentText = it },
+                    placeholder = { Text("Escribe tu comentario") },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 4,
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = commentText.isNotBlank(),
+                    onClick = {
+                        val text = commentText.trim()
+                        showCommentDialog = false
+                        if (!SupabaseAuth.isLoggedIn) {
+                            Toast.makeText(context, "Entra a la comunidad para comentar", Toast.LENGTH_SHORT).show()
+                        } else {
+                            coroutineScope.launch {
+                                val id = DezzySocial.addTrackComment(song.song.id, 0, text)
+                                Toast.makeText(
+                                    context,
+                                    if (id != null) "Comentario publicado" else "No se pudo comentar",
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            }
+                        }
+                        onDismiss()
+                    },
+                ) { Text("Publicar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCommentDialog = false }) { Text("Cancelar") }
+            },
         )
     }
 
@@ -394,7 +500,33 @@ fun SongMenu(
     val addToQueueText = stringResource(R.string.add_to_queue)
     val addToPlaylistText = stringResource(R.string.add_to_playlist)
     val shareText = stringResource(R.string.share)
+    // La red social es Spanish-first (como el resto de social/*), así que estos
+    // textos van fijos en español en vez de en strings.xml (inglés por defecto).
+    val sendToFriendText = "Enviar a un amigo"
+    val commentTrackText = "Comentar pista"
+    val shareToCommunityText = "Compartir en Comunidad"
+    val sharedToCommunityText = "Compartido en Comunidad"
+    val shareFailedText = "No se pudo compartir"
+    val communityNeedsAccountText = "Entra a la comunidad para compartir"
     val editText = stringResource(R.string.edit)
+
+    // Cambiar la carátula de canciones locales importadas (música IA)
+    val artworkPickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            coroutineScope.launch {
+                com.arturo254.opentune.utils.LocalMusicImporter
+                    .updateArtwork(context, database, song.id, uri)
+                    .onSuccess {
+                        Toast.makeText(context, "Carátula actualizada", Toast.LENGTH_SHORT).show()
+                    }
+                    .onFailure {
+                        Toast.makeText(context, "No se pudo actualizar la carátula", Toast.LENGTH_SHORT).show()
+                    }
+            }
+        }
+    }
 
     val primaryActions = remember(
         song,
@@ -482,6 +614,63 @@ fun SongMenu(
             NewAction(
                 icon = {
                     Icon(
+                        painter = painterResource(R.drawable.social_send),
+                        contentDescription = null,
+                        modifier = Modifier.size(28.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                },
+                text = sendToFriendText,
+                onClick = { showShareToFriends = true },
+            ),
+            NewAction(
+                icon = {
+                    Icon(
+                        painter = painterResource(R.drawable.social_chat),
+                        contentDescription = null,
+                        modifier = Modifier.size(28.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                },
+                text = commentTrackText,
+                onClick = { showCommentDialog = true },
+            ),
+            NewAction(
+                icon = {
+                    Icon(
+                        painter = painterResource(R.drawable.social_feed),
+                        contentDescription = null,
+                        modifier = Modifier.size(28.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                },
+                text = shareToCommunityText,
+                onClick = {
+                    onDismiss()
+                    if (!SupabaseAuth.isLoggedIn) {
+                        Toast.makeText(context, communityNeedsAccountText, Toast.LENGTH_SHORT).show()
+                    } else {
+                        coroutineScope.launch {
+                            val postId = DezzySocial.createPost(
+                                entityType = "song",
+                                entityId = song.id,
+                                entityTitle = song.song.title,
+                                entitySubtitle = song.artists.joinToString(", ") { it.name }
+                                    .ifBlank { null },
+                                artworkUrl = song.song.thumbnailUrl,
+                            )
+                            Toast.makeText(
+                                context,
+                                if (postId != null) sharedToCommunityText else shareFailedText,
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        }
+                    }
+                },
+            ),
+            NewAction(
+                icon = {
+                    Icon(
                         painter = painterResource(R.drawable.edit),
                         contentDescription = null,
                         modifier = Modifier.size(28.dp),
@@ -491,7 +680,25 @@ fun SongMenu(
                 text = editText,
                 onClick = { showEditDialog = true },
             ),
-        )
+        ).let { actions ->
+            if (song.song.isLocal) {
+                // Canción importada: permitir cambiarle la carátula
+                actions + NewAction(
+                    icon = {
+                        Icon(
+                            painter = painterResource(R.drawable.image),
+                            contentDescription = null,
+                            modifier = Modifier.size(28.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    },
+                    text = "Cambiar carátula",
+                    onClick = { artworkPickerLauncher.launch("image/*") },
+                )
+            } else {
+                actions
+            }
+        }
     }
 
     LazyColumn(
@@ -813,6 +1020,30 @@ fun SongMenu(
                                 } catch (e: android.content.ActivityNotFoundException) {
                                     Toast.makeText(context, context.getString(R.string.external_downloader_not_installed), Toast.LENGTH_SHORT).show()
                                 }
+                            },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                        )
+                    }
+                    if (losslessEnabled) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(start = 56.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant,
+                        )
+                        ListItem(
+                            headlineContent = { Text(text = "Descargar en FLAC (lossless)") },
+                            leadingContent = {
+                                Icon(
+                                    painter = painterResource(R.drawable.download),
+                                    contentDescription = null,
+                                )
+                            },
+                            modifier = Modifier.clickable {
+                                onDismiss()
+                                val query = listOfNotNull(
+                                    song.song.title,
+                                    song.artists.firstOrNull()?.name,
+                                ).joinToString(" ")
+                                navController.navigate("lossless?query=${android.net.Uri.encode(query)}")
                             },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         )

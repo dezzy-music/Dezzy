@@ -92,7 +92,7 @@ CRITICAL REQUIREMENTS:
 - If text is already in $targetLanguage script, return it UNCHANGED
 
 Examples:
-- Japanese "こんにちは" to Hindi → "कोन्निचिва" (phonetic, not translation)
+- Japanese "こんにちは" to Hindi → "कोन्निचिवा" (phonetic, not translation)
 - English "Hello" to Hindi → "हेलो" (phonetic)
 - Korean "안녕하세요" to Hindi → "अन्न्योंg हासेयो" (phonetic)
 
@@ -100,6 +100,21 @@ Input ($lineCount lines):
 $text
 
 Output MUST be a JSON array with EXACTLY $lineCount strings in $targetLanguage script."""
+                    }
+
+                    "Emotional" -> {
+                        """Translate the following $lineCount lines into $targetLanguage. Instead of a literal word-for-word translation, translate the emotional meaning, poetic subtext, and emotional feeling behind each line.
+
+CRITICAL REQUIREMENTS:
+- Translate the emotional essence and deep feeling of each line into $targetLanguage.
+- Keep the translation poetic, emotionally rich, and evocative.
+- Maintain the line-by-line structure exactly ($lineCount lines total).
+- Do not add meta-commentary, just the emotional/poetic translation.
+
+Input ($lineCount lines):
+$text
+
+Output MUST be a JSON array with EXACTLY $lineCount strings."""
                     }
 
                     else -> {

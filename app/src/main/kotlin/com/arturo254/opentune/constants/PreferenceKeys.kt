@@ -33,6 +33,24 @@ val UseNewMiniPlayerDesignKey = booleanPreferencesKey("useNewMiniPlayerDesign")
 val DynamicMiniPlayerColorKey = booleanPreferencesKey("dynamicMiniPlayerColor")
 val HidePlayerThumbnailKey = booleanPreferencesKey("hidePlayerThumbnail")
 val OpenTuneCanvasKey = booleanPreferencesKey("OpenTuneCanvas")
+val EnableSpotifyCanvasKey = booleanPreferencesKey("enableSpotifyCanvas")
+
+/** Mutually-exclusive canvas source selector */
+val CanvasModeKey = stringPreferencesKey("canvasMode")
+enum class CanvasMode {
+    APPLE_WITH_FALLBACK,
+    APPLE,
+    SPOTIFY_WITH_FALLBACK,
+    SPOTIFY,
+    NONE,
+}
+
+val ArtistCanvasModeKey = stringPreferencesKey("artistCanvasMode")
+enum class ArtistCanvasMode {
+    APPLE_WITH_FALLBACK,
+    APPLE,
+    NONE,
+}
 val ThumbnailCornerRadiusKey = floatPreferencesKey("thumbnailCornerRadius")
 val CropThumbnailToSquareKey = booleanPreferencesKey("cropThumbnailToSquare")
 val SeekExtraSeconds = booleanPreferencesKey("seekExtraSeconds")
@@ -45,7 +63,8 @@ enum class MiniPlayerStyle {
     PILL,   // default: rounded pill with surfaceContainer
     CARD,   // elevated card with shadow and softer corners
     GLASS,  // glassmorphism: blur + frosted overlay + accent border
-    COMPACT // minimal: artwork + thin progress bar only, controls on tap
+    COMPACT, // minimal: artwork + thin progress bar only, controls on tap
+    GLOW_ANIMATED // animated glow background style
 }
 
 // Wallpaper Keys
@@ -57,12 +76,38 @@ val EnableVideoWallpaperKey = booleanPreferencesKey("enableVideoWallpaper")
 val VideoWallpaperLandscapeUriKey = stringPreferencesKey("videoWallpaperLandscapeUri")
 val VideoWallpaperOpacityKey = floatPreferencesKey("videoWallpaperOpacity")
 
+// Video mode (music-video playback) keys
+val VideoMaxQualityKey = stringPreferencesKey("videoMaxQuality")
+val VideoResizeModeKey = stringPreferencesKey("videoResizeMode")
+val VideoKeepModeOnSongChangeKey = booleanPreferencesKey("videoKeepModeOnSongChange")
+val CastVideoKey = booleanPreferencesKey("castVideo")
+
+enum class VideoQuality(val maxHeight: Int) {
+    P360(360),
+    P480(480),
+    P720(720),
+    P1080(1080),
+}
+
+enum class VideoResizeMode {
+    FIT,
+    CROP,
+    FILL,
+}
+
 enum class SliderStyle {
     Standard,
     Wavy,
     Thick,
     Circular,
     Simple,
+    NeonGlow,
+    Capsule,
+    DoubleLine,
+    Dotted,
+    Waveform,
+    ShootingStar,
+    Aurora,
 }
 
 const val SYSTEM_DEFAULT = "SYSTEM_DEFAULT"
@@ -103,6 +148,15 @@ val LastFMUseNowPlaying = booleanPreferencesKey("lastfmUseNowPlaying")
 val ScrobbleDelayPercentKey = floatPreferencesKey("scrobbleDelayPercent")
 val ScrobbleMinSongDurationKey = intPreferencesKey("scrobbleMinSongDuration")
 val ScrobbleDelaySecondsKey = intPreferencesKey("scrobbleDelaySeconds")
+
+val OmegaMathUserIdKey = stringPreferencesKey("omega_math_user_id")
+val MusicMapShareLocationKey = booleanPreferencesKey("musicMapShareLocation")
+// Native Supabase session (social network: auth, friends, messaging)
+val SupabaseAccessTokenKey = stringPreferencesKey("supabaseAccessToken")
+val SupabaseRefreshTokenKey = stringPreferencesKey("supabaseRefreshToken")
+val SupabaseTokenExpiryKey = longPreferencesKey("supabaseTokenExpiry")
+val PendingReferralKey = stringPreferencesKey("pendingReferralInviterId")
+val SocialMyPhoneKey = stringPreferencesKey("socialMyPhoneDisplay")
 
 val AudioQualityKey = stringPreferencesKey("audioQuality")
 
@@ -157,11 +211,22 @@ val EqualizerVirtualizerStrengthKey = intPreferencesKey("equalizerVirtualizerStr
 val EqualizerSelectedProfileIdKey = stringPreferencesKey("equalizerSelectedProfileId")
 val EqualizerCustomProfilesJsonKey = stringPreferencesKey("equalizerCustomProfilesJson")
 
+/** Compartir "escuchando ahora" con la red social. */
+val SocialShareActivityKey = booleanPreferencesKey("socialShareActivity")
+/** Quién ve mi actividad: public | friends | private. */
+val SocialVisibilityKey = stringPreferencesKey("socialVisibility")
+
+/** Ajusta el ecualizador solo según el género detectado de la canción en curso. */
+val EqualizerAutoGenreKey = booleanPreferencesKey("equalizerAutoGenre")
+/** Género aplicado actualmente por el modo automático (solo lectura para la UI). */
+val EqualizerDetectedGenreKey = stringPreferencesKey("equalizerDetectedGenre")
+
 val MaxImageCacheSizeKey = intPreferencesKey("maxImageCacheSize")
 val SmartTrimmerKey = booleanPreferencesKey("smartTrimmer")
 val MaxSongCacheSizeKey = intPreferencesKey("maxSongCacheSize")
 val MaxCanvasCacheSizeKey = intPreferencesKey("maxCanvasCacheSize")
 val MaxParallelDownloadsKey = intPreferencesKey("maxParallelDownloads")
+val ExportDownloadsToMusicKey = booleanPreferencesKey("exportDownloadsToMusic")
 
 val PauseListenHistoryKey = booleanPreferencesKey("pauseListenHistory")
 val PauseSearchHistoryKey = booleanPreferencesKey("pauseSearchHistory")
@@ -229,6 +294,11 @@ val SongFilterKey = stringPreferencesKey("songFilter")
 val ArtistFilterKey = stringPreferencesKey("artistFilter")
 val AlbumFilterKey = stringPreferencesKey("albumFilter")
 val AudioCrossfadeGaplessKey = booleanPreferencesKey("audio_crossfade_gapless")
+
+// Dezzy Style (tornamesa de vinilo): tema de color, estilo del vinilo y velocidad de giro
+val DezzyVinylThemeKey = stringPreferencesKey("dezzy_vinyl_theme")
+val DezzyVinylStyleKey = stringPreferencesKey("dezzy_vinyl_style")
+val DezzyVinylSpeedKey = stringPreferencesKey("dezzy_vinyl_speed")
 
 val ArtistViewTypeKey = stringPreferencesKey("artistViewType")
 val AlbumViewTypeKey = stringPreferencesKey("albumViewType")
@@ -409,6 +479,8 @@ enum class PlayerDesignStyle {
     IPOD,
     SPOTIFY,
     CAR,
+    APPLE_MUSIC,
+    LIVE_MESH,
 }
 
 enum class PlayerBackgroundStyle {
@@ -437,7 +509,32 @@ enum class LyricsAnimationStyle {
     SLIDE,
     KARAOKE,
     APPLE,
+    APPLE_V2,
 }
+
+val LyricsV2StyleKey = stringPreferencesKey("lyricsV2Style")
+enum class LyricsV2Style {
+    LIQUID_FLOW,    // Flotar hacia arriba con blur al desaparecer
+    SPOTLIGHT,      // Fondo oscuro, foco de luz en línea activa
+    DEPTH_3D,       // Perspectiva 3D: futuras pequeñas/lejos, activa grande
+    CHROMATIC,      // Color dinámico del gradiente en línea activa
+    GLASS_CARDS,    // Tarjetas glassmorphism, activa elevada y brillante
+    GEOMETRIC,      // Wipe diagonal/circular al activar línea
+    TYPEWRITER,     // Línea activa se escribe carácter a carácter
+    HEAT_MAP,       // Karaoke con gradiente azul→naranja→blanco
+    MINIMAL_FADE,   // Solo activa al 100%, resto casi transparente
+    BOUNCE,         // Spring bounce al activar, resto estático
+}
+
+
+val ShowCodecOnPlayerKey = booleanPreferencesKey("showCodecOnPlayer")
+val ShowCommentButtonKey = booleanPreferencesKey("show_comment_button")
+val HideStatusBarOnFullscreenKey = booleanPreferencesKey("hideStatusBarOnFullscreen")
+val RotatingThumbnailKey = booleanPreferencesKey("rotatingThumbnail")
+val CanvasThumbnailAnimationKey = booleanPreferencesKey("canvasThumbnailAnimation")
+val AppleMusicLyricsBlurKey = booleanPreferencesKey("appleMusicLyricsBlur")
+val LyricsStandardBlurKey = booleanPreferencesKey("lyricsStandardBlur")
+val MiniPlayerBackgroundStyleKey = stringPreferencesKey("miniPlayerBackgroundStyle")
 
 val LyricsTextSizeKey = floatPreferencesKey("lyricsTextSize")
 val LyricsLineSpacingKey = floatPreferencesKey("lyricsLineSpacing")
@@ -470,12 +567,25 @@ val SwipeSensitivityKey = floatPreferencesKey("swipeSensitivity")
 enum class SearchSource {
     LOCAL,
     ONLINE,
+    LOSSLESS,
     ;
 
     fun toggle() =
         when (this) {
             LOCAL -> ONLINE
             ONLINE -> LOCAL
+            LOSSLESS -> ONLINE
+        }
+
+    /**
+     * Siguiente fuente en el ciclo del botón de la barra de búsqueda. LOSSLESS
+     * solo entra en el ciclo si el usuario tiene la función activada en Ajustes.
+     */
+    fun next(losslessEnabled: Boolean): SearchSource =
+        when (this) {
+            ONLINE -> LOCAL
+            LOCAL -> if (losslessEnabled) LOSSLESS else ONLINE
+            LOSSLESS -> ONLINE
         }
 }
 
@@ -699,6 +809,14 @@ val SpotifySyncLikesKey = booleanPreferencesKey("spotifySyncLikes")
 val UseSpotifySearchKey = booleanPreferencesKey("useSpotifySearch")
 val UseSpotifyHomeKey = booleanPreferencesKey("useSpotifyHome")
 val SpotifyHomeOnlyKey = booleanPreferencesKey("spotifyHomeOnly")
+// When enabled, the Spotify preload also downloads each resolved song for offline playback.
+val SpotifyPreloadDownloadKey = booleanPreferencesKey("spotifyPreloadDownload")
+// true (default): Spotify liked songs are saved ONLY as a "Me gusta de Spotify" playlist.
+// false: they are also inserted into the app's native Liked songs (may duplicate YT Music likes).
+val SpotifyPreloadLikedAsPlaylistKey = booleanPreferencesKey("spotifyPreloadLikedAsPlaylist")
+
+// Home welcome/orientation card for first-time users; true once the user dismisses it.
+val WelcomeCardDismissedKey = booleanPreferencesKey("welcomeCardDismissed")
 
 
 // Floating Bubble
@@ -716,6 +834,9 @@ val AiProviderKey = stringPreferencesKey("aiProvider")
 val OpenRouterBaseUrlKey = stringPreferencesKey("openRouterBaseUrl")
 val OpenRouterModelKey = stringPreferencesKey("openRouterModel")
 val AiSystemPromptKey = stringPreferencesKey("aiSystemPrompt")
+
+// AI Canvas (phase 2): let the LLM choose per-line emphasis words + song mood.
+val CanvasAiEnhanceKey = booleanPreferencesKey("canvasAiEnhance")
 val DeeplApiKey = stringPreferencesKey("deeplApiKey")
 val DeeplFormalityKey = stringPreferencesKey("deeplFormality")
 val AutoTranslateLyricsKey = booleanPreferencesKey("autoTranslateLyrics")
@@ -745,8 +866,20 @@ enum class IpodThemeMode {
 }
 val IpodThemeModeKey = stringPreferencesKey("ipodThemeMode")
 
+val ShowArtistVideoKey = booleanPreferencesKey("showArtistVideo")
+val ShowArtistBackgroundVideoKey = booleanPreferencesKey("showArtistBackgroundVideo")
+
 val KeepPlayerScreenAwakeKey = booleanPreferencesKey("keepPlayerScreenAwake")
 val HomeInactivityFadeKey = booleanPreferencesKey("homeInactivityFade")
+
+val FirstLaunchInitializedKey = booleanPreferencesKey("firstLaunchInitialized")
+
+// One-time user guidance flags
+/** Set after the "Chromecast is in beta" notice was acknowledged. */
+val CastBetaNoticeShownKey = booleanPreferencesKey("castBetaNoticeShown")
+/** Set after the one-time player tips dialog was dismissed. */
+val PlayerTipsShownKey = booleanPreferencesKey("playerTipsShown")
+
 
 
 

@@ -16,6 +16,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -35,6 +36,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -56,6 +59,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
@@ -96,7 +100,13 @@ import coil3.imageLoader
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.toBitmap
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.arturo254.opentune.LocalDatabase
+import com.arturo254.opentune.utils.LocalMusicImporter
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.arturo254.opentune.LocalDownloadUtil
 import com.arturo254.opentune.LocalPlayerAwareWindowInsets
@@ -109,6 +119,8 @@ import com.arturo254.opentune.constants.AutoPlaylistSongSortType
 import com.arturo254.opentune.constants.AutoPlaylistSongSortTypeKey
 import com.arturo254.opentune.constants.YtmSyncKey
 import com.arturo254.opentune.db.entities.Song
+import com.arturo254.opentune.models.toMediaMetadata
+import com.arturo254.opentune.lyrics.PlaylistTranslationManager
 import com.arturo254.opentune.extensions.toMediaItem
 import com.arturo254.opentune.extensions.togglePlayPause
 import com.arturo254.opentune.playback.ExoDownloadService
@@ -138,10 +150,39 @@ fun AutoPlaylistScreen(
     viewModel: AutoPlaylistViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val menuState = LocalMenuState.current
     val haptic = LocalHapticFeedback.current
     val focusManager = LocalFocusManager.current
     val playerConnection = LocalPlayerConnection.current ?: return
+    val database = LocalDatabase.current
+
+    // ── Importar música de IA (MP3/MP4 locales) a "me gusta" ──
+    var showImportMenu by remember { mutableStateOf(false) }
+    val importMusicLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenMultipleDocuments()
+    ) { uris ->
+        if (uris.isEmpty()) return@rememberLauncherForActivityResult
+        scope.launch {
+            var imported = 0
+            var failed = 0
+            var lastError: String? = null
+            uris.forEach { uri ->
+                LocalMusicImporter.import(context, database, uri)
+                    .onSuccess { imported++ }
+                    .onFailure { failed++; lastError = it.message }
+            }
+            val message = buildString {
+                if (imported > 0) append("$imported canción(es) importada(s) a Me gusta")
+                if (failed > 0) {
+                    if (isNotEmpty()) append(" · ")
+                    append("$failed con error")
+                    lastError?.let { append(": $it") }
+                }
+            }
+            Toast.makeText(context, message.ifBlank { "Nada que importar" }, Toast.LENGTH_LONG).show()
+        }
+    }
     val isPlaying by playerConnection.isPlaying.collectAsState()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
     val playlist =
@@ -254,13 +295,15 @@ fun AutoPlaylistScreen(
                 TextButton(
                     onClick = {
                         showRemoveDownloadDialog = false
-                        songs!!.forEach { song ->
-                            DownloadService.sendRemoveDownload(
-                                context,
-                                ExoDownloadService::class.java,
-                                song.song.id,
-                                false,
-                            )
+                        scope.launch(Dispatchers.IO) {
+                            songs!!.forEach { song ->
+                                DownloadService.sendRemoveDownload(
+                                    context,
+                                    ExoDownloadService::class.java,
+                                    song.song.id,
+                                    false,
+                                )
+                            }
                         }
                     },
                 ) {
@@ -592,6 +635,119 @@ fun AutoPlaylistScreen(
                                         }
                                     }
 
+                                    // Download Playlist Button
+                                    Surface(
+                                        onClick = {
+                                            val currentSongs = songs
+                                            if (currentSongs != null) {
+                                                when (downloadState) {
+                                                    Download.STATE_COMPLETED -> {
+                                                        showRemoveDownloadDialog = true
+                                                    }
+                                                    Download.STATE_DOWNLOADING -> {
+                                                        // Playlists here can hold 1000+ songs (e.g. an
+                                                        // imported Spotify library) — sending that many
+                                                        // startService intents synchronously on the UI
+                                                        // thread froze the app. Do it off-thread instead.
+                                                        scope.launch(Dispatchers.IO) {
+                                                            currentSongs.forEach { song ->
+                                                                DownloadService.sendRemoveDownload(
+                                                                    context,
+                                                                    ExoDownloadService::class.java,
+                                                                    song.song.id,
+                                                                    false,
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                    else -> {
+                                                        scope.launch(Dispatchers.IO) {
+                                                            currentSongs.forEach { song ->
+                                                                val downloadRequest = DownloadRequest
+                                                                    .Builder(song.song.id, song.song.id.toUri())
+                                                                    .setCustomCacheKey(song.song.id)
+                                                                    .setData(song.song.title.toByteArray())
+                                                                    .build()
+                                                                DownloadService.sendAddDownload(
+                                                                    context,
+                                                                    ExoDownloadService::class.java,
+                                                                    downloadRequest,
+                                                                    false,
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.surfaceVariant,
+                                        modifier = Modifier.size(48.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            when (downloadState) {
+                                                Download.STATE_COMPLETED -> {
+                                                    Icon(
+                                                        painter = painterResource(R.drawable.offline),
+                                                        contentDescription = null,
+                                                        tint = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.size(24.dp)
+                                                    )
+                                                }
+                                                Download.STATE_DOWNLOADING -> {
+                                                    CircularProgressIndicator(
+                                                        strokeWidth = 2.dp,
+                                                        modifier = Modifier.size(24.dp),
+                                                        color = MaterialTheme.colorScheme.primary
+                                                    )
+                                                }
+                                                else -> {
+                                                    Icon(
+                                                        painter = painterResource(R.drawable.download),
+                                                        contentDescription = null,
+                                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        modifier = Modifier.size(24.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // Translate Playlist Button
+                                    Surface(
+                                        onClick = {
+                                            songs?.let { songList ->
+                                                PlaylistTranslationManager.translatePlaylist(
+                                                    context = context,
+                                                    database = database,
+                                                    scope = scope,
+                                                    songs = songList.map { it.toMediaMetadata() }
+                                                )
+                                            }
+                                        },
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.surfaceVariant,
+                                        modifier = Modifier.size(48.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(R.drawable.translate),
+                                                contentDescription = stringResource(R.string.translate_playlist),
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                        }
+                                    }
+
+                                    val playBtnContainer = MaterialTheme.colorScheme.primary
+                                    val playBtnContent = if (playBtnContainer.luminance() > 0.5f) Color.Black else Color.White
+
                                     // Play Button
                                     Button(
                                         onClick = {
@@ -602,16 +758,33 @@ fun AutoPlaylistScreen(
                                                 ),
                                             )
                                         },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = playBtnContainer,
+                                            contentColor = playBtnContent,
+                                        ),
                                         shape = RoundedCornerShape(24.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp),
                                         modifier = Modifier
                                             .weight(1f)
                                             .height(48.dp)
                                     ) {
-                                        Icon(
-                                            painter = painterResource(R.drawable.play),
-                                            contentDescription = stringResource(R.string.play),
-                                            modifier = Modifier.size(24.dp)
-                                        )
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(R.drawable.play),
+                                                contentDescription = stringResource(R.string.play),
+                                                tint = playBtnContent,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Text(
+                                                text = stringResource(R.string.play),
+                                                style = MaterialTheme.typography.labelLarge,
+                                                color = playBtnContent,
+                                                maxLines = 1
+                                            )
+                                        }
                                     }
 
                                     // Shuffle Button
@@ -624,38 +797,31 @@ fun AutoPlaylistScreen(
                                                 ),
                                             )
                                         },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = playBtnContainer,
+                                            contentColor = playBtnContent,
+                                        ),
                                         shape = RoundedCornerShape(24.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp),
                                         modifier = Modifier
                                             .weight(1f)
                                             .height(48.dp)
                                     ) {
-                                        Icon(
-                                            painter = painterResource(R.drawable.shuffle),
-                                            contentDescription = stringResource(R.string.shuffle),
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                    }
-
-                                    // Add to Queue Button
-                                    Surface(
-                                        onClick = {
-                                            playerConnection.addToQueue(
-                                                items = songs!!.map { it.toMediaItem() },
-                                            )
-                                        },
-                                        shape = CircleShape,
-                                        color = MaterialTheme.colorScheme.surfaceVariant,
-                                        modifier = Modifier.size(48.dp)
-                                    ) {
-                                        Box(
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentAlignment = Alignment.Center
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                                            verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Icon(
-                                                painter = painterResource(R.drawable.queue_music),
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.size(24.dp)
+                                                painter = painterResource(R.drawable.shuffle),
+                                                contentDescription = stringResource(R.string.shuffle),
+                                                tint = playBtnContent,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Text(
+                                                text = stringResource(R.string.shuffle),
+                                                style = MaterialTheme.typography.labelLarge,
+                                                color = playBtnContent,
+                                                maxLines = 1
                                             )
                                         }
                                     }
@@ -889,6 +1055,41 @@ fun AutoPlaylistScreen(
                             painter = painterResource(R.drawable.search),
                             contentDescription = null
                         )
+                    }
+
+                    // Menú de la playlist de "me gusta": importar música generada
+                    // por IA (MP3/MP4 locales) directamente como canciones likeadas.
+                    if (playlistType == PlaylistType.LIKE) {
+                        Box {
+                            androidx.compose.material3.IconButton(
+                                onClick = { showImportMenu = true }
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.more_vert),
+                                    contentDescription = null
+                                )
+                            }
+                            androidx.compose.material3.DropdownMenu(
+                                expanded = showImportMenu,
+                                onDismissRequest = { showImportMenu = false }
+                            ) {
+                                androidx.compose.material3.DropdownMenuItem(
+                                    text = { Text("Importar música de IA") },
+                                    leadingIcon = {
+                                        Icon(
+                                            painter = painterResource(R.drawable.cloud_upload),
+                                            contentDescription = null
+                                        )
+                                    },
+                                    onClick = {
+                                        showImportMenu = false
+                                        importMusicLauncher.launch(
+                                            arrayOf("audio/*", "video/mp4")
+                                        )
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
             }

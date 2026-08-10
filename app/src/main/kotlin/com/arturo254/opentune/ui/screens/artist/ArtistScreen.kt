@@ -19,8 +19,10 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -28,6 +30,8 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -98,6 +102,14 @@ import coil3.size.Size
 import coil3.toBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.arturo254.opentune.artistvideo.ArtistVideo
+import com.arturo254.opentune.artistvideo.ArtistVideoCanvasProvider
+import com.arturo254.opentune.constants.ShowArtistVideoKey
+import com.arturo254.opentune.constants.ShowArtistBackgroundVideoKey
+import com.arturo254.opentune.canvas.AppleMusicArtistBackgroundProvider
+import com.arturo254.opentune.ui.utils.fadingEdge
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.IntOffset
 import com.arturo254.opentune.LocalDatabase
 import com.arturo254.opentune.LocalPlayerAwareWindowInsets
 import com.arturo254.opentune.LocalPlayerConnection
@@ -121,6 +133,8 @@ import com.arturo254.opentune.ui.component.HideOnScrollFAB
 import com.arturo254.opentune.ui.component.IconButton
 import com.arturo254.opentune.ui.component.LocalMenuState
 import com.arturo254.opentune.ui.component.NavigationTitle
+import com.arturo254.opentune.ui.component.ShareBottomSheet
+import com.arturo254.opentune.ui.component.ShareEntity
 import com.arturo254.opentune.ui.component.SongListItem
 import com.arturo254.opentune.ui.component.YouTubeGridItem
 import com.arturo254.opentune.ui.component.YouTubeListItem
@@ -178,6 +192,41 @@ fun ArtistScreen(
 
     // Get thumbnail URL
     val thumbnail = artistPage?.artist?.thumbnail ?: libraryArtist?.artist?.thumbnailUrl
+
+    val artistName = remember(artistPage, libraryArtist) {
+        artistPage?.artist?.title ?: libraryArtist?.artist?.name
+    }
+    val artistVideoUrl by viewModel.artistVideoUrl.collectAsState()
+    val artistVideoSong by viewModel.artistVideoSong.collectAsState()
+    val showArtistVideo by rememberPreference(key = ShowArtistVideoKey, defaultValue = true)
+    val showArtistBackgroundVideo by rememberPreference(key = ShowArtistBackgroundVideoKey, defaultValue = true)
+
+    val headerOffset = with(density) {
+        -(systemBarsTopPadding + AppBarHeight).roundToPx()
+    }
+
+    // Hoja de compartir con tarjeta de artista (estilo Spotify)
+    var showShareSheet by remember { mutableStateOf(false) }
+    if (showShareSheet) {
+        ShareBottomSheet(
+            title = artistName.orEmpty(),
+            subtitle = ShareEntity.Artist.descriptor,
+            thumbnailUrl = thumbnail,
+            shareLink = artistPage?.artist?.shareLink
+                ?: "https://music.youtube.com/channel/${viewModel.artistId}",
+            entity = ShareEntity.Artist,
+            onDismiss = { showShareSheet = false },
+        )
+    }
+
+    var backgroundVideoUrl by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(artistName, showArtistBackgroundVideo) {
+        if (artistName != null && showArtistBackgroundVideo) {
+            withContext(Dispatchers.IO) {
+                backgroundVideoUrl = AppleMusicArtistBackgroundProvider.getByArtistName(artistName)
+            }
+        }
+    }
 
     // Extract gradient colors from artist image
     LaunchedEffect(thumbnail) {
@@ -446,57 +495,140 @@ fun ArtistScreen(
             } else {
                 // Hero Header
                 item(key = "header") {
+                    val thumbnail = artistPage?.artist?.thumbnail ?: libraryArtist?.artist?.thumbnailUrl
                     val artistName = artistPage?.artist?.title ?: libraryArtist?.artist?.name
 
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = systemBarsTopPadding + AppBarHeight),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        // Artist Image - Circular with shadow
-                        Box(
-                            modifier = Modifier
-                                .padding(top = 8.dp, bottom = 16.dp)
-                        ) {
-                            if (thumbnail != null) {
-                                AsyncImage(
-                                    model = thumbnail.resize(600, 600),
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .size(210.dp)
-                                        .clip(CircleShape)
-                                )
-                            } else {
-                                // Placeholder when no image
+                    val heroVideoUrl = backgroundVideoUrl ?: artistVideoUrl
+
+                    Box {
+                        if (thumbnail != null || heroVideoUrl != null) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(1f)
+                                    .offset {
+                                        IntOffset(x = 0, y = headerOffset)
+                                    }
+                            ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(200.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                                    contentAlignment = Alignment.Center
+                                        .fillMaxSize()
+                                        .fadingEdge(
+                                            bottom = 200.dp,
+                                        )
                                 ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.person),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(80.dp),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                    if (thumbnail != null) {
+                                        AsyncImage(
+                                            model = thumbnail.resize(1200, 1200),
+                                            contentDescription = null,
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    }
+                                    if (heroVideoUrl != null && (showArtistBackgroundVideo || showArtistVideo)) {
+                                        ArtistVideo(
+                                            videoUrl = heroVideoUrl,
+                                            modifier = Modifier.fillMaxSize(),
+                                            onClick = { }
+                                        )
+                                    }
                                 }
                             }
                         }
 
-                        // Artist Name
-                        Text(
-                            text = artistName ?: stringResource(R.string.unknown_artist),
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(horizontal = 24.dp)
-                        )
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(
+                                    top = if (thumbnail != null) {
+                                        LocalContext.current.resources.displayMetrics.widthPixels.let { screenWidth ->
+                                            with(density) {
+                                                ((screenWidth / 1.2f) - 144).toDp()
+                                            }
+                                        }
+                                    } else {
+                                        systemBarsTopPadding + AppBarHeight
+                                    }
+                                ),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(bottom = 16.dp, start = 24.dp, end = 24.dp)
+                            ) {
+                                Text(
+                                    text = artistName ?: stringResource(R.string.unknown_artist),
+                                    style = MaterialTheme.typography.headlineLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f, fill = false)
+                                )
+                            }
+
+                            @OptIn(ExperimentalLayoutApi::class)
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 24.dp, end = 24.dp, bottom = 16.dp)
+                            ) {
+                                val subscriberText = artistPage?.artist?.subscriberCountText
+                                if (!subscriberText.isNullOrBlank()) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(MaterialTheme.colorScheme.secondaryContainer)
+                                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.group),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp),
+                                            tint = MaterialTheme.colorScheme.onSecondaryContainer
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = subscriberText,
+                                            style = MaterialTheme.typography.labelLarge,
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                            fontWeight = FontWeight.Medium,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+
+                                val monthlyListenersText = artistPage?.artist?.monthlyListenerCountText
+                                if (!monthlyListenersText.isNullOrBlank()) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(MaterialTheme.colorScheme.tertiaryContainer)
+                                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.graphic_eq),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp),
+                                            tint = MaterialTheme.colorScheme.onTertiaryContainer
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = monthlyListenersText,
+                                            style = MaterialTheme.typography.labelLarge,
+                                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                            fontWeight = FontWeight.Medium,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+                            }
 
                         // Artist Description (expandable)
                         val description = artistPage?.description
@@ -715,6 +847,7 @@ fun ArtistScreen(
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
+                    }
                     }
                 }
 
@@ -1112,20 +1245,9 @@ fun ArtistScreen(
                 )
             }
 
-            // Share button
+            // Share button → hoja de compartir con tarjeta de artista (estilo Spotify)
             IconButton(
-                onClick = {
-                    val shareIntent = Intent().apply {
-                        action = Intent.ACTION_SEND
-                        type = "text/plain"
-                        putExtra(
-                            Intent.EXTRA_TEXT,
-                            viewModel.artistPage?.artist?.shareLink
-                                ?: "https://music.youtube.com/channel/${viewModel.artistId}"
-                        )
-                    }
-                    context.startActivity(Intent.createChooser(shareIntent, null))
-                },
+                onClick = { showShareSheet = true },
                 onLongClick = {},
             ) {
                 Icon(

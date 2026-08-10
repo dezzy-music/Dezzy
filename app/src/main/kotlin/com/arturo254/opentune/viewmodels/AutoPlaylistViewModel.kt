@@ -90,7 +90,10 @@ constructor(
                         downloadUtil.downloads
                     ) { songs, downloads ->
                         songs.filter {
-                            downloads[it.id]?.state == Download.STATE_COMPLETED
+                            // Descargas de streaming (ExoPlayer) + archivos locales
+                            // descargados (lossless): ambos "están en el dispositivo".
+                            downloads[it.id]?.state == Download.STATE_COMPLETED ||
+                                (it.song.isLocal && it.song.dateDownload != null)
                         }.let { filteredSongs ->
                             when (songSortType) {
                                 SongSortType.CREATE_DATE -> filteredSongs.sortedBy {

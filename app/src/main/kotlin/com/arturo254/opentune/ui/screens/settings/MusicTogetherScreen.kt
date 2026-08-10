@@ -151,6 +151,8 @@ fun MusicTogetherScreen(
     val (lastJoinLink, setLastJoinLink) = rememberPreference(
         TogetherLastJoinLinkKey, defaultValue = ""
     )
+    var isPublicRoom by rememberSaveable { mutableStateOf(false) }
+    var djModeEnabled by rememberSaveable { mutableStateOf(false) }
 
     val sessionStateFlow = remember(playerConnection) {
         playerConnection?.service?.togetherSessionState ?: MutableStateFlow(TogetherSessionState.Idle)
@@ -173,6 +175,16 @@ fun MusicTogetherScreen(
     }
     val isJoinedAsAcceptedGuest = isJoinedAsGuest && !isWaitingApproval
     val disableJoinUi = isHostRole || isCreatingSessionLoading || isJoinedAsGuest
+
+    // Immediate, persistent feedback while an online host session is being created.
+    // The websocket server (HuggingFace Space) can take several seconds to cold-start,
+    // and online hosting has no intermediate "Hosting" state, so without this the user
+    // sees no progress and assumes the action failed. Cleared once the session leaves
+    // Idle (room created or error).
+    var startingHost by remember { mutableStateOf(false) }
+    LaunchedEffect(sessionState) {
+        if (sessionState !is TogetherSessionState.Idle) startingHost = false
+    }
 
     var showNameDialog by rememberSaveable { mutableStateOf(false) }
     var showPortDialog by rememberSaveable { mutableStateOf(false) }
@@ -201,6 +213,8 @@ fun MusicTogetherScreen(
                     allowGuestsToAddTracks = addTracks,
                     allowGuestsToControlPlayback = controlPlayback,
                     requireHostApprovalToJoin = approval,
+                    isPublic = isPublicRoom,
+                    djModeEnabled = djModeEnabled,
                 )
             )
         }
@@ -402,25 +416,35 @@ fun MusicTogetherScreen(
                 allowAddTracks = allowAddTracks,
                 allowControlPlayback = allowControlPlayback,
                 requireApproval = requireApproval,
+                isPublicRoom = isPublicRoom,
+                djModeEnabled = djModeEnabled,
                 onShowNameDialog = { showNameDialog = true },
                 onShowPortDialog = { showPortDialog = true },
                 onShowServerUrlDialog = { showServerUrlDialog = true },
                 onAllowAddTracksChange = setAllowAddTracks,
                 onAllowControlPlaybackChange = setAllowControlPlayback,
                 onRequireApprovalChange = setRequireApproval,
-                isStartEnabled = !isCreatingSessionLoading && !isJoining && !isHosting &&
+                onIsPublicRoomChange = { isPublicRoom = it },
+                onDjModeEnabledChange = { djModeEnabled = it },
+                isStartEnabled = !startingHost && !isCreatingSessionLoading && !isJoining && !isHosting &&
                         sessionState !is TogetherSessionState.Joined && sessionState !is TogetherSessionState.HostingOnline,
-                isLoading = isCreatingSessionLoading,
+                isLoading = isCreatingSessionLoading || startingHost,
                 onStartSession = {
-                    playerConnection?.service?.startTogetherHost(
-                        port = port,
-                        displayName = displayName,
-                        settings = TogetherRoomSettings(
-                            allowGuestsToAddTracks = allowAddTracks,
-                            allowGuestsToControlPlayback = allowControlPlayback,
-                            requireHostApprovalToJoin = requireApproval,
-                        ),
-                    )
+                    val service = playerConnection?.service
+                    if (service != null) {
+                        startingHost = true
+                        service.startTogetherHost(
+                            port = port,
+                            displayName = displayName,
+                            settings = TogetherRoomSettings(
+                                allowGuestsToAddTracks = allowAddTracks,
+                                allowGuestsToControlPlayback = allowControlPlayback,
+                                requireHostApprovalToJoin = requireApproval,
+                                isPublic = isPublicRoom,
+                                djModeEnabled = djModeEnabled,
+                            ),
+                        )
+                    }
                 },
                 modifier = Modifier
                     .padding(horizontal = 16.dp)
@@ -459,6 +483,20 @@ fun MusicTogetherScreen(
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 16.dp),
         )
+
+        // Explore public rooms — entry point to the public rooms browser.
+        FilledTonalButton(
+            onClick = { navController.navigate("public_rooms") },
+            shape = RoundedCornerShape(18.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 16.dp),
+        ) {
+            Icon(painterResource(R.drawable.language), null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Explorar salas públicas", fontWeight = FontWeight.SemiBold)
+        }
     }
 
     TopAppBar(
@@ -485,12 +523,16 @@ private fun HostSectionCard(
     allowAddTracks: Boolean,
     allowControlPlayback: Boolean,
     requireApproval: Boolean,
+    isPublicRoom: Boolean,
+    djModeEnabled: Boolean,
     onShowNameDialog: () -> Unit,
     onShowPortDialog: () -> Unit,
     onShowServerUrlDialog: () -> Unit,
     onAllowAddTracksChange: (Boolean) -> Unit,
     onAllowControlPlaybackChange: (Boolean) -> Unit,
     onRequireApprovalChange: (Boolean) -> Unit,
+    onIsPublicRoomChange: (Boolean) -> Unit,
+    onDjModeEnabledChange: (Boolean) -> Unit,
     isStartEnabled: Boolean,
     isLoading: Boolean,
     onStartSession: () -> Unit,
@@ -615,6 +657,20 @@ private fun HostSectionCard(
                 title = stringResource(R.string.together_require_approval),
                 checked = requireApproval,
                 onCheckedChange = onRequireApprovalChange,
+            )
+            Divider()
+            ToggleRow(
+                icon = R.drawable.language,
+                title = if (isPublicRoom) "Sala pública • Visible en Explorar" else "Sala pública",
+                checked = isPublicRoom,
+                onCheckedChange = onIsPublicRoomChange,
+            )
+            Divider()
+            ToggleRow(
+                icon = R.drawable.queue_music,
+                title = if (djModeEnabled) "DJ Mode • Los invitados votan" else "DJ Mode",
+                checked = djModeEnabled,
+                onCheckedChange = onDjModeEnabledChange,
             )
 
             Spacer(Modifier.height(8.dp))
@@ -841,24 +897,26 @@ private fun JoinSectionCard(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
-                            // IP badge
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                            ) {
-                                Text(
-                                    text = "${parsedLink.host}:${parsedLink.port}",
-                                    style = MaterialTheme.typography.labelMedium.copy(
-                                        fontFamily = FontFamily.Monospace
-                                    ),
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                )
+                            // IP badge (LAN sessions only)
+                            if (parsedLink.host.isNotBlank() && parsedLink.port > 0) {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                ) {
+                                    Text(
+                                        text = "${parsedLink.host}:${parsedLink.port}",
+                                        style = MaterialTheme.typography.labelMedium.copy(
+                                            fontFamily = FontFamily.Monospace
+                                        ),
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    )
+                                }
                             }
-                            // Session ID snippet
+                            // Session ID / Room code snippet
                             Text(
-                                text = "Session: ${parsedLink.sessionId.take(8)}…",
+                                text = if (parsedLink.sessionId.length > 12) "Session: ${parsedLink.sessionId.take(8)}…" else "Código: ${parsedLink.sessionId}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

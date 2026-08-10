@@ -34,7 +34,10 @@ object SpotifyMatchFileCache {
         val artist: String,
         val matchScore: Double,
         val cachedAt: Long,
-        val isManualOverride: Boolean = false
+        val isManualOverride: Boolean = false,
+        val isrc: String? = null,
+        val artistId: String? = null,
+        val albumId: String? = null,
     )
 
     fun init(context: Context) {
@@ -59,8 +62,12 @@ object SpotifyMatchFileCache {
                 val matchScore = obj.optDouble("matchScore", 1.0)
                 val cachedAt = obj.optLong("cachedAt", System.currentTimeMillis())
                 val isManualOverride = obj.optBoolean("isManualOverride", false)
+                val isrc = obj.optString("isrc", "").takeIf { it.isNotBlank() }
+                val artistId = obj.optString("artistId", "").takeIf { it.isNotBlank() }
+                val albumId = obj.optString("albumId", "").takeIf { it.isNotBlank() }
                 matchesMap[spotifyId] = CachedMatch(
-                    spotifyId, youtubeId, title, artist, matchScore, cachedAt, isManualOverride
+                    spotifyId, youtubeId, title, artist, matchScore, cachedAt, isManualOverride,
+                    isrc, artistId, albumId
                 )
             }
         } catch (e: Exception) {
@@ -82,6 +89,9 @@ object SpotifyMatchFileCache {
                     put("matchScore", match.matchScore)
                     put("cachedAt", match.cachedAt)
                     put("isManualOverride", match.isManualOverride)
+                    match.isrc?.let { put("isrc", it) }
+                    match.artistId?.let { put("artistId", it) }
+                    match.albumId?.let { put("albumId", it) }
                 }
                 array.put(obj)
             }
@@ -179,6 +189,9 @@ class SpotifyYouTubeMapper(
                     artist = bestMatch.artists.firstOrNull()?.name ?: "",
                     matchScore = bestMatch.score,
                     cachedAt = System.currentTimeMillis(),
+                    isrc = track.external_ids?.isrc,
+                    artistId = bestMatch.artists.firstOrNull()?.id,
+                    albumId = bestMatch.albumId,
                 )
             )
             memoryCache[track.id] = CachedMatch(
@@ -191,6 +204,9 @@ class SpotifyYouTubeMapper(
                 ytTitle = bestMatch.title,
                 ytArtist = bestMatch.artistName,
                 ytThumbnailUrl = bestMatch.thumbnailUrl,
+                ytArtists = bestMatch.artists,
+                ytAlbumId = bestMatch.albumId,
+                ytAlbumTitle = bestMatch.albumTitle,
             )
         }
 
@@ -292,24 +308,35 @@ class SpotifyYouTubeMapper(
         ytTitle: String,
         ytArtist: String,
         ytThumbnailUrl: String? = null,
+        ytArtists: List<MediaMetadata.Artist> = emptyList(),
+        ytAlbumId: String? = null,
+        ytAlbumTitle: String? = null,
     ): MediaMetadata {
         val thumbnail = SpotifyMapper.getTrackThumbnail(spotifyTrack)
             ?: ytThumbnailUrl
             ?: "https://i.ytimg.com/vi/$youtubeId/hqdefault.jpg"
 
+        val artistsList = if (ytArtists.isNotEmpty()) {
+            ytArtists
+        } else if (ytArtist.isNotEmpty()) {
+            listOf(MediaMetadata.Artist(id = null, name = ytArtist))
+        } else {
+            spotifyTrack.artists.map { MediaMetadata.Artist(id = null, name = it.name) }
+        }
+
+        val albumData = if (ytAlbumId != null && ytAlbumTitle != null) {
+            MediaMetadata.Album(id = ytAlbumId, title = ytAlbumTitle)
+        } else spotifyTrack.album?.let {
+            MediaMetadata.Album(id = it.id, title = it.name)
+        }
+
         return MediaMetadata(
             id = youtubeId,
             title = ytTitle.ifEmpty { spotifyTrack.name },
-            artists = if (ytArtist.isNotEmpty()) {
-                listOf(MediaMetadata.Artist(id = null, name = ytArtist))
-            } else {
-                spotifyTrack.artists.map { MediaMetadata.Artist(id = null, name = it.name) }
-            },
+            artists = artistsList,
             duration = spotifyTrack.durationMs / 1000,
             thumbnailUrl = thumbnail,
-            album = spotifyTrack.album?.let {
-                MediaMetadata.Album(id = it.id, title = it.name)
-            },
+            album = albumData,
             explicit = spotifyTrack.explicit,
         )
     }

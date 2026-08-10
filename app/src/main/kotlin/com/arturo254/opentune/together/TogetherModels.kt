@@ -35,6 +35,8 @@ data class TogetherRoomSettings(
     val allowGuestsToAddTracks: Boolean = true,
     val allowGuestsToControlPlayback: Boolean = false,
     val requireHostApprovalToJoin: Boolean = false,
+    val isPublic: Boolean = false,
+    val djModeEnabled: Boolean = false,
 )
 
 @Serializable
@@ -52,6 +54,8 @@ data class TogetherRoomState(
     val repeatMode: Int = 0,
     val shuffleEnabled: Boolean = false,
     val sentAtElapsedRealtimeMs: Long = 0L,
+    val theme: TogetherRoomTheme = TogetherRoomTheme.MIXED,
+    val currentVote: TogetherVote? = null,
 )
 
 @Immutable
@@ -99,3 +103,46 @@ sealed class TogetherSessionState {
         val recoverable: Boolean = true,
     ) : TogetherSessionState()
 }
+
+@Serializable
+enum class TogetherRoomTheme {
+    LOFI,
+    REGGAETON,
+    POP,
+    ELECTRONIC,
+    HIP_HOP,
+    RNB,
+    LATIN,
+    KPOP,
+    ROCK,
+    JAZZ,
+    CLASSICAL,
+    MIXED,
+}
+
+@Serializable
+@Immutable
+data class TogetherVote(
+    val voteId: String,
+    val proposedByParticipantId: String,
+    val proposedByName: String,
+    val track: TogetherTrack,
+    val votes: Map<String, Boolean> = emptyMap(), // participantId -> true=up, false=down
+    val expiresAtMs: Long,
+    val resolved: Boolean = false,
+    val accepted: Boolean = false,
+)
+
+@Serializable
+@Immutable
+data class TogetherPublicRoom(
+    val sessionId: String,
+    val code: String,
+    val hostName: String,
+    val theme: TogetherRoomTheme,
+    val participantCount: Int,
+    val currentTrackTitle: String? = null,
+    val currentTrackArtist: String? = null,
+    val currentTrackThumbnail: String? = null,
+    val isPublic: Boolean = true,
+)

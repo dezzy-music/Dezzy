@@ -44,16 +44,26 @@ class OfflineArtworkInterceptor(private val context: Context) : Interceptor {
 
         // 5. No cached file found, proceed normally
         val result = chain.proceed()
-        
-        // 6. Fallback if maxresdefault.jpg fails (often 404 on older videos)
-        if (result is coil3.request.ErrorResult && urlString != null && urlString.contains("maxresdefault.jpg")) {
-            val fallbackUrl = urlString.replace("maxresdefault.jpg", "hqdefault.jpg")
+
+        // 6. Fallback to hqdefault when maxresdefault/sddefault is unavailable. YouTube signals this
+        //    two ways: an HTTP 404 (ErrorResult) OR a 120x90 GRAY placeholder returned with HTTP 200
+        //    (SuccessResult) — the latter is what makes the notification cover suddenly go gray.
+        val isHighResToken = urlString != null &&
+            (urlString.contains("maxresdefault.jpg") || urlString.contains("sddefault.jpg"))
+        val isError = result is coil3.request.ErrorResult
+        val isGrayPlaceholder = result is coil3.request.SuccessResult &&
+            (result.image.width <= 121 || result.image.height <= 91)
+
+        if (isHighResToken && (isError || isGrayPlaceholder)) {
+            val fallbackUrl = urlString!!
+                .replace("maxresdefault.jpg", "hqdefault.jpg")
+                .replace("sddefault.jpg", "hqdefault.jpg")
             val fallbackRequest = chain.request.newBuilder()
                 .data(fallbackUrl)
                 .build()
             return chain.withRequest(fallbackRequest).proceed()
         }
-        
+
         return result
     }
 }

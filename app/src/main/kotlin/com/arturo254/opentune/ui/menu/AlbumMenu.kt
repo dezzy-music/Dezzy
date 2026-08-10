@@ -184,6 +184,10 @@ fun AlbumMenu(
         mutableStateOf(false)
     }
 
+    var showShareSheet by rememberSaveable {
+        mutableStateOf(false)
+    }
+
     var showErrorPlaylistAddDialog by rememberSaveable {
         mutableStateOf(false)
     }
@@ -398,13 +402,7 @@ fun AlbumMenu(
                         },
                         text = stringResource(R.string.share),
                         onClick = {
-                            onDismiss()
-                            val intent = Intent().apply {
-                                action = Intent.ACTION_SEND
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, "https://music.youtube.com/playlist?list=${album.album.playlistId}")
-                            }
-                            context.startActivity(Intent.createChooser(intent, null))
+                            showShareSheet = true
                         }
                     )
                 ),
@@ -472,13 +470,15 @@ fun AlbumMenu(
                             )
                         },
                         modifier = Modifier.clickable {
-                            songs.forEach { song ->
-                                DownloadService.sendRemoveDownload(
-                                    context,
-                                    ExoDownloadService::class.java,
-                                    song.id,
-                                    false,
-                                )
+                            coroutineScope.launch(Dispatchers.IO) {
+                                songs.forEach { song ->
+                                    DownloadService.sendRemoveDownload(
+                                        context,
+                                        ExoDownloadService::class.java,
+                                        song.id,
+                                        false,
+                                    )
+                                }
                             }
                         }
                     )
@@ -493,13 +493,15 @@ fun AlbumMenu(
                             )
                         },
                         modifier = Modifier.clickable {
-                            songs.forEach { song ->
-                                DownloadService.sendRemoveDownload(
-                                    context,
-                                    ExoDownloadService::class.java,
-                                    song.id,
-                                    false,
-                                )
+                            coroutineScope.launch(Dispatchers.IO) {
+                                songs.forEach { song ->
+                                    DownloadService.sendRemoveDownload(
+                                        context,
+                                        ExoDownloadService::class.java,
+                                        song.id,
+                                        false,
+                                    )
+                                }
                             }
                         }
                     )
@@ -514,19 +516,22 @@ fun AlbumMenu(
                             )
                         },
                         modifier = Modifier.clickable {
-                            songs.forEach { song ->
-                                val downloadRequest =
-                                    DownloadRequest
-                                        .Builder(song.id, song.id.toUri())
-                                        .setCustomCacheKey(song.id)
-                                        .setData(song.song.title.toByteArray())
-                                        .build()
-                                DownloadService.sendAddDownload(
-                                    context,
-                                    ExoDownloadService::class.java,
-                                    downloadRequest,
-                                    false,
-                                )
+                            // Bulk-enqueueing on the UI thread can freeze the app for large albums.
+                            coroutineScope.launch(Dispatchers.IO) {
+                                songs.forEach { song ->
+                                    val downloadRequest =
+                                        DownloadRequest
+                                            .Builder(song.id, song.id.toUri())
+                                            .setCustomCacheKey(song.id)
+                                            .setData(song.song.title.toByteArray())
+                                            .build()
+                                    DownloadService.sendAddDownload(
+                                        context,
+                                        ExoDownloadService::class.java,
+                                        downloadRequest,
+                                        false,
+                                    )
+                                }
                             }
                         }
                     )
@@ -574,6 +579,20 @@ fun AlbumMenu(
                 }
             )
         }
+    }
 
+    if (showShareSheet) {
+        val artistsText = album.artists.joinToString { it.name }
+        com.arturo254.opentune.ui.component.ShareBottomSheet(
+            title = album.album.title,
+            subtitle = artistsText,
+            thumbnailUrl = album.album.thumbnailUrl,
+            shareLink = "https://music.youtube.com/playlist?list=${album.album.playlistId ?: album.id}",
+            entity = com.arturo254.opentune.ui.component.ShareEntity.Album,
+            onDismiss = {
+                showShareSheet = false
+                onDismiss()
+            }
+        )
     }
 }

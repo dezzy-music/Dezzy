@@ -89,6 +89,11 @@ fun HomeScreen(
 
     val selectedChip by viewModel.selectedChip.collectAsState()
 
+    val lastListenEvent by viewModel.lastListenEvent.collectAsState()
+    val listenStreakDays by viewModel.listenStreakDays.collectAsState()
+    val todayListenMinutes by viewModel.todayListenMinutes.collectAsState()
+    val genreMixes by viewModel.genreMixes.collectAsState()
+
     val isLoading: Boolean by viewModel.isLoading.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val pullRefreshState = rememberPullToRefreshState()
@@ -315,6 +320,28 @@ fun HomeScreen(
                 state = lazylistState,
                 contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues()
             ) {
+                item {
+                    com.arturo254.opentune.ui.component.WelcomeGuideCard()
+                }
+
+                // ── Dezzy hero: saludo, reanudar con canvas, atajos y mixes ──
+                item {
+                    DezzyHomeHero(
+                        accountName = accountName,
+                        streakDays = listenStreakDays,
+                        todayMinutes = todayListenMinutes,
+                        lastEvent = lastListenEvent,
+                        genreMixes = genreMixes,
+                        quickPicks = quickPicks,
+                        navController = navController,
+                    )
+                }
+                // ── Pistas más comentadas de la comunidad Dezzy ──
+                // Se dibuja sola: sin sesión o sin datos no ocupa nada.
+                item {
+                    com.arturo254.opentune.ui.screens.social.TopCommentedTracksSection()
+                }
+
                 if (showHomeCategoryChips) {
                     item {
                         ChipsRow(

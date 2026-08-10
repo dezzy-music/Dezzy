@@ -37,6 +37,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -733,6 +735,9 @@ fun OnlinePlaylistScreen(
                                         }
                                     }
 
+                                    val playBtnContainer = MaterialTheme.colorScheme.primary
+                                    val playBtnContent = if (playBtnContainer.luminance() > 0.5f) Color.Black else Color.White
+
                                     // Shuffle Button
                                     playlist.shuffleEndpoint?.let { shuffleEndpoint ->
                                         Button(
@@ -741,6 +746,10 @@ fun OnlinePlaylistScreen(
                                                     YouTubeQueue(shuffleEndpoint)
                                                 )
                                             },
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = playBtnContainer,
+                                                contentColor = playBtnContent,
+                                            ),
                                             shape = RoundedCornerShape(24.dp),
                                             modifier = Modifier.weight(1f).height(48.dp)
                                         ) {
@@ -748,6 +757,7 @@ fun OnlinePlaylistScreen(
                                                 painter = painterResource(R.drawable.shuffle),
                                                 contentDescription =
                                                     stringResource(R.string.shuffle),
+                                                tint = playBtnContent,
                                                 modifier = Modifier.size(24.dp)
                                             )
                                         }

@@ -154,7 +154,10 @@ fun NewActionGrid(
     modifier: Modifier = Modifier,
     columns: Int = 3
 ) {
-    val rows = actions.chunked(columns)
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    val effectiveColumns = if (isLandscape) 5 else columns
+    val rows = actions.chunked(effectiveColumns)
     
     Column(
         modifier = modifier,
@@ -177,7 +180,7 @@ fun NewActionGrid(
                 }
                 
                 // Fill remaining space if row is not full
-                repeat(columns - row.size) {
+                repeat(effectiveColumns - row.size) {
                     Spacer(modifier = Modifier.weight(1f))
                 }
             }

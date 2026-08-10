@@ -100,6 +100,7 @@
     <string name="coloring">Colorido</string>
     <string name="blur_gradient">Gradiente desenfocado</string>
     <string name="glow">Brillante</string>
+    <string name="player_background_apple_music">Apple Music</string>
     <string name="player_buttons_style">Colores de los botones del reproductor</string>
     <string name="default_style">Por defecto</string>
     <string name="secondary_color_style">Secundario</string>
@@ -262,4 +263,49 @@
     <string name="restore_step_restoring_file">Restaurando %1$s</string>
     <string name="restore_step_restarting">Reiniciar la aplicación</string>
     <string name="discord">Discord</string>
+
+    <!-- Artist Profile Video Settings -->
+    <string name="artist_profile_settings">Perfil del Artista</string>
+    <string name="show_artist_video">Miniaturas de video del artista</string>
+    <string name="show_artist_video_desc">Mostrar pequeñas miniaturas de video animadas junto al nombre del artista</string>
+    <string name="show_artist_background_video">Fondo de video del artista (Apple Music)</string>
+    <string name="show_artist_background_video_desc">Mostrar video editorial de Apple Music como fondo en el perfil del artista</string>
+
+    <!-- Settings: Appearance Options (es) -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_desc">Mostrar portadas de álbumes animadas cuando estén disponibles</string>
+    <string name="rotating_thumbnail">Miniatura giratoria</string>
+    <string name="rotating_thumbnail_desc">Habilitar un efecto de animación de miniatura giratoria</string>
+    <string name="miniplayer_background_style">Estilo de fondo del mini reproductor</string>
+    <string name="apple_music_lyrics_blur">Desenfoque de letras estilo Apple Music</string>
+    <string name="apple_music_lyrics_blur_desc">Aplicar desenfoque a las líneas de letras inactivas para un efecto de enfoque premium</string>
+    <string name="standard_lyrics_blur">Desenfoque de letras estándar</string>
+    <string name="standard_lyrics_blur_desc">Aplicar un fondo desenfocado estándar a las letras</string>
+    <string name="show_comment_button">Mostrar botón de comentarios</string>
+    <string name="show_comment_button_description">Mostrar un botón para ver los comentarios en la cola del reproductor</string>
+    <string name="show_codec_on_player">Mostrar códec en el reproductor</string>
+    <string name="show_codec_on_player_desc">Mostrar información del códec de audio debajo de la barra de tiempo</string>
+    <string name="hide_status_bar_on_fullscreen">Ocultar barra de estado en pantalla completa</string>
+    <string name="hide_status_bar_on_fullscreen_desc">Ocultar la barra de estado cuando el modo de pantalla completa de letras esté activo</string>
+    <string name="comments">Comentarios</string>
+    <string name="no_comments">No se encontraron comentarios</string>
+    <string name="comment_copy">Copiar</string>
+    <string name="comment_reply">Responder</string>
+    <string name="comment_report">Denunciar</string>
+    <string name="comment_more_replies">Más respuestas</string>
+    <string name="comment_hide_replies">Ocultar respuestas</string>
+    <string name="comment_show_replies">Ver %1$d respuestas</string>
+    <string name="comment_translating">Traduciendo…</string>
+    <string name="comment_translate_failed">No se pudo traducir</string>
+    <string name="comment_show_original">Ver original</string>
+    <string name="video_playback">Reproducción de video</string>
+    <string name="video_quality">Calidad máxima de video</string>
+    <string name="video_resize_mode">Ajuste del video</string>
+    <string name="video_resize_fit">Ajustar</string>
+    <string name="video_resize_crop">Recortar</string>
+    <string name="video_resize_fill">Estirar</string>
+    <string name="video_keep_mode">Mantener modo video</string>
+    <string name="video_keep_mode_desc">Seguir en modo video al cambiar de canción</string>
+    <string name="cast_video">Castear video</string>
+    <string name="cast_video_desc">Enviar el video musical (no solo el audio) al castear</string>
 </resources>

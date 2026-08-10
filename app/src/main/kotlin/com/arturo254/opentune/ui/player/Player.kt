@@ -56,6 +56,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -63,6 +64,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import com.arturo254.opentune.constants.ThumbnailCornerRadiusKey
+import com.arturo254.opentune.constants.HideStatusBarOnFullscreenKey
+import com.arturo254.opentune.constants.ShowCodecOnPlayerKey
+import com.arturo254.opentune.utils.rememberPreference
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -128,6 +135,7 @@ import com.arturo254.opentune.LocalPlayerConnection
 import com.arturo254.opentune.constants.DarkModeKey
 import com.arturo254.opentune.constants.PlayerDesignStyle
 import com.arturo254.opentune.constants.PlayerDesignStyleKey
+import com.arturo254.opentune.constants.PlayerTipsShownKey
 import com.arturo254.opentune.constants.KeepPlayerScreenAwakeKey
 import com.arturo254.opentune.constants.UseNewMiniPlayerDesignKey
 import com.arturo254.opentune.constants.PlayerBackgroundStyle
@@ -186,6 +194,7 @@ fun BottomSheetPlayer(
     modifier: Modifier = Modifier,
     pureBlack: Boolean,
 ) {
+    timber.log.Timber.tag("BottomSheetPlayerDiag").d("Composing BottomSheetPlayer")
     val context = LocalContext.current
     val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     val menuState = LocalMenuState.current
@@ -212,7 +221,8 @@ fun BottomSheetPlayer(
 
     val (disableBlur) = rememberPreference(DisableBlurKey, false)
     val (blurRadius) = rememberPreference(BlurRadiusKey, 36f)
-    val (showCodecOnPlayer) = rememberPreference(booleanPreferencesKey("show_codec_on_player"), false)
+    val (showCodecOnPlayer) = rememberPreference(ShowCodecOnPlayerKey, true)
+    val (hideStatusBarOnFullscreen) = rememberPreference(HideStatusBarOnFullscreenKey, false)
     val (incrementalSeekSkipEnabled) = rememberPreference(SeekExtraSeconds, defaultValue = false)
     var keyboardSkipMultiplier by remember { mutableStateOf(1) }
     var lastKeyboardTapTime by remember { mutableLongStateOf(0L) }
@@ -297,7 +307,8 @@ fun BottomSheetPlayer(
     val isPlaying by playerConnection.isPlaying.collectAsState()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
     val currentSong by playerConnection.currentSong.collectAsState(initial = null)
-    val currentSongLiked = currentSong?.song?.liked == true
+    // Optimista: ver PlayerConnection.currentSongLiked.
+    val currentSongLiked by playerConnection.currentSongLiked.collectAsState()
     val currentFormat by playerConnection.currentFormat.collectAsState(initial = null)
     val queueWindows by playerConnection.queueWindows.collectAsState()
     val currentWindowIndex by playerConnection.currentWindowIndex.collectAsState()
@@ -532,7 +543,7 @@ fun BottomSheetPlayer(
                         steps = (120 - 5) / 5 - 1,
                     )
 
-                    OutlinedIconButton(
+                    OutlinedButton(
                         onClick = {
                             showSleepTimerDialog = false
                             playerConnection.service.sleepTimer.start(-1)
@@ -607,10 +618,64 @@ fun BottomSheetPlayer(
 
     val dismissedBound = dynamicQueuePeekHeight + WindowInsets.systemBars.asPaddingValues().calculateBottomPadding()
 
+    // One-time guidance: quick tips the first time the full player is opened.
+    val (playerTipsShown, setPlayerTipsShown) = rememberPreference(PlayerTipsShownKey, defaultValue = false)
+    var showPlayerTips by remember { mutableStateOf(false) }
+    LaunchedEffect(state.isExpanded, playerTipsShown) {
+        if (state.isExpanded && !playerTipsShown) showPlayerTips = true
+    }
+    if (showPlayerTips) {
+        AlertDialog(
+            onDismissRequest = {
+                setPlayerTipsShown(true)
+                showPlayerTips = false
+            },
+            title = { Text("Consejos rápidos") },
+            text = {
+                Text(
+                    "• En los estilos Clásico, Moderno, Mínimo y Cinemático usa el botón " +
+                        "Canción/Video sobre la carátula para ver el video musical.\n\n" +
+                        "• En el estilo Deezer, desliza la carátula para cambiar de canción.\n\n" +
+                        "• Al compartir una canción, toca un color de la paleta para personalizar la tarjeta.\n\n" +
+                        "• Cambia el estilo del reproductor en Ajustes → Apariencia."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        setPlayerTipsShown(true)
+                        showPlayerTips = false
+                    },
+                ) {
+                    Text("¡Entendido!")
+                }
+            },
+        )
+    }
+
+    val queueCollapsedBound = remember(playerDesignStyle, dismissedBound) {
+        if (
+            playerDesignStyle == PlayerDesignStyle.APPLE_MUSIC ||
+            playerDesignStyle == PlayerDesignStyle.LIVE_MESH ||
+            playerDesignStyle == PlayerDesignStyle.SPOTIFY ||
+            playerDesignStyle == PlayerDesignStyle.IPOD ||
+            // V7 is now the standalone Deezer player, which draws its own bottom controls;
+            // the queue sheet's old V7 collapsed header must stay fully hidden or it bleeds
+            // through behind them. Car Mode's huge transport buttons sit at the bottom too,
+            // so the same peeking header intercepted their taps.
+            playerDesignStyle == PlayerDesignStyle.V7 ||
+            playerDesignStyle == PlayerDesignStyle.CAR
+        ) {
+            0.dp
+        } else {
+            dismissedBound
+        }
+    }
+
     val queueSheetState = rememberBottomSheetState(
         dismissedBound = 0.dp,
         expandedBound = state.expandedBound,
-        collapsedBound = dismissedBound,
+        collapsedBound = queueCollapsedBound,
         initialAnchor = COLLAPSED_ANCHOR
     )
 
@@ -620,6 +685,33 @@ fun BottomSheetPlayer(
         collapsedBound = 0.dp,
         initialAnchor = 1
     )
+
+    val canvasSheetState = rememberBottomSheetState(
+        dismissedBound = 0.dp,
+        expandedBound = state.expandedBound,
+        collapsedBound = 0.dp,
+        initialAnchor = 1
+    )
+
+    val isLyricsExpanded = !lyricsSheetState.isCollapsed && !lyricsSheetState.isDismissed
+    DisposableEffect(isLyricsExpanded, hideStatusBarOnFullscreen) {
+        val window = (context as? android.app.Activity)?.window
+        if (window != null) {
+            val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+            if (isLyricsExpanded && hideStatusBarOnFullscreen) {
+                insetsController.hide(WindowInsetsCompat.Type.statusBars())
+                insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            } else {
+                insetsController.show(WindowInsetsCompat.Type.statusBars())
+            }
+        }
+        onDispose {
+            if (window != null) {
+                val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+                insetsController.show(WindowInsetsCompat.Type.statusBars())
+            }
+        }
+    }
 
     BackHandler(
         enabled =
@@ -829,6 +921,7 @@ fun BottomSheetPlayer(
             PlayerControlsContent(
                 mediaMetadata = mediaMetadata,
                 playerDesignStyle = playerDesignStyle,
+                onVisualizerClick = { canvasSheetState.expandSoft() },
                 sliderStyle = sliderStyle,
                 playbackState = playbackState,
                 isPlaying = isPlaying,
@@ -863,7 +956,10 @@ fun BottomSheetPlayer(
             playerDesignStyle != PlayerDesignStyle.V7 &&
             playerDesignStyle != PlayerDesignStyle.IPOD &&
             playerDesignStyle != PlayerDesignStyle.SPOTIFY &&
-            playerDesignStyle != PlayerDesignStyle.CAR
+            playerDesignStyle != PlayerDesignStyle.CAR &&
+            // APPLE_MUSIC and LIVE_MESH are fully independent players — no overlay
+            playerDesignStyle != PlayerDesignStyle.APPLE_MUSIC &&
+            playerDesignStyle != PlayerDesignStyle.LIVE_MESH
         ) {
             PlayerBackground(
                 playerBackground = playerBackground,
@@ -906,7 +1002,8 @@ fun BottomSheetPlayer(
                         }
                     }
                 },
-                modifier = Modifier.padding(bottom = queueSheetState.collapsedBound)
+                onVisualizerClick = { canvasSheetState.expandSoft() },
+                modifier = Modifier
             )
         } else if (playerDesignStyle == PlayerDesignStyle.SPOTIFY) {
             SpotifyPlayer(
@@ -917,7 +1014,56 @@ fun BottomSheetPlayer(
                 sliderPosition = sliderPosition,
                 onSliderPositionChange = { sliderPosition = it },
                 onQueueClick = queueSheetState::expandSoft,
-                modifier = Modifier.padding(bottom = queueSheetState.collapsedBound)
+                onSleepTimerClick = { showSleepTimerDialog = true },
+                onMenuClick = {
+                    enrichedMetadata?.let { metadata ->
+                        menuState.show {
+                            PlayerMenu(
+                                mediaMetadata = metadata,
+                                navController = navController,
+                                playerBottomSheetState = state,
+                                onShowDetailsDialog = {
+                                    bottomSheetPageState.show {
+                                        ShowMediaInfo(metadata.id)
+                                    }
+                                },
+                                onDismiss = menuState::dismiss
+                            )
+                        }
+                    }
+                },
+                onVisualizerClick = { canvasSheetState.expandSoft() },
+                modifier = Modifier
+            )
+        } else if (playerDesignStyle == PlayerDesignStyle.V7) {
+            DeezerPlayer(
+                state = state,
+                navController = navController,
+                positionState = rememberUpdatedState(position),
+                durationState = rememberUpdatedState(duration),
+                sliderPosition = sliderPosition,
+                onSliderPositionChange = { sliderPosition = it },
+                onQueueClick = queueSheetState::expandSoft,
+                onSleepTimerClick = { showSleepTimerDialog = true },
+                onMenuClick = {
+                    enrichedMetadata?.let { metadata ->
+                        menuState.show {
+                            PlayerMenu(
+                                mediaMetadata = metadata,
+                                navController = navController,
+                                playerBottomSheetState = state,
+                                onShowDetailsDialog = {
+                                    bottomSheetPageState.show {
+                                        ShowMediaInfo(metadata.id)
+                                    }
+                                },
+                                onDismiss = menuState::dismiss
+                            )
+                        }
+                    }
+                },
+                onVisualizerClick = { canvasSheetState.expandSoft() },
+                modifier = Modifier
             )
         } else if (playerDesignStyle == PlayerDesignStyle.CAR) {
             CarModePlayer(
@@ -925,132 +1071,57 @@ fun BottomSheetPlayer(
                 navController = navController,
                 mediaMetadata = enrichedMetadata,
                 isPlaying = isPlaying,
-                onQueueClick = queueSheetState::expandSoft
+                onQueueClick = queueSheetState::expandSoft,
+                onVisualizerClick = { canvasSheetState.expandSoft() }
+            )
+        } else if (playerDesignStyle == PlayerDesignStyle.LIVE_MESH) {
+            // Dezzy Style: tornamesa de vinilo (recreación de MDVinyl)
+            VinylPlayer(
+                state = state,
+                navController = navController,
+                positionState = rememberUpdatedState(position),
+                durationState = rememberUpdatedState(duration),
+                sliderPosition = sliderPosition,
+                onSliderPositionChange = { sliderPosition = it },
+                onQueueClick = queueSheetState::expandSoft,
+                onLyricsClick = lyricsSheetState::expandSoft,
+                onSleepTimerClick = { showSleepTimerDialog = true },
+                onVisualizerClick = { canvasSheetState.expandSoft() },
+                modifier = Modifier,
+            )
+        } else if (playerDesignStyle == PlayerDesignStyle.APPLE_MUSIC) {
+            // APPLE_MUSIC is a unique standalone player (like Echo Music)
+            DezzyPlayer(
+                state = state,
+                navController = navController,
+                positionState = rememberUpdatedState(position),
+                durationState = rememberUpdatedState(duration),
+                sliderPosition = sliderPosition,
+                onSliderPositionChange = { sliderPosition = it },
+                onQueueClick = queueSheetState::expandSoft,
+                onLyricsClick = lyricsSheetState::expandSoft,
+                onSleepTimerClick = { showSleepTimerDialog = true },
+                onVisualizerClick = { canvasSheetState.expandSoft() },
+                playerStyle = playerDesignStyle,
+                modifier = Modifier,
+                collapsedBound = queueSheetState.collapsedBound,
+                gradientColors = gradientColors
             )
         } else {
             when (LocalConfiguration.current.orientation) {
-            Configuration.ORIENTATION_LANDSCAPE -> {
-                if (playerDesignStyle == PlayerDesignStyle.V5) {
-                    val littleBackground = MaterialTheme.colorScheme.primaryContainer
-                    val littleTextColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    val displayPositionMs = sliderPosition ?: position
-                    val progressFraction =
-                        remember(displayPositionMs, duration) {
-                            if (duration <= 0L || duration == C.TIME_UNSET) 0f
-                            else (displayPositionMs.toFloat() / duration.toFloat()).coerceIn(0f, 1f)
-                        }
-                    val progressOverlayColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.28f)
-
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .background(littleBackground),
-                    ) {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .fillMaxHeight(progressFraction)
-                                    .align(Alignment.TopStart)
-                                    .background(progressOverlayColor),
-                        )
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillMaxSize()
-                                    .littlePlayerOverlayGestures(
-                                        seekEnabled = seekEnabled,
-                                        durationMs = duration,
-                                        progressFraction = progressFraction,
-                                        canSkipPrevious = canSkipPrevious,
-                                        canSkipNext = canSkipNext,
-                                        onSeekToPositionMs = updatedOnSliderValueChange,
-                                        onSeekFinished = updatedOnSliderValueChangeFinished,
-                                        onSkipPrevious = playerConnection::seekToPrevious,
-                                        onSkipNext = playerConnection::seekToNext,
-                                    )
-                                    .windowInsetsPadding(
-                                        WindowInsets.systemBars.only(
-                                            WindowInsetsSides.Horizontal + WindowInsetsSides.Top + WindowInsetsSides.Bottom
-                                        )
-                                    ),
-                        ) {
-                            enrichedMetadata?.let { metadata ->
-                                LittlePlayerContent(
-                                    mediaMetadata = metadata,
-                                    sliderPosition = sliderPosition,
-                                    positionMs = position,
-                                    durationMs = duration,
-                                    textColor = littleTextColor,
-                                    liked = currentSongLiked,
-                                    onCollapse = state::collapseSoft,
-                                    onToggleLike = playerConnection::toggleLike,
-                                    onExpandQueue = queueSheetState::expandSoft,
-                                    onMenuClick = {
-                                        menuState.show {
-                                            PlayerMenu(
-                                                mediaMetadata = metadata,
-                                                navController = navController,
-                                                playerBottomSheetState = state,
-                                                onShowDetailsDialog = {
-                                                    bottomSheetPageState.show {
-                                                        ShowMediaInfo(metadata.id)
-                                                    }
-                                                },
-                                                onDismiss = menuState::dismiss
-                                            )
-                                        }
-                                    },
-                                )
-                            }
-                        }
-                    }
-                } else if (playerDesignStyle == PlayerDesignStyle.V7) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize(),
-                    ) {
-                        V7PlayerBackdrop(
-                            thumbnailUrl = mediaMetadata?.thumbnailUrl,
-                            disableBlur = disableBlur,
-                            label = "v7BackdropLandscape",
-                            modifier = Modifier.clickable(
-                                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-                                indication = null
-                            ) {
-                                controlsFaded = !controlsFaded
-                            }
-                        )
-
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(bottom = queueSheetState.collapsedBound)
-                                .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom))
-                                .nestedScroll(state.preUpPostDownNestedScrollConnection),
-                        ) {
-                            enrichedMetadata?.let {
-                                controlsContent(it)
-                            }
-
-                            Spacer(Modifier.height(16.dp))
-                        }
-                    }
-                } else {
+                Configuration.ORIENTATION_LANDSCAPE -> {
                     Row(
-                        modifier =
-                            Modifier
-                                .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal))
-                                .padding(bottom = queueSheetState.collapsedBound + 48.dp),
+                        modifier = Modifier
+                            .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal))
+                            .padding(bottom = queueSheetState.collapsedBound + 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier.weight(1f),
                         ) {
-                            val screenWidth = LocalConfiguration.current.screenWidthDp
-                            val thumbnailSize = (screenWidth * 0.4).dp
+                            val screenHeight = LocalConfiguration.current.screenHeightDp
+                            val thumbnailSize = (screenHeight * 0.65).dp
                             val (thumbnailCornerRadius) = rememberPreference(ThumbnailCornerRadiusKey, 12f)
                             Thumbnail(
                                 sliderPositionProvider = { sliderPosition },
@@ -1064,14 +1135,13 @@ fun BottomSheetPlayer(
                         }
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier =
-                                Modifier
-                                    .weight(1f)
-                                    .windowInsetsPadding(
-                                        WindowInsets.systemBars.only(
-                                            WindowInsetsSides.Top
-                                        )
-                                    ),
+                            modifier = Modifier
+                                .weight(1.2f)
+                                .windowInsetsPadding(
+                                    WindowInsets.systemBars.only(
+                                        WindowInsetsSides.Top
+                                    )
+                                ),
                         ) {
                             Spacer(Modifier.weight(1f))
 
@@ -1083,7 +1153,6 @@ fun BottomSheetPlayer(
                         }
                     }
                 }
-            }
 
             else -> {
                 if (playerDesignStyle == PlayerDesignStyle.V5) {
@@ -1160,6 +1229,8 @@ fun BottomSheetPlayer(
                                                 )
                                             }
                                         },
+                                        navController = navController,
+                                        state = state,
                                     )
                                 }
                             }
@@ -1213,9 +1284,11 @@ fun BottomSheetPlayer(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier.weight(1f),
                         ) {
+                            // The Canción/Video pill renders inside Thumbnail (between its
+                            // header and the artwork).
                             Thumbnail(
                                 sliderPositionProvider = { sliderPosition },
-                                onTap = { 
+                                onTap = {
                                     if (playerDesignStyle != PlayerDesignStyle.IPOD && playerDesignStyle != PlayerDesignStyle.SPOTIFY) {
                                         controlsFaded = !controlsFaded
                                     }
@@ -1235,6 +1308,7 @@ fun BottomSheetPlayer(
                 }
             }
         }
+
     }
 
         val queueOnBackgroundColor = if (useBlackBackground) Color.White else MaterialTheme.colorScheme.onSurface
@@ -1266,11 +1340,33 @@ fun BottomSheetPlayer(
             pureBlack = pureBlack,
         )
 
+        // Music video ("watch the video") mode — a full overlay on top of whatever the current
+        // player design style renders, so it works the same regardless of skin (V4/V5/V7…).
+        // Composed AFTER Queue so the queue sheet's collapsed action row (Cola/Temporizador/
+        // Letra) can't bleed through on top of the video.
+        //
+        // Video entry points per style:
+        //  - Pill above the artwork: Clásico/Moderno/Mínimo/Cinemático (V1–V4), Expressive (V6)
+        //    and Live Mesh (inside DezzyPlayer).
+        //  - Floating button: ONLY Pequeño (V5) — everywhere else it was too invasive
+        //    (Deezer/iPod/Spotify/Car Mode/Apple Music get no video button at all).
+        //  - Hidden while the queue or the lyrics sheet is open, so it never sits on top of
+        //    the lyrics.
+        VideoModeOverlay(
+            playerConnection = playerConnection,
+            modifier = Modifier.fillMaxSize(),
+            showFloatingToggle = playerDesignStyle == PlayerDesignStyle.V5 &&
+                !queueSheetState.isExpanded &&
+                !lyricsSheetState.isExpanded,
+            onCollapse = { state.collapseSoft() },
+            onQueueClick = { queueSheetState.expandSoft() },
+        )
+
         // Lyrics BottomSheet - separate from Queue
         mediaMetadata?.let { metadata ->
             BottomSheet(
                 state = lyricsSheetState,
-                backgroundColor = Color.Unspecified,
+                backgroundColor = Color.Transparent,
                 onDismiss = { /* Optional dismiss action */ },
                 collapsedContent = {
                     // Empty collapsed content - fully hidden when collapsed
@@ -1290,6 +1386,34 @@ fun BottomSheetPlayer(
                         onBackClick = { lyricsSheetState.collapseSoft() },
                         navController = navController,
                         lyricsSyncOffset = lyricsSyncOffset,
+                        onCanvasClick = { canvasSheetState.expandSoft() },
+                        modifier = modifier,
+                    )
+                }
+            }
+        }
+
+        // Visualizador NCS (sustituye al AI Canvas): onda AGSL + partículas
+        // reaccionando a la FFT en vivo del audio, colores de la carátula.
+        mediaMetadata?.let { metadata ->
+            BottomSheet(
+                state = canvasSheetState,
+                backgroundColor = Color.Transparent,
+                onDismiss = { },
+                collapsedContent = { }
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Color.Black.copy(
+                                alpha = canvasSheetState.progress.coerceIn(0f, 1f)
+                            )
+                        )
+                ) {
+                    NcsVisualizerScreen(
+                        mediaMetadata = metadata,
+                        onBackClick = { canvasSheetState.collapseSoft() },
                         modifier = modifier,
                     )
                 }
@@ -1431,6 +1555,8 @@ private fun LittlePlayerContent(
     onToggleLike: () -> Unit,
     onExpandQueue: () -> Unit,
     onMenuClick: () -> Unit,
+    navController: NavController,
+    state: BottomSheetState,
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val titleColor = textColor.copy(alpha = 0.95f)
@@ -1521,7 +1647,16 @@ private fun LittlePlayerContent(
                                 style = MaterialTheme.typography.bodyMedium,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.basicMarquee(),
+                                modifier = Modifier
+                                    .basicMarquee()
+                                    .clickable {
+                                        mediaMetadata.artists.firstOrNull()?.id?.let { artistId ->
+                                            if (artistId.isNotBlank()) {
+                                                navController.navigate("artist/$artistId")
+                                                state.collapseSoft()
+                                            }
+                                        }
+                                    },
                             )
                         }
                     }

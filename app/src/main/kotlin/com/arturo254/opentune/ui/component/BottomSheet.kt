@@ -90,9 +90,9 @@ fun BottomSheet(
                     topEnd = if (!state.isExpanded) 16.dp else 0.dp,
                 ),
             ).background(
-                backgroundColor.copy(
-                    alpha = backgroundColor.alpha * state.progress.coerceIn(0f, 1f)
-                )
+                (if (backgroundColor == Color.Unspecified) Color.Transparent else backgroundColor).let { color ->
+                    color.copy(alpha = color.alpha * state.progress.coerceIn(0f, 1f))
+                }
             ),
     ) {
         if (!state.isCollapsed && !state.isDismissed) {

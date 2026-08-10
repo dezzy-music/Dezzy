@@ -108,6 +108,8 @@ fun CurrentSongHeader(
     onShuffleClick: () -> Unit,
     onLockClick: () -> Unit,
     onInfiniteQueueClick: () -> Unit,
+    showCommentButton: Boolean = false,
+    onCommentClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -217,6 +219,21 @@ fun CurrentSongHeader(
                         contentDescription = null,
                         modifier = Modifier.size(20.dp)
                     )
+                }
+                if (showCommentButton) {
+                    IconButton(
+                        onClick = onCommentClick,
+                        modifier = Modifier.size(40.dp),
+                        colors = IconButtonDefaults.iconButtonColors(
+                            contentColor = onBackgroundColor.copy(alpha = 0.7f)
+                        )
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.lyrics_bubble),
+                            contentDescription = stringResource(R.string.comments),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
                 IconButton(
                     onClick = onMenuClick,

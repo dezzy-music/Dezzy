@@ -24,13 +24,18 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -43,11 +48,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import coil3.compose.AsyncImage
 import com.arturo254.opentune.LocalPlayerAwareWindowInsets
 import com.arturo254.opentune.R
 import com.arturo254.opentune.ui.component.NavigationTitle
 import com.arturo254.opentune.ui.component.shimmer.ShimmerHost
 import com.arturo254.opentune.ui.component.shimmer.TextPlaceholder
+import com.arturo254.opentune.utils.GenreArtistImages
 import com.arturo254.opentune.viewmodels.MoodAndGenresViewModel
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -139,15 +146,35 @@ fun MoodAndGenresButton(
         start = Offset(0f, 0f),
         end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY),
     )
+
+    // Spotify-style genre tile: representative artist photo tilted into the
+    // bottom-right corner. Resolved lazily per genre and cached for the session;
+    // tiles without a curated artist just keep the flat color look.
+    val artistImageUrl by produceState(initialValue = GenreArtistImages.cached(title), title) {
+        value = GenreArtistImages.imageFor(title)
+    }
+
     Box(
-        contentAlignment = Alignment.BottomStart,
         modifier = modifier
             .height(MoodAndGenresButtonHeight)
             .clip(RoundedCornerShape(16.dp))
             .background(gradient)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            .clickable(onClick = onClick),
     ) {
+        artistImageUrl?.let { url ->
+            AsyncImage(
+                model = url,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .size(60.dp)
+                    .offset(x = 14.dp, y = 10.dp)
+                    .rotate(25f)
+                    .clip(RoundedCornerShape(8.dp)),
+            )
+        }
+
         Text(
             text = title,
             style = MaterialTheme.typography.titleSmall.copy(
@@ -161,6 +188,11 @@ fun MoodAndGenresButton(
             color = Color.White,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(horizontal = 14.dp, vertical = 12.dp)
+                // Leave room so long titles don't sit under the tilted artwork.
+                .padding(end = 40.dp),
         )
     }
 }

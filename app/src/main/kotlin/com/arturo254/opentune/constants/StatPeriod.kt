@@ -97,7 +97,8 @@ fun statToPeriod(
         }
 
         OptionStats.CONTINUOUS -> {
-            val index = if (test > StatPeriod.entries.size) 0 else test
-            StatPeriod.entries[index].toTimeMillis()
+            // El guardia anterior (`test > entries.size`) dejaba pasar
+            // test == size y reventaba con IndexOutOfBounds.
+            StatPeriod.entries.getOrElse(test) { StatPeriod.WEEK_1 }.toTimeMillis()
         }
     }

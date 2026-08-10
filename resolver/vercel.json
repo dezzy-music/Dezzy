@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    { "source": "/dl/:provider", "destination": "/api/dl/:provider" },
+    { "source": "/stream", "destination": "/api/stream" },
+    { "source": "/health", "destination": "/api/health" }
+  ],
+  "functions": {
+    "api/stream.js": { "maxDuration": 60 }
+  }
+}

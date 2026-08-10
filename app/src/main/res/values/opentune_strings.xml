@@ -14,6 +14,9 @@
     <string name="music_recognition_permission_desc">Allow microphone access to recognize nearby music.</string>
     <string name="music_recognition_permission_action">Allow</string>
     <string name="music_recognition_error">Something went wrong</string>
+    <string name="music_recognition_play_in_app">Play in Dezzy</string>
+    <string name="music_recognition_not_on_youtube">Couldn\'t find it on YouTube Music</string>
+    <string name="music_recognition_recent">Recently recognized</string>
     <string name="local_history">Local</string>
     <string name="remote_history">Remote</string>
     <string name="charts">Charts</string>
@@ -116,6 +119,7 @@
     <string name="coloring">Coloring</string>
     <string name="blur_gradient">Blur Gradient</string>
     <string name="glow">Glow</string>
+    <string name="player_background_apple_music">Apple Music</string>
     <string name="player_buttons_style">Player button colors</string>
     <string name="default_style">Default</string>
     <string name="secondary_color_style">Secondary</string>
@@ -313,4 +317,49 @@
     <string name="crossfade_tip">Higher values ​​work best in electronic or ambient music</string>
     <string name="preview_crossfade">Preview</string>
     <string name="crossfade_duration_seconds">%d seconds</string>
+
+    <!-- Artist Profile Video Settings -->
+    <string name="artist_profile_settings">Artist Profile</string>
+    <string name="show_artist_video">Artist video thumbnails</string>
+    <string name="show_artist_video_desc">Show small animated video thumbnails next to the artist name</string>
+    <string name="show_artist_background_video">Artist background video (Apple Music)</string>
+    <string name="show_artist_background_video_desc">Show editorial motion video from Apple Music as profile background</string>
+
+    <!-- Settings: Appearance Options -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_desc">Show animated album covers when available</string>
+    <string name="rotating_thumbnail">Rotating thumbnail</string>
+    <string name="rotating_thumbnail_desc">Enable a rotating thumbnail animation effect</string>
+    <string name="miniplayer_background_style">Mini-player background style</string>
+    <string name="apple_music_lyrics_blur">Apple Music Lyrics Blur</string>
+    <string name="apple_music_lyrics_blur_desc">Apply blur to inactive lyrics lines for a premium focus effect</string>
+    <string name="standard_lyrics_blur">Standard lyrics blur</string>
+    <string name="standard_lyrics_blur_desc">Apply a standard blur background to lyrics</string>
+    <string name="show_comment_button">Show comment button</string>
+    <string name="show_comment_button_description">Show a button to view comments in the player queue</string>
+    <string name="show_codec_on_player">Show codec on player</string>
+    <string name="show_codec_on_player_desc">Display audio codec information below the timeline</string>
+    <string name="hide_status_bar_on_fullscreen">Hide status bar on fullscreen</string>
+    <string name="hide_status_bar_on_fullscreen_desc">Hide the status bar when lyrics fullscreen mode is active</string>
+    <string name="comments">Comments</string>
+    <string name="no_comments">No comments found</string>
+    <string name="comment_copy">Copy</string>
+    <string name="comment_reply">Reply</string>
+    <string name="comment_report">Report</string>
+    <string name="comment_more_replies">More replies</string>
+    <string name="comment_hide_replies">Hide replies</string>
+    <string name="comment_show_replies">View %1$d replies</string>
+    <string name="comment_translating">Translating…</string>
+    <string name="comment_translate_failed">Translation failed</string>
+    <string name="comment_show_original">Show original</string>
+    <string name="video_playback">Video playback</string>
+    <string name="video_quality">Maximum video quality</string>
+    <string name="video_resize_mode">Video fit</string>
+    <string name="video_resize_fit">Fit</string>
+    <string name="video_resize_crop">Crop</string>
+    <string name="video_resize_fill">Stretch</string>
+    <string name="video_keep_mode">Keep video mode</string>
+    <string name="video_keep_mode_desc">Stay in video mode when the song changes</string>
+    <string name="cast_video">Cast video</string>
+    <string name="cast_video_desc">Send the music video (not just audio) when casting</string>
 </resources>

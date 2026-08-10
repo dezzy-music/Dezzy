@@ -87,6 +87,21 @@ interface DatabaseDao {
     @Query("SELECT * FROM song WHERE inLibrary IS NOT NULL ORDER BY title")
     fun songsByNameAsc(): Flow<List<Song>>
 
+    // Todas las canciones "de la biblioteca" en sentido amplio: en biblioteca,
+    // con me gusta, o presentes en alguna playlist local. Usada por la vista
+    // de géneros.
+    @Transaction
+    @Query(
+        """
+        SELECT DISTINCT song.* FROM song
+        WHERE song.inLibrary IS NOT NULL
+           OR song.liked
+           OR song.id IN (SELECT songId FROM playlist_song_map)
+        ORDER BY title
+        """
+    )
+    fun libraryAndPlaylistSongs(): Flow<List<Song>>
+
     @Transaction
     @Query("SELECT * FROM song WHERE inLibrary IS NOT NULL ORDER BY totalPlayTime")
     fun songsByPlayTimeAsc(): Flow<List<Song>>
@@ -389,6 +404,18 @@ interface DatabaseDao {
     )
     fun quickPicks(now: Long = System.currentTimeMillis()): Flow<List<Song>>
 
+    // ── Home "Dezzy hero": última escucha, racha de días y minutos de hoy ──
+
+    @Transaction
+    @Query("SELECT * FROM event ORDER BY rowid DESC LIMIT 1")
+    fun lastListenEvent(): Flow<EventWithSong?>
+
+    @Query("SELECT timestamp FROM event WHERE timestamp > :fromTimeStamp ORDER BY timestamp DESC")
+    fun listenTimestamps(fromTimeStamp: Long): Flow<List<LocalDateTime>>
+
+    @Query("SELECT COALESCE(SUM(playTime), 0) FROM event WHERE timestamp >= :fromTimeStamp")
+    fun playTimeSince(fromTimeStamp: Long): Flow<Long>
+
     @Transaction
     @Query(
         """
@@ -639,6 +666,12 @@ interface DatabaseDao {
     @Query("SELECT * FROM song WHERE id = :songId LIMIT 1")
     fun getSongByIdBlocking(songId: String): Song?
 
+    // Para la salvaguarda de carátulas rotas: localizar qué canciones usan la
+    // URL que no se pudo cargar en la notificación y refrescarles la metadata.
+    @Transaction
+    @Query("SELECT * FROM song WHERE thumbnailUrl = :thumbnailUrl AND isLocal = 0 LIMIT 10")
+    fun songsByThumbnailUrlBlocking(thumbnailUrl: String): List<Song>
+
     @Transaction
     @Query("SELECT * FROM song WHERE id IN (:songIds)")
     suspend fun getSongsByIds(songIds: List<String>): List<Song>
@@ -688,6 +721,10 @@ interface DatabaseDao {
     @Transaction
     @Query("SELECT * FROM format WHERE id = :id")
     fun format(id: String?): Flow<FormatEntity?>
+
+    /** Non-Flow, direct suspend query — much faster for one-shot lookups (no observation overhead). */
+    @Query("SELECT * FROM format WHERE id = :id LIMIT 1")
+    suspend fun formatOnce(id: String): FormatEntity?
 
     @Transaction
     @Query("SELECT * FROM lyrics WHERE id = :id")
@@ -1110,7 +1147,7 @@ interface DatabaseDao {
     }
 
     @Transaction
-    @Query("SELECT * FROM song WHERE title LIKE '%' || :query || '%' AND inLibrary IS NOT NULL LIMIT :previewSize")
+    @Query("SELECT * FROM song WHERE title LIKE '%' || :query || '%' AND (inLibrary IS NOT NULL OR liked) LIMIT :previewSize")
     fun searchSongs(
         query: String,
         previewSize: Int = Int.MAX_VALUE,
@@ -1144,6 +1181,37 @@ interface DatabaseDao {
         query: String,
         previewSize: Int = Int.MAX_VALUE,
     ): Flow<List<Playlist>>
+
+    // ── In-app local search candidates ─────────────────────────────────────────
+    // SQLite LIKE is only case-insensitive for ASCII and can't ignore accents
+    // ("cancion" never matches "Canción"), so the in-app local search pulls the
+    // full candidate sets and does normalized matching/ranking in Kotlin
+    // (LocalSearchViewModel). The LIKE-based search* queries above remain for
+    // Android Auto / Media3 sessions where a cheap one-shot query is enough.
+
+    @Transaction
+    @Query("SELECT * FROM song WHERE inLibrary IS NOT NULL OR liked")
+    fun searchCandidateSongs(): Flow<List<Song>>
+
+    @Transaction
+    @SuppressWarnings(RoomWarnings.QUERY_MISMATCH)
+    @Query(
+        "SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE artistId = artist.id AND (song.inLibrary IS NOT NULL OR song.liked)) AS songCount FROM artist WHERE songCount > 0",
+    )
+    fun searchCandidateArtists(): Flow<List<Artist>>
+
+    @Transaction
+    @SuppressWarnings(RoomWarnings.QUERY_MISMATCH)
+    @Query(
+        "SELECT * FROM album WHERE EXISTS(SELECT * FROM song WHERE song.albumId = album.id AND (song.inLibrary IS NOT NULL OR song.liked))",
+    )
+    fun searchCandidateAlbums(): Flow<List<Album>>
+
+    @Transaction
+    @Query(
+        "SELECT *, (SELECT COUNT(*) FROM playlist_song_map WHERE playlistId = playlist.id) AS songCount FROM playlist",
+    )
+    fun searchCandidatePlaylists(): Flow<List<Playlist>>
 
     @Transaction
     @Query("SELECT * FROM event ORDER BY rowId DESC")
@@ -1190,6 +1258,14 @@ interface DatabaseDao {
     fun inLibrary(
         songId: String,
         inLibrary: LocalDateTime?,
+    )
+
+    @Transaction
+    @Query("UPDATE song SET liked = :liked, likedDate = :likedDate WHERE id = :songId")
+    fun setLiked(
+        songId: String,
+        liked: Boolean,
+        likedDate: LocalDateTime?,
     )
 
     @Transaction
@@ -1426,10 +1502,16 @@ interface DatabaseDao {
         artist: ArtistEntity,
         artistPage: ArtistPage
     ) {
+        // Los elvis sobre campos declarados no-null NO son redundantes: estos
+        // valores vienen de deserializar JSON de InnerTube, así que en runtime
+        // pueden llegar null pese al tipo. En debug saltaría el null-check de
+        // Kotlin, pero R8 los elimina en release y el null llega hasta el bind
+        // de SQLite, que revienta con un NPE opaco (crash de Estadísticas).
+        @Suppress("USELESS_ELVIS")
         update(
             artist.copy(
-                name = artistPage.artist.title,
-                thumbnailUrl = artistPage.artist.thumbnail?.highRes(),
+                name = artistPage.artist.title ?: artist.name,
+                thumbnailUrl = artistPage.artist.thumbnail?.highRes() ?: artist.thumbnailUrl,
                 lastUpdateTime = LocalDateTime.now()
             )
         )
@@ -1441,13 +1523,16 @@ interface DatabaseDao {
         albumPage: AlbumPage,
         artists: List<ArtistEntity>? = emptyList(),
     ) {
+        // Mismo blindaje que en update(artist, artistPage): id y title son
+        // NOT NULL en la tabla, y un null aquí rompe la escritura entera.
+        @Suppress("USELESS_ELVIS")
         update(
             album.copy(
-                id = albumPage.album.browseId,
-                playlistId = albumPage.album.playlistId,
-                title = albumPage.album.title,
-                year = albumPage.album.year,
-                thumbnailUrl = albumPage.album.thumbnail,
+                id = albumPage.album.browseId ?: album.id,
+                playlistId = albumPage.album.playlistId ?: album.playlistId,
+                title = albumPage.album.title ?: album.title,
+                year = albumPage.album.year ?: album.year,
+                thumbnailUrl = albumPage.album.thumbnail ?: album.thumbnailUrl,
                 songCount = albumPage.songs.size,
                 duration = albumPage.songs.sumOf { song -> song.duration ?: 0 },
                 explicit = albumPage.album.explicit || albumPage.songs.any { it.explicit },

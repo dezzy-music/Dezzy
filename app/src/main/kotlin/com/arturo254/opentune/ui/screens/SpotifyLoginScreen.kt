@@ -10,7 +10,10 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.os.Message
 import android.webkit.CookieManager
+import android.webkit.JavascriptInterface
+import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -42,7 +45,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.datastore.preferences.core.edit
@@ -64,6 +66,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import timber.log.Timber
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -79,6 +82,11 @@ fun SpotifyLoginScreen(navController: NavController) {
     var hasError by remember { mutableStateOf(false) }
     var retryCount by remember { mutableIntStateOf(0) }
     val tokenFetchStarted = remember { AtomicBoolean(false) }
+    // Retry needs a live reference to re-run extractAndFetchToken — the login cookies are
+    // already in CookieManager at that point, no need to reload the WebView or re-enter
+    // credentials, but the previous retry button didn't call it at all and just left a blank
+    // WebView (it had already been swapped to about:blank before the error was shown).
+    var webViewRef by remember { mutableStateOf<WebView?>(null) }
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
@@ -116,32 +124,44 @@ fun SpotifyLoginScreen(navController: NavController) {
                         settings.useWideViewPort = true
                         settings.mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
                         settings.javaScriptCanOpenWindowsAutomatically = true
-                        settings.setSupportMultipleWindows(false)
-                        settings.userAgentString = USER_AGENT_DESKTOP
+                        // Spotify's login page opens "Continue with Google/Facebook/Apple" in a
+                        // window.open() popup. Multiple windows must be enabled or that tap does
+                        // nothing; onCreateWindow below reuses this same WebView as the target so
+                        // the popup content just navigates here instead of vanishing.
+                        settings.setSupportMultipleWindows(true)
+                        settings.userAgentString = USER_AGENT_MOBILE
+
+                        webChromeClient = object : WebChromeClient() {
+                            override fun onCreateWindow(
+                                view: WebView,
+                                isDialog: Boolean,
+                                isUserGesture: Boolean,
+                                resultMsg: Message,
+                            ): Boolean {
+                                val transport = resultMsg.obj as? WebView.WebViewTransport ?: return false
+                                transport.webView = view
+                                resultMsg.sendToTarget()
+                                return true
+                            }
+                        }
 
                         webViewClient = object : WebViewClient() {
                             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                                 isLoading = true
-                                Timber.d("SpotifyLogin: page started: $url")
                             }
 
                             override fun onPageFinished(view: WebView?, url: String?) {
                                 isLoading = false
-                                Timber.d("SpotifyLogin: page finished: $url")
-
+                                // Once redirected to open.spotify.com after login, the sp_dc cookie is
+                                // set. Grab it and fetch the access token in the background via TOTP
+                                // (Meld's proven approach) — no fragile in-page JS injection.
                                 if (url?.startsWith("https://open.spotify.com") == true &&
                                     tokenFetchStarted.compareAndSet(false, true)
                                 ) {
-                                    Timber.d("SpotifyLogin: extracting token from onPageFinished")
                                     extractAndFetchToken(
-                                        view = view,
-                                        context = context,
-                                        scope = scope,
-                                        navController = navController,
-                                        setProcessing = { isProcessing = it },
-                                        setStatus = { statusMessage = it },
-                                        setError = { hasError = it },
-                                        tokenFetchStarted = tokenFetchStarted,
+                                        view, ctx, scope, navController,
+                                        { isProcessing = it }, { statusMessage = it }, { hasError = it },
+                                        tokenFetchStarted,
                                     )
                                 }
                             }
@@ -151,13 +171,12 @@ fun SpotifyLoginScreen(navController: NavController) {
                                 request: WebResourceRequest?,
                             ): Boolean {
                                 val requestUrl = request?.url?.toString() ?: return false
-                                Timber.d("SpotifyLogin: navigating to: $requestUrl")
 
                                 if (requestUrl.startsWith("intent://") || requestUrl.startsWith("spotify://")) {
                                     try {
                                         val intent = Intent.parseUri(requestUrl, Intent.URI_INTENT_SCHEME)
                                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                        context.startActivity(intent)
+                                        ctx.startActivity(intent)
                                         return true
                                     } catch (e: Exception) {
                                         Timber.e(e, "Failed to launch intent: $requestUrl")
@@ -167,29 +186,20 @@ fun SpotifyLoginScreen(navController: NavController) {
                                 if (requestUrl.startsWith("https://open.spotify.com")) {
                                     val spDc = extractSpDcCookie()
                                     if (spDc != null && tokenFetchStarted.compareAndSet(false, true)) {
-                                        Timber.d("SpotifyLogin: sp_dc available at redirect, processing immediately")
                                         extractAndFetchToken(
-                                            view = view,
-                                            context = context,
-                                            scope = scope,
-                                            navController = navController,
-                                            setProcessing = { isProcessing = it },
-                                            setStatus = { statusMessage = it },
-                                            setError = { hasError = it },
-                                            tokenFetchStarted = tokenFetchStarted,
+                                            view, ctx, scope, navController,
+                                            { isProcessing = it }, { statusMessage = it }, { hasError = it },
+                                            tokenFetchStarted,
                                         )
                                         return true
                                     }
-                                    Timber.d("SpotifyLogin: sp_dc not ready at redirect, deferring to onPageFinished")
-                                    return false
                                 }
-
                                 return false
                             }
                         }
 
                         loadUrl(SpotifyAuth.LOGIN_URL)
-                    }
+                    }.also { webViewRef = it }
                 },
             )
 
@@ -221,10 +231,17 @@ fun SpotifyLoginScreen(navController: NavController) {
                             TextButton(
                                 onClick = {
                                     hasError = false
-                                    isProcessing = false
                                     statusMessage = ""
-                                    tokenFetchStarted.set(false)
                                     retryCount++
+                                    // The Spotify login itself already succeeded (that's how we got
+                                    // here) and its cookies are still in CookieManager, so retry just
+                                    // re-runs the token exchange — no WebView reload/re-login needed.
+                                    tokenFetchStarted.set(true)
+                                    extractAndFetchToken(
+                                        webViewRef, context, scope, navController,
+                                        { isProcessing = it }, { statusMessage = it }, { hasError = it },
+                                        tokenFetchStarted,
+                                    )
                                 },
                                 modifier = Modifier.padding(horizontal = 16.dp),
                             ) {
@@ -238,19 +255,29 @@ fun SpotifyLoginScreen(navController: NavController) {
     }
 }
 
+/**
+ * JavaScript injected into the open.spotify.com page to call get_access_token
+ * from within the page's browser context (with its real cookies).
+ * This bypasses any TOTP/client-token requirement that blocks external HTTP clients.
+ */
+/** Reads the sp_dc cookie from the CookieManager, or null if not yet available. */
 private fun extractSpDcCookie(): String? {
     val allCookies = CookieManager.getInstance().getCookie("https://open.spotify.com")
     if (allCookies.isNullOrBlank()) return null
-
     return allCookies.split(";")
-        .mapNotNull { cookie ->
-            val parts = cookie.trim().split("=", limit = 2)
-            if (parts.size == 2) parts[0].trim() to parts[1].trim() else null
+        .mapNotNull {
+            val p = it.trim().split("=", limit = 2)
+            if (p.size == 2) p[0].trim() to p[1].trim() else null
         }
         .firstOrNull { it.first == "sp_dc" && it.second.isNotBlank() }
         ?.second
 }
 
+/**
+ * Extracts sp_dc/sp_key cookies and fetches the access token in the background via TOTP
+ * ([SpotifyAuth.fetchAccessToken]) — the same approach Meld uses. No in-page JS injection,
+ * which is what previously left the WebView on a black screen.
+ */
 private fun extractAndFetchToken(
     view: WebView?,
     context: Context,
@@ -261,37 +288,26 @@ private fun extractAndFetchToken(
     setError: (Boolean) -> Unit,
     tokenFetchStarted: AtomicBoolean,
 ) {
-    val cookieManager = CookieManager.getInstance()
-    val allCookies = cookieManager.getCookie("https://open.spotify.com")
-    Timber.d("SpotifyLogin: cookies present: ${!allCookies.isNullOrBlank()}")
-
+    val allCookies = CookieManager.getInstance().getCookie("https://open.spotify.com")
     val cookieMap = allCookies?.split(";")
-        ?.mapNotNull { cookie ->
-            val parts = cookie.trim().split("=", limit = 2)
-            if (parts.size == 2 && parts[0].trim().isNotEmpty()) {
-                parts[0].trim() to parts[1].trim()
-            } else {
-                null
-            }
+        ?.mapNotNull {
+            val p = it.trim().split("=", limit = 2)
+            if (p.size == 2 && p[0].trim().isNotEmpty()) p[0].trim() to p[1].trim() else null
         }?.toMap() ?: emptyMap()
 
     val spDc = cookieMap["sp_dc"]
     if (spDc.isNullOrBlank()) {
-        Timber.w("SpotifyLogin: sp_dc not found in cookies (keys: ${cookieMap.keys})")
         setProcessing(true)
-        setStatus("Error de inicio de sesión: no se encontró la cookie de sesión.")
+        setStatus("No se encontró la sesión (sp_dc). Completa el inicio de sesión.")
         setError(true)
         tokenFetchStarted.set(false)
         return
     }
-
     val spKey = cookieMap["sp_key"] ?: ""
-    Timber.d("SpotifyLogin: sp_dc found (${spDc.take(8)}...), starting token fetch")
 
     setProcessing(true)
     setError(false)
-    setStatus("Verificando cookies de sesión...")
-
+    setStatus("Verificando sesión de Spotify...")
     view?.stopLoading()
     view?.loadUrl("about:blank")
 
@@ -302,72 +318,43 @@ private fun extractAndFetchToken(
                 prefs[SpotifySpKeyKey] = spKey
             }
 
-            withContext(Dispatchers.Main) {
-                setStatus("Conectando con Spotify...")
-            }
-            Timber.d("SpotifyLogin: fetching access token via SpotifyAuth (with TOTP)...")
+            withContext(Dispatchers.Main) { setStatus("Conectando con Spotify...") }
 
             val token = SpotifyAuth.fetchAccessToken(spDc, spKey).getOrThrow()
-            Timber.d("SpotifyLogin: token obtained (anonymous=${token.isAnonymous})")
             Spotify.accessToken = token.accessToken
 
-            withContext(Dispatchers.Main) {
-                setStatus("Cargando perfil de usuario...")
-            }
-            Timber.d("SpotifyLogin: fetching user profile...")
-
+            withContext(Dispatchers.Main) { setStatus("Cargando perfil...") }
             Spotify.me().onSuccess { user ->
-                Timber.d("SpotifyLogin: logged in as ${user.displayName} (${user.id})")
                 context.dataStore.edit { prefs ->
                     prefs[SpotifyUsernameKey] = user.displayName ?: user.id
                     prefs[SpotifyUserIdKey] = user.id
                 }
-            }.onFailure { e ->
-                Timber.w(e, "SpotifyLogin: could not fetch profile (non-fatal)")
-            }
+            }.onFailure { e -> Timber.w(e, "SpotifyLogin: profile fetch failed (non-fatal)") }
 
             context.dataStore.edit { prefs ->
                 prefs[SpotifyAccessTokenKey] = token.accessToken
                 prefs[SpotifyTokenExpiryKey] = token.accessTokenExpirationTimestampMs
             }
 
-            withContext(Dispatchers.Main) {
-                setStatus("¡Inicio de sesión en Spotify exitoso!")
-            }
-            Timber.d("SpotifyLogin: login complete, navigating back")
-
+            withContext(Dispatchers.Main) { setStatus("¡Conectado a Spotify!") }
             delay(300)
-
-            withContext(Dispatchers.Main) {
-                navController.navigateUp()
-            }
+            withContext(Dispatchers.Main) { navController.navigateUp() }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             Timber.e(e, "SpotifyLogin: login failed — ${e.message}")
-            val errorMsg = classifyLoginError(context, e)
             withContext(Dispatchers.Main) {
-                setStatus(errorMsg)
+                setStatus("Error: ${e.localizedMessage ?: e.message ?: "desconocido"}")
                 setError(true)
+                tokenFetchStarted.set(false)
             }
-            tokenFetchStarted.set(false)
         }
     }
 }
 
-private fun classifyLoginError(context: Context, e: Exception): String {
-    val msg = e.message.orEmpty()
-    return when {
-        "anonymous" in msg || "expired" in msg ->
-            "La sesión de Spotify ha caducado. Vuelve a iniciar sesión."
-        "HTTP 403" in msg || "HTTP 401" in msg ->
-            "Acceso rechazado por Spotify. Verifica tus credenciales."
-        "UnknownHostException" in msg || "timeout" in msg.lowercase() ->
-            "Error de red o conexión al servidor de Spotify."
-        else ->
-            "Error de inicio de sesión de Spotify: ${e.localizedMessage ?: ""}"
-    }
-}
-
-private const val USER_AGENT_DESKTOP =
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+// A mismatched "desktop Chrome on a touchscreen" fingerprint is a classic bot-detection signal
+// and Spotify/Google's login pages open SSO in ways that assume a real mobile browser. Mirrors
+// the mobile UA already proven to work for Google OAuth elsewhere in this app (GoogleIdentityBridge,
+// SocialScreen's GoogleLoginWebView).
+private const val USER_AGENT_MOBILE =
+    "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"

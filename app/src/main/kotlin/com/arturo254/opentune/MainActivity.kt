@@ -105,6 +105,9 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.path
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
@@ -239,6 +242,7 @@ import com.arturo254.opentune.ui.screens.LOGIN_URL_ARGUMENT
 import com.arturo254.opentune.ui.screens.Screens
 import com.arturo254.opentune.ui.screens.buildLoginRoute
 import com.arturo254.opentune.ui.screens.musicrecognition.MusicRecognitionRoute
+import com.arturo254.opentune.ui.screens.musicrecognition.openMusicRecognition
 import com.arturo254.opentune.ui.screens.navigationBuilder
 import com.arturo254.opentune.ui.screens.search.LocalSearchScreen
 import com.arturo254.opentune.ui.screens.search.OnlineSearchScreen
@@ -695,6 +699,9 @@ class MainActivity : ComponentActivity() {
                                         .Builder(this@MainActivity)
                                         .data(song.thumbnailUrl)
                                         .allowHardware(false)
+                                        // Palette extraction doesn't need full-res art; decoding
+                                        // the full bitmap on every song change wastes CPU/memory.
+                                        .size(256)
                                         .build(),
                                 )
                                 val extractedColor = result.image?.toBitmap()?.extractThemeColor()
@@ -769,7 +776,6 @@ class MainActivity : ComponentActivity() {
                     val density = LocalDensity.current
                     val windowsInsets = WindowInsets.systemBars
                     val bottomInset = with(density) { windowsInsets.getBottom(density).toDp() }
-                    val bottomInsetDp = WindowInsets.systemBars.asPaddingValues().calculateBottomPadding()
 
                     val useRail = currentWindowAdaptiveInfo().windowSizeClass
                         .isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
@@ -818,6 +824,17 @@ class MainActivity : ComponentActivity() {
 
 
                     var searchSource by rememberEnumPreference(SearchSourceKey, SearchSource.ONLINE)
+                    val (losslessEnabled) = rememberPreference(
+                        com.arturo254.opentune.lossless.LosslessEnabledKey, defaultValue = false,
+                    )
+                    // Si la función lossless se desactivó pero la fuente quedó fijada en
+                    // LOSSLESS, la tratamos como ONLINE.
+                    val effectiveSearchSource =
+                        if (searchSource == SearchSource.LOSSLESS && !losslessEnabled) {
+                            SearchSource.ONLINE
+                        } else {
+                            searchSource
+                        }
 
                     val searchBarFocusRequester = remember { FocusRequester() }
 
@@ -969,13 +986,6 @@ class MainActivity : ComponentActivity() {
                                 .add(WindowInsets(top = AppBarHeight, bottom = bottom))
                         }
 
-                    appBarScrollBehavior(
-                        canScroll = {
-                            navBackStackEntry?.destination?.route?.startsWith("search/") == false &&
-                                    (playerBottomSheetState.isCollapsed || playerBottomSheetState.isDismissed)
-                        }
-                    )
-
                     val searchBarScrollBehavior =
                         appBarScrollBehavior(
                             canScroll = {
@@ -1065,10 +1075,12 @@ class MainActivity : ComponentActivity() {
                             }
                         } else {
                             if (!isYearInMusicScreen) {
+                                // Honor the persisted anchor: if the user left the app with the
+                                // player expanded, bring them back to the expanded player. The
+                                // old unconditional collapseSoft() kicked users out of the
+                                // player on every Activity recreation.
                                 when (savedMiniPlayerAnchor) {
                                     EXPANDED_ANCHOR -> playerBottomSheetState.expandSoft()
-                                    COLLAPSED_ANCHOR -> playerBottomSheetState.collapseSoft()
-                                    DISMISSED_ANCHOR -> playerBottomSheetState.dismiss()
                                     else -> playerBottomSheetState.collapseSoft()
                                 }
                             }
@@ -1302,6 +1314,27 @@ class MainActivity : ComponentActivity() {
                                                     }
                                                 },
                                                 actions = {
+                                                    com.arturo254.opentune.ui.component.CastButton()
+                                                    // Botón de Amigos oculto temporalmente (integración social intacta,
+                                                    // se reactivará en el futuro). Ruta "social" sigue registrada en NavigationBuilder.
+                                                    /*
+                                                    IconButton(onClick = { navController.navigate("social") }) {
+                                                        Icon(
+                                                            painter = painterResource(R.drawable.social_friends),
+                                                            contentDescription = "Amigos"
+                                                        )
+                                                    }
+                                                    */
+                                                    // Botón de Music Map oculto temporalmente (pantalla y ruta "music_map"
+                                                    // intactas, se usará en próximas integraciones).
+                                                    /*
+                                                    IconButton(onClick = { navController.navigate("music_map") }) {
+                                                        Icon(
+                                                            painter = painterResource(R.drawable.resource_public),
+                                                            contentDescription = "Music Map"
+                                                        )
+                                                    }
+                                                    */
                                                     IconButton(onClick = { navController.navigate("history") }) {
                                                         Icon(
                                                             painter = painterResource(R.drawable.history),
@@ -1369,9 +1402,10 @@ class MainActivity : ComponentActivity() {
                                             placeholder = {
                                                 Text(
                                                     text = stringResource(
-                                                        when (searchSource) {
+                                                        when (effectiveSearchSource) {
                                                             SearchSource.LOCAL -> R.string.search_library
                                                             SearchSource.ONLINE -> R.string.search_yt_music
+                                                            SearchSource.LOSSLESS -> R.string.search_lossless
                                                         }
                                                     ),
                                                 )
@@ -1433,15 +1467,16 @@ class MainActivity : ComponentActivity() {
                                                         }
                                                         IconButton(
                                                             onClick = {
-                                                                searchSource =
-                                                                    if (searchSource == SearchSource.ONLINE) SearchSource.LOCAL else SearchSource.ONLINE
+                                                                // Ciclo: YouTube → Local → (Lossless si está activo) → YouTube
+                                                                searchSource = effectiveSearchSource.next(losslessEnabled)
                                                             },
                                                         ) {
                                                             Icon(
                                                                 painter = painterResource(
-                                                                    when (searchSource) {
+                                                                    when (effectiveSearchSource) {
                                                                         SearchSource.LOCAL -> R.drawable.library_music
                                                                         SearchSource.ONLINE -> R.drawable.language
+                                                                        SearchSource.LOSSLESS -> R.drawable.graphic_eq
                                                                     },
                                                                 ),
                                                                 contentDescription = null,
@@ -1476,7 +1511,7 @@ class MainActivity : ComponentActivity() {
                                             }
                                         ) {
                                             Crossfade(
-                                                targetState = searchSource,
+                                                targetState = effectiveSearchSource,
                                                 label = "",
                                                 modifier =
                                                     Modifier
@@ -1485,6 +1520,14 @@ class MainActivity : ComponentActivity() {
                                                         .navigationBarsPadding(),
                                             ) { searchSource ->
                                                 when (searchSource) {
+                                                    SearchSource.LOSSLESS ->
+                                                        com.arturo254.opentune.ui.screens.LosslessSearchScreen(
+                                                            query = query.text,
+                                                            navController = navController,
+                                                            onDismiss = { onActiveChange(false) },
+                                                            pureBlack = pureBlack,
+                                                        )
+
                                                     SearchSource.LOCAL ->
                                                         LocalSearchScreen(
                                                             query = query.text,
@@ -1523,12 +1566,15 @@ class MainActivity : ComponentActivity() {
                                 },
                                 bottomBar = {
                                     Box {
-                                        BottomSheetPlayer(
-                                            state = playerBottomSheetState,
-                                            navController = navController,
-                                            pureBlack = pureBlack,
-                                            lyricsSyncOffset = lyricsSyncOffset,
-                                        )
+                                        // Hide the mini player on the immersive Music Map screen.
+                                        if (currentRoute != "music_map") {
+                                            BottomSheetPlayer(
+                                                state = playerBottomSheetState,
+                                                navController = navController,
+                                                pureBlack = pureBlack,
+                                                lyricsSyncOffset = lyricsSyncOffset,
+                                            )
+                                        }
 
                                         if(useRail) return@Box
 
@@ -1820,11 +1866,30 @@ class MainActivity : ComponentActivity() {
             return
         }
 
+        // Botón de micro del widget de inicio: abre el reconocimiento y lo arranca.
+        if (intent.action == com.arturo254.opentune.widget.MusicWidgetProvider.ACTION_RECOGNIZE) {
+            navController.openMusicRecognition()
+            return
+        }
+
         val uri = intent.data ?: intent.extras?.getString(Intent.EXTRA_TEXT)?.toUri() ?: return
         val coroutineScope = lifecycleScope
 
+        // Social referral: an invite link (dezzy://invite?ref=… or https://dezzy.space/?ref=…)
+        // carries the inviter's id. Store it; once signed in, auto-link them as friends.
+        uri.getQueryParameter("ref")?.takeIf { it.isNotBlank() }?.let { inviterId ->
+            lifecycleScope.launch {
+                runCatching {
+                    this@MainActivity.dataStore.edit { it[com.arturo254.opentune.constants.PendingReferralKey] = inviterId }
+                }
+                com.arturo254.opentune.social.SocialRepository.consumePendingReferral()
+            }
+            navController.navigate("social")
+            return
+        }
+
         val authority = uri.authority?.lowercase()
-        if (uri.scheme.equals("OpenTune", ignoreCase = true) && authority == "together") {
+        if ((uri.scheme.equals("OpenTune", ignoreCase = true) || uri.scheme.equals("dezzy", ignoreCase = true)) && authority == "together") {
             pendingTogetherJoinLink = uri.toString()
             startMusicServiceSafely()
             joinPendingTogetherIfReady()
@@ -1833,6 +1898,16 @@ class MainActivity : ComponentActivity() {
 
         if (uri.scheme.equals("OpenTune", ignoreCase = true) && authority == "login") {
             navController.navigate(buildLoginRoute(uri.getQueryParameter(LOGIN_URL_ARGUMENT)))
+            return
+        }
+
+        // Google OAuth redirect for the social network, coming back from the Custom Tab
+        // (see GoogleIdentityBridge.launchGoogleLink / handleCallback).
+        if (uri.scheme.equals("dezzy", ignoreCase = true) && authority == "social-callback") {
+            lifecycleScope.launch {
+                com.arturo254.opentune.social.GoogleIdentityBridge.handleCallback(uri)
+                com.arturo254.opentune.social.SocialRepository.consumePendingReferral()
+            }
             return
         }
 
@@ -1909,6 +1984,10 @@ class MainActivity : ComponentActivity() {
         WindowCompat.getInsetsController(window, window.decorView.rootView).apply {
             isAppearanceLightStatusBars = !isDark
             isAppearanceLightNavigationBars = !isDark
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+            window.isStatusBarContrastEnforced = false
         }
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
             window.statusBarColor =

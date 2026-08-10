@@ -8,7 +8,9 @@ import java.security.MessageDigest
  * Removes resolution or sizing parameters so the same core image evaluates to the same base string.
  */
 fun String.toArtworkBaseUrl(): String {
-    return this.substringBefore("=w")
+    return this.substringBefore("?")
+        .substringBefore("=w")
+        .substringBefore("=s")
         .substringBefore("hqdefault.jpg")
         .substringBefore("maxresdefault.jpg")
         .substringBefore("sddefault.jpg")

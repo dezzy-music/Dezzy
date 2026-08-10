@@ -369,8 +369,13 @@ fun AODSettings(
 
 // ── SECCIÓN: Forma de la portada ──────────────────────────────────
         AodSettingsSection(title = stringResource(R.string.aod_shape_title)) {
+            val shapeColumns = when (resolveLayoutMode()) {
+                SettingsLayoutMode.COMPACT -> 4
+                SettingsLayoutMode.MEDIUM -> 6
+                SettingsLayoutMode.EXPANDED -> 8
+            }
             LazyVerticalGrid(
-                columns = GridCells.Fixed(4),
+                columns = GridCells.Fixed(shapeColumns),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),

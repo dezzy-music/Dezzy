@@ -6,6 +6,7 @@
 
 package com.arturo254.opentune.innertube
 
+import io.ktor.http.isSuccess
 import com.arturo254.opentune.innertube.models.AccountInfo
 import com.arturo254.opentune.innertube.models.AlbumItem
 import com.arturo254.opentune.innertube.models.Artist
@@ -42,6 +43,10 @@ import com.arturo254.opentune.innertube.models.response.GetTranscriptResponse
 import com.arturo254.opentune.innertube.models.response.NextResponse
 import com.arturo254.opentune.innertube.models.response.PlayerResponse
 import com.arturo254.opentune.innertube.models.response.SearchResponse
+import com.arturo254.opentune.innertube.models.comment.CommentRenderer
+import com.arturo254.opentune.innertube.models.comment.CommentResponse
+import com.arturo254.opentune.innertube.models.comment.CommentsResult
+import com.arturo254.opentune.innertube.models.comment.VideoCommentSummary
 import com.arturo254.opentune.innertube.pages.AlbumPage
 import com.arturo254.opentune.innertube.pages.ArtistItemsContinuationPage
 import com.arturo254.opentune.innertube.pages.ArtistItemsPage
@@ -149,6 +154,15 @@ object YouTube {
         set(value) {
             authState = authState.copy(poTokenPlayer = value)
         }
+
+    /**
+     * Optional bridge into the app module, which owns the BotGuard WebView that can mint genuine
+     * per-video player poTokens. Set at app startup. Given a videoId, returns a freshly minted
+     * player poToken, or null if one could not be produced.
+     */
+    @Volatile
+    var poTokenMinter: (suspend (videoId: String) -> String?)? = null
+
     var proxy: Proxy?
         get() = innerTube.proxy
         set(value) {
@@ -723,6 +737,40 @@ object YouTube {
         )
     }
 
+    /**
+     * Canciones de la playlist de TENDENCIAS de YouTube Music (la del propio
+     * país del usuario). Es la fuente de la tarjeta "pistas más comentadas":
+     * vídeos musicales reales que sí tienen comentarios (a diferencia de las
+     * "art tracks" auto-generadas de los charts, que suelen tenerlos apagados).
+     *
+     * Camino verificado: charts → primer card de playlist ("VL…") → esa playlist.
+     */
+    suspend fun trendingTracks(limit: Int = 20): Result<List<SongItem>> = runCatching {
+        val response = innerTube.browse(
+            client = WEB_REMIX,
+            browseId = "FEmusic_charts",
+            params = "ggMGCgQIgAQ%3D",
+            setLogin = true,
+        ).body<BrowseResponse>()
+
+        val sections = response.contents?.singleColumnBrowseResultsRenderer?.tabs?.firstOrNull()
+            ?.tabRenderer?.content?.sectionListRenderer?.contents.orEmpty()
+
+        val playlistBrowseId = sections.asSequence()
+            .mapNotNull { it.musicCarouselShelfRenderer }
+            .flatMap { it.contents.asSequence() }
+            .mapNotNull { it.musicTwoRowItemRenderer?.navigationEndpoint?.browseEndpoint?.browseId }
+            .firstOrNull { it.startsWith("VL") }
+
+        if (playlistBrowseId != null) {
+            val list = playlist(playlistBrowseId.removePrefix("VL")).getOrNull()?.songs?.take(limit).orEmpty()
+            if (list.isNotEmpty()) return@runCatching list
+        }
+
+        // Fallback: búsqueda de canciones populares si la playlist de gráficos falla o cambia de ID
+        search("hits music", filter = SearchFilter.FILTER_SONG).getOrNull()?.items?.filterIsInstance<com.arturo254.opentune.innertube.models.SongItem>()?.take(limit).orEmpty()
+    }
+
     suspend fun playlistContinuation(continuation: String): Result<PlaylistContinuationPage> = runCatching {
         val response = innerTube.browse(
             client = WEB_REMIX,
@@ -1033,12 +1081,21 @@ object YouTube {
         )
     }
 
-    suspend fun getChartsPage(continuation: String? = null): Result<ChartsPage> = runCatching {
+    suspend fun getChartsPage(
+        countryCode: String? = null,
+        continuation: String? = null,
+    ): Result<ChartsPage> = runCatching {
+        // Override the geolocation (gl) so YouTube Music returns charts for the
+        // requested country instead of the device's default region.
+        val localeOverride = countryCode
+            ?.takeIf { it.isNotBlank() }
+            ?.let { com.arturo254.opentune.innertube.models.YouTubeLocale(gl = it, hl = locale.hl) }
         val response = innerTube.browse(
             client = WEB_REMIX,
             browseId = "FEmusic_charts",
             params = "ggMGCgQIgAQ%3D",
-            continuation = continuation
+            continuation = continuation,
+            localeOverride = localeOverride,
         ).body<BrowseResponse>()
 
         val sections = mutableListOf<ChartsPage.ChartSection>()
@@ -1315,7 +1372,21 @@ object YouTube {
         setLogin: Boolean = true,
         authState: PlaybackAuthState = currentPlaybackAuthState(),
     ): Result<PlayerResponse> = runCatching {
-        val resolvedPoToken = resolvePlayerPoToken(client, poToken, authState)
+        // For web clients that require service integrity, mint a fresh per-video player poToken
+        // through the app-module BotGuard bridge if no explicit token was supplied. Non-web
+        // clients (ANDROID_VR, IOS, ...) do not use this token and skip the WebView round-trip.
+        val explicitPlayerToken = poToken ?: run {
+            val minter = poTokenMinter
+            if (minter != null &&
+                authState.webClientPoTokenEnabled &&
+                PlaybackAuthState.needsServiceIntegrity(client)
+            ) {
+                runCatching { minter.invoke(videoId) }.getOrNull()
+            } else {
+                null
+            }
+        }
+        val resolvedPoToken = resolvePlayerPoToken(client, explicitPlayerToken, authState)
         innerTube.player(
             client = client,
             videoId = videoId,
@@ -1381,6 +1452,14 @@ object YouTube {
         val songs = items.map { it.first }
         val currentIndex = items.indexOfFirst { it.second }.takeIf { it != -1 }
 
+        val commentsContinuationToken = response.engagementPanels
+            ?.firstOrNull { it.engagementPanelSectionListRenderer?.panelIdentifier == "engagement-panel-comments" }
+            ?.engagementPanelSectionListRenderer
+            ?.content
+            ?.yContinuationComponent
+            ?.nextContinuationData
+            ?.continuation
+
         if (followAutomixPreview) {
             // Keep automix opt-in so ordered playlist queues can page through their own continuation first.
             playlistPanelRenderer.contents.lastOrNull()?.automixPreviewVideoRenderer?.content?.automixPlaylistVideoRenderer?.navigationEndpoint?.watchPlaylistEndpoint?.let { watchPlaylistEndpoint ->
@@ -1395,7 +1474,8 @@ object YouTube {
                             2
                         )?.tabRenderer?.endpoint?.browseEndpoint,
                         currentIndex = currentIndex,
-                        endpoint = watchPlaylistEndpoint
+                        endpoint = watchPlaylistEndpoint,
+                        commentsContinuation = commentsContinuationToken ?: result.commentsContinuation
                     )
                 }
             }
@@ -1407,7 +1487,8 @@ object YouTube {
             lyricsEndpoint = response.contents.singleColumnMusicWatchNextResultsRenderer?.tabbedRenderer?.watchNextTabbedResultsRenderer?.tabs?.getOrNull(1)?.tabRenderer?.endpoint?.browseEndpoint,
             relatedEndpoint = response.contents.singleColumnMusicWatchNextResultsRenderer?.tabbedRenderer?.watchNextTabbedResultsRenderer?.tabs?.getOrNull(2)?.tabRenderer?.endpoint?.browseEndpoint,
             continuation = playlistPanelRenderer.continuations?.getContinuation(),
-            endpoint = endpoint
+            endpoint = endpoint,
+            commentsContinuation = commentsContinuationToken
         )
     }
 
@@ -1511,6 +1592,249 @@ object YouTube {
             val FILTER_PLAYLISTS_ALPHABETICAL = LibraryFilter("4qmFsgIrEhdGRW11c2ljX2xpa2VkX3BsYXlsaXN0cxoQZ2dNR0tnUUlBUkFBb0FZQg%3D%3D")
             val FILTER_PLAYLISTS_RECENTLY_SAVED = LibraryFilter("4qmFsgIrEhdGRW11c2ljX2xpa2VkX3BsYXlsaXN0cxoQZ2dNR0tnUUlBQkFCb0FZQg%3D%3D")
         }
+    }
+
+    suspend fun getVideoCommentsContinuation(videoId: String): Result<String?> = runCatching {
+        println("OpenTuneDebug: getVideoCommentsContinuation starting for videoId=$videoId")
+        // Use nextYouTube() so the request goes to www.youtube.com (not music.youtube.com)
+        // which is the only host that returns engagement panels with comment continuation tokens.
+        val response = innerTube.nextYouTube(
+            client = YouTubeClient.WEB,
+            videoId = videoId,
+            playlistId = null,
+            playlistSetVideoId = null,
+            index = null,
+            params = null,
+            continuation = null,
+            setLogin = true
+        ).body<NextResponse>()
+        println("OpenTuneDebug: getVideoCommentsContinuation got response panels=${response.engagementPanels?.size}")
+
+        val panels = response.engagementPanels
+
+        val commentsPanel = panels?.firstOrNull {
+            it.engagementPanelSectionListRenderer?.panelIdentifier?.startsWith("engagement-panel-comments") == true
+        }?.engagementPanelSectionListRenderer
+        println("OpenTuneDebug: commentsPanel found=${commentsPanel != null}, identifier=${commentsPanel?.panelIdentifier}")
+
+        // Path 1: continuationItemRenderer inside contents of itemSectionRenderer (WEB client standard path)
+        val token1 = commentsPanel?.content?.sectionListRenderer?.contents?.firstOrNull()
+            ?.itemSectionRenderer?.contents?.firstOrNull()
+            ?.continuationItemRenderer?.continuationEndpoint?.continuationCommand?.token
+        println("OpenTuneDebug: token1=$token1")
+
+        // Path 2: continuations list under itemSectionRenderer (fallback path)
+        val token2 = commentsPanel?.content?.sectionListRenderer?.contents?.firstOrNull()
+            ?.itemSectionRenderer?.continuations?.firstOrNull()
+            ?.let { c -> c.nextContinuationData?.continuation ?: c.reloadContinuationData?.continuation }
+        println("OpenTuneDebug: token2=$token2")
+
+        // Path 3: yContinuationComponent (YouTube Music legacy path)
+        val token3 = commentsPanel?.content?.yContinuationComponent?.nextContinuationData?.continuation
+        println("OpenTuneDebug: token3=$token3")
+
+        val finalToken = token1 ?: token2 ?: token3
+        println("OpenTuneDebug: finalToken=$finalToken")
+        finalToken
+    }.onFailure {
+        println("OpenTuneDebug: getVideoCommentsContinuation failed with exception: ${it.message}")
+        it.printStackTrace()
+    }
+
+    /**
+     * Resumen de comentarios REAL de un video (datos de YouTube, no de Dezzy):
+     * el conteo total tal como lo muestra YouTube Music ("254 K") y el comentario
+     * destacado (autor + texto + avatar). Es lo que alimenta la tarjeta de
+     * "pistas más comentadas".
+     *
+     * Devuelve null si el video no tiene comentarios o están desactivados.
+     */
+    suspend fun getVideoCommentSummary(videoId: String): Result<VideoCommentSummary?> = runCatching {
+        val response = innerTube.nextYouTube(
+            client = YouTubeClient.WEB,
+            videoId = videoId,
+            playlistId = null,
+            playlistSetVideoId = null,
+            index = null,
+            params = null,
+            continuation = null,
+            setLogin = true,
+        ).body<NextResponse>()
+
+        val commentsPanel = response.engagementPanels?.firstOrNull {
+            it.engagementPanelSectionListRenderer?.panelIdentifier?.startsWith("engagement-panel-comments") == true
+        }?.engagementPanelSectionListRenderer ?: return@runCatching null
+
+        // Conteo total desde la cabecera del panel ("254 K", "1.2 M", "1,234").
+        val countText = commentsPanel.header
+            ?.engagementPanelTitleHeaderRenderer
+            ?.contextualInfo
+            ?.runs
+            ?.firstOrNull()
+            ?.text
+        val count = parseCompactCount(countText)
+
+        // Token para traer la primera página y sacar el comentario destacado.
+        val token = commentsPanel.content?.sectionListRenderer?.contents?.firstOrNull()
+            ?.itemSectionRenderer?.contents?.firstOrNull()
+            ?.continuationItemRenderer?.continuationEndpoint?.continuationCommand?.token
+            ?: commentsPanel.content?.sectionListRenderer?.contents?.firstOrNull()
+                ?.itemSectionRenderer?.continuations?.firstOrNull()
+                ?.let { it.nextContinuationData?.continuation ?: it.reloadContinuationData?.continuation }
+            ?: commentsPanel.content?.yContinuationComponent?.nextContinuationData?.continuation
+
+        val top = token?.let { t ->
+            getComments(t).getOrNull()?.items?.firstOrNull()
+                ?.commentThreadRenderer?.comment?.commentRenderer
+        }
+
+        if (top == null && count == null) return@runCatching null
+
+        VideoCommentSummary(
+            videoId = videoId,
+            commentCount = count,
+            topCommentAuthor = top?.authorName(),
+            topCommentText = top?.body(),
+            topCommentAvatarUrl = top?.authorThumbnail?.bestUrl(),
+        )
+    }
+
+    /**
+     * Convierte "254 K" / "1.2 M" / "866" / "1,234" en número. YouTube separa el
+     * número del sufijo con un espacio DURO (NBSP, "56 K"), que `\s` no
+     * captura: por eso se quitan primero TODOS los espacios (normales, NBSP y
+     * finos) antes de parsear, o "56 K" se leería como 56.
+     */
+    private fun parseCompactCount(raw: String?): Long? {
+        val s = raw?.replace(Regex("[\\s\\u00A0\\u202F]"), "")?.takeIf { it.isNotBlank() } ?: return null
+        val match = Regex("([0-9][0-9.,]*)([KMB])?", RegexOption.IGNORE_CASE).find(s) ?: return null
+        val number = match.groupValues[1].replace(",", "").toDoubleOrNull() ?: return null
+        val multiplier = when (match.groupValues[2].uppercase()) {
+            "K" -> 1_000
+            "M" -> 1_000_000
+            "B" -> 1_000_000_000
+            else -> 1
+        }
+        return (number * multiplier).toLong()
+    }
+
+    suspend fun getComments(continuation: String): Result<CommentsResult> = runCatching {
+        println("OpenTuneDebug: getComments starting for token=$continuation")
+        // Must use nextYouTube() so requests go to www.youtube.com/youtubei/v1/next
+        // Comment continuation tokens are only valid on YouTube, not YouTube Music.
+        val response = innerTube.nextYouTube(
+            client = YouTubeClient.WEB,
+            videoId = null,
+            playlistId = null,
+            playlistSetVideoId = null,
+            index = null,
+            params = null,
+            continuation = continuation,
+            setLogin = true
+        ).body<CommentResponse>()
+        println("OpenTuneDebug: getComments got response endpoints=${response.onResponseReceivedEndpoints?.size}, continuationContents=${response.continuationContents != null}")
+        
+        val result = extractComments(response)
+        println("OpenTuneDebug: getComments extracted items=${result.items.size}, nextContinuation=${result.continuation}")
+        result
+    }.onFailure {
+        println("OpenTuneDebug: getComments failed with exception: ${it.message}")
+        it.printStackTrace()
+    }
+
+    suspend fun getCommentReplies(continuation: String): Result<CommentsResult> = runCatching {
+        val response = innerTube.nextYouTube(
+            client = WEB,
+            videoId = null,
+            playlistId = null,
+            playlistSetVideoId = null,
+            index = null,
+            params = null,
+            continuation = continuation
+        ).body<CommentResponse>()
+        
+        extractComments(response)
+    }
+
+    suspend fun postComment(commentText: String, createCommentParams: String? = null): Result<Boolean> = runCatching {
+        val response = innerTube.createComment(
+            client = WEB,
+            commentText = commentText,
+            createCommentParams = createCommentParams
+        )
+        response.status.isSuccess()
+    }
+
+    private fun extractComments(response: CommentResponse): CommentsResult {
+        val endpoints = response.onResponseReceivedEndpoints
+        val endpointItems = endpoints?.flatMap { endpoint ->
+            val command = endpoint.reloadContinuationItemsCommand ?: endpoint.appendContinuationItemsAction
+            command?.continuationItems ?: emptyList()
+        } ?: emptyList()
+
+        val comments = if (endpointItems.isNotEmpty()) {
+            endpointItems
+        } else {
+            response.continuationContents?.itemSectionContinuation?.contents
+                ?: response.continuationContents?.commentRepliesContinuation?.contents
+                ?: emptyList()
+        }
+
+        val nextContinuation = if (endpointItems.isNotEmpty()) {
+            endpointItems.firstOrNull { it.continuationItemRenderer != null }
+                ?.continuationItemRenderer?.continuationEndpoint?.continuationCommand?.token
+        } else {
+            val continuations = response.continuationContents?.itemSectionContinuation?.continuations
+                ?: response.continuationContents?.commentRepliesContinuation?.continuations
+            continuations?.firstOrNull { it.nextContinuationData != null || it.reloadContinuationData != null }
+                ?.let { it.nextContinuationData?.continuation ?: it.reloadContinuationData?.continuation }
+        }
+
+        // Modern WEB responses carry the actual comment data as commentEntityPayload mutations,
+        // with each thread holding only a commentViewModel reference. Hydrate those references
+        // into classic CommentRenderers so the UI keeps working with real-world data.
+        val payloadById = response.frameworkUpdates?.entityBatchUpdate?.mutations
+            ?.mapNotNull { it.payload?.commentEntityPayload }
+            ?.mapNotNull { payload -> payload.properties?.commentId?.let { id -> id to payload } }
+            ?.toMap()
+            .orEmpty()
+
+        fun hydrate(thread: CommentResponse.CommentThread): CommentResponse.CommentThread {
+            val threadRenderer = thread.commentThreadRenderer ?: return thread
+            if (threadRenderer.comment?.commentRenderer != null) return thread
+            val id = threadRenderer.commentViewModel?.commentViewModel?.commentId ?: return thread
+            val payload = payloadById[id] ?: return thread
+            val renderer = CommentRenderer(
+                authorText = CommentRenderer.TextRuns(simpleText = payload.author?.displayName),
+                authorThumbnail = CommentRenderer.AuthorThumbnail(
+                    thumbnails = payload.author?.avatarThumbnailUrl?.let { url ->
+                        listOf(CommentRenderer.AuthorThumbnail.Thumbnail(url = url, width = 88, height = 88))
+                    },
+                ),
+                contentText = CommentRenderer.TextRuns(simpleText = payload.properties?.content?.content),
+                publishedTimeText = CommentRenderer.TextRuns(simpleText = payload.properties?.publishedTime),
+                voteCount = CommentRenderer.TextRuns(
+                    simpleText = payload.toolbar?.likeCountNotliked ?: payload.toolbar?.likeCountLiked,
+                ),
+                authorIsChannelOwner = payload.author?.isCreator ?: false,
+            )
+            return thread.copy(
+                commentThreadRenderer = threadRenderer.copy(
+                    comment = CommentResponse.CommentThreadRenderer.Comment(commentRenderer = renderer),
+                ),
+            )
+        }
+
+        val hydrated = comments.map(::hydrate)
+
+        return CommentsResult(
+            // Keep only threads the UI can actually render — referencia-only threads whose
+            // payload was missing used to show up as blank rows.
+            items = hydrated.filter {
+                it.commentThreadRenderer?.comment?.commentRenderer != null || it.commentRenderer != null
+            },
+            continuation = nextContinuation
+        )
     }
 
     const val MAX_GET_QUEUE_SIZE = 1000

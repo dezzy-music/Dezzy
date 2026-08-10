@@ -44,6 +44,14 @@ internal class CrossfadeAudio(
     private val maxSafeGainFactor: Float,
     private val overlapPlayerFactory: () -> ExoPlayer,
     private val onCrossfadeStart: (MediaItem) -> Unit = {},
+    /**
+     * Se invoca cuando el crossfade/handoff TERMINA (con éxito o al cortarse).
+     * Durante el crossfade se suprime la actualización de metadata en MusicService;
+     * este callback permite re-sincronizar la metadata con el item real del player
+     * para que no se quede "pegada" en la canción anterior. Se llama en el hilo del
+     * player.
+     */
+    private val onCrossfadeEnd: () -> Unit = {},
 ) {
     // ── Estado del loop ───────────────────────────────────────────────────────
 
@@ -75,7 +83,12 @@ internal class CrossfadeAudio(
     private val handoffReseekMinIntervalMs = 180L
     private val handoffDriftCorrectionThresholdMs = 220L
     private val handoffRampStartDriftToleranceMs = 120L
-    private val handoffTimeoutMs = 5000L
+    // Tope máximo que el player principal puede permanecer mudo (playbackFadeFactor = 0)
+    // esperando a estabilizarse durante el handoff. Si no se estabiliza a tiempo,
+    // completeHandoffFromOverlap() lo desmutea y detiene el overlap: preferimos un
+    // micro-salto a un silencio prolongado. Antes eran 5000 ms → hasta 5 s de silencio
+    // si un cambio de ruta de audio (p. ej. conectar audífonos) impedía estabilizar.
+    private val handoffTimeoutMs = 2500L
 
     // ── Buffer mínimo antes de arrancar el crossfade ──────────────────────────
 
@@ -87,6 +100,69 @@ internal class CrossfadeAudio(
     // ── API pública ───────────────────────────────────────────────────────────
 
     fun isCrossfading(): Boolean = crossfadeActive
+
+    /**
+     * Índice de la pista que el usuario está OYENDO ahora mismo.
+     *
+     * Durante un fundido no coincide con `player.currentMediaItemIndex`: el audio
+     * que se escucha sale del overlap, que ya va en la pista destino. Devuelve
+     * `C.INDEX_UNSET` si no hay fundido en curso y por tanto vale el índice normal
+     * del player.
+     */
+    fun audiblyPlayingIndex(): Int =
+        if ((crossfadeActive || handoffActive) &&
+            crossfadeTargetIndex != C.INDEX_UNSET &&
+            crossfadeTargetIndex < player.mediaItemCount
+        ) crossfadeTargetIndex else C.INDEX_UNSET
+
+    /**
+     * Aborta el fundido SIN mover el player.
+     *
+     * [commitCrossfade] hace un `seekTo` al índice objetivo, y encadenar ese seek
+     * con otro salto provocaba que la navegación acabara en una pista anterior
+     * (el "siguiente" que retrocedía al controlar desde fuera de la app). Cuando
+     * quien llama ya sabe a qué índice quiere ir, esto le deja calcular el destino
+     * una sola vez y saltar directo.
+     */
+    fun abortCrossfade() {
+        stopOverlapCrossfade(resetMainFade = true)
+    }
+
+    /**
+     * "Compromete" un crossfade en curso: fija el player PRINCIPAL en la pista que
+     * realmente se está oyendo (el objetivo del fundido, que suena en el overlap) y
+     * detiene el overlap. Se llama ANTES de cualquier navegación manual (next/prev,
+     * cambiar de canción, shuffle) para que el índice del player no vaya desfasado
+     * respecto al audio — la causa del bug de "suena la canción anterior".
+     * Debe llamarse en el hilo del player.
+     */
+    fun commitCrossfade() {
+        val target = crossfadeTargetIndex
+        if ((crossfadeActive || handoffActive) &&
+            target != C.INDEX_UNSET &&
+            target < player.mediaItemCount &&
+            player.currentMediaItemIndex != target
+        ) {
+            val pos = overlapPlayer?.currentPosition?.coerceAtLeast(0L) ?: 0L
+            runCatching { player.seekTo(target, pos) }
+        }
+        stopOverlapCrossfade(resetMainFade = true)
+    }
+
+    /**
+     * Debe llamarse cuando cambia la ruta de salida de audio (conectar/desconectar
+     * audífonos o Bluetooth), que obliga al AudioSink a reconfigurarse.
+     *
+     * Si hay un fundido/handoff en curso, la reconfiguración puede impedir que el
+     * player principal se "estabilice", dejándolo mudo (playbackFadeFactor = 0)
+     * hasta el timeout. Para evitar ese silencio involuntario, cerramos el fundido
+     * de inmediato: fijamos el principal en la pista que se está oyendo y restauramos
+     * playbackFadeFactor a 1. No-op si no hay nada en curso. En el hilo del player.
+     */
+    fun onAudioRouteChanged() {
+        if (!crossfadeActive && !handoffActive) return
+        commitCrossfade()
+    }
 
     fun start(scope: CoroutineScope) {
         if (loopJob?.isActive == true) return
@@ -443,7 +519,14 @@ internal class CrossfadeAudio(
     // ── Transición de MediaItem ───────────────────────────────────────────────
 
     private fun handleMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-        if (!crossfadeActive) return
+        if (!crossfadeActive) {
+            // Cambio MANUAL (no automático) con un overlap solo "primed": lo
+            // soltamos para que jamás filtre la pista equivocada.
+            if (reason != Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) {
+                unprimeOverlap()
+            }
+            return
+        }
 
         val targetId = crossfadeTargetMediaId
         val newId = mediaItem?.mediaId
@@ -507,11 +590,16 @@ internal class CrossfadeAudio(
         overlapPrimedMediaId = null
 
         playbackFadeFactor.value = 1f
+        // Re-sincroniza la metadata con el item real ahora que el fundido acabó.
+        onCrossfadeEnd()
     }
 
     // ── Stop / reset ──────────────────────────────────────────────────────────
 
     private fun stopOverlapCrossfade(resetMainFade: Boolean) {
+        // Solo notificamos el fin si veníamos de un crossfade/handoff real (no en
+        // los innumerables ticks del loop que llaman a stop en estado inactivo).
+        val wasActive = crossfadeActive || handoffActive
         crossfadeActive = false
         crossfadeTargetIndex = C.INDEX_UNSET
         crossfadeTargetMediaId = null
@@ -538,6 +626,7 @@ internal class CrossfadeAudio(
         if (resetMainFade) {
             playbackFadeFactor.value = 1f
         }
+        if (wasActive) onCrossfadeEnd()
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

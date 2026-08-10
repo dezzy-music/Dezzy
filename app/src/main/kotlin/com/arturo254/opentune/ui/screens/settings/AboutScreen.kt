@@ -24,6 +24,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -87,6 +88,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -253,34 +255,9 @@ fun AboutScreen(
                 )
             }
 
-            // ── Contributors content ───────────────────────────────────────
-            when {
-                isLoading -> {
-                    items(4, key = { "loading_$it" }) {
-                        ContributorShimmerExpressive()
-                    }
-                }
-
-                error != null -> {
-                    item(key = "error") {
-                        ErrorCardExpressive(
-                            message = error ?: "Unknown error",
-                            onRetry = { viewModel.fetchContributorsFromGitHub() }
-                        )
-                    }
-                }
-
-                contributors.isNotEmpty() -> {
-                    items(
-                        items = contributors,
-                        key = { contributor -> contributor.name }
-                    ) { contributor ->
-                        ContributorCardExpressive(
-                            contributor = contributor,
-                            onClick = { uriHandler.openUri(contributor.profileUrl) },
-                        )
-                    }
-                }
+            // ── Contributors content: Dezzy signature artwork ─────────────
+            item(key = "credits_art") {
+                DezzyCreditsArtSection()
             }
 
             // ── License footer ────────────────────────────────────────────
@@ -296,6 +273,96 @@ fun AboutScreen(
             item(key = "bottom_spacer") {
                 Spacer(modifier = Modifier.height(16.dp))
             }
+        }
+    }
+}
+
+// ── Dezzy signature artwork (replaces the GitHub contributors list) ─────────
+// Poster-style: dos artes apilados con leve inclinación opuesta, marco morado
+// degradado, borde luminoso sutil y una pulsación de brillo muy lenta.
+
+@Composable
+private fun DezzyCreditsArtSection() {
+    val purpleDeep = Color(0xFF1E0B3D)
+    val purple = Color(0xFF5C2BA6)
+    val purpleBright = Color(0xFF7B3FE4)
+
+    // Very slow breathing glow on the frame border.
+    val glowTransition = rememberInfiniteTransition(label = "creditsGlow")
+    val glowAlpha by glowTransition.animateFloat(
+        initialValue = 0.15f,
+        targetValue = 0.45f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(3600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "creditsGlowAlpha",
+    )
+
+    Card(
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = purpleDeep),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                width = 2.dp,
+                brush = Brush.linearGradient(
+                    listOf(
+                        purpleBright.copy(alpha = glowAlpha),
+                        Color.Transparent,
+                        purpleBright.copy(alpha = glowAlpha),
+                    ),
+                ),
+                shape = RoundedCornerShape(28.dp),
+            ),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Brush.verticalGradient(listOf(purple, purpleDeep)))
+                .padding(16.dp),
+        ) {
+            Image(
+                painter = painterResource(R.drawable.dezzy_credits_created),
+                contentDescription = "Created for Dezzy",
+                contentScale = ContentScale.FillWidth,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer { rotationZ = -1.4f }
+                    .clip(RoundedCornerShape(20.dp))
+                    .border(1.dp, Color.White.copy(alpha = 0.14f), RoundedCornerShape(20.dp)),
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Image(
+                painter = painterResource(R.drawable.dezzy_credits_collage),
+                contentDescription = "Dezzy — collage",
+                contentScale = ContentScale.FillWidth,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer { rotationZ = 1.4f }
+                    .clip(RoundedCornerShape(20.dp))
+                    .border(1.dp, Color.White.copy(alpha = 0.14f), RoundedCornerShape(20.dp)),
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+            Text(
+                text = "OBSESSION WAS ALWAYS THE KEY",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White.copy(alpha = 0.7f),
+                letterSpacing = 3.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Text(
+                text = "DEZZY · NEW YORK · ESTD 2030",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White.copy(alpha = 0.45f),
+                letterSpacing = 2.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+            )
         }
     }
 }

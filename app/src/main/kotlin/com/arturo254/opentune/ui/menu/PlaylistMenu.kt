@@ -96,6 +96,25 @@ fun PlaylistMenu(
         mutableStateOf(emptyList<Song>())
     }
 
+    var showShareSheet by remember { mutableStateOf(false) }
+    if (showShareSheet) {
+        com.arturo254.opentune.ui.component.ShareBottomSheet(
+            title = playlist.playlist.name,
+            subtitle = com.arturo254.opentune.ui.component.ShareEntity.Playlist.descriptor,
+            thumbnailUrl = songs.firstOrNull()?.song?.thumbnailUrl,
+            shareLink = "https://music.youtube.com/playlist?list=${dbPlaylist?.playlist?.browseId}",
+            entity = com.arturo254.opentune.ui.component.ShareEntity.Playlist,
+            tracks = songs.take(4).map { song ->
+                com.arturo254.opentune.utils.ComposeToImage.ShareTrack(
+                    title = song.song.title,
+                    artist = song.artists.joinToString(", ") { it.name },
+                    thumbnailUrl = song.song.thumbnailUrl,
+                )
+            },
+            onDismiss = { showShareSheet = false; onDismiss() },
+        )
+    }
+
     LaunchedEffect(Unit) {
         if (autoPlaylist == false) {
             database.playlistSongs(playlist.id).collect {
@@ -144,13 +163,19 @@ fun PlaylistMenu(
             fallbackThumbnails = playlist.songThumbnails.filterNotNull(),
             onDismiss = { showEditDialog = false },
             onSave = { name, thumbnailUrl ->
-                val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                if (thumbnailUrl?.startsWith("content://") == true) {
+                var finalThumb = thumbnailUrl
+                if (finalThumb?.startsWith("content://") == true) {
                     try {
-                        context.contentResolver.takePersistableUriPermission(
-                            android.net.Uri.parse(thumbnailUrl),
-                            takeFlags
-                        )
+                        val dir = java.io.File(context.filesDir, "custom_covers")
+                        if (!dir.exists()) dir.mkdirs()
+                        val filename = "cover_${System.currentTimeMillis()}_${java.util.UUID.randomUUID().toString().take(6)}.jpg"
+                        val newFile = java.io.File(dir, filename)
+                        context.contentResolver.openInputStream(android.net.Uri.parse(finalThumb))?.use { input ->
+                            newFile.outputStream().use { output ->
+                                input.copyTo(output)
+                            }
+                        }
+                        finalThumb = "file://${newFile.absolutePath}"
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
@@ -160,7 +185,7 @@ fun PlaylistMenu(
                     update(
                         playlist.playlist.copy(
                             name = name,
-                            thumbnailUrl = thumbnailUrl,
+                            thumbnailUrl = finalThumb,
                             lastUpdateTime = LocalDateTime.now(),
                         )
                     )
@@ -201,13 +226,15 @@ fun PlaylistMenu(
                 TextButton(
                     onClick = {
                         showRemoveDownloadDialog = false
-                        songs.forEach { song ->
-                            DownloadService.sendRemoveDownload(
-                                context,
-                                ExoDownloadService::class.java,
-                                song.id,
-                                false,
-                            )
+                        coroutineScope.launch(Dispatchers.IO) {
+                            songs.forEach { song ->
+                                DownloadService.sendRemoveDownload(
+                                    context,
+                                    ExoDownloadService::class.java,
+                                    song.id,
+                                    false,
+                                )
+                            }
                         }
                     },
                 ) {
@@ -382,16 +409,7 @@ fun PlaylistMenu(
                     )
                 },
                 text = shareText,
-                onClick = {
-                    onDismiss()
-                    val intent =
-                        Intent().apply {
-                            action = Intent.ACTION_SEND
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_TEXT, "https://music.youtube.com/playlist?list=${dbPlaylist?.playlist?.browseId}")
-                        }
-                    context.startActivity(Intent.createChooser(intent, null))
-                },
+                onClick = { showShareSheet = true },
             ),
         )
     }
@@ -593,19 +611,23 @@ fun PlaylistMenu(
                                     )
                                 },
                                 modifier = Modifier.clickable {
-                                    songs.forEach { song ->
-                                        val downloadRequest =
-                                            DownloadRequest
-                                                .Builder(song.id, song.id.toUri())
-                                                .setCustomCacheKey(song.id)
-                                                .setData(song.song.title.toByteArray())
-                                                .build()
-                                        DownloadService.sendAddDownload(
-                                            context,
-                                            ExoDownloadService::class.java,
-                                            downloadRequest,
-                                            false,
-                                        )
+                                    // Bulk-enqueueing on the UI thread freezes the app for large
+                                    // playlists (e.g. an imported Spotify library with 1000+ songs).
+                                    coroutineScope.launch(Dispatchers.IO) {
+                                        songs.forEach { song ->
+                                            val downloadRequest =
+                                                DownloadRequest
+                                                    .Builder(song.id, song.id.toUri())
+                                                    .setCustomCacheKey(song.id)
+                                                    .setData(song.song.title.toByteArray())
+                                                    .build()
+                                            DownloadService.sendAddDownload(
+                                                context,
+                                                ExoDownloadService::class.java,
+                                                downloadRequest,
+                                                false,
+                                            )
+                                        }
                                     }
                                 },
                                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),

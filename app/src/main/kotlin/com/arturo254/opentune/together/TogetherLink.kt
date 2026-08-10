@@ -18,10 +18,13 @@ data class TogetherJoinInfo(
     val sessionKey: String,
 ) {
     fun toWebSocketUrl(): String =
-        "ws://$host:$port/together"
+        if (host.isNotBlank() && port > 0) "ws://$host:$port/together" else ""
 
     fun toDeepLink(): String {
         val charset = StandardCharsets.UTF_8.name()
+        if (host.isBlank()) {
+            return "dezzy://together?code=${URLEncoder.encode(sessionId, charset)}"
+        }
         val q =
             listOf(
                 "host" to host,
@@ -31,7 +34,7 @@ data class TogetherJoinInfo(
             ).joinToString("&") { (k, v) ->
                 "${URLEncoder.encode(k, charset)}=${URLEncoder.encode(v, charset)}"
             }
-        return "Dezzy://together?$q"
+        return "dezzy://together?$q"
     }
 }
 
@@ -43,35 +46,45 @@ object TogetherLink {
         if (trimmed.isBlank()) return null
 
         val asUri = runCatching { URI(trimmed) }.getOrNull()
-        if (asUri != null) {
+        if (asUri != null && !asUri.scheme.isNullOrBlank()) {
             decodeDeepLink(asUri)?.let { return it }
             decodeWsUrl(asUri)?.let { return it }
         }
 
         decodeCompact(trimmed)?.let { return it }
+        decodeRoomCode(trimmed)?.let { return it }
+
         return null
     }
 
     private fun decodeDeepLink(uri: URI): TogetherJoinInfo? {
-        if (!uri.scheme.equals("OpenTune", ignoreCase = true)) return null
+        val scheme = uri.scheme?.lowercase() ?: return null
+        if (scheme != "opentune" && scheme != "dezzy") return null
         val authority = uri.host?.lowercase() ?: uri.authority?.lowercase() ?: return null
         if (authority != "together") return null
 
         val params = parseQuery(uri.rawQuery)
         val host = params["host"]?.trim().orEmpty()
         val port = params["port"]?.toIntOrNull()
-        val sid = params["sid"]?.trim().orEmpty()
+        val sid = (params["sid"] ?: params["code"])?.trim().orEmpty()
         val key = params["key"]?.trim().orEmpty()
 
-        if (host.isBlank() || port == null || sid.isBlank() || key.isBlank()) return null
-        if (port !in 1..65535) return null
+        if (sid.isBlank()) return null
+        if (host.isNotBlank()) {
+            if (port == null || port !in 1..65535) return null
+            return TogetherJoinInfo(host = host, port = port, sessionId = sid, sessionKey = key)
+        }
 
-        return TogetherJoinInfo(host = host, port = port, sessionId = sid, sessionKey = key)
+        return TogetherJoinInfo(host = "", port = 0, sessionId = sid, sessionKey = key)
     }
 
     private fun decodeWsUrl(uri: URI): TogetherJoinInfo? {
         val scheme = uri.scheme?.lowercase() ?: return null
         if (scheme != "ws" && scheme != "wss" && scheme != "http" && scheme != "https") return null
+
+        val params = parseQuery(uri.rawQuery)
+        val sid = (params["sid"] ?: params["code"])?.trim().orEmpty()
+        val key = params["key"]?.trim().orEmpty()
 
         val host = uri.host?.trim().orEmpty()
         val port = when {
@@ -80,14 +93,12 @@ object TogetherLink {
             else -> 80
         }
 
-        val params = parseQuery(uri.rawQuery)
-        val sid = params["sid"]?.trim().orEmpty()
-        val key = params["key"]?.trim().orEmpty()
+        if (sid.isBlank()) return null
+        if (host.isNotBlank()) {
+            return TogetherJoinInfo(host = host, port = port, sessionId = sid, sessionKey = key)
+        }
 
-        if (host.isBlank() || sid.isBlank() || key.isBlank()) return null
-        if (port !in 1..65535) return null
-
-        return TogetherJoinInfo(host = host, port = port, sessionId = sid, sessionKey = key)
+        return TogetherJoinInfo(host = "", port = 0, sessionId = sid, sessionKey = key)
     }
 
     private fun decodeCompact(raw: String): TogetherJoinInfo? {
@@ -101,6 +112,14 @@ object TogetherLink {
         if (host.isBlank() || sid.isBlank() || key.isBlank()) return null
         if (port !in 1..65535) return null
         return TogetherJoinInfo(host = host, port = port, sessionId = sid, sessionKey = key)
+    }
+
+    private fun decodeRoomCode(raw: String): TogetherJoinInfo? {
+        val cleaned = raw.trim()
+        if (cleaned.length in 3..128 && cleaned.matches(Regex("^[a-zA-Z0-9_\\-]+$"))) {
+            return TogetherJoinInfo(host = "", port = 0, sessionId = cleaned, sessionKey = "")
+        }
+        return null
     }
 
     private fun parseQuery(rawQuery: String?): Map<String, String> {
