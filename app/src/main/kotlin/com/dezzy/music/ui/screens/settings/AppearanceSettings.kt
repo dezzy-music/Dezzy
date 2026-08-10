@@ -252,7 +252,7 @@ fun AppearanceSettings(
 
     val (dynamicTheme, onDynamicThemeChange) = rememberPreference(
         DynamicThemeKey,
-        defaultValue = true
+        defaultValue = false
     )
     val (randomThemeOnStartup, onRandomThemeOnStartupChange) = rememberPreference(
         RandomThemeOnStartupKey,
@@ -272,7 +272,7 @@ fun AppearanceSettings(
     )
     val (dynamicMiniPlayerColor, onDynamicMiniPlayerColorChange) = rememberPreference(
         DynamicMiniPlayerColorKey,
-        defaultValue = false
+        defaultValue = true
     )
 
     val (hidePlayerThumbnail, onHidePlayerThumbnailChange) = rememberPreference(
@@ -301,10 +301,10 @@ fun AppearanceSettings(
             PlayerBackgroundStyleKey,
             defaultValue = PlayerBackgroundStyle.DEFAULT,
         )
-    val (pureBlack, onPureBlackChange) = rememberPreference(PureBlackKey, defaultValue = false)
-    val (disableBlur, onDisableBlurChange) = rememberPreference(DisableBlurKey, defaultValue = true)
+    val (pureBlack, onPureBlackChange) = rememberPreference(PureBlackKey, defaultValue = true)
+    val (disableBlur, onDisableBlurChange) = rememberPreference(DisableBlurKey, defaultValue = false)
     val (useSystemFont, onUseSystemFontChange) = rememberPreference(UseSystemFontKey, defaultValue = false)
-    val (fontFamily, onFontFamilyChange) = rememberPreference(FontFamilyKey, defaultValue = "POPPINS")
+    val (fontFamily, onFontFamilyChange) = rememberPreference(FontFamilyKey, defaultValue = "LORA")
     val (enableBubble, onEnableBubbleChange) = rememberPreference(EnableBubbleKey, defaultValue = false)
     val (defaultOpenTab, onDefaultOpenTabChange) = rememberEnumPreference(
         DefaultOpenTabKey,
@@ -316,11 +316,11 @@ fun AppearanceSettings(
     )
     val (lyricsPosition, onLyricsPositionChange) = rememberEnumPreference(
         LyricsTextPositionKey,
-        defaultValue = LyricsPosition.LEFT
+        defaultValue = LyricsPosition.CENTER
     )
     val (lyricsAnimation, onLyricsAnimationChange) = rememberEnumPreference<LyricsAnimationStyle>(
-    key = LyricsAnimationStyleKey,
-    defaultValue = LyricsAnimationStyle.APPLE
+        key = LyricsAnimationStyleKey,
+        defaultValue = LyricsAnimationStyle.APPLE
     )
     val (lyricsClick, onLyricsClickChange) = rememberPreference(LyricsClickKey, defaultValue = true)
     val (lyricsScroll, onLyricsScrollChange) = rememberPreference(LyricsScrollKey, defaultValue = true)

@@ -72,13 +72,13 @@ fun AiSettings(
     navController: NavController,
     scrollBehavior: TopAppBarScrollBehavior,
 ) {
-    var aiProvider by rememberPreference(AiProviderKey, "OpenRouter")
+    var aiProvider by rememberPreference(AiProviderKey, "FreeOnline")
     var openRouterApiKey by rememberPreference(OpenRouterApiKey, "")
     var openRouterBaseUrl by rememberPreference(OpenRouterBaseUrlKey, "https://openrouter.ai/api/v1/chat/completions")
     var openRouterModel by rememberPreference(OpenRouterModelKey, "mistralai/mistral-small-3.1-24b-instruct:free")
-    var autoTranslateLyrics by rememberPreference(AutoTranslateLyricsKey, false)
+    var autoTranslateLyrics by rememberPreference(AutoTranslateLyricsKey, true)
     var autoTranslateLyricsMismatch by rememberPreference(AutoTranslateLyricsMismatchKey, false)
-    var translateLanguage by rememberPreference(TranslateLanguageKey, "en")
+    var translateLanguage by rememberPreference(TranslateLanguageKey, "es")
     var translateMode by rememberPreference(TranslateModeKey, "Literal")
     
     var aiSystemPrompt by rememberPreference(AiSystemPromptKey, "")

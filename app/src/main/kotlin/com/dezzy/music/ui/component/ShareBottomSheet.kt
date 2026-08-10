@@ -110,7 +110,7 @@ fun ShareBottomSheet(
     // Match the app's selected font.
     val appFontFamily = MaterialTheme.typography.bodyLarge.fontFamily
     // Fuente elegida en Ajustes → se aplica también a lo EXPORTADO (imagen y video).
-    val (fontName) = rememberPreference(FontFamilyKey, defaultValue = "POPPINS")
+    val (fontName) = rememberPreference(FontFamilyKey, defaultValue = "LORA")
     val (useSystemFont) = rememberPreference(UseSystemFontKey, defaultValue = false)
     val exportFontName = if (useSystemFont) "SYSTEM" else fontName
 

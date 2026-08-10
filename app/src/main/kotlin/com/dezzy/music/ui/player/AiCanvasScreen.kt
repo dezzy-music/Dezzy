@@ -474,7 +474,7 @@ fun AiCanvasScreen(
 
     // ----- Phase 2: AI enhancement (per-line emphasis + mood) -----
     val aiEnhance by rememberPreference(CanvasAiEnhanceKey, defaultValue = false)
-    val aiProvider by rememberPreference(AiProviderKey, "OpenRouter")
+    val aiProvider by rememberPreference(AiProviderKey, "FreeOnline")
     val openRouterApiKey by rememberPreference(OpenRouterApiKey, "")
     val openRouterBaseUrl by rememberPreference(
         OpenRouterBaseUrlKey, "https://openrouter.ai/api/v1/chat/completions"

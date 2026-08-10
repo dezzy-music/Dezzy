@@ -75,7 +75,7 @@ object PlaylistTranslationManager {
         translationJob = scope.launch(Dispatchers.IO) {
             try {
                 val prefs = context.dataStore.data.first()
-                val aiProvider = prefs[AiProviderKey] ?: "OpenRouter"
+                val aiProvider = prefs[AiProviderKey] ?: "FreeOnline"
                 val openRouterApiKey = prefs[OpenRouterApiKey] ?: ""
                 val deeplApiKey = prefs[DeeplApiKey] ?: ""
                 val openRouterBaseUrl = prefs[OpenRouterBaseUrlKey] ?: "https://openrouter.ai/api/v1/chat/completions"

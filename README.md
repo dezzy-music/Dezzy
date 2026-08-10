@@ -203,7 +203,7 @@ Para información detallada sobre configuración, características avanzadas y g
 
 #### Opción 2: Sitio Web Oficial
 
-1. Visita el [sitio web oficial de Dezzy](https://dezzymusic.netlify.app/)
+1. Visita el [sitio web oficial de Dezzy](https://dezzy.space/)
 2. Selecciona la opción de descarga para Android
 3. Sigue las instrucciones de instalación proporcionadas
 

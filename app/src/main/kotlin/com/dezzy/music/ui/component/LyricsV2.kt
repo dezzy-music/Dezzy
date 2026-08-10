@@ -204,13 +204,13 @@ fun LyricsV2(
     val (romanizeJapanese) = rememberPreference(LyricsRomanizeJapaneseKey, defaultValue = true)
     val (romanizeKorean) = rememberPreference(LyricsRomanizeKoreanKey, defaultValue = true)
     val (useSystemFont) = rememberPreference(UseSystemFontKey, defaultValue = false)
-    val (appFontName) = rememberPreference(com.dezzy.music.constants.FontFamilyKey, defaultValue = "POPPINS")
+    val (appFontName) = rememberPreference(com.dezzy.music.constants.FontFamilyKey, defaultValue = "LORA")
     val shareFontName = if (useSystemFont) "SYSTEM" else appFontName
     val lyricsFontFamily = androidx.compose.material3.MaterialTheme.typography.headlineMedium.fontFamily
     val playerBackground by rememberEnumPreference(PlayerBackgroundStyleKey, PlayerBackgroundStyle.DEFAULT)
     val lyricsV2Style by rememberEnumPreference(LyricsV2StyleKey, LyricsV2Style.LIQUID_FLOW)
-    val (lyricsTextPositionStr) = rememberPreference(LyricsTextPositionKey, defaultValue = LyricsPosition.LEFT.name)
-    val lyricsTextPosition = LyricsPosition.values().firstOrNull { it.name == lyricsTextPositionStr } ?: LyricsPosition.LEFT
+    val (lyricsTextPositionStr) = rememberPreference(LyricsTextPositionKey, defaultValue = LyricsPosition.CENTER.name)
+    val lyricsTextPosition = LyricsPosition.values().firstOrNull { it.name == lyricsTextPositionStr } ?: LyricsPosition.CENTER
 
     val database = LocalDatabase.current
     val openRouterApiKey by rememberPreference(OpenRouterApiKey, "")
@@ -218,11 +218,11 @@ fun LyricsV2(
     val openRouterModel by rememberPreference(OpenRouterModelKey, "mistralai/mistral-small-3.1-24b-instruct:free")
     val deeplApiKey by rememberPreference(DeeplApiKey, "")
     val deeplFormality by rememberPreference(DeeplFormalityKey, "default")
-    val autoTranslateLyrics by rememberPreference(AutoTranslateLyricsKey, false)
+    val autoTranslateLyrics by rememberPreference(AutoTranslateLyricsKey, true)
     val autoTranslateLyricsMismatch by rememberPreference(AutoTranslateLyricsMismatchKey, false)
-    val translateLanguage by rememberPreference(TranslateLanguageKey, "en")
+    val translateLanguage by rememberPreference(TranslateLanguageKey, "es")
     val translateMode by rememberPreference(TranslateModeKey, "Literal")
-    val aiProvider by rememberPreference(com.dezzy.music.constants.AiProviderKey, "OpenRouter")
+    val aiProvider by rememberPreference(com.dezzy.music.constants.AiProviderKey, "FreeOnline")
     val effectiveApiKey = remember(aiProvider, openRouterApiKey, deeplApiKey) {
         when (aiProvider) {
             "DeepL" -> deeplApiKey

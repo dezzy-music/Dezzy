@@ -244,6 +244,7 @@ import com.dezzy.music.ui.screens.buildLoginRoute
 import com.dezzy.music.ui.screens.musicrecognition.MusicRecognitionRoute
 import com.dezzy.music.ui.screens.musicrecognition.openMusicRecognition
 import com.dezzy.music.ui.screens.navigationBuilder
+import com.dezzy.music.ui.screens.WelcomeLoginDialog
 import com.dezzy.music.ui.screens.search.LocalSearchScreen
 import com.dezzy.music.ui.screens.search.OnlineSearchScreen
 import com.dezzy.music.ui.screens.settings.DarkMode
@@ -606,7 +607,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            val enableDynamicTheme by rememberPreference(DynamicThemeKey, defaultValue = true)
+            val enableDynamicTheme by rememberPreference(DynamicThemeKey, defaultValue = false)
             val customThemeColorValue by rememberPreference(CustomThemeColorKey, defaultValue = "default")
             val darkTheme by rememberEnumPreference(DarkModeKey, defaultValue = DarkMode.AUTO)
             val useSystemFont by rememberPreference(UseSystemFontKey, defaultValue = false)
@@ -619,7 +620,7 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(useDarkTheme) {
                 setSystemBarAppearance(useDarkTheme)
             }
-            val pureBlackEnabled by rememberPreference(PureBlackKey, defaultValue = false)
+            val pureBlackEnabled by rememberPreference(PureBlackKey, defaultValue = true)
             val pureBlack = pureBlackEnabled && useDarkTheme
 
             val enableWallpaperTheme by rememberPreference(EnableWallpaperThemeKey, defaultValue = false)
@@ -826,6 +827,9 @@ class MainActivity : ComponentActivity() {
                     var searchSource by rememberEnumPreference(SearchSourceKey, SearchSource.ONLINE)
                     val (losslessEnabled) = rememberPreference(
                         com.dezzy.music.lossless.LosslessEnabledKey, defaultValue = false,
+                    )
+                    val (hasShownWelcomeLogin, setHasShownWelcomeLogin) = rememberPreference(
+                        com.dezzy.music.constants.HasShownWelcomeLoginKey, defaultValue = false
                     )
                     // Si la función lossless se desactivó pero la fuente quedó fijada en
                     // LOSSLESS, la tratamos como ONLINE.
@@ -1250,6 +1254,20 @@ class MainActivity : ComponentActivity() {
                                         )
                                     }
                                 }
+                            }
+
+                            if (!hasShownWelcomeLogin) {
+                                WelcomeLoginDialog(
+                                    onDismiss = { setHasShownWelcomeLogin(true) },
+                                    onYoutubeMusicLogin = {
+                                        setHasShownWelcomeLogin(true)
+                                        navController.navigate(buildLoginRoute())
+                                    },
+                                    onSpotifyLogin = {
+                                        setHasShownWelcomeLogin(true)
+                                        navController.navigate("settings/spotify")
+                                    }
+                                )
                             }
 
                             Scaffold(

@@ -702,7 +702,7 @@ class MusicService :
             put("lyricsV2", prefs[com.dezzy.music.constants.UseLyricsV2Key] ?: false)
             put("lyricsV2Style", prefs[com.dezzy.music.constants.LyricsV2StyleKey] ?: "LIQUID_FLOW")
             put("background", prefs[com.dezzy.music.constants.PlayerBackgroundStyleKey] ?: "DEFAULT")
-            put("slider", prefs[com.dezzy.music.constants.SliderStyleKey] ?: "Standard")
+            put("slider", prefs[com.dezzy.music.constants.SliderStyleKey] ?: "Aurora")
         }.toString()
     }
     val castConnected get() = castController.isConnected
@@ -4045,7 +4045,7 @@ class MusicService :
              syncUtils.likeSong(song)
 
              // Check if auto-download on like is enabled and the song is now liked
-             if (dataStore.get(AutoDownloadOnLikeKey, false) && song.liked) {
+             if (dataStore.get(AutoDownloadOnLikeKey, true) && song.liked) {
                  // Trigger download for the liked song
                  val downloadRequest = androidx.media3.exoplayer.offline.DownloadRequest
                      .Builder(song.id, song.id.toUri())

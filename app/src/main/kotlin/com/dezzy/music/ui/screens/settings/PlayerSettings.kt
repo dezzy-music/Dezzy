@@ -128,7 +128,7 @@ fun PlayerSettings(
 
     val (autoDownloadOnLike, onAutoDownloadOnLikeChange) = rememberPreference(
         AutoDownloadOnLikeKey,
-        defaultValue = false
+        defaultValue = true
     )
     val (autoSkipNextOnError, onAutoSkipNextOnErrorChange) = rememberPreference(
         AutoSkipNextOnErrorKey,
@@ -187,7 +187,7 @@ fun PlayerSettings(
 
     val (wakelockEnabled, onWakelockChange) = rememberPreference(
         WakelockKey,
-        defaultValue = false
+        defaultValue = true
     )
 
     var showArtistSeparatorsDialog by remember { mutableStateOf(false) }

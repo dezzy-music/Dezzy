@@ -117,7 +117,7 @@ constructor(
                         val prefs = context.dataStore.data.first()
                         val translateEnabled = prefs[TranslateLyricsKey] ?: false
                         if (translateEnabled) {
-                            val aiProvider = prefs[AiProviderKey] ?: "OpenRouter"
+                            val aiProvider = prefs[AiProviderKey] ?: "FreeOnline"
                             val openRouterApiKey = prefs[OpenRouterApiKey] ?: ""
                             val deeplApiKey = prefs[DeeplApiKey] ?: ""
                             val apiKey = if (aiProvider == "DeepL") deeplApiKey else openRouterApiKey
@@ -126,7 +126,7 @@ constructor(
                                 val openRouterBaseUrl = prefs[OpenRouterBaseUrlKey] ?: "https://openrouter.ai/api/v1/chat/completions"
                                 val openRouterModel = prefs[OpenRouterModelKey] ?: "mistralai/mistral-small-3.1-24b-instruct:free"
                                 val translateMode = prefs[TranslateModeKey] ?: "Literal"
-                                val translateLanguage = prefs[TranslateLanguageKey] ?: "en"
+                                val translateLanguage = prefs[TranslateLanguageKey] ?: "es"
 
                                 val parsedLines = com.dezzy.music.lyrics.LyricsUtils.parseLyrics(lyricsResult)
                                 if (parsedLines.isNotEmpty()) {

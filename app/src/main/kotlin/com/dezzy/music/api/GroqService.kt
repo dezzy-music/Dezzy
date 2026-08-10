@@ -31,7 +31,7 @@ object GroqService {
     ): Result<String> = withContext(Dispatchers.IO) {
         try {
             val dataStore = context.dataStore
-            val provider = dataStore.get(com.dezzy.music.constants.AiProviderKey, "OpenRouter")
+            val provider = dataStore.get(com.dezzy.music.constants.AiProviderKey, "FreeOnline")
             val apiKey = dataStore.get(com.dezzy.music.constants.OpenRouterApiKey, "")
             val customBaseUrl = dataStore.get(com.dezzy.music.constants.OpenRouterBaseUrlKey, "")
             val model = dataStore.get(com.dezzy.music.constants.OpenRouterModelKey, DEFAULT_MODEL)

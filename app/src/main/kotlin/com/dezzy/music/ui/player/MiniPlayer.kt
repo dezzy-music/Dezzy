@@ -128,7 +128,7 @@ private fun NewMiniPlayer(
         try { MiniPlayerStyle.valueOf(savedStyle) } catch (e: Exception) { MiniPlayerStyle.PILL }
     }
     
-    val (dynamicColorEnabled) = rememberPreference(DynamicMiniPlayerColorKey, defaultValue = false)
+    val (dynamicColorEnabled) = rememberPreference(DynamicMiniPlayerColorKey, defaultValue = true)
     val (savedBgStyle) = rememberPreference(MiniPlayerBackgroundStyleKey, defaultValue = "DEFAULT")
     val miniPlayerBackground = remember(savedBgStyle) {
         try { MiniPlayerBackgroundStyle.valueOf(savedBgStyle) } catch (e: Exception) { MiniPlayerBackgroundStyle.DEFAULT }

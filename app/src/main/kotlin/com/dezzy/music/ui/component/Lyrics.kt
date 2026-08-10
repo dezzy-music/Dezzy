@@ -444,14 +444,14 @@ fun Lyrics(
     val landscapeOffset =
         configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-    val lyricsTextPosition by rememberEnumPreference(LyricsTextPositionKey, LyricsPosition.LEFT)
+    val lyricsTextPosition by rememberEnumPreference(LyricsTextPositionKey, LyricsPosition.CENTER)
     val lyricsAnimationStyle by rememberEnumPreference(LyricsAnimationStyleKey, LyricsAnimationStyle.APPLE)
 
     val coroutineScope = rememberCoroutineScope()
     val lyricsTextSize by rememberPreference(LyricsTextSizeKey, 26f)
     val lyricsLineSpacing by rememberPreference(LyricsLineSpacingKey, 1.3f)
     val useSystemFont by rememberPreference(UseSystemFontKey, false)
-    val appFontName by rememberPreference(com.dezzy.music.constants.FontFamilyKey, "POPPINS")
+    val appFontName by rememberPreference(com.dezzy.music.constants.FontFamilyKey, "LORA")
     val shareFontName = if (useSystemFont) "SYSTEM" else appFontName
     val lyricsFontFamily = androidx.compose.material3.MaterialTheme.typography.headlineMedium.fontFamily
 
@@ -474,15 +474,15 @@ fun Lyrics(
     val scope = rememberCoroutineScope()
 
     val database = LocalDatabase.current
-    val aiProvider by rememberPreference(com.dezzy.music.constants.AiProviderKey, "OpenRouter")
+    val aiProvider by rememberPreference(com.dezzy.music.constants.AiProviderKey, "FreeOnline")
     val openRouterApiKey by rememberPreference(OpenRouterApiKey, "")
     val openRouterBaseUrl by rememberPreference(OpenRouterBaseUrlKey, "https://openrouter.ai/api/v1/chat/completions")
     val openRouterModel by rememberPreference(OpenRouterModelKey, "mistralai/mistral-small-3.1-24b-instruct:free")
     val deeplApiKey by rememberPreference(DeeplApiKey, "")
     val deeplFormality by rememberPreference(DeeplFormalityKey, "default")
-    val autoTranslateLyrics by rememberPreference(AutoTranslateLyricsKey, false)
+    val autoTranslateLyrics by rememberPreference(AutoTranslateLyricsKey, true)
     val autoTranslateLyricsMismatch by rememberPreference(AutoTranslateLyricsMismatchKey, false)
-    val translateLanguage by rememberPreference(TranslateLanguageKey, "en")
+    val translateLanguage by rememberPreference(TranslateLanguageKey, "es")
     val translateMode by rememberPreference(TranslateModeKey, "Literal")
     val effectiveApiKey = remember(aiProvider, openRouterApiKey, deeplApiKey) {
         when (aiProvider) {
@@ -2527,7 +2527,7 @@ fun Lyrics(
                                             }
                                         }
                                     }
-                                    val (autoTranslateLyricsPref) = rememberPreference(AutoTranslateLyricsKey, defaultValue = false)
+                                    val (autoTranslateLyricsPref) = rememberPreference(AutoTranslateLyricsKey, defaultValue = true)
                                     val openRouterApiKeyPref by rememberPreference(OpenRouterApiKey, "")
                                     if (autoTranslateLyricsPref || openRouterApiKeyPref.isNotBlank()) {
                                         val translatedText by item.translatedTextFlow.collectAsState()
