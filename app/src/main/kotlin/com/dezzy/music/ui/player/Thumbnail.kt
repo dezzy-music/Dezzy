@@ -125,7 +125,7 @@ object CanvasArtworkPlaybackCache {
     private const val PERSIST_FILE = "canvas_artwork_cache.json"
     private const val PERSIST_DEBOUNCE_MS = 2_000L
 
-    private val map = LinkedHashMap<String, CanvasArtwork>(defaultMaxSize, 0.75f, true)
+    private val map = LinkedHashMap<String, CanvasArtwork>(16, 0.75f, true)
     @Volatile private var maxSize = defaultMaxSize
     @Volatile private var cacheFile: File? = null
 

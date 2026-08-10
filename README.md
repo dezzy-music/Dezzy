@@ -203,7 +203,7 @@ Para información detallada sobre configuración, características avanzadas y g
 
 #### Opción 2: Sitio Web Oficial
 
-1. Visita el [sitio web oficial de Dezzy](https://dezzy.space/)
+1. Visita el [sitio web oficial de Dezzy](https://dezzy-festival.vercel.app/)
 2. Selecciona la opción de descarga para Android
 3. Sigue las instrucciones de instalación proporcionadas
 
@@ -363,7 +363,7 @@ Si encuentras valor en **Dezzy** y quieres contribuir a su desarrollo continuo, 
 <div align="center">
   
 [![GitHub Sponsors](https://img.shields.io/badge/GitHub_Sponsors-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/sponsors/Dezzy)
-[![PayPal](https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](mailto:contacto@dezzymusic.com)
+[![PayPal](https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](mailto:dezzyquiet@gmail.com)
 
 </div>
 
@@ -377,7 +377,7 @@ Agradecimientos especiales a los siguientes contribuidores y colaboradores:
 
 - **ArchiveTune** - Código Inicial e inspiración
 ‎Vivi Music (Inspiración de diseño)
-- **Fabito02** - Apoyo incondicional desde el principio
+- **Alexis Hernández, Aníbal Darinel, Luis Ricardo y Yaretzy Hernández** - Apoyo incondicional desde el principio
 - **Traductores de la comunidad** - Haciendo Dezzy accesible mundialmente
 - **Testers beta** - Ayudando a mejorar la estabilidad y usabilidad
 

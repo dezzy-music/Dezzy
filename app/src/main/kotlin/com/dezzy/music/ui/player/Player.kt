@@ -1120,15 +1120,12 @@ fun BottomSheetPlayer(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier.weight(1f),
                         ) {
-                            val screenHeight = LocalConfiguration.current.screenHeightDp
-                            val thumbnailSize = (screenHeight * 0.65).dp
-                            val (thumbnailCornerRadius) = rememberPreference(ThumbnailCornerRadiusKey, 12f)
                             Thumbnail(
                                 sliderPositionProvider = { sliderPosition },
                                 onTap = { controlsFaded = !controlsFaded },
                                 modifier = Modifier
-                                    .size(thumbnailSize)
-                                    .clip(RoundedCornerShape(thumbnailCornerRadius.dp))
+                                    .fillMaxSize()
+                                    .nestedScroll(state.preUpPostDownNestedScrollConnection)
                                     .align(Alignment.Center),
                                 isPlayerExpanded = state.isExpanded
                             )

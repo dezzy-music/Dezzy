@@ -71,11 +71,14 @@ class CoilBitmapLoader(
             val request = ImageRequest.Builder(context)
                 .data(data)
                 .allowHardware(false)
-                .size(maxIconSizePx, maxIconSizePx)
                 .build()
             val result = context.imageLoader.execute(request)
             if (result !is SuccessResult) return null
             val bitmap = result.image.toBitmap()
+            if (isGrayPlaceholder(bitmap)) {
+                // If it's a placeholder, return it unscaled so the caller can identify it
+                return bitmap
+            }
             scaleBitmap(bitmap, maxIconSizePx)
         } catch (e: Exception) {
             reportException(e)

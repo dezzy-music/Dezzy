@@ -139,7 +139,17 @@ fun SpotifyLoginScreen(navController: NavController) {
                                 resultMsg: Message,
                             ): Boolean {
                                 val transport = resultMsg.obj as? WebView.WebViewTransport ?: return false
-                                transport.webView = view
+                                val dummyWebView = WebView(view.context)
+                                dummyWebView.webViewClient = object : WebViewClient() {
+                                    override fun shouldOverrideUrlLoading(
+                                        view: WebView,
+                                        request: WebResourceRequest
+                                    ): Boolean {
+                                        this@apply.loadUrl(request.url.toString())
+                                        return true
+                                    }
+                                }
+                                transport.webView = dummyWebView
                                 resultMsg.sendToTarget()
                                 return true
                             }

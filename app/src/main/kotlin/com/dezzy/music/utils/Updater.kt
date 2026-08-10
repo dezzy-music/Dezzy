@@ -87,6 +87,10 @@ object Updater {
     var cachedNightlyDownloadUrl: String = "https://pub-2218e6bbd5b948e1b5d882cf4d92086d.r2.dev/app-universal-release.apk"
 
     private var cachedNightlyInfo: NightlyInfo? = null
+    private var lastReleasesEtag: String? = null
+    private var lastReleasesCache: List<ReleaseInfo>? = null
+    private var lastCommitsEtag: String? = null
+    private var lastCommitsCache: List<GitCommit>? = null
 
     private data class SemVer(
         val major: Int,
@@ -231,6 +235,31 @@ object Updater {
         return releases
     }
 
+    private fun parseCommitsJson(json: String): List<GitCommit> {
+        val jsonArray = JSONArray(json)
+        val commits = ArrayList<GitCommit>(jsonArray.length())
+        for (i in 0 until jsonArray.length()) {
+            val item = jsonArray.getJSONObject(i)
+            val sha = item.optString("sha", "")
+            val commitObj = item.optJSONObject("commit")
+            val message = commitObj?.optString("message", "") ?: ""
+            val authorObj = commitObj?.optJSONObject("author")
+            val date = authorObj?.optString("date", "") ?: ""
+            val authorName = authorObj?.optString("name", "") ?: ""
+            val htmlUrl = item.optString("html_url", "")
+            commits.add(
+                GitCommit(
+                    sha = sha,
+                    message = message,
+                    author = authorName,
+                    date = date,
+                    url = htmlUrl
+                )
+            )
+        }
+        return commits
+    }
+
     private fun getTopReleaseFingerprint(releases: List<ReleaseInfo>): String {
         val latest = findLatestRelease(releases) ?: return ""
         return listOf(
@@ -362,22 +391,31 @@ object Updater {
             )
         }
 
-        val json = JSONObject(response)
-        val assets = json.optJSONArray("assets")
-        val firstAssetUrl = if (assets != null && assets.length() > 0) {
-            assets.getJSONObject(0).optString("url")
-        } else {
-            ""
-        }
-        val apkUrlVal = firstAssetUrl.ifEmpty { cachedNightlyDownloadUrl }
-        cachedNightlyDownloadUrl = apkUrlVal
+        try {
+            val json = JSONObject(response)
+            val assets = json.optJSONArray("assets")
+            val firstAssetUrl = if (assets != null && assets.length() > 0) {
+                assets.getJSONObject(0).optString("url")
+            } else {
+                ""
+            }
+            val apkUrlVal = firstAssetUrl.ifEmpty { cachedNightlyDownloadUrl }
+            cachedNightlyDownloadUrl = apkUrlVal
 
-        NightlyInfo(
-            versionName = json.optString("name", BuildConfig.VERSION_NAME),
-            apkUrl = apkUrlVal,
-            changelog = json.optString("description", "").takeIf { it.isNotEmpty() },
-            publishedAt = json.optString("date", "")
-        )
+            NightlyInfo(
+                versionName = json.optString("name", BuildConfig.VERSION_NAME),
+                apkUrl = apkUrlVal,
+                changelog = json.optString("description", "").takeIf { it.isNotEmpty() },
+                publishedAt = json.optString("date", "")
+            )
+        } catch (e: Exception) {
+            NightlyInfo(
+                versionName = BuildConfig.VERSION_NAME,
+                apkUrl = cachedNightlyDownloadUrl,
+                changelog = null,
+                publishedAt = ""
+            )
+        }
     }
 
     private suspend fun fetchStableJson(): Result<ReleaseInfo> = runCatching {
@@ -433,23 +471,33 @@ object Updater {
             )
         }
 
-        val json = JSONObject(response)
-        val assets = json.optJSONArray("assets")
-        val firstAssetUrl = if (assets != null && assets.length() > 0) {
-            assets.getJSONObject(0).optString("url")
-        } else {
-            ""
-        }
-        val apkUrlVal = firstAssetUrl.ifEmpty { cachedStableDownloadUrl }
-        cachedStableDownloadUrl = apkUrlVal
+        try {
+            val json = JSONObject(response)
+            val assets = json.optJSONArray("assets")
+            val firstAssetUrl = if (assets != null && assets.length() > 0) {
+                assets.getJSONObject(0).optString("url")
+            } else {
+                ""
+            }
+            val apkUrlVal = firstAssetUrl.ifEmpty { cachedStableDownloadUrl }
+            cachedStableDownloadUrl = apkUrlVal
 
-        ReleaseInfo(
-            tagName = json.optString("version", BuildConfig.VERSION_NAME),
-            name = json.optString("name", BuildConfig.VERSION_NAME),
-            body = json.optString("description", "").takeIf { it.isNotEmpty() },
-            publishedAt = json.optString("date", ""),
-            htmlUrl = apkUrlVal
-        )
+            ReleaseInfo(
+                tagName = json.optString("version", BuildConfig.VERSION_NAME),
+                name = json.optString("name", BuildConfig.VERSION_NAME),
+                body = json.optString("description", "").takeIf { it.isNotEmpty() },
+                publishedAt = json.optString("date", ""),
+                htmlUrl = apkUrlVal
+            )
+        } catch (e: Exception) {
+            ReleaseInfo(
+                tagName = BuildConfig.VERSION_NAME,
+                name = BuildConfig.VERSION_NAME,
+                body = null,
+                publishedAt = "",
+                htmlUrl = cachedStableDownloadUrl
+            )
+        }
     }
 
     // ─── Funciones públicas (compatibilidad obligatoria) ───────────────────────
@@ -570,8 +618,23 @@ object Updater {
 
     suspend fun getCommitHistory(count: Int = 20, branch: String = "master"): Result<List<GitCommit>> =
         runCatching {
-            // Deshabilitado para no depender de la API de GitHub rate-limited.
-            emptyList<GitCommit>()
+            val response: HttpResponse = client.get("https://api.github.com/repos/dezzy-music/Dezzy/commits?sha=$branch&per_page=$count") {
+                headers {
+                    append("Accept", "application/vnd.github+json")
+                    append("User-Agent", "Dezzy")
+                    if (lastCommitsEtag != null) {
+                        append("If-None-Match", lastCommitsEtag!!)
+                    }
+                }
+            }
+            if (response.status == HttpStatusCode.NotModified && lastCommitsCache != null) {
+                return@runCatching lastCommitsCache!!
+            }
+            val jsonBody = response.bodyAsText()
+            val commits = parseCommitsJson(jsonBody)
+            lastCommitsEtag = response.headers["ETag"]
+            lastCommitsCache = commits
+            commits
         }
 
     fun getLatestDownloadUrl(): String {
@@ -592,6 +655,22 @@ object Updater {
             if (getCurrentUpdateChannel() == UpdateChannel.NIGHTLY) {
                 return@runCatching emptyList()
             }
+            try {
+                val response = fetchReleasesNetwork(perPage, if (forceRefresh) null else lastReleasesEtag)
+                if (response.status == HttpStatusCode.NotModified && lastReleasesCache != null) {
+                    return@runCatching lastReleasesCache!!
+                }
+                if (response.body != null) {
+                    val releases = parseReleasesJson(response.body)
+                    lastReleasesEtag = response.etag
+                    lastReleasesCache = releases
+                    lastCheckTime = System.currentTimeMillis()
+                    return@runCatching releases
+                }
+            } catch (e: Exception) {
+                // Silently fallback to fetchStableJson
+            }
+
             val stableRelease = fetchStableJson().getOrThrow()
             lastCheckTime = System.currentTimeMillis()
             listOf(stableRelease)
