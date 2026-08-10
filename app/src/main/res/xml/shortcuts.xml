@@ -6,8 +6,8 @@
         android:shortcutId="search"
         android:shortcutShortLabel="@string/search">
         <intent
-            android:action="com.arturo254.opentune.action.SEARCH"
-            android:targetClass="com.arturo254.opentune.MainActivity"
+            android:action="com.dezzy.music.action.SEARCH"
+            android:targetClass="com.dezzy.music.MainActivity"
             android:targetPackage="com.dezzy.music" />
     </shortcut>
     <shortcut
@@ -16,8 +16,8 @@
         android:shortcutId="library"
         android:shortcutShortLabel="@string/filter_library">
         <intent
-            android:action="com.arturo254.opentune.action.LIBRARY"
-            android:targetClass="com.arturo254.opentune.MainActivity"
+            android:action="com.dezzy.music.action.LIBRARY"
+            android:targetClass="com.dezzy.music.MainActivity"
             android:targetPackage="com.dezzy.music" />
     </shortcut>
 </shortcuts>

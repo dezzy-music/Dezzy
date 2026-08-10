@@ -1,16 +1,16 @@
-# OpenTune
+# Dezzy
 
 <div align="center">
-  <img src="https://github.com/Arturo254/OpenTune/blob/master/fastlane/metadata/android/en-US/images/featureGraphic.png" alt="OpenTune Banner" width="100%"/>
+  <img src="https://github.com/dezzy-music/Dezzy/blob/master/fastlane/metadata/android/en-US/images/featureGraphic.png" alt="Dezzy Banner" width="100%"/>
   
   ### Advanced YouTube Music Client with Material Design 3 for Android
   
-  [![Latest Release](https://img.shields.io/github/v/release/Arturo254/OpenTune?style=flat-square&logo=github&color=0D1117&labelColor=161B22)](https://github.com/Arturo254/OpenTune/releases)
-  [![License](https://img.shields.io/github/license/Arturo254/OpenTune?style=flat-square&logo=gnu&color=2B3137&labelColor=161B22)](https://github.com/Arturo254/OpenTune/blob/main/LICENSE)
-  [![Translation Status](https://badges.crowdin.net/opentune/localized.svg)](https://crowdin.com/project/opentune)
+  [![Latest Release](https://img.shields.io/github/v/release/dezzy-music/Dezzy?style=flat-square&logo=github&color=0D1117&labelColor=161B22)](https://github.com/dezzy-music/Dezzy/releases)
+  [![License](https://img.shields.io/github/license/dezzy-music/Dezzy?style=flat-square&logo=gnu&color=2B3137&labelColor=161B22)](https://github.com/dezzy-music/Dezzy/blob/main/LICENSE)
+  [![Translation Status](https://badges.crowdin.net/dezzymusic/localized.svg)](https://crowdin.com/project/dezzymusic)
   [![Android](https://img.shields.io/badge/Platform-Android%206.0+-3DDC84.svg?style=flat-square&logo=android&logoColor=white&labelColor=161B22)](https://www.android.com)
-  [![Stars](https://img.shields.io/github/stars/Arturo254/OpenTune?style=flat-square&logo=github&color=yellow&labelColor=161B22&cacheSeconds=21600)](https://github.com/Arturo254/OpenTune/stargazers)
-  [![Forks](https://img.shields.io/github/forks/Arturo254/OpenTune?style=flat-square&logo=github&color=blue&labelColor=161B22&cacheSeconds=21600)](https://github.com/Arturo254/OpenTune/network/members)
+  [![Stars](https://img.shields.io/github/stars/dezzy-music/Dezzy?style=flat-square&logo=github&color=yellow&labelColor=161B22&cacheSeconds=21600)](https://github.com/dezzy-music/Dezzy/stargazers)
+  [![Forks](https://img.shields.io/github/forks/dezzy-music/Dezzy?style=flat-square&logo=github&color=blue&labelColor=161B22&cacheSeconds=21600)](https://github.com/dezzy-music/Dezzy/network/members)
 </div>
 
 ---
@@ -32,7 +32,7 @@
 
 ## Overview
 
-**OpenTune** is an open-source YouTube Music client specifically designed for Android devices. It delivers a superior user experience with a modern interface implementing Material Design 3, offering advanced functionalities to explore, play, and manage musical content without the limitations of the official application.
+**Dezzy** is an open-source YouTube Music client specifically designed for Android devices. It delivers a superior user experience with a modern interface implementing Material Design 3, offering advanced functionalities to explore, play, and manage musical content without the limitations of the official application.
 
 ### Key Benefits
 
@@ -42,7 +42,7 @@
 - **Customizable Interface**: Personalize your music experience
 - **Offline Capabilities**: Download and play music without internet connection
 
-> **Note**: OpenTune is an independent project and is not affiliated, sponsored, or endorsed by YouTube or Google.
+> **Note**: Dezzy is an independent project and is not affiliated, sponsored, or endorsed by YouTube or Google.
 
 ---
 
@@ -154,7 +154,7 @@ For detailed information about configuration, advanced features, and usage guide
 
 <div align="center">
   
-[![Documentation](https://img.shields.io/badge/Documentation-GitBook-4285F4?style=for-the-badge&logo=gitbook&logoColor=white)](https://opentune.gitbook.io/)
+[![Documentation](https://img.shields.io/badge/Documentation-GitBook-4285F4?style=for-the-badge&logo=gitbook&logoColor=white)](https://dezzymusic.gitbook.io/)
 
 </div>
 
@@ -175,14 +175,14 @@ For detailed information about configuration, advanced features, and usage guide
 
 #### Option 1: GitHub Releases (Recommended)
 
-1. Navigate to the [Releases](https://github.com/Arturo254/OpenTune/releases) section on GitHub
+1. Navigate to the [Releases](https://github.com/dezzy-music/Dezzy/releases) section on GitHub
 2. Download the APK file from the latest stable version
 3. Enable "Install from unknown sources" in your device's security settings
 4. Open the downloaded APK file to complete installation
 
 #### Option 2: Official Website
 
-1. Visit the official [OpenTune website](https://opentune.netlify.app/)
+1. Visit the official [Dezzy website](https://dezzymusic.netlify.app/)
 2. Select the download option for Android
 3. Follow the installation instructions provided
 
@@ -190,7 +190,7 @@ For detailed information about configuration, advanced features, and usage guide
 
 <div align="center">
   
-[<img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="80">](https://f-droid.org/es/packages/com.Arturo254.opentune)
+[<img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="80">](https://f-droid.org/es/packages/com.Dezzy.dezzymusic)
 
 </div>
 
@@ -198,7 +198,7 @@ For detailed information about configuration, advanced features, and usage guide
 
 <div align="center">
   
-[<img src="https://www.openapk.net/images/openapk-badge.png" alt="Get it on OpenApk" height="80">](https://www.openapk.net/opentune/com.Arturo254.opentune/)
+[<img src="https://www.openapk.net/images/openapk-badge.png" alt="Get it on OpenApk" height="80">](https://www.openapk.net/dezzymusic/com.Dezzy.dezzymusic/)
 
 </div>
 
@@ -247,10 +247,10 @@ For detailed information about configuration, advanced features, and usage guide
 
 ```bash
 # Clone the repository
-git clone https://github.com/Arturo254/OpenTune.git
+git clone https://github.com/dezzy-music/Dezzy.git
 
 # Navigate to project directory
-cd OpenTune
+cd Dezzy
 
 # Update submodules (if any)
 git submodule update --init --recursive
@@ -262,7 +262,7 @@ git submodule update --init --recursive
 
 1. Open Android Studio
 2. Select "Open an existing Android Studio project"
-3. Navigate and select the OpenTune directory
+3. Navigate and select the Dezzy directory
 4. Wait for project synchronization and indexing
 5. Select Build → Build Bundle(s) / APK(s) → Build APK(s)
 
@@ -293,16 +293,16 @@ git submodule update --init --recursive
 
 ### Code of Conduct
 
-All participants in this project must adhere to our code of conduct that promotes an inclusive, respectful, and constructive environment. Please review the [complete Code of Conduct](https://github.com/Arturo254/OpenTune/blob/master/CODE_OF_CONDUCT.md) before contributing.
+All participants in this project must adhere to our code of conduct that promotes an inclusive, respectful, and constructive environment. Please review the [complete Code of Conduct](https://github.com/dezzy-music/Dezzy/blob/master/CODE_OF_CONDUCT.md) before contributing.
 
 ### Translation
 
-Help translate OpenTune into your language or improve existing translations:
+Help translate Dezzy into your language or improve existing translations:
 
 <div align="center">
   
 [![POEditor](https://img.shields.io/badge/POEditor-2196F3?style=for-the-badge&logo=translate&logoColor=white)](https://poeditor.com/join/project/208BwCVazA)
-[![Crowdin](https://img.shields.io/badge/Crowdin-2E3440?style=for-the-badge&logo=crowdin&logoColor=white)](https://crowdin.com/project/opentune)
+[![Crowdin](https://img.shields.io/badge/Crowdin-2E3440?style=for-the-badge&logo=crowdin&logoColor=white)](https://crowdin.com/project/dezzymusic)
 
 </div>
 
@@ -310,14 +310,14 @@ Help translate OpenTune into your language or improve existing translations:
 
 <div align="center">
   
-[![Telegram Chat](https://img.shields.io/badge/Telegram-Chat-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/OpenTune_chat)
-[![Telegram Updates](https://img.shields.io/badge/Telegram-Updates-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/opentune_updates)
+[![Telegram Chat](https://img.shields.io/badge/Telegram-Chat-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/Dezzy_chat)
+[![Telegram Updates](https://img.shields.io/badge/Telegram-Updates-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/dezzymusic_updates)
 
 </div>
 
 ### Development Workflow
 
-1. **Issue Review**: Check [open issues](https://github.com/Arturo254/OpenTune/issues) or create a new one describing the problem or feature
+1. **Issue Review**: Check [open issues](https://github.com/dezzy-music/Dezzy/issues) or create a new one describing the problem or feature
 2. **Fork Repository**: Create a personal fork of the repository
 3. **Feature Branch**: Create a branch for your feature (`git checkout -b feature/new-feature`)
 4. **Implementation**: Implement changes following project coding conventions
@@ -326,13 +326,13 @@ Help translate OpenTune into your language or improve existing translations:
 7. **Push Changes**: Upload changes to your fork (`git push origin feature/new-feature`)
 8. **Pull Request**: Open a PR detailing changes and referencing corresponding issue
 
-> **Development Guidelines**: Review our [contribution guidelines](https://github.com/Arturo254/OpenTune/blob/master/CONTRIBUTING.md) for detailed information about development process, code standards, and workflow.
+> **Development Guidelines**: Review our [contribution guidelines](https://github.com/dezzy-music/Dezzy/blob/master/CONTRIBUTING.md) for detailed information about development process, code standards, and workflow.
 
 ---
 
 ## Support the Project
 
-If you find value in **OpenTune** and want to contribute to its continued development, consider making a donation. Your financial support allows us to:
+If you find value in **Dezzy** and want to contribute to its continued development, consider making a donation. Your financial support allows us to:
 
 - Implement new features and improvements
 - Fix bugs and optimize performance
@@ -341,12 +341,12 @@ If you find value in **OpenTune** and want to contribute to its continued develo
 
 <div align="center">
   
-[![GitHub Sponsors](https://img.shields.io/badge/GitHub_Sponsors-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/sponsors/Arturo254)
-[![PayPal](https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](mailto:cervantesarturo254@gmail.com)
+[![GitHub Sponsors](https://img.shields.io/badge/GitHub_Sponsors-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/sponsors/Dezzy)
+[![PayPal](https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](mailto:contacto@dezzymusic.com)
 
 </div>
 
-> **Note**: Donations are completely optional. OpenTune will always be free and open-source, regardless of financial support received.
+> **Note**: Donations are completely optional. Dezzy will always be free and open-source, regardless of financial support received.
 
 ---
 
@@ -356,18 +356,18 @@ Special thanks to the following contributors and supporters:
 
 - **mostafaalagamy** - MetroList implementation
 - **Fabito02** - Unconditional support from the beginning
-- **Community translators** - Making OpenTune accessible worldwide
+- **Community translators** - Making Dezzy accessible worldwide
 - **Beta testers** - Helping improve stability and usability
 
 ---
 
 ## License
 
-**Copyright © 2025 Arturo Cervantes**
+**Copyright © 2025 Dezzy**
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful, but **WITHOUT ANY WARRANTY**; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the [GNU General Public License](https://github.com/Arturo254/OpenTune/blob/main/LICENSE) for more details.
+This program is distributed in the hope that it will be useful, but **WITHOUT ANY WARRANTY**; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the [GNU General Public License](https://github.com/dezzy-music/Dezzy/blob/main/LICENSE) for more details.
 
 <div align="center">
   
@@ -381,11 +381,11 @@ This program is distributed in the hope that it will be useful, but **WITHOUT AN
 
 <div align="center">
   <p><strong>© 2023-2024 Open Source Projects</strong></p>
-  <p>Developed with passion by <a href="https://github.com/Arturo254">Arturo Cervantes</a></p>
+  <p>Developed with passion by <a href="https://github.com/dezzy-music">Dezzy</a></p>
   
   <br>
   
-  [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Arturo254)
-  [![Email](https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:cervantesarturo254@gmail.com)
+  [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/dezzy-music)
+  [![Email](https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:contacto@dezzymusic.com)
   
 </div>

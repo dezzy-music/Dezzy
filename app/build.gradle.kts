@@ -87,7 +87,7 @@ fun signingProp(propKey: String, envKey: String): String? =
 val gitCommit = fetchGitCommitHash()
 
 android {
-    namespace = "com.arturo254.opentune"
+    namespace = "com.dezzy.music"
     compileSdk = 36
 
     defaultConfig {

@@ -1,4 +1,4 @@
-package com.arturo254.opentune.artistvideo
+package com.dezzy.music.artistvideo
 
 import android.view.TextureView
 import android.view.ViewGroup

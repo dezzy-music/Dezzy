@@ -1,9 +1,9 @@
 ---
 name: Bug Report
-about: Report a bug found in OpenTune to help us improve the application
+about: Report a bug found in Dezzy to help us improve the application
 title: "[BUG] Brief description of the issue"
 labels: bug
-assignees: Arturo254
+assignees: Dezzy
 ---
 
 ## Bug Description
@@ -23,7 +23,7 @@ assignees: Arturo254
 <!-- Describe what actually happened instead. -->
 
 ## System Information
-- **OpenTune Version:** <!-- e.g., 1.2.3 -->
+- **Dezzy Version:** <!-- e.g., 1.2.3 -->
 - **Android Version:** <!-- e.g., Android 13 (API 33) -->
 - **Device Model:** <!-- e.g., Samsung Galaxy S21 -->
 - **Device Architecture:** <!-- e.g., arm64-v8a, armeabi-v7a -->
@@ -50,7 +50,7 @@ assignees: Arturo254
 Paste logcat output here
 ```
 **How to capture logs:**
-- Use `adb logcat | grep -i opentune` for filtered logs
+- Use `adb logcat | grep -i dezzymusic` for filtered logs
 - Or use `adb logcat > logcat.txt` for full logs
 
 ## Additional Context
@@ -65,7 +65,7 @@ Paste logcat output here
 - [ ] I have searched for existing issues before creating this report
 - [ ] I have provided all the requested information above
 - [ ] I can consistently reproduce this issue
-- [ ] I have tested on the latest version of OpenTune
+- [ ] I have tested on the latest version of Dezzy
 
 ---
 

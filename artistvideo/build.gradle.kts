@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.arturo254.opentune.artistvideo"
+    namespace = "com.dezzy.music.artistvideo"
     compileSdk = 36
 
     defaultConfig {

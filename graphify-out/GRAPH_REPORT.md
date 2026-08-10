@@ -317,18 +317,18 @@
 - `Fabito02 (Supporter)` --conceptually_related_to--> `Spanish (ES) Localization`  [INFERRED]
   README.en.md → fastlane/metadata/android/es-ES/images/phoneScreenshots/screenshot_6.png
 - `DefaultDialog()` --calls--> `Buttons`  [INFERRED]
-  app/src/main/kotlin/com/arturo254/opentune/ui/component/Dialog.kt → innertube/src/main/kotlin/com/arturo254/opentune/innertube/models/response/BrowseResponse.kt
+  app/src/main/kotlin/com/arturo254/dezzymusic/ui/component/Dialog.kt → innertube/src/main/kotlin/com/arturo254/dezzymusic/innertube/models/response/BrowseResponse.kt
 - `Lyrics Preview - Synced Japanese Lyrics with Romanization` --semantically_similar_to--> `Screenshot 3 - Synced Lyrics Display with Highlighted Current Line`  [INFERRED] [semantically similar]
   app/src/main/res/drawable/lyrics_preview.png → fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_3.png
 - `DefaultDialog()` --calls--> `Title`  [INFERRED]
-  app/src/main/kotlin/com/arturo254/opentune/ui/component/Dialog.kt → innertube/src/main/kotlin/com/arturo254/opentune/innertube/models/YouTubeDataPage.kt
+  app/src/main/kotlin/com/arturo254/dezzymusic/ui/component/Dialog.kt → innertube/src/main/kotlin/com/arturo254/dezzymusic/innertube/models/YouTubeDataPage.kt
 - `ListItem()` --calls--> `Badges`  [INFERRED]
-  app/src/main/kotlin/com/arturo254/opentune/ui/component/Items.kt → innertube/src/main/kotlin/com/arturo254/opentune/innertube/models/Badges.kt
+  app/src/main/kotlin/com/arturo254/dezzymusic/ui/component/Items.kt → innertube/src/main/kotlin/com/arturo254/dezzymusic/innertube/models/Badges.kt
 
 ## Hyperedges (group relationships)
-- **OpenTune Technology Stack** — kotlin_lang, jetpack_compose, material_design_3, gradle_build, python_backend, tensorflow_backend [EXTRACTED 1.00]
-- **OpenTune Internationalization Pipeline** — crowdin_config, crowdin_platform, fastlane_en_metadata, fastlane_es_metadata, readme_en_overview, readme_es_overview [EXTRACTED 1.00]
-- **OpenTune Community Governance** — code_of_conduct, contributing_guide, contributor_covenant, conventional_commits [EXTRACTED 1.00]
+- **Dezzy Technology Stack** — kotlin_lang, jetpack_compose, material_design_3, gradle_build, python_backend, tensorflow_backend [EXTRACTED 1.00]
+- **Dezzy Internationalization Pipeline** — crowdin_config, crowdin_platform, fastlane_en_metadata, fastlane_es_metadata, readme_en_overview, readme_es_overview [EXTRACTED 1.00]
+- **Dezzy Community Governance** — code_of_conduct, contributing_guide, contributor_covenant, conventional_commits [EXTRACTED 1.00]
 
 ## Communities (336 total, 149 thin omitted)
 
@@ -662,7 +662,7 @@ Nodes (4): SearchResult, fromMusicCardShelfRenderer(), SearchSummary, SearchSumm
 
 ### Community 98 - "Community 98"
 Cohesion: 0.17
-Nodes (12): Arturo254 - Lead Developer, Fabito02 (Supporter), Developer - Arturo Cervantes (Arturo254), OpenTune App Icon (ES), Music Note Icon with Pink-Purple Gradient, Screenshot 10 - Content Settings with Language, Country, Proxy, Screenshot 11 - Player and Sound Settings with Queue Options, Screenshot 13 - About Screen with Version, Developer, Collaborators (+4 more)
+Nodes (12): Dezzy - Lead Developer, Fabito02 (Supporter), Developer - Dezzy (Dezzy), Dezzy App Icon (ES), Music Note Icon with Pink-Purple Gradient, Screenshot 10 - Content Settings with Language, Country, Proxy, Screenshot 11 - Player and Sound Settings with Queue Options, Screenshot 13 - About Screen with Version, Developer, Collaborators (+4 more)
 
 ### Community 100 - "Community 100"
 Cohesion: 0.18
@@ -690,7 +690,7 @@ Nodes (8): duration(), lastText(), metadataGroups(), playlistAuthor(), SearchPag
 
 ### Community 109 - "Community 109"
 Cohesion: 0.2
-Nodes (10): Fastlane App Icon - Music Note Logo, Feature Graphic - Store Banner with Account Sync and Open Source Badges, OpenTune App Icon - Music Note Logo, Screenshot 12 - Storage Settings with Cache and Download Management, Screenshot 1 - Home Screen with Quick Picks and Continue Listening, Screenshot 5 - Library with Playlists, Songs, Albums Tabs and Collections, Offline Cache and Download Feature, Bottom Navigation Bar Pattern (Home, Explore, Library) (+2 more)
+Nodes (10): Fastlane App Icon - Music Note Logo, Feature Graphic - Store Banner with Account Sync and Open Source Badges, Dezzy App Icon - Music Note Logo, Screenshot 12 - Storage Settings with Cache and Download Management, Screenshot 1 - Home Screen with Quick Picks and Continue Listening, Screenshot 5 - Library with Playlists, Songs, Albums Tabs and Collections, Offline Cache and Download Feature, Bottom Navigation Bar Pattern (Home, Explore, Library) (+2 more)
 
 ### Community 113 - "Community 113"
 Cohesion: 0.25

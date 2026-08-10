@@ -104,9 +104,9 @@
 
 ## Queue Persistence Rules
 # Keep queue-related classes to prevent serialization issues in release builds
--keep class com.arturo254.opentune.models.** { *; }
--keep class com.arturo254.opentune.innertube.models.** { *; }
--keep class com.arturo254.opentune.playback.queues.** { *; }
+-keep class com.dezzy.music.models.** { *; }
+-keep class com.dezzy.music.innertube.models.** { *; }
+-keep class com.dezzy.music.playback.queues.** { *; }
 
 
 # Keep serialization methods for queue persistence

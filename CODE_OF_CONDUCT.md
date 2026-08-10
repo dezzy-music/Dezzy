@@ -34,7 +34,7 @@ Este código de conducta aplica tanto a espacios del proyecto como a espacios p�
 
 ## Aplicación
 
-Ejemplos de abuso, acoso u otro tipo de comportamiento inaceptable pueden ser reportados al equipo del proyecto en [cervantesarturo254@gmail.com](mailto:cervantesarturo254@gmail.com). Todas las quejas serán revisadas e investigadas, generando un resultado apropiado a las circunstancias. El equipo del proyecto está obligado a mantener la confidencialidad de la persona que reporta el incidente. Detalles específicos acerca de las políticas de aplicación pueden ser publicadas por separado.
+Ejemplos de abuso, acoso u otro tipo de comportamiento inaceptable pueden ser reportados al equipo del proyecto en [contacto@dezzymusic.com](mailto:contacto@dezzymusic.com). Todas las quejas serán revisadas e investigadas, generando un resultado apropiado a las circunstancias. El equipo del proyecto está obligado a mantener la confidencialidad de la persona que reporta el incidente. Detalles específicos acerca de las políticas de aplicación pueden ser publicadas por separado.
 
 Los mantenedores del proyecto que no sigan o que no hagan cumplir este Código de Conducta pueden ser eliminados de forma temporal o permanente del equipo del proyecto.
 

@@ -1,4 +1,4 @@
-package com.arturo254.opentune.artistvideo
+package com.dezzy.music.artistvideo
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
