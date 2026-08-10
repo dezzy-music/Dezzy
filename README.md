@@ -362,7 +362,7 @@ Si encuentras valor en **Dezzy** y quieres contribuir a su desarrollo continuo, 
 
 <div align="center">
   
-[![GitHub Sponsors](https://img.shields.io/badge/GitHub_Sponsors-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/sponsors/Dezzy)
+[![GitHub Sponsors](https://img.shields.io/badge/GitHub_Sponsors-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/sponsors/dezzy-music)
 [![PayPal](https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](mailto:dezzyquiet@gmail.com)
 
 </div>
