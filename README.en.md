@@ -60,89 +60,103 @@
 
 ---
 
-## Key Features
+## Main Features
 
-### Core Functionality
+**Dezzy** doesn't just inherit the robustness of a complete client, but has been redesigned with massive and exclusive integrations to offer the ultimate experience:
+
+### 🌟 User Experience and Customization (Exclusive)
 <table>
 <tr>
 <th width="30%">Feature</th>
 <th width="70%">Description</th>
 </tr>
 <tr>
-<td><strong>🎵 Ad-free Playback</strong></td>
-<td>Enjoy music without any advertising interruptions</td>
+<td><strong>🎨 Platform Imitation</strong></td>
+<td>We've managed to accurately recreate the player styles and UI of the most popular streaming platforms. Feel like you're using your favorite app but with all the power of Dezzy!</td>
 </tr>
 <tr>
-<td><strong>🔄 Background Playback</strong></td>
-<td>Continue listening while using other applications</td>
+<td><strong>🎬 Canvas System (Video Backgrounds)</strong></td>
+<td>Enjoy looping short videos (Spotify Canvas style) playing in the background of your favorite tracks for an unparalleled immersive experience.</td>
 </tr>
 <tr>
-<td><strong>🔍 Advanced Search</strong></td>
-<td>Quickly find songs, videos, albums, and playlists</td>
-</tr>
-<tr>
-<td><strong>👤 Account Integration</strong></td>
-<td>Sign in to sync preferences and collections</td>
-</tr>
-<tr>
-<td><strong>📚 Library Management</strong></td>
-<td>Organize and fully manage your music collection</td>
-</tr>
-<tr>
-<td><strong>📱 Offline Mode</strong></td>
-<td>Download content for offline listening</td>
-</tr>
-</table>
-
-### Audio Enhancement
-<table>
-<tr>
-<th width="30%">Feature</th>
-<th width="70%">Description</th>
-</tr>
-<tr>
-<td><strong>🎤 Synchronized Lyrics</strong></td>
-<td>View perfectly synchronized song lyrics</td>
-</tr>
-<tr>
-<td><strong>⚡ Smart Silence Skip</strong></td>
-<td>Automatically skip segments without audio</td>
-</tr>
-<tr>
-<td><strong>🔊 Volume Normalization</strong></td>
-<td>Balance sound levels between different tracks</td>
-</tr>
-<tr>
-<td><strong>🎛️ Tempo & Pitch Control</strong></td>
-<td>Adjust playback speed and pitch to preferences</td>
-</tr>
-</table>
-
-### Personalization & Integration
-<table>
-<tr>
-<th width="30%">Feature</th>
-<th width="70%">Description</th>
-</tr>
-<tr>
-<td><strong>🎨 Dynamic Theming</strong></td>
-<td>Interface adapts to album artwork colors</td>
+<td><strong>✨ Dynamic Themes Pro</strong></td>
+<td>The interface doesn't just adapt to album cover colors, it completely redefines its palette using advanced Material Design 3 algorithms.</td>
 </tr>
 <tr>
 <td><strong>🌐 Multi-language Support</strong></td>
-<td>Available in numerous languages for global users</td>
+<td>Available in numerous languages for global users.</td>
 </tr>
 <tr>
 <td><strong>🚗 Android Auto Compatible</strong></td>
-<td>Integration with vehicle infotainment systems</td>
-</tr>
-<tr>
-<td><strong>🎯 Material Design 3</strong></td>
-<td>Design aligned with Google's latest design guidelines</td>
+<td>Full integration with vehicle infotainment systems.</td>
 </tr>
 <tr>
 <td><strong>🖼️ Artwork Export</strong></td>
-<td>Save high-resolution album images</td>
+<td>Save high-resolution album images directly to your device.</td>
+</tr>
+</table>
+
+### 🎵 Hi-Fi Audio and Downloads (Exclusive)
+<table>
+<tr>
+<th width="30%">Feature</th>
+<th width="70%">Description</th>
+</tr>
+<tr>
+<td><strong>💎 Lossless FLAC Audio</strong></td>
+<td>Native integration for playing FLAC (Lossless) files. Listen to your music with maximum fidelity and original studio quality.</td>
+</tr>
+<tr>
+<td><strong>📥 Advanced Direct Download</strong></td>
+<td>Ultra-fast direct download system built into the core to save all your music and enjoy it offline instantly.</td>
+</tr>
+<tr>
+<td><strong>🔊 Custom Audio Engine</strong></td>
+<td>Volume normalization, tempo/pitch control, and smart silence skipping processed directly on your device.</td>
+</tr>
+</table>
+
+### 🎤 Lyrics and Intelligence (Exclusive)
+<table>
+<tr>
+<th width="30%">Feature</th>
+<th width="70%">Description</th>
+</tr>
+<tr>
+<td><strong>🌍 Online Translation without APIs</strong></td>
+<td>We've successfully implemented real-time lyrics translation completely online, without relying on paid or external APIs!</td>
+</tr>
+<tr>
+<td><strong>📜 Synchronized Lyrics (LRC)</strong></td>
+<td>View the lyrics of your songs perfectly synced word-by-word with the music.</td>
+</tr>
+</table>
+
+### 🛠️ Enhanced Classic Functionality
+<table>
+<tr>
+<th width="30%">Feature</th>
+<th width="70%">Description</th>
+</tr>
+<tr>
+<td><strong>🚫 100% Ad-Free</strong></td>
+<td>Enjoy music and browsing without ad interruptions forever.</td>
+</tr>
+<tr>
+<td><strong>🔄 Background Playback</strong></td>
+<td>Keep listening while using other apps or with the screen off.</td>
+</tr>
+<tr>
+<td><strong>👤 Account Synchronization</strong></td>
+<td>Log in to instantly bring over all your preferences and collections.</td>
+</tr>
+<tr>
+<td><strong>🔍 Advanced Search</strong></td>
+<td>Quickly find songs, videos, albums, and playlists.</td>
+</tr>
+<tr>
+<td><strong>📚 Library Management</strong></td>
+<td>Organize and fully manage your music collection exactly how you want.</td>
 </tr>
 </table>
 

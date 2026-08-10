@@ -69,87 +69,101 @@
 
 ## Características Principales
 
-### Funcionalidad Principal
-<table>
-<tr>
-<th width="30%">Característica</th>
-<th width="70%">Descripción</th>
-</tr>
-<tr>
-<td><strong>🎵 Reproducción sin Anuncios</strong></td>
-<td>Disfruta de música sin interrupciones publicitarias</td>
-</tr>
-<tr>
-<td><strong>🔄 Reproducción en Segundo Plano</strong></td>
-<td>Continúa escuchando mientras usas otras aplicaciones</td>
-</tr>
-<tr>
-<td><strong>🔍 Búsqueda Avanzada</strong></td>
-<td>Encuentra rápidamente canciones, vídeos, álbumes y listas de reproducción</td>
-</tr>
-<tr>
-<td><strong>👤 Integración de Cuenta</strong></td>
-<td>Inicia sesión para sincronizar preferencias y colecciones</td>
-</tr>
-<tr>
-<td><strong>📚 Gestión de Biblioteca</strong></td>
-<td>Organiza y administra completamente tu colección musical</td>
-</tr>
-<tr>
-<td><strong>📱 Modo Offline</strong></td>
-<td>Descarga contenido para escuchar sin conexión</td>
-</tr>
-</table>
+**Dezzy** no solo hereda la robustez de un cliente completo, sino que ha sido rediseñado con integraciones masivas y exclusivas para ofrecer la experiencia definitiva:
 
-### Mejoras de Audio
+### 🌟 Experiencia de Usuario y Personalización (Exclusivo)
 <table>
 <tr>
 <th width="30%">Característica</th>
 <th width="70%">Descripción</th>
 </tr>
 <tr>
-<td><strong>🎤 Letras Sincronizadas</strong></td>
-<td>Visualiza letras de canciones perfectamente sincronizadas</td>
+<td><strong>🎨 Imitación de Plataformas</strong></td>
+<td>Logramos recrear exactamente los estilos de reproductor y la interfaz de las plataformas de streaming más populares. ¡Siente que usas tu app favorita pero con todo el poder de Dezzy!</td>
 </tr>
 <tr>
-<td><strong>⚡ Omisión Inteligente de Silencios</strong></td>
-<td>Omite automáticamente segmentos sin audio</td>
+<td><strong>🎬 Sistema de Canvas (Videos de Fondo)</strong></td>
+<td>Disfruta de vídeos cortos en bucle (estilo Spotify Canvas) en el fondo de tus canciones favoritas para una experiencia inmersiva sin igual.</td>
 </tr>
 <tr>
-<td><strong>🔊 Normalización de Volumen</strong></td>
-<td>Equilibra los niveles de sonido entre diferentes pistas</td>
-</tr>
-<tr>
-<td><strong>🎛️ Control de Tempo y Tono</strong></td>
-<td>Ajusta la velocidad y el tono de reproducción según preferencias</td>
-</tr>
-</table>
-
-### Personalización e Integración
-<table>
-<tr>
-<th width="30%">Característica</th>
-<th width="70%">Descripción</th>
-</tr>
-<tr>
-<td><strong>🎨 Temas Dinámicos</strong></td>
-<td>La interfaz se adapta a los colores de las portadas de álbumes</td>
+<td><strong>✨ Temas Dinámicos Pro</strong></td>
+<td>La interfaz no solo se adapta a los colores de las portadas de álbumes, sino que redefine su paleta entera usando algoritmos avanzados de Material Design 3.</td>
 </tr>
 <tr>
 <td><strong>🌐 Soporte Multiidioma</strong></td>
-<td>Disponible en numerosos idiomas para usuarios globales</td>
+<td>Disponible en numerosos idiomas para usuarios globales.</td>
 </tr>
 <tr>
 <td><strong>🚗 Compatible con Android Auto</strong></td>
-<td>Integración con sistemas de infoentretenimiento vehicular</td>
-</tr>
-<tr>
-<td><strong>🎯 Material Design 3</strong></td>
-<td>Diseño alineado con las últimas directrices de diseño de Google</td>
+<td>Integración total con sistemas de infoentretenimiento vehicular.</td>
 </tr>
 <tr>
 <td><strong>🖼️ Exportación de Portadas</strong></td>
-<td>Guarda imágenes de álbumes en alta resolución</td>
+<td>Guarda imágenes de álbumes en alta resolución directamente en tu dispositivo.</td>
+</tr>
+</table>
+
+### 🎵 Audio Hi-Fi y Descargas (Exclusivo)
+<table>
+<tr>
+<th width="30%">Característica</th>
+<th width="70%">Descripción</th>
+</tr>
+<tr>
+<td><strong>💎 Audio FLAC Sin Pérdida</strong></td>
+<td>Integración nativa para reproducción de archivos FLAC (Lossless). Escucha tu música con la máxima fidelidad y calidad de estudio original.</td>
+</tr>
+<tr>
+<td><strong>📥 Descarga Directa Avanzada</strong></td>
+<td>Sistema de descargas directas ultrarrápido integrado en el núcleo para guardar toda tu música y disfrutarla offline al instante.</td>
+</tr>
+<tr>
+<td><strong>🔊 Motor de Audio Personalizado</strong></td>
+<td>Normalización de volumen, control de tempo/tono y omisión inteligente de silencios procesados directamente en el dispositivo.</td>
+</tr>
+</table>
+
+### 🎤 Letras e Inteligencia (Exclusivo)
+<table>
+<tr>
+<th width="30%">Característica</th>
+<th width="70%">Descripción</th>
+</tr>
+<tr>
+<td><strong>🌍 Traducción Online sin APIs</strong></td>
+<td>Hemos logrado consagrar la traducción de letras de canciones en tiempo real de manera completamente online, ¡y sin depender de APIs de pago o externas!</td>
+</tr>
+<tr>
+<td><strong>📜 Letras Sincronizadas (LRC)</strong></td>
+<td>Visualiza las letras de tus canciones perfectamente sincronizadas palabra por palabra con la música.</td>
+</tr>
+</table>
+
+### 🛠️ Funcionalidad Clásica Potenciada
+<table>
+<tr>
+<th width="30%">Característica</th>
+<th width="70%">Descripción</th>
+</tr>
+<tr>
+<td><strong>🚫 100% Sin Anuncios</strong></td>
+<td>Disfruta de música y navegación sin interrupciones publicitarias para siempre.</td>
+</tr>
+<tr>
+<td><strong>🔄 Reproducción en Segundo Plano</strong></td>
+<td>Continúa escuchando mientras usas otras aplicaciones o con la pantalla apagada.</td>
+</tr>
+<tr>
+<td><strong>👤 Sincronización de Cuenta</strong></td>
+<td>Inicia sesión para traer todas tus preferencias y colecciones al instante.</td>
+</tr>
+<tr>
+<td><strong>🔍 Búsqueda Avanzada</strong></td>
+<td>Encuentra rápidamente canciones, vídeos, álbumes y listas de reproducción.</td>
+</tr>
+<tr>
+<td><strong>📚 Gestión de Biblioteca</strong></td>
+<td>Organiza y administra completamente tu colección musical a tu gusto.</td>
 </tr>
 </table>
 
