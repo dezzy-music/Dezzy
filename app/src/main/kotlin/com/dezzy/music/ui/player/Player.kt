@@ -1112,13 +1112,14 @@ fun BottomSheetPlayer(
                 Configuration.ORIENTATION_LANDSCAPE -> {
                     Row(
                         modifier = Modifier
+                            .fillMaxSize()
                             .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal))
                             .padding(bottom = queueSheetState.collapsedBound + 16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1f).fillMaxHeight(),
                         ) {
                             Thumbnail(
                                 sliderPositionProvider = { sliderPosition },
@@ -1134,6 +1135,7 @@ fun BottomSheetPlayer(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier
                                 .weight(1.2f)
+                                .fillMaxHeight()
                                 .windowInsetsPadding(
                                     WindowInsets.systemBars.only(
                                         WindowInsetsSides.Top

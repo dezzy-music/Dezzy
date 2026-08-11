@@ -207,21 +207,6 @@ Para información detallada sobre configuración, características avanzadas y g
 2. Selecciona la opción de descarga para Android
 3. Sigue las instrucciones de instalación proporcionadas
 
-#### Opción 3: F-Droid
-
-<div align="center">
-  
-[<img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="80">](https://f-droid.org/es/packages/com.Dezzy.dezzymusic)
-
-</div>
-
-#### Opción 4: OpenApk
-
-<div align="center">
-  
-[<img src="https://www.openapk.net/images/openapk-badge.png" alt="Get it on OpenApk" height="80">](https://www.openapk.net/dezzymusic/com.Dezzy.dezzymusic/)
-
-</div>
 
 > **Aviso de Seguridad**: Por razones de seguridad, se recomienda obtener la aplicación exclusivamente a través de los canales oficiales mencionados anteriormente. Evita descargar APKs de fuentes no verificadas.
 
