@@ -94,8 +94,8 @@ android {
         applicationId = "com.dezzy.music"
         minSdk = 26
         targetSdk = 36
-        versionCode = 137
-        versionName = "3.0.6"
+        versionCode = 138
+        versionName = "3.0.7"
 //        versionName = "3.0.2-$gitCommit"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

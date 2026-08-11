@@ -185,8 +185,6 @@ object Updater {
         parseSemVerOrNull(release.tagName) ?: parseSemVerOrNull(release.name)
 
     internal fun isSameVersion(a: String, b: String): Boolean {
-        return true // Temporarily hidden for future integration
-        /*
         val aSemVer = parseSemVerOrNull(a)
         val bSemVer = parseSemVerOrNull(b)
         return if (aSemVer != null && bSemVer != null) {
@@ -197,7 +195,6 @@ object Updater {
         } else {
             a.trim() == b.trim()
         }
-        */
     }
 
     internal fun findLatestRelease(releases: List<ReleaseInfo>): ReleaseInfo? {
