@@ -35,16 +35,26 @@ class ExoDownloadService : DownloadService(
     @Inject
     lateinit var downloadUtil: DownloadUtil
 
+    @Volatile private var isMassCancelling = false
+    private val notificationHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val debouncedNotificationRunnable = Runnable { updateNotification() }
+
+    private fun debouncedUpdateNotification() {
+        notificationHandler.removeCallbacks(debouncedNotificationRunnable)
+        notificationHandler.postDelayed(debouncedNotificationRunnable, 500L)
+    }
+
     private val notificationUpdateListener = object : DownloadManager.Listener {
         override fun onDownloadsPausedChanged(downloadManager: DownloadManager, downloadsPaused: Boolean) {
-            updateNotification()
+            if (!isMassCancelling) debouncedUpdateNotification()
         }
 
         override fun onDownloadChanged(downloadManager: DownloadManager, download: Download, finalException: Exception?) {
-            updateNotification()
+            if (!isMassCancelling) debouncedUpdateNotification()
         }
 
         override fun onIdle(downloadManager: DownloadManager) {
+            isMassCancelling = false
             updateNotification()
         }
     }
@@ -62,9 +72,8 @@ class ExoDownloadService : DownloadService(
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             REMOVE_ALL_PENDING_DOWNLOADS -> {
-                downloadManager.currentDownloads.forEach { download ->
-                    downloadManager.removeDownload(download.request.id)
-                }
+                isMassCancelling = true
+                downloadManager.removeAllDownloads()
             }
             REMOVE_DOWNLOAD -> {
                 intent.getStringExtra(EXTRA_DOWNLOAD_ID)?.let { id ->

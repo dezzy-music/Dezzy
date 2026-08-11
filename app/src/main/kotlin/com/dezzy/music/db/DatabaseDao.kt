@@ -676,6 +676,13 @@ interface DatabaseDao {
     @Query("SELECT * FROM song WHERE id IN (:songIds)")
     suspend fun getSongsByIds(songIds: List<String>): List<Song>
 
+    @Query("UPDATE song SET dateDownload = NULL WHERE id IN (:ids)")
+    fun clearDateDownloadBatch(ids: List<String>)
+
+    @Transaction
+    @Query("SELECT * FROM song WHERE id IN (:songIds)")
+    fun songsByIdsFlow(songIds: List<String>): Flow<List<Song>>
+
     
     @Transaction
     @Query("SELECT * FROM song_artist_map WHERE songId = :songId")

@@ -124,6 +124,14 @@ constructor(
         onBufferOverflow = kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST,
     )
 
+    // Batched dateDownload cleanup for mass cancellation — accumulates IDs and flushes
+    // in a single DB transaction after a short coalescing delay.
+    private val pendingDateDownloadCleanup = java.util.concurrent.ConcurrentLinkedQueue<String>()
+    private val dateDownloadCleanupDirty = MutableSharedFlow<Unit>(
+        replay = 1,
+        onBufferOverflow = kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST,
+    )
+
     private val dataSourceFactory =
         ResolvingDataSource.Factory(
             CacheDataSource
@@ -178,18 +186,20 @@ constructor(
                     ),
                 )
 
-                val now = LocalDateTime.now()
                 val existing = getSongByIdBlocking(mediaId)?.song
 
+                // dateDownload is NOT set here — it's set only when the download
+                // actually completes (STATE_COMPLETED) to avoid phantom "downloaded"
+                // state if the download is cancelled or fails midway.
                 val updatedSong = if (existing != null) {
-                    if (existing.dateDownload == null) existing.copy(dateDownload = now) else existing
+                    existing
                 } else {
                     SongEntity(
                         id = mediaId,
                         title = playbackData.videoDetails?.title ?: "Unknown",
                         duration = playbackData.videoDetails?.lengthSeconds?.toIntOrNull() ?: 0,
                         thumbnailUrl = playbackData.videoDetails?.thumbnail?.getHighestResUrl(),
-                        dateDownload = now
+                        dateDownload = null
                     )
                 }
 
@@ -247,6 +257,13 @@ constructor(
                         downloadsDirty.tryEmit(Unit)
                         if (download.state == Download.STATE_COMPLETED) {
                             internalScope.launch {
+                                // Mark dateDownload ONLY now that the download truly completed
+                                database.query {
+                                    val song = getSongByIdBlocking(download.request.id)?.song
+                                    if (song != null && song.dateDownload == null) {
+                                        upsert(song.copy(dateDownload = LocalDateTime.now()))
+                                    }
+                                }
                                 val exportEnabled = context.dataStore.get(
                                     com.dezzy.music.constants.ExportDownloadsToMusicKey, false
                                 )
@@ -261,6 +278,10 @@ constructor(
                     ) {
                         downloadsMap.remove(download.request.id)
                         downloadsDirty.tryEmit(Unit)
+                        // Queue dateDownload cleanup — batched to avoid 2000 individual
+                        // DB writes during mass cancellation.
+                        pendingDateDownloadCleanup.add(download.request.id)
+                        dateDownloadCleanupDirty.tryEmit(Unit)
                     }
                 }
             )
@@ -281,6 +302,25 @@ constructor(
             downloadsDirty.collect {
                 downloads.value = HashMap(downloadsMap)
                 delay(500)
+            }
+        }
+        // Batched dateDownload cleanup: coalesces mass removal events into a single
+        // DB transaction, preventing 2000 individual writes during mass cancellation.
+        internalScope.launch {
+            dateDownloadCleanupDirty.collect {
+                delay(300) // Coalesce rapid-fire removals
+                val ids = mutableListOf<String>()
+                while (true) {
+                    val id = pendingDateDownloadCleanup.poll() ?: break
+                    ids.add(id)
+                }
+                if (ids.isNotEmpty()) {
+                    database.transaction {
+                        ids.chunked(500).forEach { batch ->
+                            clearDateDownloadBatch(batch)
+                        }
+                    }
+                }
             }
         }
     }

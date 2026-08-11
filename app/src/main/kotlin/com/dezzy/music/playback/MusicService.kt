@@ -5241,12 +5241,7 @@ class MusicService :
                 )
             }
 
-            // ── Fast path 1: downloaded songs ──
-            val isDownloaded = downloadCache.keys.contains(mediaId)
-            if (isDownloaded) {
-                scope.launch(Dispatchers.IO) { recoverSong(mediaId) }
-                return@Factory dataSpec
-            }
+
 
             // ── Fast path 2: recently resolved URL still valid (in-memory, zero I/O) ──
             playbackUrlCache[mediaId]?.takeIf { it.second > System.currentTimeMillis() }?.let {

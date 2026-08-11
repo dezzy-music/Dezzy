@@ -19,8 +19,14 @@ import com.dezzy.music.playback.DownloadUtil
 import com.dezzy.music.playback.ExoDownloadService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
@@ -40,24 +46,33 @@ class DownloadQueueViewModel @Inject constructor(
     database: MusicDatabase,
 ) : ViewModel() {
 
-    val downloads = combine(
-        downloadUtil.downloads,
-        database.allSongs()
-    ) { downloadMap, allSongs ->
-        val songMap = allSongs.associateBy { it.id }
-        downloadMap.values
-            .filter { it.state != Download.STATE_COMPLETED }
-            .map { download ->
-                DownloadItem(
-                    download = download,
-                    song = songMap[download.request.id],
-                    title = download.request.data?.let { Util.fromUtf8Bytes(it) } 
-                        ?: songMap[download.request.id]?.song?.title 
-                        ?: download.request.id
-                )
+    @OptIn(kotlinx.coroutines.FlowPreview::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val downloads = downloadUtil.downloads
+        .debounce(300)
+        .flatMapLatest { downloadMap ->
+            val activeDownloads = downloadMap.values
+                .filter { it.state != Download.STATE_COMPLETED }
+            if (activeDownloads.isEmpty()) {
+                flowOf(emptyList())
+            } else {
+                val activeIds = activeDownloads.map { it.request.id }
+                database.songsByIdsFlow(activeIds).map { songs ->
+                    val songMap = songs.associateBy { it.id }
+                    activeDownloads
+                        .map { download ->
+                            DownloadItem(
+                                download = download,
+                                song = songMap[download.request.id],
+                                title = download.request.data?.let { Util.fromUtf8Bytes(it) }
+                                    ?: songMap[download.request.id]?.song?.title
+                                    ?: download.request.id
+                            )
+                        }
+                        .sortedBy { it.download.startTimeMs }
+                }
             }
-            .sortedBy { it.download.startTimeMs }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val downloadsPaused = callbackFlow {
         val listener = object : DownloadManager.Listener {
