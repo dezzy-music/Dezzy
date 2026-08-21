@@ -144,7 +144,7 @@ class ArtistViewModel @Inject constructor(
                                 ).getOrNull()
                                 val vId = searchRes?.items?.firstOrNull()?.id
                                 if (!vId.isNullOrBlank()) {
-                                    com.dezzy.music.utils.YTPlayerUtils.videoPlaybackDataForPlayback(vId).getOrNull()?.streamUrl
+                                    com.dezzy.music.utils.YTPlayerUtils.videoPlaybackDataForPlayback(vId).getOrNull()?.let { it.streamUrl ?: it.adaptiveVideoUrl }
                                 } else null
                             }.getOrNull()
                             if (!ytFallbackVid.isNullOrBlank()) {

@@ -80,8 +80,10 @@ fun HomeScreen(
     val isPlaying by playerConnection.isPlaying.collectAsState()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
 
-    val quickPicks by viewModel.quickPicks.collectAsState()
+    val quickPicksState by viewModel.quickPicks.collectAsState()
     val speedDialSongs by viewModel.speedDialSongs.collectAsState()
+    val quickPicks = quickPicksState?.takeIf { it.isNotEmpty() } ?: speedDialSongs
+    val recentPlaylists by viewModel.recentPlaylistsDb.collectAsState()
     val forgottenFavorites by viewModel.forgottenFavorites.collectAsState()
     val keepListening by viewModel.keepListening.collectAsState()
     val homePage by viewModel.homePage.collectAsState()
@@ -324,7 +326,17 @@ fun HomeScreen(
                     com.dezzy.music.ui.component.WelcomeGuideCard()
                 }
 
-                // ── Dezzy hero: saludo, reanudar con canvas, atajos y mixes ──
+// ── Cajones estilo Spotify: 8 atajos rápidos ──
+                item {
+                    SpotifyGreetingGrid(
+                        quickPicks = quickPicks,
+                        recentPlaylists = recentPlaylists,
+                        playerConnection = playerConnection,
+                        navController = navController
+                    )
+                }
+
+// ── Dezzy hero: saludo, reanudar con canvas, atajos y mixes ──
                 item {
                     DezzyHomeHero(
                         accountName = accountName,
@@ -340,18 +352,6 @@ fun HomeScreen(
                 // Se dibuja sola: sin sesión o sin datos no ocupa nada.
                 item {
                     com.dezzy.music.ui.screens.social.TopCommentedTracksSection()
-                }
-
-                if (showHomeCategoryChips) {
-                    item {
-                        ChipsRow(
-                            chips = homePage?.chips.orEmpty().map { it to it.title },
-                            currentValue = selectedChip,
-                            onValueUpdate = {
-                                viewModel.toggleChip(it)
-                            }
-                        )
-                    }
                 }
 
                 quickPicks?.takeIf { it.isNotEmpty() }?.let { picks ->

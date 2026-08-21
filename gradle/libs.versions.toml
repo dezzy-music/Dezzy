@@ -140,7 +140,7 @@ turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 jaudiotagger = { module = "net.jthink:jaudiotagger", version.ref = "jaudiotagger" }
 
-newpipe-extractor = { module = "com.github.teamnewpipe:NewPipeExtractor", version = "v0.26.3" }
+newpipe-extractor = { module = "com.github.teamnewpipe:NewPipeExtractor", version = "v0.26.5" }
 #newpipe-extractor = { module = "com.github.libre-tube:NewPipeExtractor", version = "76e7ea7" }
 #newpipe-extractor = { module = "com.github.teamnewpipe:NewPipeExtractor", version = "master-SNAPSHOT" }
 

@@ -685,6 +685,13 @@ fun BottomSheetPlayer(
         collapsedBound = 0.dp,
         initialAnchor = 1
     )
+    
+    LaunchedEffect(com.dezzy.music.lyrics.LyricsSelectionState.isSelectingForShare) {
+        if (com.dezzy.music.lyrics.LyricsSelectionState.isSelectingForShare) {
+            if (state.isCollapsed) state.expandSoft()
+            if (lyricsSheetState.isCollapsed) lyricsSheetState.expandSoft()
+        }
+    }
 
     val canvasSheetState = rememberBottomSheetState(
         dismissedBound = 0.dp,

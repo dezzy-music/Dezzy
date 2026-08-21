@@ -759,11 +759,17 @@ fun Lyrics(
     val lyricsLineBlur by rememberPreference(LyricsLineBlurKey, true)
 
     var isSelectionModeActive by rememberSaveable { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(com.dezzy.music.lyrics.LyricsSelectionState.isSelectingForShare) {
+        if (com.dezzy.music.lyrics.LyricsSelectionState.isSelectingForShare) {
+            isSelectionModeActive = true
+        }
+    }
     val selectedIndices = remember { mutableStateListOf<Int>() }
     var showMaxSelectionToast by remember { mutableStateOf(false) }
 
     val lazyListState = rememberLazyListState()
 
+    androidx.compose.runtime.LaunchedEffect(isSelectionModeActive) { if (!isSelectionModeActive) { com.dezzy.music.lyrics.LyricsSelectionState.isSelectingForShare = false } }
     BackHandler(enabled = isSelectionModeActive) {
         isSelectionModeActive = false
         selectedIndices.clear()

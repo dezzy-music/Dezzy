@@ -671,10 +671,12 @@ fun TopPlaylistScreen(
                                     // Play Button
                                     Button(
                                         onClick = {
+                                            val currentSongs = songs ?: return@Button
+                                            if (currentSongs.isEmpty()) return@Button
                                             playerConnection.playQueue(
                                                 ListQueue(
                                                     title = name,
-                                                    items = songs!!.map { it.toMediaItem() },
+                                                    items = currentSongs.map { it.toMediaItem() },
                                                 ),
                                             )
                                         },
@@ -710,10 +712,12 @@ fun TopPlaylistScreen(
                                     // Shuffle Button
                                     Button(
                                         onClick = {
+                                            val currentSongs = songs ?: return@Button
+                                            if (currentSongs.isEmpty()) return@Button
                                             playerConnection.playQueue(
                                                 ListQueue(
                                                     title = name,
-                                                    items = songs!!.shuffled().map { it.toMediaItem() },
+                                                    items = currentSongs.shuffled().map { it.toMediaItem() },
                                                 ),
                                             )
                                         },
@@ -818,11 +822,12 @@ fun TopPlaylistScreen(
                                             if (songWrapper.item.song.id == mediaMetadata?.id) {
                                                 playerConnection.player.togglePlayPause()
                                             } else {
+                                                val currentSongs = songs ?: return@combinedClickable
                                                 playerConnection.playQueue(
                                                     ListQueue(
                                                         title = name,
-                                                        items = songs!!.map { it.toMediaItem() },
-                                                        startIndex = songs!!.indexOfFirst { it.id == songWrapper.item.id }
+                                                        items = currentSongs.map { it.toMediaItem() },
+                                                        startIndex = maxOf(0, currentSongs.indexOfFirst { it.id == songWrapper.item.id })
                                                     ),
                                                 )
                                             }

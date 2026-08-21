@@ -170,7 +170,7 @@ internal suspend fun fetchCanvasArtworkForPlayback(
         ).getOrNull()
         val videoId = searchResult?.items?.firstOrNull()?.id
         if (!videoId.isNullOrBlank()) {
-            YTPlayerUtils.videoPlaybackDataForPlayback(videoId).getOrNull()?.streamUrl
+            YTPlayerUtils.videoPlaybackDataForPlayback(videoId).getOrNull()?.let { it.streamUrl ?: it.adaptiveVideoUrl }
         } else null
     }.getOrNull()
 

@@ -423,7 +423,9 @@ class MusicService :
                     videoModeMediaId = mediaId
                     videoModeActive.value = true
                     videoModeLoading.value = false
-                    startVideoPlayer(android.net.Uri.fromFile(file).toString(), resumePositionMs, wasPlaying)
+                    val finalPositionMs = player.currentPosition
+                    val finalWasPlaying = player.playWhenReady
+                    startVideoPlayer(android.net.Uri.fromFile(file).toString(), null, finalPositionMs, finalWasPlaying)
                 } else {
                     videoModeLoading.value = false
                     videoModeError.value = "Esta canción importada no tiene pista de video"
@@ -443,7 +445,20 @@ class MusicService :
             val currentTitle = player.mediaMetadata.title?.toString()
             val currentArtist = player.mediaMetadata.artist?.toString()
             val result = withContext(Dispatchers.IO) {
-                val direct = YTPlayerUtils.videoPlaybackDataForPlayback(mediaId, maxHeight = maxHeight)
+                val isValidUrl: suspend (String) -> Boolean = { url ->
+                    try {
+                        val request = okhttp3.Request.Builder().url(url).get().header("Range", "bytes=0-0").build()
+                        val response = mediaOkHttpClient.newCall(request).execute()
+                        val isSuccess = response.isSuccessful
+                        android.util.Log.e("MusicService", "isValidUrl check: HTTP ${response.code} for URL ${url.take(60)}... success=$isSuccess")
+                        response.close()
+                        isSuccess
+                    } catch (e: Exception) {
+                        android.util.Log.e("MusicService", "isValidUrl exception: ${e.message}")
+                        false
+                    }
+                }
+                val direct = YTPlayerUtils.videoPlaybackDataForPlayback(mediaId, maxHeight = maxHeight, isValidUrl = isValidUrl)
                 if (direct.isSuccess) {
                     direct
                 } else {
@@ -459,7 +474,7 @@ class MusicService :
                     } else null
 
                     if (!searchVidId.isNullOrBlank()) {
-                        YTPlayerUtils.videoPlaybackDataForPlayback(searchVidId, maxHeight = maxHeight)
+                        YTPlayerUtils.videoPlaybackDataForPlayback(searchVidId, maxHeight = maxHeight, isValidUrl = isValidUrl)
                     } else {
                         direct
                     }
@@ -469,7 +484,10 @@ class MusicService :
             result.onSuccess { data ->
                 // The song changed while we were resolving — don't attach a stale video.
                 if (player.currentMediaItem?.mediaId != mediaId) return@onSuccess
-                startVideoPlayer(data.streamUrl, resumePositionMs, wasPlaying)
+                val finalPositionMs = player.currentPosition
+                val finalWasPlaying = player.playWhenReady
+                val vidUrl = data.streamUrl ?: data.adaptiveVideoUrl ?: return@onSuccess
+                startVideoPlayer(vidUrl, data.adaptiveAudioUrl, finalPositionMs, finalWasPlaying)
                 videoModeMediaId = mediaId
                 videoModeActive.value = true
             }.onFailure { e ->
@@ -524,14 +542,17 @@ class MusicService :
         val audible = crossfadeAudio?.audiblyPlayingIndex() ?: C.INDEX_UNSET
         val from = if (audible != C.INDEX_UNSET) audible else player.currentMediaItemIndex
 
+        val repeatModeForSkip = if (player.repeatMode == Player.REPEAT_MODE_ONE) Player.REPEAT_MODE_ALL else player.repeatMode
+        val timeline = player.currentTimeline
+
         val target = when {
-            forward -> if (from + 1 < count) from + 1 else if (player.repeatMode != REPEAT_MODE_OFF) 0 else return
+            forward -> timeline.getNextWindowIndex(from, repeatModeForSkip, player.shuffleModeEnabled)
+                .let { if (it == androidx.media3.common.C.INDEX_UNSET) return else it }
             // "Anterior" reinicia la pista si ya avanzó lo suficiente, como todos
             // los reproductores; si no, va a la anterior.
-            player.currentPosition > PREVIOUS_RESTART_THRESHOLD_MS && audible == C.INDEX_UNSET -> from
-            from - 1 >= 0 -> from - 1
-            player.repeatMode != REPEAT_MODE_OFF -> count - 1
-            else -> from
+            player.currentPosition > PREVIOUS_RESTART_THRESHOLD_MS && audible == androidx.media3.common.C.INDEX_UNSET -> from
+            else -> timeline.getPreviousWindowIndex(from, repeatModeForSkip, player.shuffleModeEnabled)
+                .let { if (it == androidx.media3.common.C.INDEX_UNSET) from else it }
         }
 
         val before = player.currentMediaItemIndex
@@ -562,11 +583,32 @@ class MusicService :
         }
     }
 
-    private fun startVideoPlayer(url: String, positionMs: Long, autoPlay: Boolean) {
+    private fun startVideoPlayer(videoUrl: String, audioUrl: String?, positionMs: Long, autoPlay: Boolean) {
         stopVideoPlayerInternal()
         player.pause()
-        videoPlayer = ExoPlayer.Builder(this).build().apply {
-            setMediaItem(MediaItem.fromUri(url))
+        
+        val dataSourceFactory = createCacheDataSource()
+        
+        videoPlayer = ExoPlayer.Builder(this)
+            .setMediaSourceFactory(androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSourceFactory))
+            .build().apply {
+            addListener(object : Player.Listener {
+                override fun onPlayerError(error: PlaybackException) {
+                    videoModeError.value = "Error al reproducir el video: ${error.errorCodeName}"
+                }
+            })
+            
+            if (audioUrl != null) {
+                val factory = androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSourceFactory)
+                val videoSource = factory.createMediaSource(MediaItem.fromUri(videoUrl))
+                
+                val audioSource = factory.createMediaSource(MediaItem.fromUri(audioUrl))
+                
+                setMediaSource(androidx.media3.exoplayer.source.MergingMediaSource(true, videoSource, audioSource))
+            } else {
+                setMediaItem(MediaItem.fromUri(videoUrl))
+            }
+            
             prepare()
             seekTo(positionMs)
             playWhenReady = autoPlay
@@ -723,13 +765,23 @@ class MusicService :
                     ),
                 )
             }.getOrDefault(com.dezzy.music.constants.VideoQuality.P720).maxHeight
-            YTPlayerUtils.videoPlaybackDataForPlayback(mediaId, maxHeight = maxHeight)
+            YTPlayerUtils.videoPlaybackDataForPlayback(mediaId, maxHeight = maxHeight, isValidUrl = { url ->
+                try {
+                    val request = okhttp3.Request.Builder().url(url).get().header("Range", "bytes=0-0").build()
+                    val response = mediaOkHttpClient.newCall(request).execute()
+                    response.use { it.isSuccessful }
+                } catch (e: Exception) {
+                    false
+                }
+            })
                 .getOrNull()
                 ?.let { video ->
-                    return com.dezzy.music.playback.cast.CastSessionController.ResolvedStream(
-                        video.streamUrl,
-                        "video/mp4",
-                    )
+                    video.streamUrl?.let { url ->
+                        return com.dezzy.music.playback.cast.CastSessionController.ResolvedStream(
+                            url,
+                            "video/mp4",
+                        )
+                    }
                 }
         }
 

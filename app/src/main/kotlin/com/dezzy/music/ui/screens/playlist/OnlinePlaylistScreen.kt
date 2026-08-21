@@ -16,6 +16,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -738,6 +739,42 @@ fun OnlinePlaylistScreen(
                                     val playBtnContainer = MaterialTheme.colorScheme.primary
                                     val playBtnContent = if (playBtnContainer.luminance() > 0.5f) Color.Black else Color.White
 
+                                    // Play Button
+                                    playlist.playEndpoint?.let { playEndpoint ->
+                                        Button(
+                                            onClick = {
+                                                playerConnection.playQueue(
+                                                    YouTubeQueue(playEndpoint)
+                                                )
+                                            },
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = playBtnContainer,
+                                                contentColor = playBtnContent,
+                                            ),
+                                            shape = RoundedCornerShape(24.dp),
+                                            contentPadding = PaddingValues(horizontal = 12.dp),
+                                            modifier = Modifier.weight(1f).height(48.dp)
+                                        ) {
+                                            Row(
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    painter = painterResource(R.drawable.play),
+                                                    contentDescription = stringResource(R.string.play),
+                                                    tint = playBtnContent,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                                Text(
+                                                    text = stringResource(R.string.play),
+                                                    style = MaterialTheme.typography.labelLarge,
+                                                    color = playBtnContent,
+                                                    maxLines = 1
+                                                )
+                                            }
+                                        }
+                                    }
+
                                     // Shuffle Button
                                     playlist.shuffleEndpoint?.let { shuffleEndpoint ->
                                         Button(
@@ -751,15 +788,26 @@ fun OnlinePlaylistScreen(
                                                 contentColor = playBtnContent,
                                             ),
                                             shape = RoundedCornerShape(24.dp),
+                                            contentPadding = PaddingValues(horizontal = 12.dp),
                                             modifier = Modifier.weight(1f).height(48.dp)
                                         ) {
-                                            Icon(
-                                                painter = painterResource(R.drawable.shuffle),
-                                                contentDescription =
-                                                    stringResource(R.string.shuffle),
-                                                tint = playBtnContent,
-                                                modifier = Modifier.size(24.dp)
-                                            )
+                                            Row(
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    painter = painterResource(R.drawable.shuffle),
+                                                    contentDescription = stringResource(R.string.shuffle),
+                                                    tint = playBtnContent,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                                Text(
+                                                    text = stringResource(R.string.shuffle),
+                                                    style = MaterialTheme.typography.labelLarge,
+                                                    color = playBtnContent,
+                                                    maxLines = 1
+                                                )
+                                            }
                                         }
                                     }
 

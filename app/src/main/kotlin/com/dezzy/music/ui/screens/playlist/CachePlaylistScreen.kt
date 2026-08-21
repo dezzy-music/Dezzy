@@ -656,8 +656,8 @@ fun CachePlaylistScreen(
                                             playerConnection.playQueue(
                                                 ListQueue(
                                                     title = "Cache Songs",
-                                                    items = cachedSongs.map { it.toMediaItem() },
-                                                    startIndex = cachedSongs.indexOfFirst { it.id == songWrapper.item.id }
+                                                    items = filteredSongs.map { it.item.toMediaItem() },
+                                                    startIndex = maxOf(0, filteredSongs.indexOfFirst { it.item.id == songWrapper.item.id })
                                                 )
                                             )
                                         }

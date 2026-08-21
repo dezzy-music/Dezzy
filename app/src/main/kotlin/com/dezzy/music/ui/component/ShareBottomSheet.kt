@@ -116,16 +116,19 @@ fun ShareBottomSheet(
 
     val darkBg = Color(0xFF1E1E1E)
 
-    // ── Letra principal: sin timestamps LRC, máximo 5 líneas ──
-    val lyricLines = remember(lyrics) {
+    // ── Letra principal: sin timestamps LRC ──
+    val allLyricLines = remember(lyrics) {
         lyrics?.lines()
             ?.map { it.replace(Regex("\\[[^\\]]*\\]"), "").trim() }
             ?.filter { it.isNotBlank() }
             ?.distinct()
-            ?.take(5)
             .orEmpty()
     }
-    val hasLyrics = lyricLines.isNotEmpty() && !isEntityCard
+    var selectedLyricLines by remember(allLyricLines) {
+        mutableStateOf(allLyricLines.take(5))
+    }
+    val hasLyrics = allLyricLines.isNotEmpty() && !isEntityCard
+    var showLyricsSelectionDialog by remember { mutableStateOf(false) }
 
     // ── Canvas de la canción (si existe) ──
     val canvasArtwork = if (mediaId != null && !isEntityCard) {
@@ -532,7 +535,7 @@ fun ShareBottomSheet(
                                 modifier = Modifier.weight(1f),
                                 verticalArrangement = Arrangement.Center,
                             ) {
-                                lyricLines.forEach { line ->
+                                selectedLyricLines.forEach { line ->
                                     Text(
                                         text = line,
                                         color = textColor,
@@ -614,11 +617,39 @@ fun ShareBottomSheet(
                     Row(modifier = Modifier.padding(4.dp)) {
                         SharePillTab("Canción", shareTab == TAB_SONG) { shareTab = TAB_SONG }
                         if (hasLyrics) {
-                            SharePillTab("Letra", shareTab == TAB_LYRICS) { shareTab = TAB_LYRICS }
+                            SharePillTab("Letra", shareTab == TAB_LYRICS) { 
+                                shareTab = TAB_LYRICS 
+                                polaroid = false
+                            }
                         }
                         if (hasCanvas) {
-                            SharePillTab("Canvas", shareTab == TAB_CANVAS) { shareTab = TAB_CANVAS }
+                            SharePillTab("Canvas", shareTab == TAB_CANVAS) { 
+                                shareTab = TAB_CANVAS 
+                                polaroid = false
+                            }
                         }
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            if (shareTab == TAB_LYRICS && hasLyrics) {
+                Surface(
+                    shape = CircleShape,
+                    color = Color(0xFF2E2E2E),
+                    onClick = { 
+                        onDismiss()
+                        com.dezzy.music.lyrics.LyricsSelectionState.isSelectingForShare = true
+                        com.dezzy.music.lyrics.LyricsSelectionState.pendingShareSong = entity
+                    }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(painterResource(R.drawable.text_fields), null, tint = Color.White, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Escoger letra", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     }
                 }
                 Spacer(modifier = Modifier.height(12.dp))
@@ -697,7 +728,7 @@ fun ShareBottomSheet(
                 ) {
                     // Opción especial: estilo Polaroid (foto sobre papel de cuaderno).
                     // No aplica a artistas/playlists, que usan la tarjeta de entidad.
-                    if (!isEntityCard) Box(
+                    if (!isEntityCard && shareTab == TAB_SONG) Box(
                         modifier = Modifier
                             .size(34.dp)
                             .clip(CircleShape)
@@ -872,7 +903,7 @@ fun ShareBottomSheet(
                                     coverArtUrl = thumbnailUrl,
                                     songTitle = title,
                                     artistName = if (isEntityCard) entity.descriptor else subtitle,
-                                    lyrics = if (shareTab == TAB_LYRICS) lyricLines.joinToString("\n") else "",
+                                    lyrics = if (shareTab == TAB_LYRICS) selectedLyricLines.joinToString("\n") else "",
                                     config = config,
                                     outputSize = 1080
                                 )
@@ -982,7 +1013,7 @@ fun ShareBottomSheet(
                                             coverArtUrl = thumbnailUrl,
                                             songTitle = title,
                                             artistName = if (isEntityCard) entity.descriptor else subtitle,
-                                            lyrics = if (shareTab == TAB_LYRICS) lyricLines.joinToString("\n") else "",
+                                            lyrics = if (shareTab == TAB_LYRICS) selectedLyricLines.joinToString("\n") else "",
                                             config = config,
                                             outputSize = 1080
                                         )
@@ -1061,6 +1092,18 @@ fun ShareBottomSheet(
                 )
             }
         }
+        }
+
+        if (showLyricsSelectionDialog) {
+            LyricsSelectionDialog(
+                allLyricLines = allLyricLines,
+                selectedLyricLines = selectedLyricLines,
+                onDismiss = { showLyricsSelectionDialog = false },
+                onSelectionConfirmed = { newSelection ->
+                    selectedLyricLines = newSelection
+                    showLyricsSelectionDialog = false
+                }
+            )
         }
     }
 }
@@ -1211,6 +1254,115 @@ private suspend fun downloadCanvasMediaFile(url: String, outputFile: File): File
         } else {
             outputFile.writeBytes(bodyBytes)
             outputFile
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LyricsSelectionDialog(
+    allLyricLines: List<String>,
+    selectedLyricLines: List<String>,
+    onDismiss: () -> Unit,
+    onSelectionConfirmed: (List<String>) -> Unit
+) {
+    var currentSelection by remember { mutableStateOf(selectedLyricLines) }
+
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF121212))
+        ) {
+            // Background blur if desired
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .systemBarsPadding()
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onDismiss) {
+                        Icon(painterResource(R.drawable.expand_more), contentDescription = "Close", tint = Color.White)
+                    }
+                    Text(
+                        text = "Selecciona hasta 5 líneas",
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
+
+                // Lyrics list
+                androidx.compose.foundation.lazy.LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp)
+                ) {
+                    items(allLyricLines.size) { index ->
+                        val line = allLyricLines[index]
+                        val isSelected = currentSelection.contains(line)
+                        val isSelectable = isSelected || currentSelection.size < 5
+
+                        Text(
+                            text = line,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isSelected) Color.White else Color.White.copy(alpha = 0.4f),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(enabled = isSelectable || isSelected) {
+                                    if (isSelected) {
+                                        currentSelection = currentSelection - line
+                                    } else {
+                                        currentSelection = currentSelection + line
+                                    }
+                                }
+                                .padding(vertical = 12.dp)
+                        )
+                    }
+                }
+
+                // Bottom actions
+                Surface(
+                    color = Color(0xFF1E1E1E),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "${currentSelection.size}/5",
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        androidx.compose.material3.Button(
+                            onClick = { onSelectionConfirmed(currentSelection) },
+                            enabled = currentSelection.isNotEmpty(),
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+                        ) {
+                            Text("Compartir", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
         }
     }
 }

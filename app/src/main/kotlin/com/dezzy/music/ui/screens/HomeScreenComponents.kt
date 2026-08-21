@@ -11,6 +11,7 @@ package com.dezzy.music.ui.screens
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
@@ -1130,3 +1131,186 @@ fun LazyListScope.SimilarRecommendationsContainer(
         }
     }
 }
+
+
+@Composable
+fun SpotifyGreetingGrid(
+    quickPicks: List<Song>?,
+    recentPlaylists: List<Playlist>?,
+    playerConnection: PlayerConnection,
+    navController: NavController,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        val gridItems = mutableListOf<Any>()
+
+        // Slot 1: Mis Me gusta
+        gridItems.add("LIKED")
+
+        // Slots 2-4: playlists del usuario (excluyendo LM que es "Me gusta")
+        val playlists = recentPlaylists?.filter { it.id != "LM" }?.take(3) ?: emptyList()
+        gridItems.addAll(playlists)
+
+        // Slots 5-8: sugerencias automáticas (quickPicks)
+        val remainingSlots = 8 - gridItems.size
+        gridItems.addAll((quickPicks ?: emptyList()).take(remainingSlots))
+
+        val rows = (gridItems.size + 1) / 2
+        for (i in 0 until rows) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val leftItem = gridItems.elementAtOrNull(i * 2)
+                val rightItem = gridItems.elementAtOrNull(i * 2 + 1)
+
+                if (leftItem != null) {
+                    SpotifyGenericCajon(
+                        item = leftItem,
+                        playerConnection = playerConnection,
+                        navController = navController,
+                        modifier = Modifier.weight(1f)
+                    )
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+
+                if (rightItem != null) {
+                    SpotifyGenericCajon(
+                        item = rightItem,
+                        playerConnection = playerConnection,
+                        navController = navController,
+                        modifier = Modifier.weight(1f)
+                    )
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SpotifyGenericCajon(
+    item: Any,
+    playerConnection: PlayerConnection,
+    navController: NavController,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .height(56.dp)
+            .clickable {
+                when (item) {
+                    is String -> {
+                        if (item == "LIKED") {
+                            navController.navigate("auto_playlist/liked")
+                        }
+                    }
+                    is Playlist -> {
+                        navController.navigate("local_playlist/${item.id}")
+                    }
+                    is Song -> {
+                        playerConnection.playQueue(
+                            YouTubeQueue(
+                                endpoint = WatchEndpoint(videoId = item.id)
+                            )
+                        )
+                    }
+                }
+            },
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        shape = RoundedCornerShape(4.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            when (item) {
+                is String -> {
+                    if (item == "LIKED") {
+                        // "Mis Me gusta" - cuadrado con ícono de corazón
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .background(MaterialTheme.colorScheme.primary),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.favorite),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Text(
+                            text = "Mis Me gusta",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .padding(horizontal = 8.dp)
+                                .weight(1f)
+                        )
+                    } else if (item == "EMPTY_SLOT") {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                        )
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 8.dp)
+                                .height(12.dp)
+                                .weight(1f)
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
+                        )
+                    }
+                }
+                is Playlist -> {
+                    AsyncImage(
+                        model = item.thumbnails.firstOrNull(),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.size(56.dp)
+                    )
+                    Text(
+                        text = item.playlist.name,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .padding(horizontal = 8.dp)
+                            .weight(1f)
+                    )
+                }
+                is Song -> {
+                    AsyncImage(
+                        model = item.song.thumbnailUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.size(56.dp)
+                    )
+                    Text(
+                        text = item.song.title,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .padding(horizontal = 8.dp)
+                            .weight(1f)
+                    )
+                }
+            }
+        }
+    }
+}
+

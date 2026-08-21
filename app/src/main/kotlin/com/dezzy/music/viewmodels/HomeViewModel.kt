@@ -223,7 +223,13 @@ class HomeViewModel @Inject constructor(
 
     private suspend fun getQuickPicks(){
         when (quickPicksEnum.first()) {
-            QuickPicks.QUICK_PICKS -> quickPicks.value = database.quickPicks().first().shuffled().take(20)
+            QuickPicks.QUICK_PICKS -> {
+                var picks = database.quickPicks().first().shuffled().take(20)
+                if (picks.isEmpty()) {
+                    picks = database.songsByPlayTimeAsc().first().reversed().take(20)
+                }
+                quickPicks.value = picks
+            }
             QuickPicks.LAST_LISTEN -> songLoad()
         }
     }
@@ -371,7 +377,11 @@ class HomeViewModel @Inject constructor(
             if (database.hasRelatedSongs(song.id)) {
                 val relatedSongs = database.getRelatedSongs(song.id).first().shuffled().take(20)
                 quickPicks.value = relatedSongs
+            } else {
+                quickPicks.value = database.songsByPlayTimeAsc().first().reversed().take(20)
             }
+        } else {
+            quickPicks.value = database.songsByPlayTimeAsc().first().reversed().take(20)
         }
     }
 

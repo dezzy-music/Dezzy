@@ -197,9 +197,9 @@ private fun VideoModeScreen(
 
     // El reproductor de video es independiente del de la app: su posición y su
     // estado de reproducción hay que leerlos de él directamente.
-    var isVideoPlaying by remember { mutableStateOf(videoPlayer.playWhenReady) }
-    var position by remember { mutableLongStateOf(videoPlayer.currentPosition) }
-    var duration by remember { mutableLongStateOf(videoPlayer.duration.coerceAtLeast(0L)) }
+    var isVideoPlaying by remember(videoPlayer) { mutableStateOf(videoPlayer.playWhenReady) }
+    var position by remember(videoPlayer) { mutableLongStateOf(videoPlayer.currentPosition) }
+    var duration by remember(videoPlayer) { mutableLongStateOf(videoPlayer.duration.coerceAtLeast(0L)) }
     var sliderPosition by remember { mutableStateOf<Long?>(null) }
 
     DisposableEffect(videoPlayer) {
@@ -400,9 +400,11 @@ private fun VideoModeScreen(
             Spacer(Modifier.height(18.dp))
 
             // ── Progreso ──────────────────────────────────────────────────
+            val maxDuration = duration.coerceAtLeast(1L).toFloat()
+            val currentPos = (sliderPosition ?: position).toFloat().coerceIn(0f, maxDuration)
             Slider(
-                value = (sliderPosition ?: position).toFloat(),
-                valueRange = 0f..(duration.coerceAtLeast(1L)).toFloat(),
+                value = currentPos,
+                valueRange = 0f..maxDuration,
                 onValueChange = { sliderPosition = it.toLong() },
                 onValueChangeFinished = {
                     sliderPosition?.let { videoPlayer.seekTo(it) }

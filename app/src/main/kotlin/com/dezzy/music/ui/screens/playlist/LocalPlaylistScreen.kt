@@ -848,10 +848,11 @@ fun LocalPlaylistScreen(
                                     // Play Button
                                     Button(
                                         onClick = {
+                                            if (filteredSongs.isEmpty()) return@Button
                                             playerConnection.playQueue(
                                                 ListQueue(
                                                     title = playlist.playlist.name,
-                                                    items = songs.map { it.song.toMediaItem() },
+                                                    items = filteredSongs.map { it.song.toMediaItem() },
                                                 ),
                                             )
                                         },
@@ -887,10 +888,11 @@ fun LocalPlaylistScreen(
                                     // Shuffle Button
                                     Button(
                                         onClick = {
+                                            if (filteredSongs.isEmpty()) return@Button
                                             playerConnection.playQueue(
                                                 ListQueue(
                                                     title = playlist.playlist.name,
-                                                    items = songs.shuffled().map { it.song.toMediaItem() },
+                                                    items = filteredSongs.shuffled().map { it.song.toMediaItem() },
                                                 ),
                                             )
                                         },
@@ -899,16 +901,28 @@ fun LocalPlaylistScreen(
                                             contentColor = playBtnContent,
                                         ),
                                         shape = RoundedCornerShape(24.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp),
                                         modifier = Modifier
                                             .weight(1f)
                                             .height(48.dp)
                                     ) {
-                                        Icon(
-                                            painter = painterResource(R.drawable.shuffle),
-                                            contentDescription = stringResource(R.string.shuffle),
-                                            tint = playBtnContent,
-                                            modifier = Modifier.size(24.dp)
-                                        )
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(R.drawable.shuffle),
+                                                contentDescription = stringResource(R.string.shuffle),
+                                                tint = playBtnContent,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Text(
+                                                text = stringResource(R.string.shuffle),
+                                                style = MaterialTheme.typography.labelLarge,
+                                                color = playBtnContent,
+                                                maxLines = 1
+                                            )
+                                        }
                                     }
 
                                     // Download Button
@@ -1251,8 +1265,8 @@ fun LocalPlaylistScreen(
                                                 playerConnection.playQueue(
                                                     ListQueue(
                                                         title = playlist!!.playlist.name,
-                                                        items = songs.map { it.song.toMediaItem() },
-                                                        startIndex = songs.indexOfFirst { it.map.id == song.map.id },
+                                                        items = filteredSongs.map { it.song.toMediaItem() },
+                                                        startIndex = maxOf(0, filteredSongs.indexOfFirst { it.map.id == song.map.id }),
                                                     ),
                                                 )
                                             }

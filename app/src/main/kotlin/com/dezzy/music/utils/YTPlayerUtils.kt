@@ -18,6 +18,7 @@ import com.dezzy.music.innertube.models.YouTubeClient
 import com.dezzy.music.innertube.models.YouTubeClient.Companion.IOS
 import com.dezzy.music.innertube.models.YouTubeClient.Companion.TVHTML5_SIMPLY_EMBEDDED_PLAYER
 import com.dezzy.music.innertube.models.YouTubeClient.Companion.WEB_REMIX
+import com.dezzy.music.innertube.models.YouTubeClient.Companion.ANDROID_TESTSUITE
 import com.dezzy.music.innertube.models.response.PlayerResponse
 import com.dezzy.music.innertube.models.YouTubeClient.Companion.ANDROID_CREATOR
 import com.dezzy.music.innertube.models.YouTubeClient.Companion.ANDROID_MUSIC
@@ -198,23 +199,24 @@ object YTPlayerUtils {
      */
     data class VideoPlaybackData(
         val format: PlayerResponse.StreamingData.Format,
-        val streamUrl: String,
+        val streamUrl: String?,
         val streamExpiresInSeconds: Int,
+        val adaptiveVideoUrl: String? = null,
+        val adaptiveAudioUrl: String? = null,
     )
 
-    private val VIDEO_MODE_CLIENTS: List<YouTubeClient> = listOf(ANDROID_VR_NO_AUTH, WEB_REMIX, IOS, ANDROID_MUSIC)
+    private val VIDEO_MODE_CLIENTS: List<YouTubeClient> = listOf(IOS, ANDROID_TESTSUITE, TVHTML5, WEB_REMIX, ANDROID_VR_NO_AUTH, ANDROID_MUSIC)
 
     /**
-     * Resolves a muxed (progressive, single-file) video+audio stream for "watch the music video"
-     * mode. YouTube only serves muxed formats up to 720p (itag 22) / 360p (itag 18) — true 1080p+
-     * requires merging separate adaptive video-only and audio-only tracks, which this deliberately
-     * does not do: video mode runs on its own standalone player (see MusicService), so keeping its
-     * resolution path this simple means it can never destabilize the hardened main audio pipeline.
+     * Resolves a video+audio stream for "watch the music video" mode.
+     * Tries to find a muxed stream first. If unavailable (like for Official Videos),
+     * it resolves adaptive video and audio streams.
      */
     suspend fun videoPlaybackDataForPlayback(
         videoId: String,
         playlistId: String? = null,
         maxHeight: Int = 720,
+        isValidUrl: suspend (String) -> Boolean = { true },
     ): Result<VideoPlaybackData> = runCatching {
         var lastError: Throwable? = null
         for (client in VIDEO_MODE_CLIENTS) {
@@ -224,25 +226,58 @@ object YTPlayerUtils {
                 if (response.playabilityStatus.status != "OK") continue
 
                 val candidates = selectMuxedFormatCandidates(response, maxHeight)
-                for (candidate in candidates.take(4)) {
-                    val cacheKey = buildCacheKey(videoId, candidate.itag)
-                    val cached = streamUrlCache[cacheKey]
-                    val url =
-                        if (cached != null && cached.expiresAtMs > System.currentTimeMillis()) {
-                            cached.url
-                        } else {
-                            findUrlOrNull(candidate, videoId, client) ?: continue
+                if (candidates.isNotEmpty()) {
+                    for (candidate in candidates.take(4)) {
+                        val cacheKey = buildCacheKey(videoId, candidate.itag)
+                        val cached = streamUrlCache[cacheKey]
+                        val url =
+                            if (cached != null && cached.expiresAtMs > System.currentTimeMillis()) {
+                                cached.url
+                            } else {
+                                findUrlOrNull(candidate, videoId, client) ?: continue
+                            }
+                        if (!isValidUrl(url)) continue
+                        val expiresIn = response.streamingData?.expiresInSeconds ?: continue
+                        streamUrlCache[cacheKey] = CachedStreamUrl(url, System.currentTimeMillis() + expiresIn * 1000L)
+                        return@runCatching VideoPlaybackData(candidate, url, expiresIn)
+                    }
+                } else {
+                    // Fallback to adaptive
+                    val videoCandidates = selectAdaptiveVideoFormatCandidates(response, maxHeight)
+                    val audioCandidates = selectAudioFormatCandidates(response, com.dezzy.music.constants.AudioQuality.HIGH, false)
+                    
+                    if (videoCandidates.isNotEmpty() && audioCandidates.isNotEmpty()) {
+                        var resolvedVideoUrl: String? = null
+                        var resolvedVideoCandidate: PlayerResponse.StreamingData.Format? = null
+                        for (vc in videoCandidates.take(4)) {
+                            val vUrl = findUrlOrNull(vc, videoId, client)
+                            if (vUrl != null && isValidUrl(vUrl)) {
+                                resolvedVideoUrl = vUrl
+                                resolvedVideoCandidate = vc
+                                break
+                            }
                         }
-                    val expiresIn = response.streamingData?.expiresInSeconds ?: continue
-                    streamUrlCache[cacheKey] =
-                        CachedStreamUrl(url, System.currentTimeMillis() + expiresIn * 1000L)
-                    return@runCatching VideoPlaybackData(candidate, url, expiresIn)
+                        
+                        var resolvedAudioUrl: String? = null
+                        for (ac in audioCandidates.take(4)) {
+                            val aUrl = findUrlOrNull(ac, videoId, client)
+                            if (aUrl != null && isValidUrl(aUrl)) {
+                                resolvedAudioUrl = aUrl
+                                break
+                            }
+                        }
+                        
+                        if (resolvedVideoUrl != null && resolvedAudioUrl != null && resolvedVideoCandidate != null) {
+                            val expiresIn = response.streamingData?.expiresInSeconds ?: continue
+                            return@runCatching VideoPlaybackData(resolvedVideoCandidate, null, expiresIn, resolvedVideoUrl, resolvedAudioUrl)
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 lastError = e
             }
         }
-        throw lastError ?: IllegalStateException("No muxed video stream available for $videoId")
+        throw lastError ?: IllegalStateException("No video stream available for $videoId")
     }
 
     private fun selectMuxedFormatCandidates(
@@ -260,6 +295,25 @@ object YTPlayerUtils {
                     .thenByDescending { it.bitrate },
             )?.toList()
             .orEmpty()
+
+    private fun selectAdaptiveVideoFormatCandidates(
+        playerResponse: PlayerResponse,
+        maxHeight: Int,
+    ): List<PlayerResponse.StreamingData.Format> =
+        playerResponse.streamingData
+            ?.adaptiveFormats
+            ?.asSequence()
+            ?.filter { it.width != null }
+            ?.filter { it.url != null || it.signatureCipher != null || it.cipher != null }
+            ?.filter { (it.height ?: 0) in 1..maxHeight }
+            ?.sortedWith(
+                compareByDescending<PlayerResponse.StreamingData.Format> { it.url != null }
+                    .thenByDescending { it.height ?: 0 }
+                    .thenByDescending { it.bitrate },
+            )
+            ?.toList()
+            .orEmpty()
+
     /**
      * Custom player response intended to use for playback.
      * Metadata like audioConfig and videoDetails are from [MAIN_CLIENT].
@@ -806,6 +860,10 @@ object YTPlayerUtils {
         // Patch cver in the URL to match the client we actually used
         if (client != null) {
             url = StreamClientUtils.patchClientVersion(url, client.clientVersion)
+            if (!url.contains("c=")) {
+                val separator = if (url.contains("?")) "&" else "?"
+                url = "$url${separator}c=${client.clientName}"
+            }
         }
 
         return url
