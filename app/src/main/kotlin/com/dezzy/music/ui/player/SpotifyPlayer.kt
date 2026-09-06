@@ -1,8 +1,12 @@
 package com.dezzy.music.ui.player
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
@@ -18,6 +22,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
@@ -91,6 +96,8 @@ fun SpotifyPlayer(
     sliderPosition: Long?,
     onSliderPositionChange: (Long?) -> Unit,
     onQueueClick: () -> Unit,
+    onLyricsClick: () -> Unit,
+
     onSleepTimerClick: () -> Unit = {},
     onMenuClick: () -> Unit = {},
     onVisualizerClick: () -> Unit = {},
@@ -182,13 +189,37 @@ fun SpotifyPlayer(
 
     // ---- Colores dinámicos de la carátula (como Spotify): fondo con la paleta y
     //      tarjetas de un tono distinto pero relacionado ----
-    var dominantColor by remember { mutableStateOf(Color(0xFF1A1A1A)) }
+    var targetDominantColor by remember { mutableStateOf(Color(0xFF242424)) }
     // Fondo inferior (al hacer scroll) y color de las tarjetas, ambos derivados
     // de la paleta pero más oscuros/desaturados; las tarjetas van un poco más
     // claras que el fondo para destacar sobre él.
-    var bgBottomColor by remember { mutableStateOf(Color(0xFF121212)) }
-    var cardColor by remember { mutableStateOf(Color(0xFF1F1F1F)) }
-    val fallbackColor = Color(0xFF121212).toArgb()
+    var targetBgBottomColor by remember { mutableStateOf(Color(0xFF121212)) }
+    var targetCardColor by remember { mutableStateOf(Color(0xFF1F1F1F)) }
+    // Tarjeta de letras: tono más vibrante/claro derivado del álbum (como Spotify).
+    var targetLyricsCardColor by remember { mutableStateOf(Color(0xFF2A2A2A)) }
+
+    val dominantColor by animateColorAsState(
+        targetValue = targetDominantColor,
+        animationSpec = tween(durationMillis = 500),
+        label = "dominantColor"
+    )
+    val bgBottomColor by animateColorAsState(
+        targetValue = targetBgBottomColor,
+        animationSpec = tween(durationMillis = 500),
+        label = "bgBottomColor"
+    )
+    val cardColor by animateColorAsState(
+        targetValue = targetCardColor,
+        animationSpec = tween(durationMillis = 500),
+        label = "cardColor"
+    )
+    val lyricsCardColor by animateColorAsState(
+        targetValue = targetLyricsCardColor,
+        animationSpec = tween(durationMillis = 500),
+        label = "lyricsCardColor"
+    )
+
+    val fallbackColor = Color(0xFF242424).toArgb()
     LaunchedEffect(mediaMetadata?.id, hasCanvas) {
         val thumbnailUrl = mediaMetadata?.thumbnailUrl ?: return@LaunchedEffect
         withContext(Dispatchers.IO) {
@@ -206,6 +237,7 @@ fun SpotifyPlayer(
                 val topBg: Int
                 val bottomBg: Int
                 val card: Int
+                val lyricsCard: Int
                 if (hasCanvas) {
                     // CON canvas: se deja EXACTAMENTE como estaba (dominante, apagado).
                     val dominant = palette.getDominantColor(fallbackColor)
@@ -214,36 +246,37 @@ fun SpotifyPlayer(
                     topBg = androidx.core.graphics.ColorUtils.HSLToColor(floatArrayOf(hsl[0], (hsl[1] * 0.85f).coerceIn(0.15f, 0.6f), 0.30f))
                     bottomBg = androidx.core.graphics.ColorUtils.HSLToColor(floatArrayOf(hsl[0], (hsl[1] * 0.5f).coerceIn(0.08f, 0.35f), 0.07f))
                     card = androidx.core.graphics.ColorUtils.HSLToColor(floatArrayOf(hsl[0], (hsl[1] * 0.45f).coerceIn(0.06f, 0.30f), 0.155f))
+                    lyricsCard = androidx.core.graphics.ColorUtils.HSLToColor(floatArrayOf(hsl[0], (hsl[1] * 0.65f).coerceIn(0.12f, 0.50f), 0.20f))
                 } else {
                     // SIN canvas: degradado VIVO como Spotify (color vibrante de la portada).
-                    val base = palette.vibrantSwatch?.rgb
-                        ?: palette.lightVibrantSwatch?.rgb
-                        ?: palette.darkVibrantSwatch?.rgb
-                        ?: palette.dominantSwatch?.rgb
-                        ?: palette.mutedSwatch?.rgb
+                    val base = palette.dominantSwatch?.rgb
+                        ?: palette.vibrantSwatch?.rgb
                         ?: fallbackColor
                     val hsl = FloatArray(3)
                     androidx.core.graphics.ColorUtils.colorToHSL(base, hsl)
+                    // Ajuste de saturación/luminancia para evitar fondos sobreexpuestos
+                    hsl[1] = hsl[1].coerceAtMost(0.6f)
+                    hsl[2] = hsl[2].coerceIn(0.1f, 0.4f)
                     val srcSat = hsl[1]
-                    val topSat = if (srcSat < 0.12f) srcSat else (srcSat * 1.1f).coerceIn(0.42f, 0.90f)
-                    topBg = androidx.core.graphics.ColorUtils.HSLToColor(floatArrayOf(hsl[0], topSat, 0.42f))
-                    bottomBg = androidx.core.graphics.ColorUtils.HSLToColor(
-                        floatArrayOf(hsl[0], if (srcSat < 0.12f) srcSat else (topSat * 0.7f).coerceIn(0.12f, 0.6f), 0.08f)
-                    )
+                    topBg = androidx.core.graphics.ColorUtils.HSLToColor(hsl)
+                    bottomBg = android.graphics.Color.parseColor("#121212")
                     card = androidx.core.graphics.ColorUtils.HSLToColor(
-                        floatArrayOf(hsl[0], if (srcSat < 0.12f) srcSat else (topSat * 0.45f).coerceIn(0.06f, 0.35f), 0.16f)
+                        floatArrayOf(hsl[0], if (srcSat < 0.12f) srcSat else (srcSat * 0.45f).coerceIn(0.06f, 0.35f), 0.16f)
+                    )
+                    // Lyrics card: más saturada y luminosa que la card genérica (como Spotify).
+                    lyricsCard = androidx.core.graphics.ColorUtils.HSLToColor(
+                        floatArrayOf(hsl[0], if (srcSat < 0.12f) srcSat else (srcSat * 0.7f).coerceIn(0.18f, 0.55f), 0.22f)
                     )
                 }
                 withContext(Dispatchers.Main) {
-                    dominantColor = Color(topBg)
-                    bgBottomColor = Color(bottomBg)
-                    cardColor = Color(card)
+                    targetDominantColor = Color(topBg)
+                    targetBgBottomColor = Color(bottomBg)
+                    targetCardColor = Color(card)
+                    targetLyricsCardColor = Color(lyricsCard)
                 }
             }
         }
     }
-
-    var lyricsFullscreen by remember { mutableStateOf(false) }
     var showShareSheet by remember { mutableStateOf(false) }
 
     // Global slider style (canvas ya calculado arriba).
@@ -302,21 +335,25 @@ fun SpotifyPlayer(
         modifier = modifier
             .fillMaxSize()
             .background(
-                if (hasCanvas) {
-                    // CON canvas: degradado simple como estaba (el canvas lo tapa).
-                    Brush.verticalGradient(colors = listOf(dominantColor, bgBottomColor))
-                } else {
-                    // SIN canvas (como Spotify): el color vivo se sostiene arriba y
-                    // luego cae a oscuro, en vez de un degradado lineal plano.
-                    Brush.verticalGradient(
-                        0.0f to dominantColor,
-                        0.32f to dominantColor,
-                        0.62f to androidx.compose.ui.graphics.lerp(dominantColor, bgBottomColor, 0.72f),
-                        1.0f to bgBottomColor,
-                    )
-                }
+                Brush.verticalGradient(
+                    colors = listOf(dominantColor, bgBottomColor)
+                )
             )
     ) {
+        // ---------- Blur sutil de la carátula (como Spotify real) ----------
+        // Capa nebulosa de la portada difuminada debajo del degradado, solo
+        // cuando NO hay canvas. Da profundidad visual al fondo.
+        if (!hasCanvas && mediaMetadata?.thumbnailUrl != null) {
+            AsyncImage(
+                model = mediaMetadata?.thumbnailUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blur(60.dp)
+                    .graphicsLayer { alpha = 0.15f }
+            )
+        }
         // ---------- Canvas a PANTALLA COMPLETA (como Spotify real) ----------
         // El video del canvas cubre toda la pantalla detrás de los controles, en
         // vez de quedar encajado en el recuadro de la carátula. Un scrim arriba y
@@ -512,7 +549,7 @@ fun SpotifyPlayer(
                                 fontWeight = FontWeight.Bold,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.clickable { lyricsFullscreen = true }
+                                modifier = Modifier.clickable { onLyricsClick() }
                             )
                         }
 
@@ -648,7 +685,7 @@ fun SpotifyPlayer(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { lyricsFullscreen = true }
+                            .clickable { onLyricsClick() }
                     )
                 }
 
@@ -784,7 +821,9 @@ fun SpotifyPlayer(
                         entries = lyricEntries.map { it.text },
                         synced = isSynced,
                         currentLineIndex = currentLineIndex,
-                        onShowLyrics = { lyricsFullscreen = true }
+                        lyricsCardColor = lyricsCardColor,
+                        onShowLyrics = { onLyricsClick() },
+                        onShareLyrics = { showShareSheet = true },
                     )
                     Spacer(Modifier.height(16.dp))
                 }
@@ -793,6 +832,7 @@ fun SpotifyPlayer(
                 artistPage?.let { page ->
                     AboutArtistCard(
                         page = page,
+                        scrollState = scrollState,
                         onOpenArtist = {
                             state.collapseSoft()
                             navController.navigate("artist/${page.artist.id}")
@@ -886,6 +926,16 @@ fun SpotifyPlayer(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // Mini artwork (like real Spotify sticky header)
+                AsyncImage(
+                    model = mediaMetadata?.thumbnailUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                )
+                Spacer(Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = mediaMetadata?.title ?: "",
@@ -912,49 +962,6 @@ fun SpotifyPlayer(
                         modifier = Modifier.size(28.dp)
                     )
                 }
-            }
-        }
-    }
-
-    if (lyricsFullscreen) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Brush.verticalGradient(colors = listOf(dominantColor, Color.Black)))
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding()
-                    .navigationBarsPadding()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = { lyricsFullscreen = false }) {
-                        Icon(
-                            painter = painterResource(R.drawable.expand_more),
-                            contentDescription = "Cerrar letra",
-                            tint = Color.White
-                        )
-                    }
-                    Text(
-                        text = mediaMetadata?.title ?: "",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(start = 8.dp)
-                    )
-                }
-                Lyrics(
-                    lyricsSyncOffset = 0,
-                    sliderPositionProvider = { sliderPosition },
-                    modifier = Modifier.fillMaxSize()
-                )
             }
         }
     }
@@ -1094,13 +1101,20 @@ private fun SpotifyControls(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = onShuffle) {
-            Icon(
-                painter = painterResource(R.drawable.shuffle),
-                contentDescription = "Aleatorio",
-                tint = if (shuffleModeEnabled) SpotifyGreen else Color.White,
-                modifier = Modifier.size(24.dp)
-            )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            IconButton(onClick = onShuffle) {
+                Icon(
+                    painter = painterResource(R.drawable.shuffle),
+                    contentDescription = "Aleatorio",
+                    tint = if (shuffleModeEnabled) SpotifyGreen else Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            if (shuffleModeEnabled) {
+                Box(Modifier.size(4.dp).clip(CircleShape).background(SpotifyGreen))
+            } else {
+                Spacer(Modifier.size(4.dp))
+            }
         }
         IconButton(onClick = onPrevious) {
             Icon(
@@ -1134,16 +1148,23 @@ private fun SpotifyControls(
             )
         }
         // Repeat: off → all → one, tinted green while active (faithful to Spotify).
-        IconButton(onClick = onRepeat) {
-            Icon(
-                painter = painterResource(
-                    if (repeatMode == Player.REPEAT_MODE_ONE) R.drawable.repeat_one
-                    else R.drawable.repeat
-                ),
-                contentDescription = "Repetir",
-                tint = if (repeatMode != Player.REPEAT_MODE_OFF) SpotifyGreen else Color.White,
-                modifier = Modifier.size(24.dp)
-            )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            IconButton(onClick = onRepeat) {
+                Icon(
+                    painter = painterResource(
+                        if (repeatMode == Player.REPEAT_MODE_ONE) R.drawable.repeat_one
+                        else R.drawable.repeat
+                    ),
+                    contentDescription = "Repetir",
+                    tint = if (repeatMode != Player.REPEAT_MODE_OFF) SpotifyGreen else Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            if (repeatMode != Player.REPEAT_MODE_OFF) {
+                Box(Modifier.size(4.dp).clip(CircleShape).background(SpotifyGreen))
+            } else {
+                Spacer(Modifier.size(4.dp))
+            }
         }
     }
 }
@@ -1153,7 +1174,9 @@ private fun LyricsPreviewCard(
     entries: List<String>,
     synced: Boolean,
     currentLineIndex: Int,
-    onShowLyrics: () -> Unit
+    lyricsCardColor: Color,
+    onShowLyrics: () -> Unit,
+    onShareLyrics: () -> Unit = {},
 ) {
     // Pick a small window of lines: around the current line if synced, else the first lines.
     val nonBlank = entries.withIndex().filter { it.value.isNotBlank() }
@@ -1164,30 +1187,63 @@ private fun LyricsPreviewCard(
         nonBlank.take(5)
     }.map { it.value }
 
+    // Graduated opacities: active line = full white, fading for subsequent lines.
+    val lineAlphas = floatArrayOf(1.0f, 0.7f, 0.5f, 0.35f, 0.25f)
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(LocalSpotifyCardColor.current)
+            .clip(RoundedCornerShape(16.dp))
+            .background(lyricsCardColor)
             .clickable(onClick = onShowLyrics)
             .padding(20.dp)
     ) {
-        Text(
-            text = "Muestra de la letra",
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(Modifier.height(16.dp))
-        window.forEachIndexed { i, line ->
+        // Header: title + share/expand icon
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(
-                text = line,
-                color = if (i == 0) Color.White else Color.White.copy(alpha = 0.6f),
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                lineHeight = 28.sp,
-                modifier = Modifier.padding(bottom = 12.dp)
+                text = "Letras",
+                color = Color.White,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
             )
+            IconButton(
+                onClick = onShareLyrics,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.share),
+                    contentDescription = "Compartir letras",
+                    tint = Color.White.copy(alpha = 0.8f),
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+        Spacer(Modifier.height(16.dp))
+        // Crossfade: las líneas se desvanecen suavemente al cambiar (como Spotify).
+        AnimatedContent(
+            targetState = window,
+            transitionSpec = {
+                fadeIn(tween(300)) togetherWith fadeOut(tween(300))
+            },
+            label = "lyricsCrossfade"
+        ) { currentWindow ->
+            Column {
+                currentWindow.forEachIndexed { i, line ->
+                    val alpha = lineAlphas.getOrElse(i) { 0.2f }
+                    Text(
+                        text = line,
+                        color = Color.White.copy(alpha = alpha),
+                        fontSize = 22.sp,
+                        fontWeight = if (i == 0) FontWeight.ExtraBold else FontWeight.SemiBold,
+                        lineHeight = 28.sp,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                }
+            }
         }
         Spacer(Modifier.height(4.dp))
         Surface(
@@ -1207,7 +1263,7 @@ private fun LyricsPreviewCard(
 }
 
 @Composable
-private fun AboutArtistCard(page: ArtistPage, onOpenArtist: () -> Unit) {
+private fun AboutArtistCard(page: ArtistPage, scrollState: androidx.compose.foundation.ScrollState, onOpenArtist: () -> Unit) {
     val artist = page.artist
     var expanded by remember { mutableStateOf(false) }
     val listeners = artist.monthlyListenerCountText ?: artist.subscriberCountText
@@ -1215,11 +1271,15 @@ private fun AboutArtistCard(page: ArtistPage, onOpenArtist: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(LocalSpotifyCardColor.current)
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFF181818))
             .clickable(onClick = onOpenArtist)
     ) {
-        Box(modifier = Modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+        ) {
             AsyncImage(
                 model = artist.thumbnail,
                 contentDescription = null,
@@ -1227,6 +1287,23 @@ private fun AboutArtistCard(page: ArtistPage, onOpenArtist: () -> Unit) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(220.dp)
+                    // Parallax: la imagen se desplaza a 30% de la velocidad del scroll
+                    .graphicsLayer { translationY = scrollState.value * 0.3f }
+            )
+            // Scrim for text legibility over the hero image
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Black.copy(alpha = 0.4f),
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.3f),
+                            )
+                        )
+                    )
             )
             Text(
                 text = "Acerca del artista",
@@ -1306,7 +1383,7 @@ private fun ExploreCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(LocalSpotifyCardColor.current)
             .padding(vertical = 16.dp)
     ) {
@@ -1374,8 +1451,8 @@ private fun CreditsCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(LocalSpotifyCardColor.current)
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFF282828))
             .padding(20.dp)
     ) {
         Text(
@@ -1480,7 +1557,7 @@ private fun SongDnaCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(cardColor)
             .clickable(onClick = onExplore)
             .padding(20.dp)
@@ -1630,7 +1707,7 @@ private fun LocalSongCard() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(Color.White.copy(alpha = 0.06f))
             .padding(16.dp)
     ) {
@@ -1656,3 +1733,4 @@ private fun LocalSongCard() {
         }
     }
 }
+

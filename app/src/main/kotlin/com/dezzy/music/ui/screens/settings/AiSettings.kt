@@ -47,6 +47,7 @@ import androidx.navigation.NavController
 import com.dezzy.music.LocalPlayerAwareWindowInsets
 import com.dezzy.music.R
 import com.dezzy.music.constants.AiProviderKey
+
 import com.dezzy.music.constants.AiSystemPromptKey
 import com.dezzy.music.constants.CanvasAiEnhanceKey
 import com.dezzy.music.constants.AutoTranslateLyricsKey
@@ -73,15 +74,18 @@ fun AiSettings(
     scrollBehavior: TopAppBarScrollBehavior,
 ) {
     var aiProvider by rememberPreference(AiProviderKey, "FreeOnline")
+    
     var openRouterApiKey by rememberPreference(OpenRouterApiKey, "")
     var openRouterBaseUrl by rememberPreference(OpenRouterBaseUrlKey, "https://openrouter.ai/api/v1/chat/completions")
     var openRouterModel by rememberPreference(OpenRouterModelKey, "mistralai/mistral-small-3.1-24b-instruct:free")
     var autoTranslateLyrics by rememberPreference(AutoTranslateLyricsKey, true)
     var autoTranslateLyricsMismatch by rememberPreference(AutoTranslateLyricsMismatchKey, false)
     var translateLanguage by rememberPreference(TranslateLanguageKey, "es")
-    var translateMode by rememberPreference(TranslateModeKey, "Literal")
+    var translateMode by rememberPreference(TranslateModeKey, stringResource(R.string.mode_literal))
     
     var aiSystemPrompt by rememberPreference(AiSystemPromptKey, "")
+    var djVoice by rememberPreference(com.dezzy.music.constants.DjVoiceKey, "es-MX-JorgeNeural")
+    var showDjVoiceDialog by remember { mutableStateOf(false) }
     var canvasAiEnhance by rememberPreference(CanvasAiEnhanceKey, false)
     var deeplApiKey by rememberPreference(DeeplApiKey, "")
     var deeplFormality by rememberPreference(DeeplFormalityKey, "default")
@@ -160,10 +164,10 @@ fun AiSettings(
 
     // Proveedores que no requieren clave ni modelo de IA
     val isFreeProvider = aiProvider == "FreeOnline" || aiProvider == "Offline"
-    val providerDisplayName: (String) -> String = {
+    val providerDisplayName: @Composable (String) -> String = {
         when (it) {
-            "FreeOnline" -> "Traductor gratuito (online, sin clave)"
-            "Offline" -> "Offline · sin internet (ML Kit)"
+            "FreeOnline" -> stringResource(R.string.free_translator)
+            "Offline" -> stringResource(R.string.offline_translator)
             else -> it
         }
     }
@@ -193,7 +197,21 @@ fun AiSettings(
     var showSystemPromptDialog by rememberSaveable { mutableStateOf(false) }
     var showDeeplFormalityDialog by rememberSaveable { mutableStateOf(false) }
 
-    if (showProviderDialog) {
+        if (showDjVoiceDialog) {
+                EnumDialog(
+            title = stringResource(R.string.dj_voice),
+            onDismiss = { showDjVoiceDialog = false },
+            onSelect = {
+                djVoice = it
+                showDjVoiceDialog = false
+            },
+            current = djVoice,
+            values = listOf("es-MX-JorgeNeural", "es-MX-DaliaNeural"),
+            valueText = { if (it == "es-MX-DaliaNeural") stringResource(R.string.dalia_female) else stringResource(R.string.jorge_male) }
+        )
+    }
+
+if (showProviderDialog) {
         EnumDialog(
             onDismiss = { showProviderDialog = false },
             onSelect = {
@@ -212,7 +230,7 @@ fun AiSettings(
                 }
                 showProviderDialog = false
             },
-            title = "Proveedor de traducción",
+            title = stringResource(R.string.ai_translation_provider),
             current = aiProvider,
             values = aiProviders.keys.toList(),
             valueText = { providerDisplayName(it) }
@@ -226,15 +244,15 @@ fun AiSettings(
                 translateMode = it
                 showTranslateModeDialog = false
             },
-            title = "Modo de traducción",
+            title = stringResource(R.string.translation_mode),
             current = translateMode,
-            values = listOf("Literal", "Emotional", "Transcribed", "Romanized"),
+            values = listOf(stringResource(R.string.mode_literal), "Emotional", "Transcribed", "Romanized"),
             valueText = {
                 when (it) {
-                    "Literal" -> "Literal"
-                    "Emotional" -> "Significado Emocional (IA)"
-                    "Transcribed" -> "Transcripción"
-                    "Romanized" -> "Romanización (IA)"
+                    stringResource(R.string.mode_literal) -> stringResource(R.string.mode_literal)
+                    "Emotional" -> stringResource(R.string.mode_emotional)
+                    "Transcribed" -> stringResource(R.string.mode_transcription)
+                    "Romanized" -> stringResource(R.string.mode_romanization)
                     else -> it
                 }
             }
@@ -248,7 +266,7 @@ fun AiSettings(
                 translateLanguage = it
                 showLanguageDialog = false
             },
-            title = "Idioma de destino",
+            title = stringResource(R.string.target_language_settings),
             current = translateLanguage,
             values = LanguageCodeToName.keys.sortedBy { LanguageCodeToName[it] },
             valueText = { LanguageCodeToName[it] ?: it }
@@ -257,7 +275,7 @@ fun AiSettings(
 
     if (showApiKeyDialog) {
         TextFieldDialog(
-            title = { Text(if (aiProvider == "DeepL") "Clave API de DeepL" else "Clave API de IA") },
+            title = { Text(if (aiProvider == "DeepL") stringResource(R.string.deepl_api_key) else stringResource(R.string.ai_api_key)) },
             icon = { Icon(painterResource(R.drawable.token), null) },
             initialTextFieldValue = TextFieldValue(text = if (aiProvider == "DeepL") deeplApiKey else openRouterApiKey),
             onDone = {
@@ -270,7 +288,7 @@ fun AiSettings(
 
     if (showBaseUrlDialog) {
         TextFieldDialog(
-            title = { Text("URL Base de IA") },
+            title = { Text(stringResource(R.string.ai_base_url)) },
             icon = { Icon(painterResource(R.drawable.link), null) },
             initialTextFieldValue = TextFieldValue(text = openRouterBaseUrl),
             onDone = {
@@ -293,18 +311,18 @@ fun AiSettings(
                     showModelDialog = false
                 }
             },
-            title = "Modelo de IA",
+            title = stringResource(R.string.ai_model),
             current = if (openRouterModel in commonModels) openRouterModel else "custom_input",
             values = commonModels + "custom_input",
             valueText = { 
-                if (it == "custom_input") "Personalizado" else it
+                if (it == "custom_input") stringResource(R.string.custom_model_input) else it
             }
         )
     }
 
     if (showCustomModelInput) {
         TextFieldDialog(
-            title = { Text("Modelo de IA") },
+            title = { Text(stringResource(R.string.ai_model)) },
             icon = { Icon(painterResource(R.drawable.discover_tune), null) },
             initialTextFieldValue = TextFieldValue(text = openRouterModel),
             onDone = {
@@ -317,8 +335,8 @@ fun AiSettings(
     
     if (showSystemPromptDialog) {
         TextFieldDialog(
-            title = { Text("Indicación del sistema (System Prompt)") },
-            placeholder = { Text("Instrucciones personalizadas para la traducción de la IA...") },
+            title = { Text(stringResource(R.string.system_prompt)) },
+            placeholder = { Text(stringResource(R.string.system_prompt_placeholder)) },
             initialTextFieldValue = TextFieldValue(text = aiSystemPrompt),
             singleLine = false,
             onDone = {
@@ -336,14 +354,14 @@ fun AiSettings(
                 deeplFormality = it
                 showDeeplFormalityDialog = false
             },
-            title = "Formalidad de DeepL",
+            title = stringResource(R.string.deepl_formality),
             current = deeplFormality,
             values = listOf("default", "less", "more"),
             valueText = {
                 when (it) {
-                    "default" -> "Por defecto"
-                    "less" -> "Informal"
-                    "more" -> "Formal"
+                    "default" -> stringResource(R.string.formality_default)
+                    "less" -> stringResource(R.string.formality_informal)
+                    "more" -> stringResource(R.string.formality_formal)
                     else -> it
                 }
             }
@@ -354,7 +372,7 @@ fun AiSettings(
         containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { Text("Traducción de Letras") },
+                title = { Text(stringResource(R.string.lyrics_translation_title)) },
                 navigationIcon = {
                     androidx.compose.material3.IconButton(onClick = { navController.navigateUp() }) {
                         androidx.compose.material3.Icon(
@@ -383,19 +401,19 @@ fun AiSettings(
                 .padding(horizontal = 16.dp)
         ) {
             Material3SettingsGroup(
-                title = "Proveedor de traducción",
+                title = stringResource(R.string.ai_translation_provider),
                 items = listOf(
                     Material3SettingsItem(
                         icon = painterResource(R.drawable.explore_outlined),
-                        title = { Text("Proveedor") },
+                        title = { Text(stringResource(R.string.ai_provider)) },
                         description = { Text(providerDisplayName(aiProvider)) },
                         onClick = { showProviderDialog = true }
                     ),
                     if (!isFreeProvider && (aiProvider == "Custom" || (aiProvider != "DeepL" && aiProvider != "Mistral" && aiProvider != "OpenRouter" && aiProvider != "Nvidia"))) {
                         Material3SettingsItem(
                             icon = painterResource(R.drawable.link),
-                            title = { Text("URL Base de IA") },
-                            description = { Text(openRouterBaseUrl.ifBlank { "No establecido" }) },
+                            title = { Text(stringResource(R.string.ai_base_url)) },
+                            description = { Text(openRouterBaseUrl.ifBlank { stringResource(R.string.not_set) }) },
                             onClick = { showBaseUrlDialog = true }
                         )
                     } else {
@@ -409,12 +427,12 @@ fun AiSettings(
             // ── Traductor gratuito: no requiere configuración ──
             if (aiProvider == "FreeOnline") {
                 Material3SettingsGroup(
-                    title = "Configuración",
+                    title = stringResource(R.string.ai_configuration),
                     items = listOf(
                         Material3SettingsItem(
                             icon = painterResource(R.drawable.info),
-                            title = { Text("Sin configuración necesaria") },
-                            description = { Text("Traduce gratis con el traductor de Google. No requiere clave API. Necesita conexión a internet.") },
+                            title = { Text(stringResource(R.string.no_config_needed)) },
+                            description = { Text(stringResource(R.string.free_translator_desc)) },
                             onClick = {}
                         )
                     )
@@ -426,7 +444,7 @@ fun AiSettings(
             if (aiProvider == "Offline") {
                 val langName = LanguageCodeToName[offlineLang] ?: offlineLang
                 Material3SettingsGroup(
-                    title = "Modelo de traducción offline",
+                    title = stringResource(R.string.offline_model),
                     items = listOf(
                         Material3SettingsItem(
                             icon = painterResource(
@@ -436,14 +454,14 @@ fun AiSettings(
                                     else -> R.drawable.download
                                 }
                             ),
-                            title = { Text("Modelo de $langName (~30 MB)") },
+                            title = { Text(stringResource(R.string.model_of_lang_mb, langName)) },
                             description = {
                                 Text(
                                     when {
-                                        offlineModelDownloading -> "Descargando modelo…"
-                                        offlineModelDownloaded == true -> "Descargado — traduce sin internet"
-                                        offlineModelDownloaded == false -> "Toca para descargar y activar la traducción offline"
-                                        else -> "Comprobando estado…"
+                                        offlineModelDownloading -> stringResource(R.string.downloading_model)
+                                        offlineModelDownloaded == true -> stringResource(R.string.downloaded_translate_offline)
+                                        offlineModelDownloaded == false -> stringResource(R.string.tap_to_download_offline)
+                                        else -> stringResource(R.string.checking_status)
                                     }
                                 )
                             },
@@ -473,8 +491,8 @@ fun AiSettings(
                         if (offlineModelDownloaded == true) {
                             Material3SettingsItem(
                                 icon = painterResource(R.drawable.delete),
-                                title = { Text("Eliminar modelo descargado") },
-                                description = { Text("Libera ~30 MB; la traducción offline dejará de funcionar") },
+                                title = { Text(stringResource(R.string.delete_downloaded_model)) },
+                                description = { Text(stringResource(R.string.delete_downloaded_model_desc)) },
                                 onClick = {
                                     settingsScope.launch {
                                         val result = OfflineTranslationService.deleteModel(offlineLang)
@@ -488,8 +506,8 @@ fun AiSettings(
                         } else null,
                         Material3SettingsItem(
                             icon = painterResource(R.drawable.info),
-                            title = { Text("Cómo funciona") },
-                            description = { Text("Traduce en el dispositivo, sin internet y sin IA. Si la letra está en un idioma distinto al inglés, la primera vez se descargará también ese modelo de origen.") },
+                            title = { Text(stringResource(R.string.how_it_works)) },
+                            description = { Text(stringResource(R.string.how_it_works_offline_desc)) },
                             onClick = {}
                         )
                     ).filterNotNull()
@@ -499,11 +517,11 @@ fun AiSettings(
 
             if (!isFreeProvider) {
             Material3SettingsGroup(
-                title = "Configuración",
+                title = stringResource(R.string.ai_configuration),
                 items = listOf(
                     Material3SettingsItem(
                         icon = painterResource(R.drawable.token),
-                        title = { Text(if (aiProvider == "DeepL") "Clave API de DeepL" else "Clave API de IA") },
+                        title = { Text(if (aiProvider == "DeepL") stringResource(R.string.deepl_api_key) else stringResource(R.string.ai_api_key)) },
                         description = { 
                             val key = if (aiProvider == "DeepL") deeplApiKey else openRouterApiKey
                             Text(
@@ -518,20 +536,20 @@ fun AiSettings(
                     if (aiProvider != "DeepL") {
                         Material3SettingsItem(
                             icon = painterResource(R.drawable.discover_tune),
-                            title = { Text("Modelo de IA") },
-                            description = { Text(openRouterModel.ifBlank { "No establecido" }) },
+                            title = { Text(stringResource(R.string.ai_model)) },
+                            description = { Text(openRouterModel.ifBlank { stringResource(R.string.not_set) }) },
                             onClick = { showModelDialog = true }
                         )
                     } else {
                         Material3SettingsItem(
                             icon = painterResource(R.drawable.discover_tune),
-                            title = { Text("Formalidad de DeepL") },
+                            title = { Text(stringResource(R.string.deepl_formality)) },
                             description = { 
                                 Text(
                                     when (deeplFormality) {
-                                        "default" -> "Por defecto"
-                                        "less" -> "Informal"
-                                        "more" -> "Formal"
+                                        "default" -> stringResource(R.string.formality_default)
+                                        "less" -> stringResource(R.string.formality_informal)
+                                        "more" -> stringResource(R.string.formality_formal)
                                         else -> deeplFormality
                                     }
                                 )
@@ -542,8 +560,8 @@ fun AiSettings(
                     if (aiProvider != "DeepL") {
                         Material3SettingsItem(
                             icon = painterResource(R.drawable.info),
-                            title = { Text("System Prompt") },
-                            description = { Text(aiSystemPrompt.ifBlank { "Estilo predeterminado" }) },
+                            title = { Text(stringResource(R.string.system_prompt)) },
+                            description = { Text(aiSystemPrompt.ifBlank { stringResource(R.string.default_style) }) },
                             onClick = { showSystemPromptDialog = true }
                         )
                     } else null
@@ -554,12 +572,12 @@ fun AiSettings(
             }
 
             Material3SettingsGroup(
-                title = "Traducción Automática",
+                title = stringResource(R.string.auto_translation),
                 items = listOf(
                     Material3SettingsItem(
                         icon = painterResource(R.drawable.translate),
-                        title = { Text("Traducir automáticamente") },
-                        description = { Text("Traducir letras en reproducción de forma automática") },
+                        title = { Text(stringResource(R.string.translate_automatically)) },
+                        description = { Text(stringResource(R.string.translate_automatically_desc)) },
                         trailingContent = {
                             Switch(
                                 checked = autoTranslateLyrics,
@@ -582,8 +600,8 @@ fun AiSettings(
                         items + listOf(
                             Material3SettingsItem(
                                 icon = painterResource(R.drawable.info),
-                                title = { Text("Diferencia de idioma") },
-                                description = { Text("Traducir solo si el idioma es diferente del de la interfaz") },
+                                title = { Text(stringResource(R.string.language_difference)) },
+                                description = { Text(stringResource(R.string.language_difference_desc)) },
                                 trailingContent = {
                                     Switch(
                                         checked = autoTranslateLyricsMismatch,
@@ -611,19 +629,19 @@ fun AiSettings(
             Spacer(modifier = Modifier.height(27.dp))
 
             Material3SettingsGroup(
-                title = "Opciones de traducción",
+                title = stringResource(R.string.translation_options),
                 items = listOf(
                     // Los proveedores gratuitos siempre traducen en modo literal.
                     if (!isFreeProvider) {
                         Material3SettingsItem(
                             icon = painterResource(R.drawable.translate),
-                            title = { Text("Modo de traducción") },
+                            title = { Text(stringResource(R.string.translation_mode)) },
                             description = {
                                 Text(
                                     when (translateMode) {
-                                        "Literal" -> "Literal"
-                                        "Transcribed" -> "Transcripción"
-                                        "Romanized" -> "Romanización (IA)"
+                                        stringResource(R.string.mode_literal) -> stringResource(R.string.mode_literal)
+                                        "Transcribed" -> stringResource(R.string.mode_transcription)
+                                        "Romanized" -> stringResource(R.string.mode_romanization)
                                         else -> translateMode
                                     }
                                 )
@@ -634,7 +652,7 @@ fun AiSettings(
                     if (!autoTranslateLyricsMismatch || !autoTranslateLyrics) {
                         Material3SettingsItem(
                             icon = painterResource(R.drawable.language),
-                            title = { Text("Idioma de destino") },
+                            title = { Text(stringResource(R.string.target_language_settings)) },
                             description = { Text(LanguageCodeToName[translateLanguage] ?: translateLanguage) },
                             onClick = { showLanguageDialog = true }
                         )
@@ -647,12 +665,12 @@ fun AiSettings(
             Spacer(modifier = Modifier.height(27.dp))
 
             Material3SettingsGroup(
-                title = "AI Canvas",
+                title = stringResource(R.string.ai_canvas),
                 items = listOf(
                     Material3SettingsItem(
                         icon = painterResource(R.drawable.auto_awesome),
-                        title = { Text("Énfasis inteligente (IA)") },
-                        description = { Text("Deja que la IA elija las palabras destacadas y el 'mood' del canvas tipográfico. Requiere API key configurada arriba.") },
+                        title = { Text(stringResource(R.string.smart_emphasis)) },
+                        description = { Text(stringResource(R.string.smart_emphasis_desc)) },
                         trailingContent = {
                             Switch(
                                 checked = canvasAiEnhance,
@@ -673,7 +691,25 @@ fun AiSettings(
                 )
             )
 
+            
+            Material3SettingsGroup(
+                title = "DJ Dezzy",
+                items = listOf(
+                    
+                )
+            )
             Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+
+    ,
+            icon = { Icon(painterResource(R.drawable.mic), null) },
+            initialTextFieldValue = androidx.compose.ui.text.input.TextFieldValue(text = elevenLabsApiKey),
+            onDone = {
+                elevenLabsApiKey = it
+                showElevenLabsDialog = false
+            },
+            onDismiss = { showElevenLabsDialog = false }
+        )
     }
 }
