@@ -67,7 +67,7 @@ We also handle feature suggestions through [GitHub Issues](https://github.com/de
 
 Pull Requests (PRs) are the primary way to contribute code to Dezzy. To ensure your PR is effective and easy to review, follow these steps:
 
-1. **Fork the repository** and create a feature branch from `main`.
+1. **Fork the repository** and create a feature branch from `dev` (all PRs must target `dev`).
 2. **Implement your changes** while following the [style guide](#style-guide).
 3. **Write or update tests** as needed to cover your changes.
 4. **Ensure all tests pass** before submitting your PR.
@@ -164,8 +164,8 @@ docs(readme): update installation instructions
 
 We use a structured branching model:
 
-* `main`: The production-ready branch
-* `develop`: The active development branch
+* `master`: Production-ready release branch
+* `dev`: Active development branch (all PRs must target `dev`)
 * `feature/xyz`: New feature branches
 * `fix/xyz`: Bug fix branches
 * `release/xyz`: Release preparation branches
