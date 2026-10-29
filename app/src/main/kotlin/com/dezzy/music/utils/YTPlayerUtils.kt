@@ -119,6 +119,7 @@ object YTPlayerUtils {
     fun invalidateCachedStreamUrls(videoId: String) {
         val prefix = "$videoId:"
         streamUrlCache.keys.removeIf { it.startsWith(prefix) }
+        failedStreamClientsUntil.keys.removeIf { it.startsWith(prefix) }
     }
 
     private fun markClientBotDetected(clientName: String) {
@@ -221,11 +222,20 @@ object YTPlayerUtils {
         var lastError: Throwable? = null
         for (client in VIDEO_MODE_CLIENTS) {
             try {
+                Timber.tag(logTag).i("videoPlaybackDataForPlayback: Trying client ${client.clientName}")
                 val signatureTimestamp = if (client.useSignatureTimestamp) getSignatureTimestampOrNull(videoId) else null
-                val response = YouTube.player(videoId, playlistId, client, signatureTimestamp).getOrNull() ?: continue
-                if (response.playabilityStatus.status != "OK") continue
+                val response = YouTube.player(videoId, playlistId, client, signatureTimestamp).getOrNull()
+                if (response == null) {
+                    Timber.tag(logTag).w("videoPlaybackDataForPlayback: Response is null for ${client.clientName}")
+                    continue
+                }
+                if (response.playabilityStatus.status != "OK") {
+                    Timber.tag(logTag).w("videoPlaybackDataForPlayback: Status is ${response.playabilityStatus.status} for ${client.clientName}")
+                    continue
+                }
 
                 val candidates = selectMuxedFormatCandidates(response, maxHeight)
+                Timber.tag(logTag).i("videoPlaybackDataForPlayback: Found ${candidates.size} muxed candidates for ${client.clientName}")
                 if (candidates.isNotEmpty()) {
                     for (candidate in candidates.take(4)) {
                         val cacheKey = buildCacheKey(videoId, candidate.itag)
@@ -245,6 +255,7 @@ object YTPlayerUtils {
                     // Fallback to adaptive
                     val videoCandidates = selectAdaptiveVideoFormatCandidates(response, maxHeight)
                     val audioCandidates = selectAudioFormatCandidates(response, com.dezzy.music.constants.AudioQuality.HIGH, false)
+                    Timber.tag(logTag).i("videoPlaybackDataForPlayback: Found ${videoCandidates.size} adaptive video candidates, ${audioCandidates.size} adaptive audio candidates for ${client.clientName}")
                     
                     if (videoCandidates.isNotEmpty() && audioCandidates.isNotEmpty()) {
                         var resolvedVideoUrl: String? = null

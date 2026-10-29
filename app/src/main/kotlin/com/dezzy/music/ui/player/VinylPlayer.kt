@@ -190,6 +190,7 @@ fun VinylPlayer(
     onSliderPositionChange: (Long?) -> Unit,
     onQueueClick: () -> Unit,
     onLyricsClick: () -> Unit,
+
     onSleepTimerClick: () -> Unit = {},
     onVisualizerClick: () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -1108,6 +1109,7 @@ private fun InfoAndControls(
     onNext: () -> Unit,
     onToggleLike: () -> Unit,
     onLyricsClick: () -> Unit,
+
     onShareClick: () -> Unit = {},
     onVisualizerClick: () -> Unit = {},
 ) {
@@ -1408,3 +1410,4 @@ private suspend fun saveVinylToGallery(
         false
     }
 }
+

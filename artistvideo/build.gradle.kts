@@ -33,17 +33,17 @@ dependencies {
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.json)
     implementation(libs.ktor.client.encoding)
-    
+
     implementation(libs.compose.runtime)
     implementation(libs.compose.foundation)
     implementation(libs.compose.ui)
     implementation(libs.compose.animation)
     implementation(libs.material3)
-    
+
     // ExoPlayer for playing the artist video
     implementation(libs.media3)
     implementation(libs.media3.ui)
     implementation(libs.media3.okhttp)
-    
+
     coreLibraryDesugaring(libs.desugaring)
 }

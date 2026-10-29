@@ -18,6 +18,7 @@ import com.dezzy.music.innertube.models.WatchEndpoint.WatchEndpointMusicSupporte
 import com.dezzy.music.db.entities.Song
 import com.dezzy.music.models.MediaMetadata
 import com.dezzy.music.models.toMediaMetadata
+import com.dezzy.music.ui.utils.highRes
 
 const val ExtraIsMusicVideo = "com.dezzy.music.extra.IS_MUSIC_VIDEO"
 
@@ -57,7 +58,7 @@ fun SongItem.toMediaItem() =
                 .setTitle(title)
                 .setSubtitle(artists.joinToString { it.name })
                 .setArtist(artists.joinToString { it.name })
-                .setArtworkUri(thumbnail.toUri())
+                .setArtworkUri(thumbnail.highRes().toUri())
                 .setAlbumTitle(album?.name)
                 .setMediaType(MEDIA_TYPE_MUSIC)
                 .setExtras(Bundle().apply { putBoolean(ExtraIsMusicVideo, isMusicVideo()) })

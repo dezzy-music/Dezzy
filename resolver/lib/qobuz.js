@@ -28,6 +28,46 @@ const FORMAT_CHAIN = {
 
 let cachedConfig = null; // { appId, secrets:[...], at }
 const CONFIG_TTL_MS = 6 * 60 * 60 * 1000;
+const COOLDOWN_MS = 10 * 60 * 1000;
+const cooldownUntil = new Map();
+
+function tokenPool() {
+  return (process.env.QOBUZ_TOKEN || '')
+    .split(/[\n,]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+function acquireToken(customToken = null) {
+  if (customToken) return customToken;
+  const pool = tokenPool();
+  if (pool.length === 0) throw new Error('No hay QOBUZ_TOKEN configurado');
+  const now = Date.now();
+  const healthy = pool.filter((t) => (cooldownUntil.get(t) || 0) < now);
+  const order = shuffle(healthy.length ? healthy : [...pool]);
+  return order[0];
+}
+
+function benchToken(token) {
+  if (token) cooldownUntil.set(token, Date.now() + COOLDOWN_MS);
+}
+
+function poolHealth() {
+  const pool = tokenPool();
+  const now = Date.now();
+  return {
+    total: pool.length,
+    available: pool.filter((t) => (cooldownUntil.get(t) || 0) < now).length,
+  };
+}
 
 function capitalize(s) {
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -112,38 +152,62 @@ async function apiGet(path, params, appId, authToken) {
   return { status: res.status, json };
 }
 
+const searchCache = new Map();
+function getCached(key) { return searchCache.get(key); }
+function setCached(key, val) { 
+  if (searchCache.size > 1000) searchCache.clear();
+  searchCache.set(key, val); 
+  return val;
+}
+
 /**
  * Busca la pista por ISRC. Qobuz exige el token de suscripción incluso para
  * buscar, así que este camino solo funciona con QOBUZ_TOKEN configurado.
  */
-async function trackByIsrc(isrc) {
+async function trackByIsrc(isrc, customToken = null) {
   if (!isrc) return null;
-  const token = process.env.QOBUZ_TOKEN || '';
+  const cacheKey = `isrc:${isrc}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
+
+  const token = acquireToken(customToken);
   const { appId } = await getConfig();
   const { json } = await apiGet('track/search', { query: isrc, limit: 5 }, appId, token);
   const items = json && json.tracks && json.tracks.items;
   if (!items || !items.length) return null;
   const hit =
     items.find((t) => (t.isrc || '').toUpperCase() === isrc.toUpperCase()) || items[0];
-  return {
+  const out = {
     id: hit.id,
     hires: !!hit.hires_streamable || !!hit.hires,
     title: hit.title,
     artist: hit.performer && hit.performer.name,
   };
+  return setCached(cacheKey, out);
 }
 
-async function searchTrackId(title, artist) {
-  const token = process.env.QOBUZ_TOKEN || '';
+async function searchTrackId(title, artist, customToken = null) {
+  const cacheKey = `search:${title}:${artist}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
+
+  const token = acquireToken(customToken);
   const { appId } = await getConfig();
   const { json } = await apiGet(
     'track/search',
-    { query: `${title} ${artist}`, limit: 1 },
+    { query: `${title} ${artist}`, limit: 5 },
     appId,
-    token,
+    token
   );
-  const first = json && json.tracks && json.tracks.items && json.tracks.items[0];
-  return first ? { id: first.id, hires: !!first.hires_streamable } : null;
+  const items = json && json.tracks && json.tracks.items;
+  if (!items || !items.length) return null;
+  const out = {
+    id: items[0].id,
+    hires: !!items[0].hires_streamable || !!items[0].hires,
+    title: items[0].title,
+    artist: items[0].performer && items[0].performer.name,
+  };
+  return setCached(cacheKey, out);
 }
 
 /** Firma request_sig de Qobuz (params ordenados alfabéticamente + ts + secreto). */
@@ -165,6 +229,11 @@ function signGetFileUrl(trackId, formatId, ts, secret) {
  */
 async function fileUrl(trackId, quality, authToken) {
   if (!authToken) throw new Error('Qobuz necesita QOBUZ_TOKEN (suscripción) para descargar');
+  
+  const cacheKey = `fileUrl:${trackId}:${quality}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
+
   const cfg = await getConfig();
   const chain = FORMAT_CHAIN[quality] || FORMAT_CHAIN.flac;
 
@@ -185,15 +254,11 @@ async function fileUrl(trackId, quality, authToken) {
         authToken,
       );
       if (json && json.url) {
-        const isFlac = formatId >= 6;
-        return {
-          url: json.url,
-          formatId,
-          container: isFlac ? 'flac' : 'mp3',
-          mime: isFlac ? 'audio/flac' : 'audio/mpeg',
-          bitDepth: json.bit_depth,
-          samplingRate: json.sampling_rate,
-        };
+        const bit = json.bit_depth || 16;
+        const sr = json.sampling_rate || 44.1;
+        const container = formatId === 5 ? 'mp3' : 'flac';
+        const mime = formatId === 5 ? 'audio/mpeg' : 'audio/flac';
+        return setCached(cacheKey, { url: json.url, formatId, container, mime, bitDepth: bit, samplingRate: sr });
       }
       // sig inválida → probamos el siguiente secreto; otro error → siguiente formato
       if (json && json.code && json.code !== 'InvalidRequestSignature') break;
@@ -202,4 +267,4 @@ async function fileUrl(trackId, quality, authToken) {
   throw new Error('Qobuz no devolvió URL (¿token sin permiso para este formato?)');
 }
 
-module.exports = { getConfig, trackByIsrc, searchTrackId, fileUrl };
+module.exports = { getConfig, trackByIsrc, searchTrackId, fileUrl, benchToken, poolHealth, acquireToken };

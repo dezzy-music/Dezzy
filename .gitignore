@@ -115,3 +115,16 @@ core.*
 # AI code review
 /.qodo/
 /.github/copilot-instructions.md
+# Environment variables & secrets
+.env
+.env.*
+*.env
+
+# Local temporary files & developer scripts
+_temp_scripts/
+.agents/
+chromecast_dashboard/
+*.log
+log*.txt
+logcat*.txt
+

@@ -13,15 +13,15 @@ import okhttp3.Request
 import java.util.concurrent.TimeUnit
 
 class RotatingProxyClient {
-
     private val selector = RotatingProxySelector()
 
-    private val client: OkHttpClient = OkHttpClient.Builder()
-        .proxySelector(selector)
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
-        .retryOnConnectionFailure(false)
-        .build()
+    private val client: OkHttpClient =
+        OkHttpClient.Builder()
+            .proxySelector(selector)
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(false)
+            .build()
 
     internal fun selector(): RotatingProxySelector = selector
 
@@ -44,13 +44,15 @@ class RotatingProxyClient {
     }
 
     private fun fetchProxyConfigs(): List<ProxyConfig> {
-        val fetchClient = OkHttpClient.Builder()
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(20, TimeUnit.SECONDS)
-            .build()
-        val request = Request.Builder()
-            .url("https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt")
-            .build()
+        val fetchClient =
+            OkHttpClient.Builder()
+                .connectTimeout(15, TimeUnit.SECONDS)
+                .readTimeout(20, TimeUnit.SECONDS)
+                .build()
+        val request =
+            Request.Builder()
+                .url("https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt")
+                .build()
         return fetchClient.newCall(request).execute().use { response ->
             if (!response.isSuccessful) return emptyList()
             response.body?.string()

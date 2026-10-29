@@ -4,10 +4,6 @@
  * Licensed Under GPL-3.0 | see git history for contributors
  */
 
-
-
-
-
 package com.dezzy.music.innertube.utils
 
 import com.dezzy.music.innertube.YouTube
@@ -17,19 +13,21 @@ import com.dezzy.music.innertube.pages.PlaylistPage
 import java.security.MessageDigest
 
 @JvmName("completedLibrary")
-suspend fun Result<PlaylistPage>.completed(): Result<PlaylistPage> = runCatching {
-    completePlaylistPage(getOrThrow()) { continuation ->
-        YouTube.playlistContinuation(continuation).getOrNull()
+suspend fun Result<PlaylistPage>.completed(): Result<PlaylistPage> =
+    runCatching {
+        completePlaylistPage(getOrThrow()) { continuation ->
+            YouTube.playlistContinuation(continuation).getOrNull()
+        }
     }
-}
 
 internal suspend fun completePlaylistPage(
     page: PlaylistPage,
     fetchContinuationPage: suspend (String) -> PlaylistContinuationPage?,
 ): PlaylistPage {
     val songs = page.songs.toMutableList()
-    var continuation = page.songsContinuation.normalizedContinuation()
-        ?: page.continuation.normalizedContinuation()
+    var continuation =
+        page.songsContinuation.normalizedContinuation()
+            ?: page.continuation.normalizedContinuation()
     val seenContinuations = mutableSetOf<String>()
     var requestCount = 0
     val maxRequests = 50
@@ -58,44 +56,45 @@ internal suspend fun completePlaylistPage(
     return page.copy(
         songs = songs,
         songsContinuation = null,
-        continuation = null
+        continuation = null,
     )
 }
 
 @JvmName("completedPlaylist")
-suspend fun Result<LibraryPage>.completed(): Result<LibraryPage> = runCatching {
-    val page = getOrThrow()
-    val items = page.items.toMutableList()
-    var continuation = page.continuation
-    val seenContinuations = mutableSetOf<String>()
-    var requestCount = 0
-    val maxRequests = 50
-    var consecutiveEmptyResponses = 0
-    
-    while (continuation != null && requestCount < maxRequests) {
-        if (continuation in seenContinuations) {
-            break
+suspend fun Result<LibraryPage>.completed(): Result<LibraryPage> =
+    runCatching {
+        val page = getOrThrow()
+        val items = page.items.toMutableList()
+        var continuation = page.continuation
+        val seenContinuations = mutableSetOf<String>()
+        var requestCount = 0
+        val maxRequests = 50
+        var consecutiveEmptyResponses = 0
+
+        while (continuation != null && requestCount < maxRequests) {
+            if (continuation in seenContinuations) {
+                break
+            }
+            seenContinuations.add(continuation)
+            requestCount++
+
+            val continuationPage = YouTube.libraryContinuation(continuation).getOrNull() ?: break
+
+            if (continuationPage.items.isEmpty()) {
+                consecutiveEmptyResponses++
+                if (consecutiveEmptyResponses >= 2) break
+            } else {
+                consecutiveEmptyResponses = 0
+                items += continuationPage.items
+            }
+
+            continuation = continuationPage.continuation
         }
-        seenContinuations.add(continuation)
-        requestCount++
-        
-        val continuationPage = YouTube.libraryContinuation(continuation).getOrNull() ?: break
-        
-        if (continuationPage.items.isEmpty()) {
-            consecutiveEmptyResponses++
-            if (consecutiveEmptyResponses >= 2) break
-        } else {
-            consecutiveEmptyResponses = 0
-            items += continuationPage.items
-        }
-        
-        continuation = continuationPage.continuation
+        LibraryPage(
+            items = items,
+            continuation = null,
+        )
     }
-    LibraryPage(
-        items = items,
-        continuation = null
-    )
-}
 
 fun ByteArray.toHex(): String = joinToString(separator = "") { eachByte -> "%02x".format(eachByte) }
 
@@ -147,18 +146,18 @@ fun String.parseTime(): Int? {
 
 private fun Char.isDurationSeparator(): Boolean =
     this == ':' ||
-            this == '.' ||
-            this == ',' ||
-            this == '：' ||
-            this == '．' ||
-            this == '﹕' ||
-            this == '꞉' ||
-            this == '∶' ||
-            this == '٫'
+        this == '.' ||
+        this == ',' ||
+        this == '：' ||
+        this == '．' ||
+        this == '﹕' ||
+        this == '꞉' ||
+        this == '∶' ||
+        this == '٫'
 
 private fun Char.isIgnorableDurationChar(): Boolean =
     isWhitespace() ||
-            Character.getType(this) == Character.FORMAT.toInt()
+        Character.getType(this) == Character.FORMAT.toInt()
 
 fun isPrivateId(browseId: String): Boolean {
     return browseId.contains("privately")

@@ -58,6 +58,9 @@ import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.HttpDataSource
 import androidx.media3.datasource.ResolvingDataSource
 import androidx.media3.datasource.cache.CacheDataSource
+import com.dezzy.music.constants.DjNameKey
+import com.dezzy.music.utils.dataStore
+import kotlinx.coroutines.flow.first
 import androidx.media3.datasource.cache.CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR
 import androidx.media3.datasource.cache.Cache
 import androidx.media3.datasource.cache.ContentMetadata
@@ -446,17 +449,8 @@ class MusicService :
             val currentArtist = player.mediaMetadata.artist?.toString()
             val result = withContext(Dispatchers.IO) {
                 val isValidUrl: suspend (String) -> Boolean = { url ->
-                    try {
-                        val request = okhttp3.Request.Builder().url(url).get().header("Range", "bytes=0-0").build()
-                        val response = mediaOkHttpClient.newCall(request).execute()
-                        val isSuccess = response.isSuccessful
-                        android.util.Log.e("MusicService", "isValidUrl check: HTTP ${response.code} for URL ${url.take(60)}... success=$isSuccess")
-                        response.close()
-                        isSuccess
-                    } catch (e: Exception) {
-                        android.util.Log.e("MusicService", "isValidUrl exception: ${e.message}")
-                        false
-                    }
+                    android.util.Log.w("MusicService", "isValidUrl bypassed for $url")
+                    true
                 }
                 val direct = YTPlayerUtils.videoPlaybackDataForPlayback(mediaId, maxHeight = maxHeight, isValidUrl = isValidUrl)
                 if (direct.isSuccess) {
@@ -816,6 +810,7 @@ class MusicService :
             EqSettings(
                 enabled = false,
                 bandLevelsMb = emptyList(),
+                parametricBands = emptyList(),
                 outputGainEnabled = false,
                 outputGainMb = 0,
                 bassBoostEnabled = false,
@@ -2923,6 +2918,22 @@ class MusicService :
                                         settings = settings
                                     )
                                 )
+                                withContext(Dispatchers.Main) {
+                                    currentMediaMetadata.value?.let { meta ->
+                                        relayListenTogetherPlayback(
+                                            com.dezzy.music.listentogether.PlaybackActions.CHANGE_TRACK,
+                                            position = player.currentPosition,
+                                            trackId = meta.id,
+                                            trackInfo = meta.toListenTogetherTrackInfo(),
+                                        )
+                                        if (player.playWhenReady) {
+                                            relayListenTogetherPlayback(
+                                                com.dezzy.music.listentogether.PlaybackActions.PLAY,
+                                                position = player.currentPosition,
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                         is com.dezzy.music.listentogether.ListenTogetherEvent.Disconnected -> {
@@ -4127,11 +4138,18 @@ class MusicService :
         return runCatching { EqualizerJson.json.encodeToString(levelsMb) }.getOrNull().orEmpty()
     }
 
+    private fun decodeParametricBands(raw: String?): List<com.dezzy.music.audio.models.EqBand> {
+        if (raw.isNullOrBlank()) return emptyList()
+        return runCatching { EqualizerJson.json.decodeFromString<List<com.dezzy.music.audio.models.EqBand>>(raw) }.getOrNull() ?: emptyList()
+    }
+
     private fun readEqSettingsFromPrefs(prefs: Preferences): EqSettings {
         val levels = decodeBandLevelsMb(prefs[EqualizerBandLevelsMbKey])
+        val paramBands = decodeParametricBands(prefs[com.dezzy.music.constants.EqualizerParametricBandsKey])
         return EqSettings(
             enabled = prefs[EqualizerEnabledKey] ?: false,
             bandLevelsMb = levels,
+            parametricBands = paramBands,
             outputGainEnabled = prefs[EqualizerOutputGainEnabledKey] ?: false,
             outputGainMb = prefs[EqualizerOutputGainMbKey] ?: 0,
             bassBoostEnabled = prefs[EqualizerBassBoostEnabledKey] ?: false,
@@ -4185,10 +4203,13 @@ class MusicService :
             ) ?: return@launch
 
             val encoded = encodeBandLevelsMb(levels)
+            val paramBands = GenreEqPresets.parametricBandsForCurve(genre) ?: emptyList()
+            val encodedParam = runCatching { EqualizerJson.json.encodeToString(paramBands) }.getOrNull().orEmpty()
             if (encoded.isBlank()) return@launch
             Timber.tag("EqAutoGenre").i("Aplicando curva '$genre' a ${metadata.title}")
             dataStore.edit { prefs ->
                 prefs[EqualizerBandLevelsMbKey] = encoded
+                prefs[com.dezzy.music.constants.EqualizerParametricBandsKey] = encodedParam
                 prefs[EqualizerSelectedProfileIdKey] = "genre:$genre"
                 prefs[EqualizerDetectedGenreKey] = genre
             }
@@ -4198,40 +4219,54 @@ class MusicService :
     fun applyEqFlatPreset() {
         ioScope.launch {
             val caps = eqCapabilities.value
-            val bandCount = caps?.bandCount ?: runCatching { equalizer?.numberOfBands?.toInt() }.getOrNull() ?: 0
+            val bandCount = caps?.bandCount ?: 10
             val encoded = encodeBandLevelsMb(List(bandCount.coerceAtLeast(0)) { 0 })
+            val flatParam = List(10) { 0 }.let { GenreEqPresets.parametricBandsForCurve("flat") ?: emptyList() } // we'll use a hack or just clear it
+            // Better yet, just clear parametric bands so it falls back to empty or we create flat bands
+            val defaultFrequencies = listOf(31f, 62f, 125f, 250f, 500f, 1000f, 2000f, 4000f, 8000f, 16000f)
+            val flatBands = defaultFrequencies.mapIndexed { index, freq ->
+                com.dezzy.music.audio.models.EqBand(
+                    id = index,
+                    type = if (index == 0) com.dezzy.music.audio.models.FilterType.LOW_SHELF else if (index == 9) com.dezzy.music.audio.models.FilterType.HIGH_SHELF else com.dezzy.music.audio.models.FilterType.PEAKING,
+                    frequencyHz = freq,
+                    gainDb = 0f,
+                    qFactor = 0.707f
+                )
+            }
+            val encodedParam = runCatching { EqualizerJson.json.encodeToString(flatBands) }.getOrNull().orEmpty()
+
             dataStore.edit { prefs ->
                 prefs[EqualizerEnabledKey] = true
                 prefs[EqualizerBandLevelsMbKey] = encoded
+                prefs[com.dezzy.music.constants.EqualizerParametricBandsKey] = encodedParam
                 prefs[EqualizerSelectedProfileIdKey] = "flat"
             }
         }
     }
 
     fun applySystemEqPreset(presetIndex: Int) {
-        scope.launch {
-            ensureAudioEffects(player.audioSessionId)
-            val eq = equalizer ?: return@launch
-            val maxPreset = runCatching { eq.numberOfPresets.toInt() }.getOrNull() ?: 0
-            if (presetIndex !in 0 until maxPreset) return@launch
+        ioScope.launch {
+            val presets = GenreEqPresets.availableGenres()
+            if (presetIndex !in presets.indices) return@launch
+            
+            val genre = presets[presetIndex]
+            val paramBands = GenreEqPresets.parametricBandsForCurve(genre) ?: return@launch
+            val encodedParam = runCatching { EqualizerJson.json.encodeToString(paramBands) }.getOrNull().orEmpty()
+            
+            // Generate legacy bands for fallback
+            val caps = eqCapabilities.value
+            val centerFreqs = caps?.centerFreqHz.orEmpty()
+            val legacyLevels = if (centerFreqs.isNotEmpty()) {
+                GenreEqPresets.bandLevelsForCurve(genre, centerFreqs, caps?.minBandLevelMb ?: -1500, caps?.maxBandLevelMb ?: 1500)
+            } else null
+            val encodedLegacy = encodeBandLevelsMb(legacyLevels ?: List(10) { 0 })
 
-            runCatching { eq.usePreset(presetIndex.toShort()) }.getOrNull() ?: return@launch
-
-            val bandCount = runCatching { eq.numberOfBands.toInt() }.getOrNull() ?: 0
-            val levels =
-                (0 until bandCount).map { band ->
-                    runCatching { eq.getBandLevel(band.toShort()).toInt() }.getOrNull() ?: 0
-                }
-
-            val encoded = encodeBandLevelsMb(levels)
-            if (encoded.isBlank()) return@launch
-
-            ioScope.launch {
-                dataStore.edit { prefs ->
-                    prefs[EqualizerEnabledKey] = true
-                    prefs[EqualizerBandLevelsMbKey] = encoded
-                    prefs[EqualizerSelectedProfileIdKey] = "system:$presetIndex"
-                }
+            dataStore.edit { prefs ->
+                prefs[EqualizerEnabledKey] = true
+                prefs[EqualizerBandLevelsMbKey] = encodedLegacy
+                prefs[com.dezzy.music.constants.EqualizerParametricBandsKey] = encodedParam
+                prefs[EqualizerSelectedProfileIdKey] = "system:$presetIndex"
+                prefs[EqualizerDetectedGenreKey] = genre
             }
         }
     }
@@ -4304,33 +4339,42 @@ class MusicService :
 
     private fun ensureAudioEffects(sessionId: Int) {
         if (sessionId <= 0) return
-        if (audioEffectsSessionId == sessionId && equalizer != null) return
+        if (audioEffectsSessionId == sessionId && bassBoost != null) return
 
         releaseAudioEffects()
         audioEffectsSessionId = sessionId
 
-        equalizer = runCatching { Equalizer(0, sessionId) }.getOrNull()
         bassBoost = runCatching { BassBoost(0, sessionId) }.getOrNull()
         virtualizer = runCatching { Virtualizer(0, sessionId) }.getOrNull()
         loudnessEnhancer = runCatching { LoudnessEnhancer(sessionId) }.getOrNull()
 
-        equalizer?.let(::updateEqCapabilitiesFromEffect)
+        val presets = GenreEqPresets.availableGenres()
+        
+        // Mock eqCapabilities to expose exactly 10 bands for the Biquad processor
+        eqCapabilities.value = EqCapabilities(
+            bandCount = 10,
+            minBandLevelMb = -1500,
+            maxBandLevelMb = 1500,
+            centerFreqHz = listOf(31000, 62000, 125000, 250000, 500000, 1000000, 2000000, 4000000, 8000000, 16000000), // millihertz
+            systemPresets = presets
+        )
+
         applyEqSettingsToEffects(desiredEqSettings.value)
     }
 
     private fun applyEqSettingsToEffects(settings: EqSettings) {
-        val eq = equalizer ?: return
         val caps = eqCapabilities.value
-        val bandCount = caps?.bandCount ?: eq.numberOfBands.toInt()
-        val minMb = caps?.minBandLevelMb ?: runCatching { eq.bandLevelRange.getOrNull(0)?.toInt() }.getOrNull() ?: -1500
-        val maxMb = caps?.maxBandLevelMb ?: runCatching { eq.bandLevelRange.getOrNull(1)?.toInt() }.getOrNull() ?: 1500
+        val bandCount = caps?.bandCount ?: 10
+        val minMb = caps?.minBandLevelMb ?: -1500
+        val maxMb = caps?.maxBandLevelMb ?: 1500
 
         val levels = resampleLevelsByIndex(settings.bandLevelsMb, bandCount)
-        runCatching { eq.enabled = settings.enabled }
 
-        for (band in 0 until bandCount) {
-            val levelMb = levels.getOrNull(band)?.coerceIn(minMb, maxMb) ?: 0
-            runCatching { eq.setBandLevel(band.toShort(), levelMb.toShort()) }
+        // Set the Biquad EQ bands via DezzyEqManager
+        if (settings.parametricBands.isNotEmpty()) {
+            com.dezzy.music.audio.DezzyEqManager.updateFromParametric(settings.enabled, settings.parametricBands)
+        } else {
+            com.dezzy.music.audio.DezzyEqManager.updateFromSystemSettings(settings.enabled, levels)
         }
 
         bassBoost?.let { bb ->
@@ -4870,11 +4914,11 @@ class MusicService :
             networkRetryAttempt = 0
             consecutivePlaybackErr = 0
         }
-        val keepAudioEffectSessionOpen =
-            playbackState == Player.STATE_BUFFERING || playbackState == Player.STATE_READY
-        if (player.playWhenReady && keepAudioEffectSessionOpen) {
+        if (player.playWhenReady) {
             requestAudioFocus()
         }
+        val keepAudioEffectSessionOpen =
+            playbackState == Player.STATE_BUFFERING || playbackState == Player.STATE_READY
         if (keepAudioEffectSessionOpen) {
             openAudioEffectSession()
         } else {
@@ -5081,8 +5125,10 @@ class MusicService :
     override fun onPlayerError(error: PlaybackException) {
         super.onPlayerError(error)
         val isConnectionError = error.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ||
+                error.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT ||
                 ((error.cause?.cause is PlaybackException) &&
-                (error.cause?.cause as PlaybackException).errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED)
+                ((error.cause?.cause as PlaybackException).errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ||
+                 (error.cause?.cause as PlaybackException).errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT))
 
         if (!isNetworkConnected.value || isConnectionError) {
             waitOnNetworkError()
@@ -5616,10 +5662,12 @@ class MusicService :
                 enableAudioTrackPlaybackParams: Boolean,
             ) = DefaultAudioSink
                 .Builder(this@MusicService)
-                .setEnableFloatOutput(enableFloatOutput)
                 .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
                 .setAudioProcessorChain(
                     DefaultAudioSink.DefaultAudioProcessorChain(
+                        arrayOf<androidx.media3.common.audio.AudioProcessor>(
+                            com.dezzy.music.audio.DezzyBiquadAudioProcessor(),
+                        ),
                         SilenceSkippingAudioProcessor(
                             1_500_000L,
                             0.35f,
@@ -6142,6 +6190,53 @@ class MusicService :
         if (startInForegroundRequired) ensureStartedAsForeground()
         runCatching { super.onUpdateNotification(session, startInForegroundRequired) }
             .onFailure { reportException(it) }
+    }
+
+    fun requestDjSong(request: String) {
+        scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val result = com.dezzy.music.innertube.YouTube.search(request, com.dezzy.music.innertube.YouTube.SearchFilter.FILTER_SONG).getOrNull()
+            if (result != null && result.items.isNotEmpty()) {
+                val songs = result.items.take(3).map { 
+                    (it as com.dezzy.music.innertube.models.SongItem).toMediaItem() 
+                }
+                
+                val prefs = this@MusicService.dataStore.data.first()
+                val customName = prefs[DjNameKey] ?: ""
+                val djName = if (customName.isNotBlank()) "DJ $customName" else "DJ"
+
+                val prompt = "El usuario acaba de pedir la canción o artista: $request. Reacciona con asombro y mucha emoción genuina. Habla un poco sobre este artista o canción y preséntalos al estilo de locutores legendarios. Tú eres $djName. Sé breve."
+                
+                val scriptResult = com.dezzy.music.ai.DjDezzyClient.generateScript(this@MusicService, prompt)
+                val script = scriptResult.getOrElse { "¡Wow! Acabas de pedir $request. ¡Me encanta tu estilo! Aquí la tienes." }
+                val id = "dj_inter_${System.currentTimeMillis()}"
+                
+                val djMediaItem = androidx.media3.common.MediaItem.Builder()
+                        .setMediaId(id)
+                        .setUri("https://translate.google.com/translate_tts?ie=UTF-8&q=${java.net.URLEncoder.encode(script, "UTF-8")}&tl=es-MX&client=tw-ob")
+                        .setMediaMetadata(
+                            androidx.media3.common.MediaMetadata.Builder()
+                                .setTitle(djName)
+                                .setArtist("Mezcla Especial")
+                                .setArtworkUri(songs.first().mediaMetadata.artworkUri)
+                                .build()
+                        )
+                        .build()
+                
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    val currentIndex = player.currentMediaItemIndex
+                    if (currentIndex != androidx.media3.common.C.INDEX_UNSET) {
+                        player.addMediaItem(currentIndex + 1, djMediaItem)
+                        player.addMediaItems(currentIndex + 2, songs)
+                        player.seekToNextMediaItem()
+                    } else {
+                        player.addMediaItem(djMediaItem)
+                        player.addMediaItems(songs)
+                        player.prepare()
+                        player.play()
+                    }
+                }
+            }
+        }
     }
 
     inner class MusicBinder : Binder() {

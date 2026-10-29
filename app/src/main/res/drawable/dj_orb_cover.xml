@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="512dp"
+    android:height="512dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+
+    <!-- Fondo -->
+    <path
+        android:pathData="M 0,0 L 512,0 L 512,512 L 0,512 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="256"
+                android:centerY="256"
+                android:gradientRadius="350">
+                <item
+                    android:offset="0.0"
+                    android:color="#1a1a2e" />
+                <item
+                    android:offset="1.0"
+                    android:color="#000000" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Orbe -->
+    <path
+        android:pathData="M 256,256 m -150,0 a 150,150 0 1,0 300,0 a 150,150 0 1,0 -300,0">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="256"
+                android:centerY="256"
+                android:gradientRadius="180">
+                <item
+                    android:offset="0.0"
+                    android:color="#00FF88" />
+                <item
+                    android:offset="0.5"
+                    android:color="#00B8FF" />
+                <item
+                    android:offset="1.0"
+                    android:color="#00000000" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Ondas -->
+    <path
+        android:strokeWidth="4"
+        android:strokeColor="#5500FF88"
+        android:pathData="M 256,256 m -180,0 a 180,180 0 1,0 360,0 a 180,180 0 1,0 -360,0" />
+        
+    <path
+        android:strokeWidth="2"
+        android:strokeColor="#2200B8FF"
+        android:pathData="M 256,256 m -210,0 a 210,210 0 1,0 420,0 a 210,210 0 1,0 -420,0" />
+
+</vector>

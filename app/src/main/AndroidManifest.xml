@@ -68,6 +68,11 @@
             </intent-filter>
 
             <intent-filter>
+                <action android:name="android.intent.action.SEARCH" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.DEFAULT" />
@@ -224,6 +229,17 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".listentogether.ListenTogetherActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.dezzy.music.LISTEN_TOGETHER_APPROVE_JOIN" />
+                <action android:name="com.dezzy.music.LISTEN_TOGETHER_REJECT_JOIN" />
+                <action android:name="com.dezzy.music.LISTEN_TOGETHER_APPROVE_SUGGESTION" />
+                <action android:name="com.dezzy.music.LISTEN_TOGETHER_REJECT_SUGGESTION" />
             </intent-filter>
         </receiver>
 

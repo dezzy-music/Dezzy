@@ -102,6 +102,7 @@ fun DezzyPlayer(
     onSliderPositionChange: (Long?) -> Unit,
     onQueueClick: () -> Unit,
     onLyricsClick: () -> Unit,
+
     playerStyle: PlayerDesignStyle,
     modifier: Modifier = Modifier,
     collapsedBound: androidx.compose.ui.unit.Dp = 0.dp,
@@ -149,6 +150,7 @@ fun DezzyPlayer(
     val canvasActiveForApple = canvasMode == CanvasMode.APPLE || canvasMode == CanvasMode.APPLE_WITH_FALLBACK
     val canvasActiveForSpotify = canvasMode == CanvasMode.SPOTIFY || canvasMode == CanvasMode.SPOTIFY_WITH_FALLBACK
     val anyCanvasActive = canvasMode != CanvasMode.NONE
+    val allowFallback = canvasMode == CanvasMode.APPLE_WITH_FALLBACK || canvasMode == CanvasMode.SPOTIFY_WITH_FALLBACK
     val videoModeActive by playerConnection.videoModeActive.collectAsState()
     val videoPlayer by playerConnection.videoPlayerInstance.collectAsState()
     
@@ -187,14 +189,15 @@ fun DezzyPlayer(
 
         // ── 2. Check the in-memory/disk cache for an online entry (HLS/animated URL) ──
         val cachedOnline = CanvasArtworkPlaybackCache.get(id)
-        val expectedSource =
-            if (canvasActiveForSpotify) CanvasArtwork.SOURCE_SPOTIFY else CanvasArtwork.SOURCE_APPLE
+        val isValidCache = when (canvasMode) {
+            com.dezzy.music.constants.CanvasMode.SPOTIFY -> cachedOnline?.source == CanvasArtwork.SOURCE_SPOTIFY
+            com.dezzy.music.constants.CanvasMode.APPLE -> cachedOnline?.source == CanvasArtwork.SOURCE_APPLE
+            else -> true
+        }
 
-        // Prefer the online cache entry only when it matches the SELECTED source — a cached
-        // Spotify canvas must not keep showing after the user switches to Apple (and vice versa).
         if (cachedOnline != null &&
             (!cachedOnline.animated.isNullOrBlank() || !cachedOnline.animatedVertical.isNullOrBlank()) &&
-            (cachedOnline.isLocalFile || cachedOnline.source == expectedSource)
+            (cachedOnline.isLocalFile || isValidCache)
         ) {
             canvasArtwork = cachedOnline
             canvasFetchInFlight = false
@@ -234,7 +237,8 @@ fun DezzyPlayer(
                             spotifyCanvasEnabled = false,
                             spotifyTrackId = com.dezzy.music.spotify.SpotifyMatchFileCache
                                 .getMatchByYouTubeId(id)?.spotifyId,
-                            logFilePath = logFile.absolutePath
+                            logFilePath = logFile.absolutePath,
+                            allowFallback = allowFallback
                         )
                         if (remote != null) {
                             CanvasArtworkPlaybackCache.put(id, remote)
@@ -267,7 +271,8 @@ fun DezzyPlayer(
                 spotifyCanvasEnabled = canvasActiveForSpotify,
                 spotifyTrackId = com.dezzy.music.spotify.SpotifyMatchFileCache
                     .getMatchByYouTubeId(id)?.spotifyId,
-                logFilePath = logFile.absolutePath
+                logFilePath = logFile.absolutePath,
+                allowFallback = allowFallback
             )
         }
         canvasArtwork = fetched
@@ -1666,3 +1671,4 @@ fun DezzyPlayer(
         )
     }
 }
+

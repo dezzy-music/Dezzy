@@ -6,7 +6,6 @@
 
 package com.dezzy.music.innertube
 
-import com.dezzy.music.innertube.PlaybackAuthState
 import com.dezzy.music.innertube.models.YouTubeClient
 import com.dezzy.music.innertube.models.response.PlayerResponse
 import io.ktor.http.URLBuilder
@@ -25,19 +24,18 @@ import java.io.IOException
 import java.net.Proxy
 import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
-import java.lang.reflect.Field
 import java.util.regex.Pattern
 
 private class NewPipeDownloaderImpl(proxy: Proxy?) : Downloader() {
-
-    private val client = OkHttpClient.Builder()
-        .proxy(proxy)
-        .retryOnConnectionFailure(true)
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
-        .callTimeout(45, TimeUnit.SECONDS)
-        .build()
+    private val client =
+        OkHttpClient.Builder()
+            .proxy(proxy)
+            .retryOnConnectionFailure(true)
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .callTimeout(45, TimeUnit.SECONDS)
+            .build()
 
     @Throws(IOException::class, ReCaptchaException::class)
     override fun execute(request: Request): Response {
@@ -46,9 +44,10 @@ private class NewPipeDownloaderImpl(proxy: Proxy?) : Downloader() {
         val headers = request.headers()
         val dataToSend = request.dataToSend()
 
-        val requestBuilder = okhttp3.Request.Builder()
-            .method(httpMethod, dataToSend?.toRequestBody())
-            .url(url)
+        val requestBuilder =
+            okhttp3.Request.Builder()
+                .method(httpMethod, dataToSend?.toRequestBody())
+                .url(url)
 
         var hasUserAgent = false
         headers.forEach { (headerName, headerValueList) ->
@@ -82,63 +81,24 @@ private class NewPipeDownloaderImpl(proxy: Proxy?) : Downloader() {
         val latestUrl = response.request.url.toString()
         return Response(response.code, response.message, response.headers.toMultimap(), responseBodyToReturn, latestUrl)
     }
-
 }
 
 object NewPipeUtils {
-
     init {
         NewPipe.init(NewPipeDownloaderImpl(YouTube.proxy))
         patchNewPipeRegexes()
     }
 
     private fun patchNewPipeRegexes() {
-        try {
-            val clazz = Class.forName("org.schabi.newpipe.extractor.services.youtube.YoutubeSignatureUtils")
-            val field = clazz.getDeclaredField("FUNCTION_REGEXES")
-            field.isAccessible = true
+        // Obsolete: NewPipeExtractor v0.26.5 has been updated to handle the new YouTube player.
+        // These custom loose regexes mistakenly match the new 'ez' BotGuard interpreter function
+        // and cause the cipher decoder to crash with 'Could not parse deobfuscation function'.
+    }
 
-            val newPatterns = arrayOf(
-                Pattern.compile("\\b([a-zA-Z0-9_$]+)\\((\\d+,\\d+,)[a-zA-Z0-9_$]+\\(\\d+,\\d+,[a-zA-Z0-9_$]+(?:\\.s)?\\)\\)"),
-                Pattern.compile("\\b([a-zA-Z0-9_$]+)\\((\\d+,)[a-zA-Z0-9_$]+\\(\\d+,\\d+,[a-zA-Z0-9_$]+(?:\\.s)?\\)\\)"),
-                Pattern.compile("\\b([a-zA-Z0-9_$]+)\\([a-zA-Z0-9_$]+\\(\\d+,\\d+,[a-zA-Z0-9_$]+(?:\\.s)?\\)\\)"),
-                Pattern.compile("\\b([a-zA-Z0-9_$]+)\\((\\d+,\\d+,)[a-zA-Z0-9_$]+\\([a-zA-Z0-9_$]+(?:\\.s)?\\)\\)"),
-                Pattern.compile("\\b([a-zA-Z0-9_$]+)\\((\\d+,)[a-zA-Z0-9_$]+\\([a-zA-Z0-9_$]+(?:\\.s)?\\)\\)"),
-                Pattern.compile("\\b([a-zA-Z0-9_$]+)\\([a-zA-Z0-9_$]+\\([a-zA-Z0-9_$]+(?:\\.s)?\\)\\)")
-            )
-
-            @Suppress("UNCHECKED_CAST")
-            val originalRegexes = field.get(null) as Array<Pattern>
-
-            // Construct new array with our patterns at the beginning
-            val combinedRegexes = newPatterns + originalRegexes
-
-            try {
-                // Try setting field directly
-                field.set(null, combinedRegexes)
-                println("[Dezzy] Successfully patched YoutubeSignatureUtils.FUNCTION_REGEXES field directly")
-            } catch (e: Exception) {
-                println("[Dezzy] Failed to set YoutubeSignatureUtils.FUNCTION_REGEXES field directly, falling back to mutating array elements: ${e.message}")
-                // Fallback: Mutate elements of the original array
-                if (originalRegexes.size >= newPatterns.size) {
-                    for (i in newPatterns.indices) {
-                        originalRegexes[i] = newPatterns[i]
-                    }
-                    println("[Dezzy] Successfully mutated original YoutubeSignatureUtils.FUNCTION_REGEXES array elements")
-                } else if (originalRegexes.isNotEmpty()) {
-                    originalRegexes[0] = newPatterns[0]
-                    println("[Dezzy] Successfully mutated first element of YoutubeSignatureUtils.FUNCTION_REGEXES array")
-                }
-            }
-        } catch (e: Exception) {
-            System.err.println("[Dezzy] Error patching YoutubeSignatureUtils.FUNCTION_REGEXES: ${e.message}")
-            e.printStackTrace()
+    fun getSignatureTimestamp(videoId: String): Result<Int> =
+        runCatching {
+            YoutubeJavaScriptPlayerManager.getSignatureTimestamp(videoId)
         }
-    }
-
-    fun getSignatureTimestamp(videoId: String): Result<Int> = runCatching {
-        YoutubeJavaScriptPlayerManager.getSignatureTimestamp(videoId)
-    }
 
     fun getStreamUrl(
         format: PlayerResponse.StreamingData.Format,
@@ -159,11 +119,11 @@ object NewPipeUtils {
                             retryWithBackoff(
                                 maxAttempts = 3,
                                 initialDelayMs = 250L,
-                                maxDelayMs = 2_000L
+                                maxDelayMs = 2_000L,
                             ) {
                                 YoutubeJavaScriptPlayerManager.getUrlWithThrottlingParameterDeobfuscated(
                                     videoId,
-                                    directUrl
+                                    directUrl,
                                 )
                             }
                         }.getOrElse { directUrl }
@@ -178,34 +138,53 @@ object NewPipeUtils {
                 )
             }
 
-            val url = run {
-                val cipherString = format.signatureCipher ?: format.cipher
-                if (cipherString == null) throw ParsingException("Could not find format url")
+            val url =
+                run {
+                    val cipherString = format.signatureCipher ?: format.cipher
+                    if (cipherString == null) throw ParsingException("Could not find format url")
 
-                val params = parseQueryString(cipherString)
-                val obfuscatedSignature = params["s"]
-                    ?: throw ParsingException("Could not parse cipher signature")
-                val signatureParam = params["sp"]
-                    ?: throw ParsingException("Could not parse cipher signature parameter")
-                val url = params["url"]?.let { URLBuilder(it) }
-                    ?: throw ParsingException("Could not parse cipher url")
-                url.parameters[signatureParam] =
-                    YoutubeJavaScriptPlayerManager.deobfuscateSignature(
-                        videoId,
-                        obfuscatedSignature
-                    )
-                url.toString()
-            }
+                    val params = parseQueryString(cipherString)
+                    val obfuscatedSignature =
+                        params["s"]
+                            ?: throw ParsingException("Could not parse cipher signature")
+                    val signatureParam =
+                        params["sp"]
+                            ?: throw ParsingException("Could not parse cipher signature parameter")
+                    val url =
+                        params["url"]?.let { URLBuilder(it) }
+                            ?: throw ParsingException("Could not parse cipher url")
 
-            val resolvedUrl = runCatching {
-                retryWithBackoff(
-                    maxAttempts = 3,
-                    initialDelayMs = 250L,
-                    maxDelayMs = 2_000L
-                ) {
-                    YoutubeJavaScriptPlayerManager.getUrlWithThrottlingParameterDeobfuscated(videoId, url)
+                    // Try to deobfuscate the signature with NewPipeExtractor.
+                    // If NewPipeExtractor's regex patterns are broken (YouTube JS player changed),
+                    // fall back to using the unsigned base URL — YouTube may still serve the stream
+                    // when a valid PO token is attached.
+                    try {
+                        val deobfuscated = YoutubeJavaScriptPlayerManager.deobfuscateSignature(
+                            videoId,
+                            obfuscatedSignature,
+                        )
+                        url.parameters[signatureParam] = deobfuscated
+                    } catch (e: Exception) {
+                        System.err.println(
+                            "[NewPipeUtils] Cipher deobfuscation failed, trying unsigned URL fallback: ${e.message}"
+                        )
+                        // Leave the URL without a signature — the PO token appended below
+                        // may be sufficient for YouTube to accept the request.
+                    }
+
+                    url.toString()
                 }
-            }.getOrElse { url }
+
+            val resolvedUrl =
+                runCatching {
+                    retryWithBackoff(
+                        maxAttempts = 3,
+                        initialDelayMs = 250L,
+                        maxDelayMs = 2_000L,
+                    ) {
+                        YoutubeJavaScriptPlayerManager.getUrlWithThrottlingParameterDeobfuscated(videoId, url)
+                    }
+                }.getOrElse { url }
 
             YouTube.appendGvsPoToken(
                 url = resolvedUrl,
@@ -218,7 +197,7 @@ object NewPipeUtils {
         maxAttempts: Int,
         initialDelayMs: Long,
         maxDelayMs: Long,
-        block: () -> T
+        block: () -> T,
     ): T {
         var attempt = 0
         var delayMs = initialDelayMs
@@ -246,5 +225,4 @@ object NewPipeUtils {
         }
         throw lastError ?: IllegalStateException("Retry attempts exhausted")
     }
-
 }

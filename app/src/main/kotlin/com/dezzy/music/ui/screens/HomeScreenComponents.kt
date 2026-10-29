@@ -49,6 +49,15 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.carousel.HorizontalCenteredHeroCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.ui.AspectRatioFrameLayout
+import androidx.media3.ui.PlayerView
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
@@ -1136,7 +1145,10 @@ fun LazyListScope.SimilarRecommendationsContainer(
 @Composable
 fun SpotifyGreetingGrid(
     quickPicks: List<Song>?,
-    recentPlaylists: List<Playlist>?,
+    pinnedPlaylist1: Playlist?,
+    pinnedPlaylist2: Playlist?,
+    onAddPlaylistClick: (Int) -> Unit,
+    onRemovePlaylistClick: (Int) -> Unit,
     playerConnection: PlayerConnection,
     navController: NavController,
     modifier: Modifier = Modifier
@@ -1152,26 +1164,43 @@ fun SpotifyGreetingGrid(
         // Slot 1: Mis Me gusta
         gridItems.add("LIKED")
 
-        // Slots 2-4: playlists del usuario (excluyendo LM que es "Me gusta")
-        val playlists = recentPlaylists?.filter { it.id != "LM" }?.take(3) ?: emptyList()
-        gridItems.addAll(playlists)
+        // Slot 2: DJ Dezzy
+        gridItems.add("DJ")
+
+        // Slot 3: Pinned 1
+        gridItems.add(pinnedPlaylist1 ?: "ADD_PLAYLIST_1")
+
+        // Slot 4: Pinned 2
+        gridItems.add(pinnedPlaylist2 ?: "ADD_PLAYLIST_2")
 
         // Slots 5-8: sugerencias automáticas (quickPicks)
-        val remainingSlots = 8 - gridItems.size
-        gridItems.addAll((quickPicks ?: emptyList()).take(remainingSlots))
+        val picks = (quickPicks ?: emptyList()).take(4)
+        gridItems.addAll(picks)
 
-        val rows = (gridItems.size + 1) / 2
+        // Rellenar con vacíos si no hay 8 elementos
+        while (gridItems.size < 8) {
+            gridItems.add("EMPTY_SLOT")
+        }
+
+        val rows = 4
         for (i in 0 until rows) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                val leftItem = gridItems.elementAtOrNull(i * 2)
-                val rightItem = gridItems.elementAtOrNull(i * 2 + 1)
+                val leftIndex = i * 2
+                val rightIndex = i * 2 + 1
+                val leftItem = gridItems.elementAtOrNull(leftIndex)
+                val rightItem = gridItems.elementAtOrNull(rightIndex)
 
                 if (leftItem != null) {
                     SpotifyGenericCajon(
                         item = leftItem,
+                        onAddPlaylistClick = onAddPlaylistClick,
+                        onRemovePlaylistClick = {
+                            if (leftIndex == 2) onRemovePlaylistClick(1)
+                            else if (leftIndex == 3) onRemovePlaylistClick(2)
+                        },
                         playerConnection = playerConnection,
                         navController = navController,
                         modifier = Modifier.weight(1f)
@@ -1183,6 +1212,11 @@ fun SpotifyGreetingGrid(
                 if (rightItem != null) {
                     SpotifyGenericCajon(
                         item = rightItem,
+                        onAddPlaylistClick = onAddPlaylistClick,
+                        onRemovePlaylistClick = {
+                            if (rightIndex == 2) onRemovePlaylistClick(1)
+                            else if (rightIndex == 3) onRemovePlaylistClick(2)
+                        },
                         playerConnection = playerConnection,
                         navController = navController,
                         modifier = Modifier.weight(1f)
@@ -1195,37 +1229,59 @@ fun SpotifyGreetingGrid(
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun SpotifyGenericCajon(
     item: Any,
+    onAddPlaylistClick: (Int) -> Unit,
+    onRemovePlaylistClick: () -> Unit,
     playerConnection: PlayerConnection,
     navController: NavController,
     modifier: Modifier = Modifier
 ) {
+    val playerConn = com.dezzy.music.LocalPlayerConnection.current
+    val djVm = com.dezzy.music.LocalDjViewModel.current
+
     Surface(
         modifier = modifier
             .height(56.dp)
-            .clickable {
-                when (item) {
-                    is String -> {
-                        if (item == "LIKED") {
-                            navController.navigate("auto_playlist/liked")
+            .clip(RoundedCornerShape(4.dp))
+            .combinedClickable(
+                onClick = {
+                    when (item) {
+                        is String -> {
+                            if (item == "LIKED") {
+                                navController.navigate("auto_playlist/liked")
+                            } else if (item == "DJ") {
+                                // We don't start the session immediately here, the DJ screen will handle it!
+                                navController.navigate("dj_dezzy") {
+                                    launchSingleTop = true
+                                }
+                            } else if (item == "ADD_PLAYLIST_1") {
+                                onAddPlaylistClick(1)
+                            } else if (item == "ADD_PLAYLIST_2") {
+                                onAddPlaylistClick(2)
+                            }
+                        }
+                        is Playlist -> {
+                            navController.navigate("local_playlist/${item.id}")
+                        }
+                        is Song -> {
+                            playerConnection.playQueue(
+                                YouTubeQueue(
+                                    endpoint = WatchEndpoint(videoId = item.id)
+                                )
+                            )
                         }
                     }
-                    is Playlist -> {
-                        navController.navigate("local_playlist/${item.id}")
-                    }
-                    is Song -> {
-                        playerConnection.playQueue(
-                            YouTubeQueue(
-                                endpoint = WatchEndpoint(videoId = item.id)
-                            )
-                        )
+                },
+                onLongClick = {
+                    if (item is Playlist) {
+                        onRemovePlaylistClick()
                     }
                 }
-            },
+            ),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        shape = RoundedCornerShape(4.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
@@ -1252,6 +1308,68 @@ fun SpotifyGenericCajon(
                             text = "Mis Me gusta",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .padding(horizontal = 8.dp)
+                                .weight(1f)
+                        )
+                    } else if (item == "DJ") {
+                        val context = LocalContext.current
+                        val exoPlayer = remember {
+                            ExoPlayer.Builder(context).build().apply {
+                                val uri = android.net.Uri.parse("android.resource://${context.packageName}/${R.raw.dj_intro_video}")
+                                setMediaItem(MediaItem.fromUri(uri))
+                                repeatMode = Player.REPEAT_MODE_ALL
+                                volume = 0f
+                                playWhenReady = true
+                                prepare()
+                            }
+                        }
+                        DisposableEffect(exoPlayer) {
+                            onDispose { exoPlayer.release() }
+                        }
+                        AndroidView(
+                            factory = { ctx ->
+                                PlayerView(ctx).apply {
+                                    player = exoPlayer
+                                    useController = false
+                                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                                }
+                            },
+                            modifier = Modifier.size(56.dp)
+                        )
+                        val (customDjName) = com.dezzy.music.utils.rememberPreference(com.dezzy.music.constants.DjNameKey, "")
+                        val djName = if (customDjName.isNotBlank()) "DJ $customDjName" else "DJ"
+                        Text(
+                            text = djName,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .padding(horizontal = 8.dp)
+                                .weight(1f)
+                        )
+                    } else if (item == "ADD_PLAYLIST_1" || item == "ADD_PLAYLIST_2") {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.add),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Text(
+                            text = "Añadir Playlist",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier

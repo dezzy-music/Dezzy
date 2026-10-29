@@ -139,8 +139,8 @@ fun buildSettingsGroups(
                     ),
                     SettingsItem(
                         icon = painterResource(R.drawable.translate),
-                        title = "Traducción de letras por IA",
-                        subtitle = "Configura la traducción de letras mediante inteligencia artificial",
+                        title = stringResource(R.string.ai_lyrics_translation),
+                        subtitle = stringResource(R.string.ai_lyrics_translation_desc),
                         accentColor = MaterialTheme.colorScheme.primary,
                         keywords = listOf("ai", "lyrics", "translation", "traduccion", "letras", "deepl", "openrouter", "mistral", "dezzy"),
                         onClick = { resetSearch(); navController.navigate("settings/ai") },

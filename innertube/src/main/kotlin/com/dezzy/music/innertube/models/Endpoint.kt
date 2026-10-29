@@ -8,8 +8,8 @@ package com.dezzy.music.innertube.models
 
 import com.dezzy.music.innertube.models.BrowseEndpoint.BrowseEndpointContextSupportedConfigs.BrowseEndpointContextMusicConfig.Companion.MUSIC_PAGE_TYPE_ALBUM
 import com.dezzy.music.innertube.models.BrowseEndpoint.BrowseEndpointContextSupportedConfigs.BrowseEndpointContextMusicConfig.Companion.MUSIC_PAGE_TYPE_ARTIST
-import com.dezzy.music.innertube.models.BrowseEndpoint.BrowseEndpointContextSupportedConfigs.BrowseEndpointContextMusicConfig.Companion.MUSIC_PAGE_TYPE_PLAYLIST
 import com.dezzy.music.innertube.models.BrowseEndpoint.BrowseEndpointContextSupportedConfigs.BrowseEndpointContextMusicConfig.Companion.MUSIC_PAGE_TYPE_AUDIOBOOK
+import com.dezzy.music.innertube.models.BrowseEndpoint.BrowseEndpointContextSupportedConfigs.BrowseEndpointContextMusicConfig.Companion.MUSIC_PAGE_TYPE_PLAYLIST
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -24,7 +24,6 @@ data class WatchEndpoint(
     val index: Int? = null,
     val watchEndpointMusicSupportedConfigs: WatchEndpointMusicSupportedConfigs? = null,
 ) : Endpoint() {
-
     @Serializable
     data class WatchEndpointMusicSupportedConfigs(
         val watchEndpointMusicConfig: WatchEndpointMusicConfig,
@@ -51,7 +50,8 @@ data class BrowseEndpoint(
     val isArtistEndpoint: Boolean
         get() = browseEndpointContextSupportedConfigs?.browseEndpointContextMusicConfig?.pageType == MUSIC_PAGE_TYPE_ARTIST
     val isAlbumEndpoint: Boolean
-        get() = browseEndpointContextSupportedConfigs?.browseEndpointContextMusicConfig?.pageType == MUSIC_PAGE_TYPE_ALBUM ||
+        get() =
+            browseEndpointContextSupportedConfigs?.browseEndpointContextMusicConfig?.pageType == MUSIC_PAGE_TYPE_ALBUM ||
                 browseEndpointContextSupportedConfigs?.browseEndpointContextMusicConfig?.pageType == MUSIC_PAGE_TYPE_AUDIOBOOK
     val isPlaylistEndpoint: Boolean
         get() = browseEndpointContextSupportedConfigs?.browseEndpointContextMusicConfig?.pageType == MUSIC_PAGE_TYPE_PLAYLIST
@@ -103,7 +103,7 @@ data class ShareEntityEndpoint(
 
 @Serializable
 data class DefaultServiceEndpoint(
-    var subscribeEndpoint: SubscribeEndpoint?
+    var subscribeEndpoint: SubscribeEndpoint?,
 ) : Endpoint() {
     @Serializable
     data class SubscribeEndpoint(

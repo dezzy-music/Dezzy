@@ -1,4 +1,6 @@
 plugins {
+    id("io.gitlab.arturbosch.detekt") version "1.23.6" apply false
+    alias(libs.plugins.ktlint) apply (false)
     alias(libs.plugins.android.application) apply (false)
     alias(libs.plugins.android.library) apply (false)
     alias(libs.plugins.hilt) apply (false)
@@ -13,6 +15,14 @@ tasks.register<Delete>("clean") {
 }
 
 subprojects {
+    apply(plugin = "org.jlleitschuh.gradle.ktlint")
+    configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+        version.set("1.0.1")
+        android.set(true)
+        outputToConsole.set(true)
+        ignoreFailures.set(true)
+    }
+
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
         compilerOptions {
             if (project.findProperty("enableComposeCompilerReports") == "true") {

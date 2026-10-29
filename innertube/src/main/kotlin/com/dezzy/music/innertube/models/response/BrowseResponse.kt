@@ -29,7 +29,7 @@ data class BrowseResponse(
     val header: Header?,
     val microformat: Microformat?,
     val responseContext: ResponseContext,
-    val background: ThumbnailRenderer?
+    val background: ThumbnailRenderer?,
 ) {
     @Serializable
     data class Contents(
@@ -43,6 +43,7 @@ data class BrowseResponse(
         val tabs: List<Tabs.Tab?>?,
         val secondaryContents: SecondaryContents?,
     )
+
     @Serializable
     data class SecondaryContents(
         val sectionListRenderer: SectionListRenderer?,
@@ -53,7 +54,7 @@ data class BrowseResponse(
         val sectionListContinuation: SectionListContinuation?,
         val musicPlaylistShelfContinuation: MusicPlaylistShelfContinuation?,
         val gridContinuation: GridContinuation?,
-        val musicShelfContinuation: MusicShelfRenderer?
+        val musicShelfContinuation: MusicShelfRenderer?,
     ) {
         @Serializable
         data class SectionListContinuation(
@@ -126,12 +127,14 @@ data class BrowseResponse(
             val straplineTextOne: Runs?,
             val straplineThumbnail: MusicThumbnailRenderer?,
         )
+
         @Serializable
         data class MusicThumbnail(
             val url: String?,
         ) {
             val normalizedUrl: String? get() = url?.let { if (it.startsWith("//")) "https:$it" else it }
         }
+
         @Serializable
         data class MusicThumbnailRenderer(
             val musicThumbnailRenderer: MusicThumbnailRenderer,

@@ -64,6 +64,7 @@ import com.dezzy.music.R
 import com.dezzy.music.constants.ChipSortTypeKey
 import com.dezzy.music.constants.DarkModeKey
 import com.dezzy.music.constants.DefaultOpenTabKey
+import com.dezzy.music.constants.DjNameKey
 import com.dezzy.music.constants.DynamicThemeKey
 import com.dezzy.music.constants.GridItemSize
 import com.dezzy.music.constants.GridItemsSizeKey
@@ -118,6 +119,7 @@ import com.dezzy.music.constants.AppleMusicLyricsBlurKey
 import com.dezzy.music.constants.LyricsStandardBlurKey
 import com.dezzy.music.constants.MiniPlayerBackgroundStyleKey
 import com.dezzy.music.ui.component.DefaultDialog
+import com.dezzy.music.ui.component.EditTextPreference
 import com.dezzy.music.ui.component.EnumListPreference
 import com.dezzy.music.ui.component.IconButton
 import com.dezzy.music.ui.component.ListPreference
@@ -427,6 +429,21 @@ fun AppearanceSettings(
         it != PlayerBackgroundStyle.BLUR || Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     }
 
+    val (djName, onDjNameChange) = rememberPreference(
+        DjNameKey,
+        defaultValue = ""
+    )
+
+    val (username, onUsernameChange) = rememberPreference(
+        com.dezzy.music.constants.UsernameKey,
+        defaultValue = ""
+    )
+
+    val (djLanguage, onDjLanguageChange) = rememberPreference(
+        com.dezzy.music.constants.DjLanguageKey,
+        defaultValue = "auto"
+    )
+
     val (liquidGlassNavBar, onLiquidGlassNavBarChange) = rememberPreference(
         LiquidGlassNavBarKey,
         defaultValue = false
@@ -572,7 +589,7 @@ fun AppearanceSettings(
         )
 
         ListPreference(
-            title = { Text("Fuente de la aplicación") },
+            title = { Text(stringResource(R.string.app_font)) },
             icon = { Icon(painterResource(R.drawable.text_fields), null) },
             selectedValue = fontFamily,
             onValueSelected = onFontFamilyChange,
@@ -623,8 +640,8 @@ fun AppearanceSettings(
 
 
         SwitchPreference(
-            title = { Text("Mantener pantalla encendida") },
-            description = "Evita que la pantalla se apague cuando el reproductor está expandido",
+            title = { Text(stringResource(R.string.keep_screen_on)) },
+            description = stringResource(R.string.keep_screen_on_desc),
             icon = { Icon(painterResource(R.drawable.motion_photos_on), null) },
             checked = keepPlayerScreenAwake,
             onCheckedChange = onKeepPlayerScreenAwakeChange,
@@ -639,8 +656,8 @@ fun AppearanceSettings(
 
         AnimatedVisibility(visible = useNewMiniPlayerDesign) {
             SwitchPreference(
-                title = { Text("Color dinámico en mini reproductor") },
-                description = "Usa el color dominante de la carátula como fondo",
+                title = { Text(stringResource(R.string.dynamic_color_mini_player)) },
+                description = stringResource(R.string.dynamic_color_mini_player_desc),
                 icon = { Icon(painterResource(R.drawable.palette), null) },
                 checked = dynamicMiniPlayerColor,
                 onCheckedChange = onDynamicMiniPlayerColorChange,
@@ -748,17 +765,17 @@ fun AppearanceSettings(
         AnimatedVisibility(visible = canvasCapable) {
             Column {
                 EnumListPreference(
-                    title = { Text("Canvas de Canciones") },
+                    title = { Text(stringResource(R.string.song_canvas)) },
                     icon = { Icon(painterResource(R.drawable.motion_photos_on), null) },
                     selectedValue = canvasMode,
                     onValueSelected = onCanvasModeChange,
                     valueText = {
                         when (it) {
-                            CanvasMode.APPLE_WITH_FALLBACK -> "Apple Music + Fallback de Video"
-                            CanvasMode.APPLE -> "Apple Music"
-                            CanvasMode.SPOTIFY_WITH_FALLBACK -> "Spotify + Fallback de Video"
-                            CanvasMode.SPOTIFY -> "Spotify"
-                            CanvasMode.NONE -> "Desactivado"
+                            CanvasMode.APPLE_WITH_FALLBACK -> stringResource(R.string.apple_music_video_fallback)
+                            CanvasMode.APPLE -> stringResource(R.string.apple_music)
+                            CanvasMode.SPOTIFY_WITH_FALLBACK -> stringResource(R.string.spotify_video_fallback)
+                            CanvasMode.SPOTIFY -> stringResource(R.string.spotify)
+                            CanvasMode.NONE -> stringResource(R.string.disabled)
                         }
                     }
                 )
@@ -774,15 +791,15 @@ fun AppearanceSettings(
                 Spacer(Modifier.height(4.dp))
 
                 EnumListPreference(
-                    title = { Text("Canvas de Artistas") },
+                    title = { Text(stringResource(R.string.artist_canvas)) },
                     icon = { Icon(painterResource(R.drawable.artist), null) },
                     selectedValue = artistCanvasMode,
                     onValueSelected = onArtistCanvasModeChange,
                     valueText = {
                         when (it) {
-                            com.dezzy.music.constants.ArtistCanvasMode.APPLE_WITH_FALLBACK -> "Apple Music + Fallback de Video"
-                            com.dezzy.music.constants.ArtistCanvasMode.APPLE -> "Apple Music"
-                            com.dezzy.music.constants.ArtistCanvasMode.NONE -> "Desactivado"
+                            com.dezzy.music.constants.ArtistCanvasMode.APPLE_WITH_FALLBACK -> stringResource(R.string.apple_music_video_fallback)
+                            com.dezzy.music.constants.ArtistCanvasMode.APPLE -> stringResource(R.string.apple_music)
+                            com.dezzy.music.constants.ArtistCanvasMode.NONE -> stringResource(R.string.disabled)
                         }
                     }
                 )
@@ -1179,6 +1196,35 @@ fun AppearanceSettings(
             title = stringResource(R.string.misc),
         )
 
+        EditTextPreference(
+            title = { Text("Nombre del DJ") },
+            icon = { Icon(painterResource(R.drawable.person), null) },
+            value = djName,
+            onValueChange = onDjNameChange
+        )
+
+        EditTextPreference(
+            title = { Text("Tu Nombre (Usuario)") },
+            icon = { Icon(painterResource(R.drawable.person), null) },
+            value = username,
+            onValueChange = onUsernameChange
+        )
+
+        ListPreference(
+            title = { Text("Idioma del DJ") },
+            icon = { Icon(painterResource(R.drawable.language), null) },
+            selectedValue = djLanguage,
+            values = listOf("auto", "es", "en"),
+            valueText = {
+                when (it) {
+                    "es" -> "Español"
+                    "en" -> "Inglés"
+                    else -> "Automático"
+                }
+            },
+            onValueSelected = onDjLanguageChange
+        )
+
         EnumListPreference(
             title = { Text(stringResource(R.string.default_open_tab)) },
             icon = { Icon(painterResource(R.drawable.nav_bar), null) },
@@ -1224,8 +1270,8 @@ fun AppearanceSettings(
 
         val context = LocalContext.current
         SwitchPreference(
-            title = { Text("Burbuja Flotante") },
-            description = "Habilitar un reproductor de burbuja flotante en pantalla",
+            title = { Text(stringResource(R.string.floating_bubble)) },
+            description = stringResource(R.string.floating_bubble_desc),
             icon = { Icon(painterResource(R.drawable.motion_photos_on), null) },
             checked = enableBubble,
             onCheckedChange = { isChecked ->
@@ -1346,11 +1392,11 @@ fun AppearanceSettings(
         )
 
         PreferenceGroupTitle(
-            title = "Fondo de Pantalla & Video"
+            title = stringResource(R.string.wallpaper_and_video)
         )
 
         SwitchPreference(
-            title = { Text("Activar Fondo de Pantalla (Imagen)") },
+            title = { Text(stringResource(R.string.enable_image_wallpaper)) },
             icon = { Icon(painterResource(R.drawable.image), null) },
             checked = enableWallpaperTheme,
             onCheckedChange = { checked ->
@@ -1364,22 +1410,22 @@ fun AppearanceSettings(
         AnimatedVisibility(enableWallpaperTheme) {
             Column {
                 PreferenceEntry(
-                    title = { Text("Seleccionar Imagen Vertical") },
-                    description = if (wallpaperUri.isEmpty()) "Ninguna seleccionada" else "Imagen vertical configurada",
+                    title = { Text(stringResource(R.string.select_vertical_image)) },
+                    description = if (wallpaperUri.isEmpty()) stringResource(R.string.no_image_selected) else stringResource(R.string.vertical_image_set),
                     icon = { Icon(painterResource(R.drawable.android_cell), null) },
                     onClick = { verticalImageLauncher.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly)) }
                 )
 
                 PreferenceEntry(
-                    title = { Text("Seleccionar Imagen Horizontal") },
-                    description = if (wallpaperLandscapeUri.isEmpty()) "Ninguna seleccionada" else "Imagen horizontal configurada",
+                    title = { Text(stringResource(R.string.select_horizontal_image)) },
+                    description = if (wallpaperLandscapeUri.isEmpty()) stringResource(R.string.no_image_selected) else stringResource(R.string.horizontal_image_set),
                     icon = { Icon(painterResource(R.drawable.desktop_windows), null) },
                     onClick = { landscapeImageLauncher.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly)) }
                 )
 
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                     Text(
-                        text = "Opacidad de Imagen: ${(wallpaperOpacity * 100).roundToInt()}%",
+                        text = stringResource(R.string.image_opacity, (wallpaperOpacity * 100).roundToInt()),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Slider(
@@ -1393,7 +1439,7 @@ fun AppearanceSettings(
         }
 
         SwitchPreference(
-            title = { Text("Activar Video Wallpaper") },
+            title = { Text(stringResource(R.string.enable_video_wallpaper)) },
             icon = { Icon(painterResource(R.drawable.motion_photos_on), null) },
             checked = enableVideoWallpaper,
             onCheckedChange = { checked ->
@@ -1407,22 +1453,22 @@ fun AppearanceSettings(
         AnimatedVisibility(enableVideoWallpaper) {
             Column {
                 PreferenceEntry(
-                    title = { Text("Seleccionar Video Vertical") },
-                    description = if (videoWallpaperUri.isEmpty()) "Ninguna seleccionada" else "Video vertical configurado",
+                    title = { Text(stringResource(R.string.select_vertical_video)) },
+                    description = if (videoWallpaperUri.isEmpty()) stringResource(R.string.no_video_selected) else stringResource(R.string.vertical_video_set),
                     icon = { Icon(painterResource(R.drawable.android_cell), null) },
                     onClick = { verticalVideoLauncher.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.VideoOnly)) }
                 )
 
                 PreferenceEntry(
-                    title = { Text("Seleccionar Video Horizontal") },
-                    description = if (videoWallpaperLandscapeUri.isEmpty()) "Ninguna seleccionada" else "Video horizontal configurado",
+                    title = { Text(stringResource(R.string.select_horizontal_video)) },
+                    description = if (videoWallpaperLandscapeUri.isEmpty()) stringResource(R.string.no_video_selected) else stringResource(R.string.horizontal_video_set),
                     icon = { Icon(painterResource(R.drawable.desktop_windows), null) },
                     onClick = { landscapeVideoLauncher.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.VideoOnly)) }
                 )
 
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                     Text(
-                        text = "Opacidad de Video: ${(videoWallpaperOpacity * 100).roundToInt()}%",
+                        text = stringResource(R.string.video_opacity, (videoWallpaperOpacity * 100).roundToInt()),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Slider(
@@ -1436,8 +1482,8 @@ fun AppearanceSettings(
         }
 
         SwitchPreference(
-            title = { Text("Desvanecimiento por inactividad") },
-            description = "Desvanece la pantalla de inicio tras 2 minutos de inactividad si hay un fondo activo",
+            title = { Text(stringResource(R.string.inactivity_fade)) },
+            description = stringResource(R.string.inactivity_fade_desc),
             icon = { Icon(painterResource(R.drawable.image), null) },
             checked = homeInactivityFade,
             onCheckedChange = onHomeInactivityFadeChange,

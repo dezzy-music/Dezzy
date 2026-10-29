@@ -4,8 +4,6 @@
  * Licensed Under GPL-3.0 | see git history for contributors
  */
 
-
-
 package com.dezzy.music.lastfm
 
 import com.dezzy.music.lastfm.models.Authentication
@@ -27,10 +25,11 @@ import java.security.MessageDigest
 object LastFM {
     var sessionKey: String? = null
 
-    private val json = Json { 
-        isLenient = true
-        ignoreUnknownKeys = true 
-    }
+    private val json =
+        Json {
+            isLenient = true
+            ignoreUnknownKeys = true
+        }
 
     private val client by lazy {
         HttpClient(OkHttp) {
@@ -55,64 +54,75 @@ object LastFM {
         secret: String,
         sessionKey: String? = null,
         extra: Map<String, String> = emptyMap(),
-        format: String = "json"
+        format: String = "json",
     ) {
         contentType(ContentType.Application.FormUrlEncoded)
         userAgent("Dezzy (https://github.com/dezzy-music/Dezzy)")
-        val paramsForSig = mutableMapOf(
-            "method" to method,
-            "api_key" to apiKey
-        ).apply {
-            sessionKey?.let { put("sk", it) }
-            putAll(extra)
-        }
+        val paramsForSig =
+            mutableMapOf(
+                "method" to method,
+                "api_key" to apiKey,
+            ).apply {
+                sessionKey?.let { put("sk", it) }
+                putAll(extra)
+            }
         val apiSig = paramsForSig.apiSig(secret)
-        
-        setBody(FormDataContent(Parameters.build {
-            paramsForSig.forEach { (k, v) -> append(k, v) }
-            append("api_sig", apiSig)
-            append("format", format)
-        }))
+
+        setBody(
+            FormDataContent(
+                Parameters.build {
+                    paramsForSig.forEach { (k, v) -> append(k, v) }
+                    append("api_sig", apiSig)
+                    append("format", format)
+                },
+            ),
+        )
     }
 
     // OAuth methods (kept for backward compatibility)
-    suspend fun getToken() = runCatching {
-        client.post {
-            lastfmParams(
-                method = "auth.getToken",
-                apiKey = API_KEY,
-                secret = SECRET
-            )
-        }.body<TokenResponse>()
-    }
+    suspend fun getToken() =
+        runCatching {
+            client.post {
+                lastfmParams(
+                    method = "auth.getToken",
+                    apiKey = API_KEY,
+                    secret = SECRET,
+                )
+            }.body<TokenResponse>()
+        }
 
-    suspend fun getSession(token: String) = runCatching {
-        client.post {
-            lastfmParams(
-                method = "auth.getSession",
-                apiKey = API_KEY,
-                secret = SECRET,
-                extra = mapOf("token" to token)
-            )
-        }.body<Authentication>()
-    }
+    suspend fun getSession(token: String) =
+        runCatching {
+            client.post {
+                lastfmParams(
+                    method = "auth.getSession",
+                    apiKey = API_KEY,
+                    secret = SECRET,
+                    extra = mapOf("token" to token),
+                )
+            }.body<Authentication>()
+        }
 
     fun getAuthUrl(token: String): String {
         return "https://www.last.fm/api/auth/?api_key=$API_KEY&token=$token"
     }
 
     // Mobile session authentication
-    suspend fun getMobileSession(username: String, password: String) = runCatching {
-        val response = client.post {
-            lastfmParams(
-                method = "auth.getMobileSession",
-                apiKey = API_KEY,
-                secret = SECRET,
-                extra = mapOf("username" to username, "password" to password)
-            )
-            parameter("format", "json")
-        }
-        
+    suspend fun getMobileSession(
+        username: String,
+        password: String,
+    ) = runCatching {
+        val response =
+            client.post {
+                lastfmParams(
+                    method = "auth.getMobileSession",
+                    apiKey = API_KEY,
+                    secret = SECRET,
+                    extra = mapOf("username" to username, "password" to password),
+                )
+                parameter("format", "json")
+            }
+
         val responseText = response.bodyAsText()
         if (responseText.contains("\"error\"")) {
             val error = json.decodeFromString<LastFmError>(responseText)
@@ -120,14 +130,17 @@ object LastFM {
         }
         json.decodeFromString<Authentication>(responseText)
     }
-    
+
     class LastFmException(val code: Int, override val message: String) : Exception(message) {
         override fun toString(): String = "LastFmException(code=$code, message=$message)"
     }
 
     suspend fun updateNowPlaying(
-        artist: String, track: String,
-        album: String? = null, trackNumber: Int? = null, duration: Int? = null
+        artist: String,
+        track: String,
+        album: String? = null,
+        trackNumber: Int? = null,
+        duration: Int? = null,
     ) = runCatching {
         client.post {
             lastfmParams(
@@ -135,20 +148,25 @@ object LastFM {
                 apiKey = API_KEY,
                 secret = SECRET,
                 sessionKey = sessionKey!!,
-                extra = buildMap {
-                    put("artist", artist)
-                    put("track", track)
-                    album?.let { put("album", it) }
-                    trackNumber?.let { put("trackNumber", it.toString()) }
-                    duration?.let { put("duration", it.toString()) }
-                }
+                extra =
+                    buildMap {
+                        put("artist", artist)
+                        put("track", track)
+                        album?.let { put("album", it) }
+                        trackNumber?.let { put("trackNumber", it.toString()) }
+                        duration?.let { put("duration", it.toString()) }
+                    },
             )
         }
     }
 
     suspend fun scrobble(
-        artist: String, track: String, timestamp: Long,
-        album: String? = null, trackNumber: Int? = null, duration: Int? = null
+        artist: String,
+        track: String,
+        timestamp: Long,
+        album: String? = null,
+        trackNumber: Int? = null,
+        duration: Int? = null,
     ) = runCatching {
         client.post {
             lastfmParams(
@@ -156,14 +174,15 @@ object LastFM {
                 apiKey = API_KEY,
                 secret = SECRET,
                 sessionKey = sessionKey!!,
-                extra = buildMap {
-                    put("artist[0]", artist)
-                    put("track[0]", track)
-                    put("timestamp[0]", timestamp.toString())
-                    album?.let { put("album[0]", it) }
-                    trackNumber?.let { put("trackNumber[0]", it.toString()) }
-                    duration?.let { put("duration[0]", it.toString()) }
-                }
+                extra =
+                    buildMap {
+                        put("artist[0]", artist)
+                        put("track[0]", track)
+                        put("timestamp[0]", timestamp.toString())
+                        album?.let { put("album[0]", it) }
+                        trackNumber?.let { put("trackNumber[0]", it.toString()) }
+                        duration?.let { put("duration[0]", it.toString()) }
+                    },
             )
         }
     }
@@ -172,7 +191,10 @@ object LastFM {
     private var API_KEY = ""
     private var SECRET = ""
 
-    fun initialize(apiKey: String, secret: String) {
+    fun initialize(
+        apiKey: String,
+        secret: String,
+    ) {
         API_KEY = apiKey
         SECRET = secret
     }

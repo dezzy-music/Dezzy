@@ -36,6 +36,7 @@ data class Menu(
                 val icon: Icon,
                 val serviceEndpoint: NavigationEndpoint,
             )
+
             @Serializable
             data class ToggleMenuServiceRenderer(
                 val defaultIcon: Icon,

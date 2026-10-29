@@ -52,6 +52,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.border
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -59,6 +60,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -273,6 +275,12 @@ fun BottomSheetPlayer(
         key = PlayerButtonsStyleKey,
         defaultValue = PlayerButtonsStyle.DEFAULT
     )
+
+    val djViewModel = com.dezzy.music.LocalDjViewModel.current
+    val djUiState by (djViewModel?.uiState ?: kotlinx.coroutines.flow.MutableStateFlow(com.dezzy.music.ui.screens.DJUiState.IDLE)).collectAsState()
+    val isUserTyping by (djViewModel?.isUserTyping ?: kotlinx.coroutines.flow.MutableStateFlow(false)).collectAsState()
+    val isDjTalking = (djUiState == com.dezzy.music.ui.screens.DJUiState.SPEAKING || djUiState == com.dezzy.music.ui.screens.DJUiState.GENERATING || isUserTyping)
+    var showDjBottomSheet by remember { mutableStateOf(false) }
 
     val isSystemInDarkTheme = isSystemInDarkTheme()
     val darkTheme by rememberEnumPreference(DarkModeKey, defaultValue = DarkMode.AUTO)
@@ -742,10 +750,10 @@ fun BottomSheetPlayer(
         }
     }
 
-    BottomSheet(
-
-        state = state,
-        modifier = modifier
+    Box(modifier = modifier.fillMaxSize()) {
+        BottomSheet(
+            state = state,
+            modifier = Modifier
             .focusRequester(focusRequester)
             .focusable()
             .onKeyEvent { keyEvent ->
@@ -1021,6 +1029,8 @@ fun BottomSheetPlayer(
                 sliderPosition = sliderPosition,
                 onSliderPositionChange = { sliderPosition = it },
                 onQueueClick = queueSheetState::expandSoft,
+                onLyricsClick = lyricsSheetState::expandSoft,
+
                 onSleepTimerClick = { showSleepTimerDialog = true },
                 onMenuClick = {
                     enrichedMetadata?.let { metadata ->
@@ -1051,6 +1061,8 @@ fun BottomSheetPlayer(
                 sliderPosition = sliderPosition,
                 onSliderPositionChange = { sliderPosition = it },
                 onQueueClick = queueSheetState::expandSoft,
+                onLyricsClick = lyricsSheetState::expandSoft,
+
                 onSleepTimerClick = { showSleepTimerDialog = true },
                 onMenuClick = {
                     enrichedMetadata?.let { metadata ->
@@ -1092,6 +1104,7 @@ fun BottomSheetPlayer(
                 onSliderPositionChange = { sliderPosition = it },
                 onQueueClick = queueSheetState::expandSoft,
                 onLyricsClick = lyricsSheetState::expandSoft,
+
                 onSleepTimerClick = { showSleepTimerDialog = true },
                 onVisualizerClick = { canvasSheetState.expandSoft() },
                 modifier = Modifier,
@@ -1107,6 +1120,7 @@ fun BottomSheetPlayer(
                 onSliderPositionChange = { sliderPosition = it },
                 onQueueClick = queueSheetState::expandSoft,
                 onLyricsClick = lyricsSheetState::expandSoft,
+
                 onSleepTimerClick = { showSleepTimerDialog = true },
                 onVisualizerClick = { canvasSheetState.expandSoft() },
                 playerStyle = playerDesignStyle,
@@ -1425,8 +1439,105 @@ fun BottomSheetPlayer(
                 }
             }
         }
+    } // Closes BottomSheet content lambda
+
+    // Floating DJ Live Banner when DJ is talking/generating (Non-intrusive, keeps controls accessible)
+    androidx.compose.animation.AnimatedVisibility(
+        visible = isDjTalking && state.isExpanded,
+        enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { -it / 2 },
+        exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically { -it / 2 },
+        modifier = Modifier
+            .align(Alignment.TopCenter)
+            .statusBarsPadding()
+            .padding(top = 64.dp, start = 20.dp, end = 20.dp)
+    ) {
+        val djStatus by (djViewModel?.statusText ?: kotlinx.coroutines.flow.MutableStateFlow("DJ Dezzy en vivo")).collectAsState()
+        Surface(
+            onClick = {
+                navController.navigate("dj_dezzy")
+            },
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+            color = Color(0xFF16082B),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFA855F7).copy(alpha = 0.6f)),
+            shadowElevation = 8.dp
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .background(Color(0xFFA855F7), androidx.compose.foundation.shape.CircleShape)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f, fill = false)) {
+                    Text(
+                        text = "DJ Dezzy",
+                        color = Color.White,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
+                    Text(
+                        text = djStatus,
+                        color = Color.White.copy(alpha = 0.75f),
+                        fontSize = 11.sp,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Ver DJ ›",
+                    color = Color(0xFFA855F7),
+                    fontSize = 12.sp,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+                )
+            }
+        }
     }
-}
+
+    // Spotify-style Circular Floating DJ Button (FAB) at bottom-right of player
+    androidx.compose.animation.AnimatedVisibility(
+        visible = state.isExpanded,
+        enter = androidx.compose.animation.fadeIn(),
+        exit = androidx.compose.animation.fadeOut(),
+        modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .navigationBarsPadding()
+            .padding(end = 20.dp, bottom = 24.dp)
+    ) {
+        Surface(
+            onClick = { showDjBottomSheet = true },
+            shape = androidx.compose.foundation.shape.CircleShape,
+            color = Color(0xFF1E0A38),
+            border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFA855F7)),
+            shadowElevation = 8.dp,
+            modifier = Modifier.size(52.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(Color.Transparent)
+                        .border(androidx.compose.foundation.BorderStroke(2.5.dp, Color(0xFFA855F7)), androidx.compose.foundation.shape.CircleShape)
+                )
+            }
+        }
+    }
+
+    // Spotify DJ Interaction Modal Bottom Sheet
+    if (showDjBottomSheet && djViewModel != null) {
+        com.dezzy.music.ui.screens.DJInteractionBottomSheet(
+            onDismissRequest = { showDjBottomSheet = false },
+            viewModel = djViewModel,
+            playerConnection = playerConnection,
+            mediaMetadata = mediaMetadata
+        )
+    }
+} // Closes Box
+} // Closes BottomSheetPlayer
 
 @Composable
 private fun V7PlayerBackdrop(

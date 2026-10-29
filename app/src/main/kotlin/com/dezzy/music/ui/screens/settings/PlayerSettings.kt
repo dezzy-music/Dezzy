@@ -100,6 +100,7 @@ fun PlayerSettings(
         PlayerStreamClientKey,
         defaultValue = PlayerStreamClient.ANDROID_VR
     )
+    val (highResEngine, onHighResEngineChange) = com.dezzy.music.utils.rememberPreference(com.dezzy.music.constants.HighResEngineEnabledKey, false)
     val (networkMetered, onNetworkMeteredChange) = rememberPreference(
         NetworkMeteredKey,
         defaultValue = true
@@ -316,6 +317,14 @@ fun PlayerSettings(
                     AudioQuality.LOW -> stringResource(R.string.audio_quality_low)
                 }
             }
+        )
+
+        SwitchPreference(
+            title = { Text("Motor de Audio Nativo (64-bits)") },
+            description = "Procesamiento DSP en C++ (Oboe) con latencia ultrabaja y ecualización grado audiófilo. Evita el mezclador de Android.",
+            icon = { Icon(painterResource(R.drawable.graphic_eq), null) },
+            checked = highResEngine,
+            onCheckedChange = onHighResEngineChange
         )
 
         PreferenceEntry(

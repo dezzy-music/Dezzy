@@ -32,6 +32,14 @@ import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -406,6 +414,16 @@ fun LocalPlaylistScreen(
         }
     }
     val lazyListState = rememberLazyListState()
+    var showAddSongsScreen by remember { mutableStateOf(false) }
+    
+    if (showAddSongsScreen) {
+        com.dezzy.music.ui.screens.playlist.AddSongsToLikedScreen(
+            playlistId = playlist?.id,
+            onDismiss = { showAddSongsScreen = false },
+            onSearchClick = { navController.navigate(com.dezzy.music.ui.screens.Screens.Search.route) }
+        )
+    }
+
     var dragInfo by remember { mutableStateOf<Pair<Int, Int>?>(null) }
     val reorderableState = rememberReorderableLazyListState(
         lazyListState = lazyListState,
@@ -1153,6 +1171,40 @@ fun LocalPlaylistScreen(
                                 }
                             }
                         }
+                    }
+                }
+            }
+
+                        // Botón Agregar a la playlist
+            if (!selection && !isSearching) {
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showAddSongsScreen = true }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .background(Color.White.copy(alpha=0.15f), RoundedCornerShape(4.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.add),
+                                contentDescription = "Add",
+                                tint = Color.White,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(
+                            text = "Agregar a esta playlist",
+                            color = Color.White,
+                            fontSize = 17.sp,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+                        )
                     }
                 }
             }

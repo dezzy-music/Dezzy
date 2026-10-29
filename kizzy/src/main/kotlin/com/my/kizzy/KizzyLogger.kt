@@ -4,8 +4,6 @@
  * Licensed Under GPL-3.0 | see git history for contributors
  */
 
-
-
 package com.my.kizzy
 
 import java.util.logging.Logger
@@ -16,8 +14,11 @@ import java.util.logging.Logger
  */
 interface KizzyLogger {
     fun info(message: String)
+
     fun fine(message: String)
+
     fun warning(message: String)
+
     fun severe(message: String)
 }
 

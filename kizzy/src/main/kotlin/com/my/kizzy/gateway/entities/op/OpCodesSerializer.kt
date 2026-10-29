@@ -4,8 +4,6 @@
  * Licensed Under GPL-3.0 | see git history for contributors
  */
 
-
-
 package com.my.kizzy.gateway.entities.op
 
 import kotlinx.serialization.KSerializer
@@ -24,7 +22,10 @@ class OpCodeSerializer : KSerializer<OpCode> {
         return OpCode.values().firstOrNull { it.value == opCode } ?: throw IllegalArgumentException("Unknown OpCode $opCode")
     }
 
-    override fun serialize(encoder: Encoder, value: OpCode) {
+    override fun serialize(
+        encoder: Encoder,
+        value: OpCode,
+    ) {
         encoder.encodeInt(value.value)
     }
 }

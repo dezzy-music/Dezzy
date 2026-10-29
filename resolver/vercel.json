@@ -5,6 +5,16 @@
     { "source": "/stream", "destination": "/api/stream" },
     { "source": "/health", "destination": "/api/health" }
   ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization, X-Requested-With, X-Deezer-Arl, X-Qobuz-Token" }
+      ]
+    }
+  ],
   "functions": {
     "api/stream.js": { "maxDuration": 60 }
   }

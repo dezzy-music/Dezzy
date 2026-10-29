@@ -19,6 +19,10 @@
 
 - [Overview](#overview)
 - [Technology Stack](#technology-stack)
+- [System Architecture](#system-architecture)
+  - [1. Frontend Architecture (UI & Presentation)](#1-frontend-architecture-ui--presentation)
+  - [2. Backend & Services Architecture (Core Playback & Resolvers)](#2-backend--services-architecture-core-playback--resolvers)
+  - [3. Combined End-to-End Architecture](#3-combined-end-to-end-architecture)
 - [Key Features](#key-features)
 - [Documentation](#documentation)
 - [Installation](#installation)
@@ -57,6 +61,130 @@
 | ![Material Design 3](https://img.shields.io/badge/Material%20Design%203-757575?style=for-the-badge&logo=materialdesign&logoColor=white) | | ![Git](https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white) |
 
 </div>
+
+---
+
+## System Architecture
+
+Dezzy is organized into decoupled, reactive modules, linking a modern Jetpack Compose UI with a low-latency playback engine based on AndroidX Media3 and distributed media resolution services.
+
+### 1. Frontend Architecture (UI & Presentation)
+
+```mermaid
+flowchart TD
+    subgraph UI ["Presentation Layer (Jetpack Compose)"]
+        Nav["NavigationBuilder & BottomBar"]
+        Screens["Screens (Home, Library, Search, DJ Dezzy, Settings)"]
+        PlayerView["Modular Players (Spotify, Vinyl, Deezer, Dezzy, CarMode)"]
+        Overlay["VideoModeOverlay & CanvasArtworkPlayer"]
+        Visualizer["DJVisualizerBox & AudioSpectrumEngine"]
+    end
+
+    subgraph StateManagement ["State Management"]
+        VMs["ViewModels (HomeViewModel, DJDezzyViewModel, etc.)"]
+        PC["PlayerConnection (Reactive StateFlow bridge)"]
+        Prefs["Preferences & DataStore"]
+    end
+
+    subgraph ImagePipeline ["Image & Thumbnail Pipeline"]
+        Coil["Coil 3 ImageLoader"]
+        Interceptor["OfflineArtworkInterceptor (Safe hqdefault fallback)"]
+        CoilBitmap["CoilBitmapLoader (MediaSession Artwork)"]
+    end
+
+    Screens --> VMs
+    PlayerView --> PC
+    Overlay --> PC
+    Visualizer --> PC
+    VMs --> PC
+    VMs --> Prefs
+    Screens --> Coil
+    PlayerView --> Coil
+    Coil --> Interceptor
+    Coil --> CoilBitmap
+```
+
+### 2. Backend & Services Architecture (Core Playback & Resolvers)
+
+```mermaid
+flowchart TD
+    subgraph ServiceLayer ["Central Android Service"]
+        MS["MusicService (Foreground Service & MediaSession)"]
+        ExoMain["Primary ExoPlayer (Audio)"]
+        ExoVideo["Secondary ExoPlayer (VideoMode)"]
+        Sink["DefaultAudioSink + DezzyBiquadAudioProcessor"]
+        Cache["playerCache & downloadCache (SimpleCache)"]
+    end
+
+    subgraph ResolvingEngine ["Media Resolving Engine"]
+        RDS["ResolvingDataSource.Factory"]
+        YTPU["YTPlayerUtils (Muxed, Adaptive & Client Rotation)"]
+        InnerTube["InnerTube API (ANDROID_TESTSUITE, IOS, WEB_REMIX)"]
+        LosslessMgr["LosslessDownloadManager"]
+    end
+
+    subgraph ExternalServices ["External Services & Resolvers"]
+        VercelResolver["Vercel Lossless Resolver (/dl & /stream)"]
+        Deezer["Deezer CDN (Blowfish Decryption BF_CBC_STRIPE)"]
+        Qobuz["Qobuz CDN (302 Hi-Res Redirect)"]
+        AIEngine["Gemini AI & TTS (DJ Dezzy Script & Speech)"]
+        SyncEngine["ListenTogether & Discord RPC (Kizzy)"]
+    end
+
+    MS --> ExoMain
+    MS --> ExoVideo
+    ExoMain --> Sink
+    ExoMain --> Cache
+    ExoMain --> RDS
+
+    RDS --> YTPU
+    RDS --> LosslessMgr
+    YTPU --> InnerTube
+
+    LosslessMgr --> VercelResolver
+    VercelResolver --> Deezer
+    VercelResolver --> Qobuz
+
+    MS --> AIEngine
+    MS --> SyncEngine
+```
+
+### 3. Combined End-to-End Architecture
+
+```mermaid
+flowchart LR
+    subgraph ClientFrontend ["Frontend (Compose UI)"]
+        UI_Player["Player UI & Controls"]
+        UI_Coil["Coil Image Pipeline"]
+        UI_Connection["PlayerConnection"]
+    end
+
+    subgraph AndroidCore ["Android Core (Service & Media3)"]
+        Service["MusicService (MediaSession)"]
+        Pipeline["ResolvingDataSource + SimpleCache"]
+        AudioSink["AudioProcessorChain (Biquad DSP)"]
+        VideoEngine["VideoMode ExoPlayer (MergingMediaSource)"]
+    end
+
+    subgraph ResolversNetwork ["Resolution Network & CDNs"]
+        YT["YouTube CDN (Audio WebM/M4A & Video MP4)"]
+        Vercel["Vercel Serverless Resolver"]
+        LosslessCDN["Deezer / Qobuz CDNs (FLAC / Hi-Res)"]
+        AI_Cloud["Google Gemini & Edge TTS (DJ Mode)"]
+    end
+
+    UI_Player --> UI_Connection
+    UI_Connection --> Service
+    Service --> AudioSink
+    Service --> VideoEngine
+    Service --> Pipeline
+    UI_Coil -.-> YT
+
+    Pipeline --> YT
+    Pipeline --> Vercel
+    Vercel --> LosslessCDN
+    Service --> AI_Cloud
+```
 
 ---
 

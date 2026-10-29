@@ -123,6 +123,10 @@ class PlayerConnection(
         repeatMode.value = player.repeatMode
     }
 
+    fun requestDjSong(request: String) {
+        service.requestDjSong(request)
+    }
+
     fun playQueue(queue: Queue) {
         service.playQueue(queue)
     }

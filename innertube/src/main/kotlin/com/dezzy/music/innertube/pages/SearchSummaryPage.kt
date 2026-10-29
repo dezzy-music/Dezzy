@@ -190,7 +190,6 @@ data class SearchSummaryPage(
             }
         }
 
-        fun fromMusicResponsiveListItemRenderer(renderer: MusicResponsiveListItemRenderer): YTItem? =
-            SearchPage.toYTItem(renderer)
+        fun fromMusicResponsiveListItemRenderer(renderer: MusicResponsiveListItemRenderer): YTItem? = SearchPage.toYTItem(renderer)
     }
 }

@@ -17,8 +17,8 @@ import com.dezzy.music.innertube.models.PlaylistItem
 import com.dezzy.music.innertube.models.SectionListRenderer
 import com.dezzy.music.innertube.models.SongItem
 import com.dezzy.music.innertube.models.YTItem
-import com.dezzy.music.innertube.models.oddElements
 import com.dezzy.music.innertube.models.filterExplicit
+import com.dezzy.music.innertube.models.oddElements
 
 data class HomePage(
     val chips: List<Chip>?,
@@ -55,13 +55,14 @@ data class HomePage(
                     label = renderer.header.musicCarouselShelfBasicHeaderRenderer.strapline?.runs?.firstOrNull()?.text,
                     thumbnail = renderer.header.musicCarouselShelfBasicHeaderRenderer.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl(),
                     endpoint = renderer.header.musicCarouselShelfBasicHeaderRenderer.moreContentButton?.buttonRenderer?.navigationEndpoint?.browseEndpoint,
-                    items = renderer.contents.mapNotNull {
-                        it.musicTwoRowItemRenderer
-                    }.mapNotNull {
-                        fromMusicTwoRowItemRenderer(it)
-                    }.ifEmpty {
-                        return null
-                    }
+                    items =
+                        renderer.contents.mapNotNull {
+                            it.musicTwoRowItemRenderer
+                        }.mapNotNull {
+                            fromMusicTwoRowItemRenderer(it)
+                        }.ifEmpty {
+                            return null
+                        },
                 )
             }
 
@@ -69,53 +70,60 @@ data class HomePage(
                 return when {
                     renderer.isSong -> {
                         val subtitleRuns = renderer.subtitle?.runs ?: return null
-                        val (artistRuns, albumRuns) = subtitleRuns.partition { run ->
-                            run.navigationEndpoint?.browseEndpoint?.browseId?.startsWith("UC") == true
-                        }
-                        val artists = artistRuns.map {
-                            Artist(
-                                name = it.text,
-                                id = it.navigationEndpoint?.browseEndpoint?.browseId ?: return null
-                            )
-                        }
+                        val (artistRuns, albumRuns) =
+                            subtitleRuns.partition { run ->
+                                run.navigationEndpoint?.browseEndpoint?.browseId?.startsWith("UC") == true
+                            }
+                        val artists =
+                            artistRuns.map {
+                                Artist(
+                                    name = it.text,
+                                    id = it.navigationEndpoint?.browseEndpoint?.browseId ?: return null,
+                                )
+                            }
                         SongItem(
                             id = renderer.navigationEndpoint.watchEndpoint?.videoId ?: return null,
                             title = renderer.title.runs?.firstOrNull()?.text ?: return null,
                             artists = artists,
-                            album = albumRuns.firstOrNull { run ->
-                                run.navigationEndpoint?.browseEndpoint?.browseId?.startsWith("MPREb_") == true
-                            }?.let { run ->
-                                val endpoint = run.navigationEndpoint?.browseEndpoint ?: return null
-                                Album(
-                                    name = run.text,
-                                    id = endpoint.browseId
-                                )
-                            },
+                            album =
+                                albumRuns.firstOrNull { run ->
+                                    run.navigationEndpoint?.browseEndpoint?.browseId?.startsWith("MPREb_") == true
+                                }?.let { run ->
+                                    val endpoint = run.navigationEndpoint?.browseEndpoint ?: return null
+                                    Album(
+                                        name = run.text,
+                                        id = endpoint.browseId,
+                                    )
+                                },
                             duration = null,
                             thumbnail = renderer.thumbnailRenderer.musicThumbnailRenderer?.getThumbnailUrl() ?: return null,
-                            explicit = renderer.subtitleBadges?.any {
-                                it.musicInlineBadgeRenderer?.icon?.iconType == "MUSIC_EXPLICIT_BADGE"
-                            } == true
+                            explicit =
+                                renderer.subtitleBadges?.any {
+                                    it.musicInlineBadgeRenderer?.icon?.iconType == "MUSIC_EXPLICIT_BADGE"
+                                } == true,
                         )
                     }
                     renderer.isAlbum -> {
                         AlbumItem(
                             browseId = renderer.navigationEndpoint.browseEndpoint?.browseId ?: return null,
-                            playlistId = renderer.thumbnailOverlay?.musicItemThumbnailOverlayRenderer?.content
-                                ?.musicPlayButtonRenderer?.playNavigationEndpoint
-                                ?.watchPlaylistEndpoint?.playlistId ?: return null,
+                            playlistId =
+                                renderer.thumbnailOverlay?.musicItemThumbnailOverlayRenderer?.content
+                                    ?.musicPlayButtonRenderer?.playNavigationEndpoint
+                                    ?.watchPlaylistEndpoint?.playlistId ?: return null,
                             title = renderer.title.runs?.firstOrNull()?.text ?: return null,
-                            artists = renderer.subtitle?.runs?.oddElements()?.drop(1)?.map {
-                                Artist(
-                                    name = it.text,
-                                    id = it.navigationEndpoint?.browseEndpoint?.browseId
-                                )
-                            },
+                            artists =
+                                renderer.subtitle?.runs?.oddElements()?.drop(1)?.map {
+                                    Artist(
+                                        name = it.text,
+                                        id = it.navigationEndpoint?.browseEndpoint?.browseId,
+                                    )
+                                },
                             year = null,
                             thumbnail = renderer.thumbnailRenderer.musicThumbnailRenderer?.getThumbnailUrl() ?: return null,
-                            explicit = renderer.subtitleBadges?.find {
-                                it.musicInlineBadgeRenderer?.icon?.iconType == "MUSIC_EXPLICIT_BADGE"
-                            } != null
+                            explicit =
+                                renderer.subtitleBadges?.find {
+                                    it.musicInlineBadgeRenderer?.icon?.iconType == "MUSIC_EXPLICIT_BADGE"
+                                } != null,
                         )
                     }
 
@@ -123,22 +131,26 @@ data class HomePage(
                         PlaylistItem(
                             id = renderer.navigationEndpoint.browseEndpoint?.browseId?.removePrefix("VL") ?: return null,
                             title = renderer.title.runs?.firstOrNull()?.text ?: return null,
-                            author = Artist(
-                                name = renderer.subtitle?.runs?.lastOrNull()?.text ?: return null,
-                                id = null
-                            ),
+                            author =
+                                Artist(
+                                    name = renderer.subtitle?.runs?.lastOrNull()?.text ?: return null,
+                                    id = null,
+                                ),
                             songCountText = null,
                             thumbnail = renderer.thumbnailRenderer.musicThumbnailRenderer?.getThumbnailUrl() ?: return null,
-                            playEndpoint = renderer.thumbnailOverlay
-                                ?.musicItemThumbnailOverlayRenderer?.content
-                                ?.musicPlayButtonRenderer?.playNavigationEndpoint
-                                ?.watchPlaylistEndpoint ?: return null,
-                            shuffleEndpoint = renderer.menu?.menuRenderer?.items?.find {
-                                it.menuNavigationItemRenderer?.icon?.iconType == "MUSIC_SHUFFLE"
-                            }?.menuNavigationItemRenderer?.navigationEndpoint?.watchPlaylistEndpoint ?: return null,
-                            radioEndpoint = renderer.menu.menuRenderer.items.find {
-                                it.menuNavigationItemRenderer?.icon?.iconType == "MIX"
-                            }?.menuNavigationItemRenderer?.navigationEndpoint?.watchPlaylistEndpoint
+                            playEndpoint =
+                                renderer.thumbnailOverlay
+                                    ?.musicItemThumbnailOverlayRenderer?.content
+                                    ?.musicPlayButtonRenderer?.playNavigationEndpoint
+                                    ?.watchPlaylistEndpoint ?: return null,
+                            shuffleEndpoint =
+                                renderer.menu?.menuRenderer?.items?.find {
+                                    it.menuNavigationItemRenderer?.icon?.iconType == "MUSIC_SHUFFLE"
+                                }?.menuNavigationItemRenderer?.navigationEndpoint?.watchPlaylistEndpoint ?: return null,
+                            radioEndpoint =
+                                renderer.menu.menuRenderer.items.find {
+                                    it.menuNavigationItemRenderer?.icon?.iconType == "MIX"
+                                }?.menuNavigationItemRenderer?.navigationEndpoint?.watchPlaylistEndpoint,
                         )
                     }
 
@@ -147,12 +159,14 @@ data class HomePage(
                             id = renderer.navigationEndpoint.browseEndpoint?.browseId ?: return null,
                             title = renderer.title.runs?.lastOrNull()?.text ?: return null,
                             thumbnail = renderer.thumbnailRenderer.musicThumbnailRenderer?.getThumbnailUrl() ?: return null,
-                            shuffleEndpoint = renderer.menu?.menuRenderer?.items?.find {
-                                it.menuNavigationItemRenderer?.icon?.iconType == "MUSIC_SHUFFLE"
-                            }?.menuNavigationItemRenderer?.navigationEndpoint?.watchPlaylistEndpoint ?: return null,
-                            radioEndpoint = renderer.menu.menuRenderer.items.find {
-                                it.menuNavigationItemRenderer?.icon?.iconType == "MIX"
-                            }?.menuNavigationItemRenderer?.navigationEndpoint?.watchPlaylistEndpoint ?: return null,
+                            shuffleEndpoint =
+                                renderer.menu?.menuRenderer?.items?.find {
+                                    it.menuNavigationItemRenderer?.icon?.iconType == "MUSIC_SHUFFLE"
+                                }?.menuNavigationItemRenderer?.navigationEndpoint?.watchPlaylistEndpoint ?: return null,
+                            radioEndpoint =
+                                renderer.menu.menuRenderer.items.find {
+                                    it.menuNavigationItemRenderer?.icon?.iconType == "MIX"
+                                }?.menuNavigationItemRenderer?.navigationEndpoint?.watchPlaylistEndpoint ?: return null,
                         )
                     }
 
@@ -164,9 +178,13 @@ data class HomePage(
 
     fun filterExplicit(enabled: Boolean = true) =
         if (enabled) {
-            copy(sections = sections.map {
-                it.copy(items = it.items.filterExplicit())
-            })
-        } else this
-
+            copy(
+                sections =
+                    sections.map {
+                        it.copy(items = it.items.filterExplicit())
+                    },
+            )
+        } else {
+            this
+        }
 }

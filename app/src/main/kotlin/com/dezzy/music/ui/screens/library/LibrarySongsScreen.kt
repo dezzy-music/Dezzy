@@ -7,6 +7,7 @@
 
 
 package com.dezzy.music.ui.screens.library
+import androidx.compose.ui.Alignment
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -18,6 +19,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.height
+
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import com.dezzy.music.ui.screens.Screens
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -39,7 +51,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
+
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
@@ -90,7 +102,17 @@ fun LibrarySongsScreen(
     val haptic = LocalHapticFeedback.current
     val playerConnection = LocalPlayerConnection.current ?: return
     val isPlaying by playerConnection.isPlaying.collectAsState()
+
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
+    var showAddSongsScreen by remember { mutableStateOf(false) }
+
+    if (showAddSongsScreen) {
+        com.dezzy.music.ui.screens.playlist.AddSongsToLikedScreen(
+            onDismiss = { showAddSongsScreen = false },
+            onSearchClick = { navController.navigate(com.dezzy.music.ui.screens.Screens.Search.route) }
+        )
+    }
+
 
     val (sortType, onSortTypeChange) = rememberEnumPreference(
         SongSortTypeKey,
@@ -268,6 +290,40 @@ fun LibrarySongsScreen(
                                 color = MaterialTheme.colorScheme.secondary,
                             )
                         }
+                    }
+                }
+            }
+
+            
+            if (filter == SongFilter.LIKED && !selection) {
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showAddSongsScreen = true }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .background(Color.White.copy(alpha=0.15f), RoundedCornerShape(4.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.add),
+                                contentDescription = "Add",
+                                tint = Color.White,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(
+                            text = "Agregar a esta playlist",
+                            color = Color.White,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
             }

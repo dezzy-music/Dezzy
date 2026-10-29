@@ -4,8 +4,6 @@
  * Licensed Under GPL-3.0 | see git history for contributors
  */
 
-
-
 package com.dezzy.music.lrclib
 
 import com.dezzy.music.lrclib.models.Track
@@ -13,9 +11,9 @@ import com.dezzy.music.lrclib.models.bestMatchingFor
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
-import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.serialization.kotlinx.json.json
@@ -70,14 +68,15 @@ object LrcLib {
     ) = runCatching {
         val tracks = queryLyrics(artist, title, album)
 
-        val res = when {
-            duration == -1 -> {
-                tracks.bestMatchingFor(duration, title, artist)?.syncedLyrics?.let(LrcLib::Lyrics)
+        val res =
+            when {
+                duration == -1 -> {
+                    tracks.bestMatchingFor(duration, title, artist)?.syncedLyrics?.let(LrcLib::Lyrics)
+                }
+                else -> {
+                    tracks.bestMatchingFor(duration)?.syncedLyrics?.let(LrcLib::Lyrics)
+                }
             }
-            else -> {
-                tracks.bestMatchingFor(duration)?.syncedLyrics?.let(LrcLib::Lyrics)
-            }
-        }
 
         if (res != null) {
             return@runCatching res.text
@@ -97,24 +96,25 @@ object LrcLib {
         var count = 0
         var plain = 0
 
-        val sortedTracks = when {
-            duration == -1 -> {
-                tracks.sortedByDescending { track ->
-                    var score = 0.0
+        val sortedTracks =
+            when {
+                duration == -1 -> {
+                    tracks.sortedByDescending { track ->
+                        var score = 0.0
 
-                    if (track.syncedLyrics != null) score += 1.0
+                        if (track.syncedLyrics != null) score += 1.0
 
-                    val titleSimilarity = calculateStringSimilarity(title, track.trackName)
-                    val artistSimilarity = calculateStringSimilarity(artist, track.artistName)
-                    score += (titleSimilarity + artistSimilarity) / 2.0
-                    
-                    score
+                        val titleSimilarity = calculateStringSimilarity(title, track.trackName)
+                        val artistSimilarity = calculateStringSimilarity(artist, track.artistName)
+                        score += (titleSimilarity + artistSimilarity) / 2.0
+
+                        score
+                    }
+                }
+                else -> {
+                    tracks.sortedBy { abs(it.duration.toInt() - duration) }
                 }
             }
-            else -> {
-                tracks.sortedBy { abs(it.duration.toInt() - duration) }
-            }
-        }
 
         sortedTracks.forEach { track ->
             currentCoroutineContext().ensureActive() // Corrected usage
@@ -137,13 +137,16 @@ object LrcLib {
         }
     }
 
-    private fun calculateStringSimilarity(str1: String, str2: String): Double {
+    private fun calculateStringSimilarity(
+        str1: String,
+        str2: String,
+    ): Double {
         val s1 = str1.trim().lowercase()
         val s2 = str2.trim().lowercase()
-        
+
         if (s1 == s2) return 1.0
         if (s1.isEmpty() || s2.isEmpty()) return 0.0
-        
+
         return when {
             s1.contains(s2) || s2.contains(s1) -> 0.8
             else -> {
@@ -154,25 +157,29 @@ object LrcLib {
         }
     }
 
-    private fun levenshteinDistance(str1: String, str2: String): Int {
+    private fun levenshteinDistance(
+        str1: String,
+        str2: String,
+    ): Int {
         val len1 = str1.length
         val len2 = str2.length
         val matrix = Array(len1 + 1) { IntArray(len2 + 1) }
-        
+
         for (i in 0..len1) matrix[i][0] = i
         for (j in 0..len2) matrix[0][j] = j
-        
+
         for (i in 1..len1) {
             for (j in 1..len2) {
                 val cost = if (str1[i - 1] == str2[j - 1]) 0 else 1
-                matrix[i][j] = minOf(
-                    matrix[i - 1][j] + 1,      // deletion
-                    matrix[i][j - 1] + 1,      // insertion
-                    matrix[i - 1][j - 1] + cost // substitution
-                )
+                matrix[i][j] =
+                    minOf(
+                        matrix[i - 1][j] + 1, // deletion
+                        matrix[i][j - 1] + 1, // insertion
+                        matrix[i - 1][j - 1] + cost, // substitution
+                    )
             }
         }
-        
+
         return matrix[len1][len2]
     }
 
@@ -207,5 +214,3 @@ object LrcLib {
                 }.getOrNull()
     }
 }
-
-

@@ -12,8 +12,8 @@ import com.dezzy.music.innertube.models.Artist
 import com.dezzy.music.innertube.models.MusicResponsiveHeaderRenderer
 import com.dezzy.music.innertube.models.MusicResponsiveListItemRenderer
 import com.dezzy.music.innertube.models.SectionListRenderer
-import com.dezzy.music.innertube.models.getContinuation
 import com.dezzy.music.innertube.models.SongItem
+import com.dezzy.music.innertube.models.getContinuation
 import com.dezzy.music.innertube.models.getItems
 import com.dezzy.music.innertube.models.oddElements
 import com.dezzy.music.innertube.models.response.BrowseResponse
@@ -49,16 +49,18 @@ data class AlbumPage(
         }
 
         fun getTitle(response: BrowseResponse): String? {
-            val title = getHeader(response)?.title
-                ?: response.header?.musicDetailHeaderRenderer?.title
-                ?: response.header?.musicHeaderRenderer?.title
+            val title =
+                getHeader(response)?.title
+                    ?: response.header?.musicDetailHeaderRenderer?.title
+                    ?: response.header?.musicHeaderRenderer?.title
             return title?.runs?.firstOrNull()?.text
         }
 
         fun getYear(response: BrowseResponse): Int? {
-            val subtitle = getHeader(response)?.subtitle
-                ?: response.header?.musicDetailHeaderRenderer?.subtitle
-                ?: response.header?.musicHeaderRenderer?.subtitle
+            val subtitle =
+                getHeader(response)?.subtitle
+                    ?: response.header?.musicDetailHeaderRenderer?.subtitle
+                    ?: response.header?.musicHeaderRenderer?.subtitle
             return subtitle?.runs?.lastOrNull()?.text?.toIntOrNull()
         }
 
@@ -71,22 +73,23 @@ data class AlbumPage(
         }
 
         fun getArtists(response: BrowseResponse): List<Artist> {
-            val artists = getHeader(response)?.straplineTextOne?.runs?.oddElements()?.map {
-                Artist(
-                    name = it.text,
-                    id = it.navigationEndpoint?.browseEndpoint?.browseId
-                )
-            } ?: response.header?.musicDetailHeaderRenderer?.subtitle?.runs?.splitBySeparator()?.getOrNull(1)?.oddElements()?.map {
-                Artist(
-                    name = it.text,
-                    id = it.navigationEndpoint?.browseEndpoint?.browseId
-                )
-            } ?: response.header?.musicHeaderRenderer?.straplineTextOne?.runs?.oddElements()?.map {
-                Artist(
-                    name = it.text,
-                    id = it.navigationEndpoint?.browseEndpoint?.browseId
-                )
-            } ?: emptyList()
+            val artists =
+                getHeader(response)?.straplineTextOne?.runs?.oddElements()?.map {
+                    Artist(
+                        name = it.text,
+                        id = it.navigationEndpoint?.browseEndpoint?.browseId,
+                    )
+                } ?: response.header?.musicDetailHeaderRenderer?.subtitle?.runs?.splitBySeparator()?.getOrNull(1)?.oddElements()?.map {
+                    Artist(
+                        name = it.text,
+                        id = it.navigationEndpoint?.browseEndpoint?.browseId,
+                    )
+                } ?: response.header?.musicHeaderRenderer?.straplineTextOne?.runs?.oddElements()?.map {
+                    Artist(
+                        name = it.text,
+                        id = it.navigationEndpoint?.browseEndpoint?.browseId,
+                    )
+                } ?: emptyList()
 
             return artists
         }
@@ -113,8 +116,10 @@ data class AlbumPage(
             return emptyList()
         }
 
-        fun getSongs(response: BrowseResponse, album: AlbumItem? = null): List<SongItem> =
-            getSongRenderers(response).mapNotNull { getSong(it, album) }
+        fun getSongs(
+            response: BrowseResponse,
+            album: AlbumItem? = null,
+        ): List<SongItem> = getSongRenderers(response).mapNotNull { getSong(it, album) }
 
         fun getSongContinuation(response: BrowseResponse): String? {
             for (section in getSectionContents(response)) {
@@ -170,9 +175,8 @@ data class AlbumPage(
 
         fun getContinuationSongs(
             response: BrowseResponse,
-            album: AlbumItem? = null
-        ): List<SongItem> =
-            getContinuationSongRenderers(response).mapNotNull { getSong(it, album) }
+            album: AlbumItem? = null,
+        ): List<SongItem> = getContinuationSongRenderers(response).mapNotNull { getSong(it, album) }
 
         fun getNextSongContinuation(response: BrowseResponse): String? {
             response.onResponseReceivedActions
@@ -192,56 +196,66 @@ data class AlbumPage(
             return null
         }
 
-        fun getSong(renderer: MusicResponsiveListItemRenderer, album: AlbumItem? = null): SongItem? {
-            val title = renderer.flexColumns.firstOrNull()
-                ?.musicResponsiveListItemFlexColumnRenderer
-                ?.text
-                ?.runs
-                ?.firstOrNull()
-                ?.text
-                ?: PageHelper.extractRuns(renderer.flexColumns, "MUSIC_VIDEO").firstOrNull()?.text
-                ?: return null
+        fun getSong(
+            renderer: MusicResponsiveListItemRenderer,
+            album: AlbumItem? = null,
+        ): SongItem? {
+            val title =
+                renderer.flexColumns.firstOrNull()
+                    ?.musicResponsiveListItemFlexColumnRenderer
+                    ?.text
+                    ?.runs
+                    ?.firstOrNull()
+                    ?.text
+                    ?: PageHelper.extractRuns(renderer.flexColumns, "MUSIC_VIDEO").firstOrNull()?.text
+                    ?: return null
 
             val duration = findDuration(renderer)
-            val videoId = renderer.playlistItemData?.videoId
-                ?: renderer.overlay?.musicItemThumbnailOverlayRenderer?.content?.musicPlayButtonRenderer?.playNavigationEndpoint?.watchEndpoint?.videoId
-                ?: renderer.navigationEndpoint?.watchEndpoint?.videoId
-                ?: return null
-            val thumbnail = renderer.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl()
-                ?: renderer.thumbnail?.musicAnimatedThumbnailRenderer?.backupRenderer?.getThumbnailUrl()
-                ?: album?.thumbnail
-                ?: return null
-            val songAlbum = album?.let {
-                Album(it.title, it.browseId)
-            } ?: findAlbumRun(renderer)?.let { run ->
-                run.navigationEndpoint?.browseEndpoint?.browseId?.let { browseId ->
-                    Album(
-                        name = run.text,
-                        id = browseId
-                    )
+            val videoId =
+                renderer.playlistItemData?.videoId
+                    ?: renderer.overlay?.musicItemThumbnailOverlayRenderer?.content?.musicPlayButtonRenderer?.playNavigationEndpoint?.watchEndpoint?.videoId
+                    ?: renderer.navigationEndpoint?.watchEndpoint?.videoId
+                    ?: return null
+            val thumbnail =
+                renderer.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl()
+                    ?: renderer.thumbnail?.musicAnimatedThumbnailRenderer?.backupRenderer?.getThumbnailUrl()
+                    ?: album?.thumbnail
+                    ?: return null
+            val songAlbum =
+                album?.let {
+                    Album(it.title, it.browseId)
+                } ?: findAlbumRun(renderer)?.let { run ->
+                    run.navigationEndpoint?.browseEndpoint?.browseId?.let { browseId ->
+                        Album(
+                            name = run.text,
+                            id = browseId,
+                        )
+                    }
                 }
-            }
 
             return SongItem(
                 id = videoId,
                 title = title,
-                artists = PageHelper.extractRuns(renderer.flexColumns, "MUSIC_PAGE_TYPE_ARTIST").map{
-                    Artist(
-                        name = it.text,
-                        id = it.navigationEndpoint?.browseEndpoint?.browseId
-                    )
-                }.ifEmpty {
-                    // Fallback to album artists if no artists found in song data
-                    album?.artists ?: emptyList()
-                },
+                artists =
+                    PageHelper.extractRuns(renderer.flexColumns, "MUSIC_PAGE_TYPE_ARTIST").map {
+                        Artist(
+                            name = it.text,
+                            id = it.navigationEndpoint?.browseEndpoint?.browseId,
+                        )
+                    }.ifEmpty {
+                        // Fallback to album artists if no artists found in song data
+                        album?.artists ?: emptyList()
+                    },
                 album = songAlbum,
                 duration = duration,
                 thumbnail = thumbnail,
-                explicit = renderer.badges?.find {
-                    it.musicInlineBadgeRenderer?.icon?.iconType == "MUSIC_EXPLICIT_BADGE"
-                } != null,
-                endpoint = renderer.overlay?.musicItemThumbnailOverlayRenderer?.content?.musicPlayButtonRenderer?.playNavigationEndpoint?.watchEndpoint
-                    ?: renderer.navigationEndpoint?.watchEndpoint
+                explicit =
+                    renderer.badges?.find {
+                        it.musicInlineBadgeRenderer?.icon?.iconType == "MUSIC_EXPLICIT_BADGE"
+                    } != null,
+                endpoint =
+                    renderer.overlay?.musicItemThumbnailOverlayRenderer?.content?.musicPlayButtonRenderer?.playNavigationEndpoint?.watchEndpoint
+                        ?: renderer.navigationEndpoint?.watchEndpoint,
             )
         }
 
@@ -302,8 +316,7 @@ data class AlbumPage(
                         ?.contains("ALBUM") == true
                 }
 
-        private fun hasTrackCandidates(items: List<MusicResponsiveListItemRenderer>) =
-            items.any(::isTrackCandidate)
+        private fun hasTrackCandidates(items: List<MusicResponsiveListItemRenderer>) = items.any(::isTrackCandidate)
 
         private fun isTrackCandidate(renderer: MusicResponsiveListItemRenderer): Boolean {
             if (renderer.playlistItemData?.videoId != null) return true

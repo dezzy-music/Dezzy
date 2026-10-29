@@ -78,6 +78,22 @@ class HomeViewModel @Inject constructor(
     val recentActivity = MutableStateFlow<List<YTItem>?>(null)
     val recentPlaylistsDb = MutableStateFlow<List<Playlist>?>(null)
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val pinnedPlaylist1 = context.dataStore.data.map { it[com.dezzy.music.constants.PinnedPlaylist1Key] }
+        .flatMapLatest { id ->
+            if (id.isNullOrBlank()) kotlinx.coroutines.flow.flowOf(null)
+            else database.playlist(id)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val pinnedPlaylist2 = context.dataStore.data.map { it[com.dezzy.music.constants.PinnedPlaylist2Key] }
+        .flatMapLatest { id ->
+            if (id.isNullOrBlank()) kotlinx.coroutines.flow.flowOf(null)
+            else database.playlist(id)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
     // ── Dezzy hero: última escucha, racha de días, minutos de hoy y mixes ──
 
     val lastListenEvent = database.lastListenEvent()

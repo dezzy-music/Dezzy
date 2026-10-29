@@ -94,6 +94,7 @@ class App : Application(), SingletonImageLoader.Factory {
             return
         }
         PreferenceStore.start(this)
+        com.dezzy.music.audio.DezzyEqManager.initAndLoad(this)
         // Logcat logging only in debug builds — in release every Timber call still paid
         // string formatting + a logcat write. GlobalLogTree stays: it feeds the in-app log viewer.
         if (BuildConfig.DEBUG) {

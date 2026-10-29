@@ -4,8 +4,6 @@
  * Licensed Under GPL-3.0 | see git history for contributors
  */
 
-
-
 package com.my.kizzy.gateway.entities.op
 
 import kotlinx.serialization.Serializable
@@ -46,5 +44,5 @@ enum class OpCode(val value: Int) {
     HEARTBEAT_ACK(11),
 
     /** For future use or unknown opcodes. */
-    UNKNOWN(-1);
+    UNKNOWN(-1),
 }

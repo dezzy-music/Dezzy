@@ -21,11 +21,12 @@ class ElevenLabsTtsClient(private val client: OkHttpClient) {
         try {
             val jsonBody = JSONObject().apply {
                 put("text", text)
-                put("voice_id", voiceId)
+                put("model_id", "eleven_multilingual_v2")
             }
 
             val request = Request.Builder()
-                .url("https://dezzyyyy-listen-together.hf.space/api/tts")
+                .url("https://api.elevenlabs.io/v1/text-to-speech/$voiceId")
+                .header("xi-api-key", com.dezzy.music.BuildConfig.ELEVENLABS_API_KEY)
                 .header("Content-Type", "application/json")
                 .post(jsonBody.toString().toRequestBody(JSON))
                 .build()

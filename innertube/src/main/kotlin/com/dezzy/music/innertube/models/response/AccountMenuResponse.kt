@@ -9,7 +9,6 @@ package com.dezzy.music.innertube.models.response
 import com.dezzy.music.innertube.models.AccountInfo
 import com.dezzy.music.innertube.models.Runs
 import com.dezzy.music.innertube.models.Thumbnails
-import com.dezzy.music.innertube.models.Thumbnail
 import kotlinx.serialization.Serializable
 
 @Serializable

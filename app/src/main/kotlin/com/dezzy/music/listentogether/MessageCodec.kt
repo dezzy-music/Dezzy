@@ -80,29 +80,38 @@ class MessageCodec(
      */
     @OptIn(ExperimentalSerializationApi::class)
     private fun encodeJson(msgType: String, payload: Any?): ByteArray {
-        val payloadBytes = when (format) {
-            MessageFormat.PROTOBUF -> payload?.let { ProtoBuf.encodeToByteArray(serializer(it), it) }
-            MessageFormat.JSON -> payload?.let { json.encodeToString(serializer(it), it).toByteArray() }
+        var actualPayload = payload
+        
+        // Apply Go backend's hack: wrap CHAT messages as JSON string inside ErrorPayload
+        if (msgType == MessageTypes.CHAT && format == MessageFormat.PROTOBUF && payload != null) {
+            val jsonString = json.encodeToString(serializer(payload), payload)
+            actualPayload = ErrorPayload(code = "", message = jsonString)
+        }
+        
+        var payloadBytes = when (format) {
+            MessageFormat.PROTOBUF -> actualPayload?.let { ProtoBuf.encodeToByteArray(serializer(it), it) }
+            MessageFormat.JSON -> actualPayload?.let { json.encodeToString(serializer(it), it).toByteArray() }
+        }
+
+        var isCompressed = false
+        if (compressionEnabled && payloadBytes != null && payloadBytes.size > COMPRESSION_THRESHOLD) {
+            val compressed = compressData(payloadBytes)
+            if (compressed.size < payloadBytes.size) {
+                payloadBytes = compressed
+                isCompressed = true
+            }
         }
 
         val msg = Message(
             type = msgType,
-            payload = payloadBytes
+            payload = payloadBytes,
+            compressed = isCompressed
         )
         
-        var data = when (format) {
+        return when (format) {
             MessageFormat.PROTOBUF -> ProtoBuf.encodeToByteArray(Message.serializer(), msg)
             MessageFormat.JSON -> json.encodeToString(Message.serializer(), msg).toByteArray()
         }
-        
-        if (compressionEnabled && data.size > COMPRESSION_THRESHOLD) {
-            val compressed = compressData(data)
-            if (compressed.size < data.size) {
-                data = compressed
-            }
-        }
-        
-        return data
     }
     
     /**
@@ -110,21 +119,34 @@ class MessageCodec(
      */
     @OptIn(ExperimentalSerializationApi::class)
     private fun decodeJson(data: ByteArray): Pair<String, ByteArray> {
-        val actualData = if (compressionEnabled && data.size > 2 && 
-                             data[0] == 0x1f.toByte() && data[1] == 0x8b.toByte()) {
-            decompressData(data) ?: data
-        } else {
-            data
-        }
-        
-        val detectedFormat = detectMessageFormat(actualData)
+        val detectedFormat = detectMessageFormat(data)
         
         val msg = when (detectedFormat) {
-            MessageFormat.PROTOBUF -> ProtoBuf.decodeFromByteArray(serializer<Message>(), actualData)
-            MessageFormat.JSON -> json.decodeFromString<Message>(actualData.decodeToString())
+            MessageFormat.PROTOBUF -> ProtoBuf.decodeFromByteArray(serializer<Message>(), data)
+            MessageFormat.JSON -> json.decodeFromString<Message>(data.decodeToString())
         }
         
-        val payloadBytes = msg.payload ?: byteArrayOf()
+        var payloadBytes = msg.payload ?: byteArrayOf()
+        
+        if (msg.compressed && payloadBytes.isNotEmpty()) {
+            payloadBytes = decompressData(payloadBytes) ?: payloadBytes
+        }
+        
+        // Reverse the Go backend's hack: if it's a CHAT message, it comes wrapped in ErrorPayload
+        if (msg.type == MessageTypes.CHAT && format == MessageFormat.PROTOBUF && payloadBytes.isNotEmpty()) {
+            try {
+                val errorPayload = ProtoBuf.decodeFromByteArray(serializer<ErrorPayload>(), payloadBytes)
+                if (errorPayload.code == "__json__") {
+                    payloadBytes = errorPayload.message.toByteArray()
+                    // Now it's a JSON string bytes of ChatMessagePayload, so we must force decodePayload to read it as JSON
+                    // We'll handle this in decodePayload itself by passing the JSON string directly.
+                    // Wait, decodePayload checks `format`. If `format` is PROTOBUF, it will try to Protobuf-decode it!
+                    // Let's just return the JSON string bytes here, and we'll fix decodePayload.
+                }
+            } catch (e: Exception) {
+                // Ignore and fall through, maybe it's not wrapped
+            }
+        }
         
         return Pair(msg.type, payloadBytes)
     }
@@ -162,7 +184,7 @@ class MessageCodec(
     fun decodePayload(msgType: String, payloadBytes: ByteArray, format: MessageFormat): Any? {
         if (payloadBytes.isEmpty()) return null
         
-        val isJson = format == MessageFormat.JSON
+        val isJson = format == MessageFormat.JSON || (payloadBytes.isNotEmpty() && payloadBytes[0] == '{'.code.toByte())
         val payloadString = if (isJson) payloadBytes.decodeToString() else ""
         
         return try {
@@ -218,6 +240,7 @@ class MessageCodec(
             is TypingPayload -> TypingPayload.serializer()
             is EditMessagePayload -> EditMessagePayload.serializer()
             is ChatAckPayload -> ChatAckPayload.serializer()
+            is ErrorPayload -> ErrorPayload.serializer()
             else -> throw IllegalArgumentException("Unknown type: ${value!!::class.simpleName}")
         } as kotlinx.serialization.KSerializer<T>
     }

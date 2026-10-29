@@ -72,6 +72,11 @@ class AudioSpectrumEngine {
     }
 
     private fun processFft(fft: ByteArray) {
+        if (NativeDspEngine.isNativeSupported()) {
+            loudness = NativeDspEngine.processFftNative(fft, bands, loudness)
+            return
+        }
+
         // Formato Android: fft[0]=Re(0), fft[1]=Re(N/2), luego pares (Re, Im).
         val bins = fft.size / 2
         if (bins < 2) return

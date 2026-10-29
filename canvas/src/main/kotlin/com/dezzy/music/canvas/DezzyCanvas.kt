@@ -4,12 +4,9 @@
  * Licensed Under GPL-3.0 | see git history for contributors
  */
 
-
-
 package com.dezzy.music.canvas
 
 import com.dezzy.music.canvas.models.CanvasArtwork
-
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.okhttp.OkHttp
@@ -22,8 +19,6 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
@@ -31,11 +26,12 @@ import java.util.concurrent.ConcurrentHashMap
 object DezzyCanvas {
     private const val BASE_URL = "https://artwork-ArchiveTune.koiiverse.cloud/"
 
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-        explicitNulls = false
-    }
+    private val json =
+        Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+            explicitNulls = false
+        }
 
     private val client by lazy {
         HttpClient(OkHttp) {
@@ -161,7 +157,10 @@ object DezzyCanvas {
         return response.status == HttpStatusCode.OK
     }
 
-    private fun cacheKey(prefix: String, vararg parts: String): String {
+    private fun cacheKey(
+        prefix: String,
+        vararg parts: String,
+    ): String {
         val normalized =
             parts
                 .map { it.trim().lowercase(Locale.ROOT) }

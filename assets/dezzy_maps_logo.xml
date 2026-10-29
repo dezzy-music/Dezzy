@@ -1,0 +1,125 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="512dp"
+    android:height="512dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+
+    <!-- Background -->
+    <path
+        android:fillColor="#222224"
+        android:pathData="M0,0h512v512H0z" />
+
+    <!-- NORTH spike -->
+    <path
+        android:fillColor="#D8D5D0"
+        android:pathData="M256,38 L240,118 L256,148 L272,118 Z" />
+
+    <!-- SOUTH spike -->
+    <path
+        android:fillColor="#D8D5D0"
+        android:pathData="M256,478 L240,392 L256,358 L272,392 Z" />
+
+    <!-- WEST spike -->
+    <path
+        android:fillColor="#D8D5D0"
+        android:pathData="M36,256 L118,240 L155,256 L118,272 Z" />
+
+    <!-- EAST spike -->
+    <path
+        android:fillColor="#D8D5D0"
+        android:pathData="M476,256 L394,240 L357,256 L394,272 Z" />
+
+    <!-- NE spike -->
+    <path
+        android:fillColor="#D8D5D0"
+        android:pathData="M405,85 L310,172 L318,196 L328,168 Z" />
+
+    <!-- NW spike -->
+    <path
+        android:fillColor="#D8D5D0"
+        android:pathData="M107,85 L202,172 L194,196 L184,168 Z" />
+
+    <!-- SE spike -->
+    <path
+        android:fillColor="#D8D5D0"
+        android:pathData="M405,427 L310,340 L318,316 L328,344 Z" />
+
+    <!-- SW spike -->
+    <path
+        android:fillColor="#D8D5D0"
+        android:pathData="M107,427 L202,340 L194,316 L184,344 Z" />
+
+    <!-- SKULL solid shape -->
+    <path
+        android:fillColor="#D8D5D0"
+        android:pathData="
+            M256,130
+            C310,128 358,155 376,200
+            C382,222 378,244 370,258
+            C362,272 352,282 340,296
+            C326,312 310,326 294,336
+            L274,344 L264,350 L256,358
+            L248,350 L238,344
+            C202,326 186,312 172,296
+            C160,282 150,272 142,258
+            C134,244 130,222 136,200
+            C154,155 202,128 256,130
+            Z" />
+
+    <!-- Left upper curl -->
+    <path
+        android:fillColor="#D8D5D0"
+        android:pathData="M148,255 C141,246 130,252 132,262 C134,272 144,274 148,266 C150,261 150,258 148,255 Z" />
+
+    <!-- Right upper curl -->
+    <path
+        android:fillColor="#D8D5D0"
+        android:pathData="M364,255 C371,246 382,252 380,262 C378,272 368,274 364,266 C362,261 362,258 364,255 Z" />
+
+    <!-- Left lower curl -->
+    <path
+        android:fillColor="#D8D5D0"
+        android:pathData="M156,294 C148,286 138,292 140,303 C142,314 152,316 156,307 C158,302 158,297 156,294 Z" />
+
+    <!-- Right lower curl -->
+    <path
+        android:fillColor="#D8D5D0"
+        android:pathData="M356,294 C364,286 374,292 372,303 C370,314 360,316 356,307 C354,302 354,297 356,294 Z" />
+
+    <!-- Fangs -->
+    <path
+        android:fillColor="#D8D5D0"
+        android:pathData="M234,344 L230,366 L240,348 Z" />
+    <path
+        android:fillColor="#D8D5D0"
+        android:pathData="M246,350 L242,378 L254,356 Z" />
+    <path
+        android:fillColor="#D8D5D0"
+        android:pathData="M266,350 L270,378 L258,356 Z" />
+    <path
+        android:fillColor="#D8D5D0"
+        android:pathData="M278,344 L282,366 L272,348 Z" />
+
+    <!-- Left eye -->
+    <path
+        android:fillColor="#222224"
+        android:pathData="M200,235 L186,247 L182,264 L196,277 L220,275 L232,256 L226,238 Z" />
+
+    <!-- Right eye -->
+    <path
+        android:fillColor="#222224"
+        android:pathData="M312,235 L326,247 L330,264 L316,277 L292,275 L280,256 L286,238 Z" />
+
+    <!-- Nose cavity -->
+    <path
+        android:fillColor="#222224"
+        android:pathData="
+            M256,275
+            C246,268 233,272 231,286
+            C229,300 238,310 250,314
+            L256,320 L262,314
+            C274,310 283,300 281,286
+            C279,272 266,268 256,275
+            Z" />
+
+</vector>

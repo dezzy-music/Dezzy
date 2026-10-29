@@ -1057,6 +1057,7 @@ fun EqualizerDialog(onDismiss: () -> Unit, openSystemEqualizer: () -> Unit) {
     val (eqEnabled, setEqEnabled) = rememberPreference(EqualizerEnabledKey, defaultValue = false)
     val (selectedProfileId, setSelectedProfileId) = rememberPreference(EqualizerSelectedProfileIdKey, defaultValue = "flat")
     val (bandLevelsRaw, setBandLevelsRaw) = rememberPreference(EqualizerBandLevelsMbKey, defaultValue = "")
+    val (parametricBandsRaw, setParametricBandsRaw) = rememberPreference(com.dezzy.music.constants.EqualizerParametricBandsKey, defaultValue = "")
     val (outputGainEnabled, setOutputGainEnabled) = rememberPreference(EqualizerOutputGainEnabledKey, defaultValue = false)
     val (outputGainMb, setOutputGainMb) = rememberPreference(EqualizerOutputGainMbKey, defaultValue = 0)
     val (bassBoostEnabled, setBassBoostEnabled) = rememberPreference(EqualizerBassBoostEnabledKey, defaultValue = false)
@@ -1082,8 +1083,24 @@ fun EqualizerDialog(onDismiss: () -> Unit, openSystemEqualizer: () -> Unit) {
     LaunchedEffect(virtualizerStrength) { virtualizerStrengthLocal = virtualizerStrength }
 
     var bandLevelsMb by remember { mutableStateOf<List<Int>>(emptyList()) }
-    LaunchedEffect(bandLevelsRaw, bandCount) {
+    var parametricBands by remember { mutableStateOf<List<com.dezzy.music.audio.models.EqBand>>(emptyList()) }
+    LaunchedEffect(bandLevelsRaw, parametricBandsRaw, bandCount) {
         bandLevelsMb = resampleLevelsByIndex(decodeBandLevelsMb(bandLevelsRaw), bandCount)
+        val decodedParam = runCatching { EqualizerJson.json.decodeFromString<List<com.dezzy.music.audio.models.EqBand>>(parametricBandsRaw) }.getOrNull() ?: emptyList()
+        if (decodedParam.isNotEmpty()) {
+            parametricBands = decodedParam
+        } else {
+            val defaultFrequencies = listOf(31f, 62f, 125f, 250f, 500f, 1000f, 2000f, 4000f, 8000f, 16000f)
+            parametricBands = defaultFrequencies.mapIndexed { index, freq ->
+                com.dezzy.music.audio.models.EqBand(
+                    id = index,
+                    type = if (index == 0) com.dezzy.music.audio.models.FilterType.LOW_SHELF else if (index == 9) com.dezzy.music.audio.models.FilterType.HIGH_SHELF else com.dezzy.music.audio.models.FilterType.PEAKING,
+                    frequencyHz = freq,
+                    gainDb = (bandLevelsMb.getOrNull(index) ?: 0) / 100f,
+                    qFactor = 0.707f
+                )
+            }
+        }
     }
 
     val profiles = remember(customProfilesJson) { decodeProfilesPayload(customProfilesJson).profiles }
@@ -1093,6 +1110,15 @@ fun EqualizerDialog(onDismiss: () -> Unit, openSystemEqualizer: () -> Unit) {
     var showSaveProfileDialog by rememberSaveable { mutableStateOf(false) }
     var showManageProfilesDialog by rememberSaveable { mutableStateOf(false) }
     var showImportProfilesDialog by rememberSaveable { mutableStateOf(false) }
+
+    fun saveBands(newBands: List<com.dezzy.music.audio.models.EqBand>) {
+        parametricBands = newBands
+        val newLevelsMb = newBands.map { (it.gainDb * 100).toInt() }
+        bandLevelsMb = newLevelsMb
+        setSelectedProfileId("manual")
+        setBandLevelsRaw(encodeBandLevelsMb(newLevelsMb))
+        setParametricBandsRaw(runCatching { EqualizerJson.json.encodeToString(newBands) }.getOrNull().orEmpty())
+    }
 
     if (showSaveProfileDialog) {
         TextFieldDialog(
@@ -1296,26 +1322,68 @@ fun EqualizerDialog(onDismiss: () -> Unit, openSystemEqualizer: () -> Unit) {
                     Spacer(Modifier.height(12.dp))
 
                     EqSection(title = stringResource(R.string.eq_bands), trailing = {
-                        TextButton(onClick = { setSelectedProfileId("manual"); setBandLevelsRaw(encodeBandLevelsMb(List(bandCount) { 0 })) }) { Text(text = stringResource(R.string.reset)) }
-                    }) {
-                        caps.centerFreqHz.forEachIndexed { band, hz ->
-                            val label = formatHz(hz)
-                            val value = bandLevelsMb.getOrNull(band) ?: 0
-                            val valueDb = (value / 100f).coerceIn(-24f, 24f)
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 10.dp)) {
-                                Text(text = label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(64.dp))
-                                Slider(
-                                    value = value.toFloat().coerceIn(minMb.toFloat(), maxMb.toFloat()),
-                                    onValueChange = { newValue ->
-                                        val coerced = newValue.toInt().coerceIn(minMb, maxMb)
-                                        bandLevelsMb = bandLevelsMb.toMutableList().apply { while (size < bandCount) add(0); set(band, coerced) }
-                                    },
-                                    onValueChangeFinished = { setSelectedProfileId("manual"); setBandLevelsRaw(encodeBandLevelsMb(bandLevelsMb)) },
-                                    valueRange = minMb.toFloat()..maxMb.toFloat(),
-                                    colors = SliderDefaults.colors(activeTrackColor = MaterialTheme.colorScheme.primary, inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest),
-                                    modifier = Modifier.weight(1f),
+                        TextButton(onClick = { 
+                            val defaultFrequencies = listOf(31f, 62f, 125f, 250f, 500f, 1000f, 2000f, 4000f, 8000f, 16000f)
+                            val resetBands = defaultFrequencies.mapIndexed { index, freq ->
+                                com.dezzy.music.audio.models.EqBand(
+                                    id = index,
+                                    type = if (index == 0) com.dezzy.music.audio.models.FilterType.LOW_SHELF else if (index == 9) com.dezzy.music.audio.models.FilterType.HIGH_SHELF else com.dezzy.music.audio.models.FilterType.PEAKING,
+                                    frequencyHz = freq,
+                                    gainDb = 0f,
+                                    qFactor = 0.707f
                                 )
-                                Text(text = formatDb(valueDb), style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.End, modifier = Modifier.width(64.dp))
+                            }
+                            saveBands(resetBands)
+                        }) { Text(text = stringResource(R.string.reset)) }
+                    }) {
+                        parametricBands.forEachIndexed { bandIndex, band ->
+                            var expanded by rememberSaveable { mutableStateOf(false) }
+                            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                                    Text(text = formatHz((band.frequencyHz * 1000).toInt()), style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(64.dp))
+                                    Slider(
+                                        value = band.gainDb,
+                                        onValueChange = { newValue ->
+                                            val newBands = parametricBands.toMutableList().apply { set(bandIndex, band.copy(gainDb = newValue)) }
+                                            saveBands(newBands)
+                                        },
+                                        valueRange = -15f..15f,
+                                        colors = SliderDefaults.colors(activeTrackColor = MaterialTheme.colorScheme.primary, inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest),
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    Text(text = formatDb(band.gainDb), style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.End, modifier = Modifier.width(52.dp))
+                                    IconButton(onClick = { expanded = !expanded }) {
+                                        Icon(painter = painterResource(R.drawable.settings), contentDescription = "Edit", modifier = Modifier.size(20.dp))
+                                    }
+                                }
+                                if (expanded) {
+                                    Column(modifier = Modifier.fillMaxWidth().padding(start = 64.dp, end = 16.dp, bottom = 8.dp)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text("Freq: ${band.frequencyHz.toInt()}Hz", style = MaterialTheme.typography.labelMedium, modifier = Modifier.width(80.dp))
+                                            Slider(
+                                                value = band.frequencyHz,
+                                                onValueChange = { newValue ->
+                                                    val newBands = parametricBands.toMutableList().apply { set(bandIndex, band.copy(frequencyHz = newValue)) }
+                                                    saveBands(newBands)
+                                                },
+                                                valueRange = 20f..20000f,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                        }
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text("Q: ${String.format("%.2f", band.qFactor)}", style = MaterialTheme.typography.labelMedium, modifier = Modifier.width(80.dp))
+                                            Slider(
+                                                value = band.qFactor,
+                                                onValueChange = { newValue ->
+                                                    val newBands = parametricBands.toMutableList().apply { set(bandIndex, band.copy(qFactor = newValue)) }
+                                                    saveBands(newBands)
+                                                },
+                                                valueRange = 0.1f..10f,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

@@ -18,6 +18,7 @@ data class EqProfile(
     val name: String,
     val bandCenterFreqHz: List<Int> = emptyList(),
     val bandLevelsMb: List<Int> = emptyList(),
+    val parametricBands: List<com.dezzy.music.audio.models.EqBand>? = null,
     val outputGainMb: Int = 0,
     val bassBoostStrength: Int = 0,
     val virtualizerStrength: Int = 0,
@@ -40,6 +41,7 @@ data class EqCapabilities(
 data class EqSettings(
     val enabled: Boolean,
     val bandLevelsMb: List<Int>,
+    val parametricBands: List<com.dezzy.music.audio.models.EqBand>,
     val outputGainEnabled: Boolean,
     val outputGainMb: Int,
     val bassBoostEnabled: Boolean,
@@ -92,6 +94,8 @@ object GenreEqPresets {
         "reggae" to listOf(60 to 4.5f, 230 to 1.5f, 910 to -0.5f, 3600 to 1.5f, 14000 to 1.5f),
     )
 
+    fun availableGenres(): List<String> = CURVES.keys.toList().sorted()
+
     fun hasCurve(genreKey: String?): Boolean = genreKey != null && CURVES.containsKey(genreKey)
 
     /**
@@ -109,6 +113,22 @@ object GenreEqPresets {
         return centerFreqHz.map { freq ->
             val gainDb = interpolateDb(curve, freq.coerceAtLeast(1))
             (gainDb * 100f).toInt().coerceIn(minMb, maxMb)
+        }
+    }
+
+    fun parametricBandsForCurve(genreKey: String): List<com.dezzy.music.audio.models.EqBand>? {
+        val curve = CURVES[genreKey] ?: return null
+        val defaultFrequencies = listOf(31f, 62f, 125f, 250f, 500f, 1000f, 2000f, 4000f, 8000f, 16000f)
+        return defaultFrequencies.mapIndexed { index, freq ->
+            val gainDb = interpolateDb(curve, freq.toInt())
+            val type = if (index == 0) com.dezzy.music.audio.models.FilterType.LOW_SHELF else if (index == 9) com.dezzy.music.audio.models.FilterType.HIGH_SHELF else com.dezzy.music.audio.models.FilterType.PEAKING
+            com.dezzy.music.audio.models.EqBand(
+                id = index,
+                type = type,
+                frequencyHz = freq,
+                gainDb = gainDb,
+                qFactor = 0.707f
+            )
         }
     }
 

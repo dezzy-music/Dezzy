@@ -44,13 +44,16 @@ async function dl(req, res) {
   body = body || {};
 
   try {
-    const p = await providers.plan(preferred, {
+    const params = {
       id: body.id,
       isrc: body.isrc,
       title: body.title,
       artist: body.artist,
-      quality: String(body.quality || 'flac'),
-    });
+      quality: body.quality || 'flac',
+      customArl: req.headers['x-deezer-arl'],
+      customQbz: req.headers['x-qobuz-token'],
+    };
+    const p = await providers.plan(preferred, params);
 
     const payload = `${p.provider}|${p.trackId}|${body.quality || 'flac'}`;
     const sig = sign(payload);
@@ -96,27 +99,27 @@ async function stream(req, res) {
   if (!verify(`${provider}|${trackId}|${quality}`, sig)) return jsonError(403, 'Firma inválida');
 
   try {
-    if (provider === 'qbz') return await streamQobuz(trackId, quality, res);
-    return await streamDeezer(trackId, quality, res);
+    if (provider === 'qbz') return await streamQobuz(trackId, quality, res, req.headers['x-qobuz-token']);
+    return await streamDeezer(trackId, quality, res, req.headers['x-deezer-arl']);
   } catch (e) {
     if (!res.headersSent) jsonError(502, e.message || 'Error al resolver el stream');
     else res.end();
   }
 }
 
-async function streamDeezer(sngId, quality, res) {
-  if (!process.env.DEEZER_ARL) throw new Error('DEEZER_ARL no configurado');
+async function streamDeezer(sngId, quality, res, customArl = null) {
+  if (!customArl && !process.env.DEEZER_ARL) throw new Error('DEEZER_ARL no configurado');
 
   let session;
   let song;
   let media;
   let lastErr = null;
-  const poolSize = process.env.DEEZER_ARL.split(/[\n,]+/).filter(Boolean).length;
+  const poolSize = customArl ? 1 : (process.env.DEEZER_ARL || '').split(/[\n,]+/).filter(Boolean).length;
   const attempts = Math.min(3, Math.max(1, poolSize + 1));
   for (let i = 0; i < attempts; i++) {
     let acquired = null;
     try {
-      acquired = await deezer.acquireSession(i > 0);
+      acquired = await deezer.acquireSession(i > 0, customArl);
       session = acquired.session;
       song = await deezer.songData(session, sngId);
       media = await deezer.mediaUrl(session, song.TRACK_TOKEN, quality);
@@ -146,36 +149,49 @@ async function streamDeezer(sngId, quality, res) {
   await pipeDecrypted(upstream.body, key, res);
 }
 
-async function streamQobuz(trackId, quality, res) {
-  const token = process.env.QOBUZ_TOKEN || '';
-  const file = await qobuz.fileUrl(trackId, quality, token);
-  const upstream = await fetch(file.url);
-  if (!upstream.ok || !upstream.body) throw new Error(`Qobuz CDN respondió ${upstream.status}`);
+async function streamQobuz(trackId, quality, res, customQbz = null) {
+  const poolSize = customQbz ? 1 : qobuz.poolHealth().total;
+  const attempts = Math.min(3, Math.max(1, poolSize + 1));
+  let lastErr = null;
+  let file = null;
 
-  res.statusCode = 200;
-  res.setHeader('Content-Type', file.mime);
-  res.setHeader('Content-Disposition', `attachment; filename="track.${file.container}"`);
-  const len = upstream.headers.get('content-length');
-  if (len) res.setHeader('Content-Length', len);
-  res.setHeader('Cache-Control', 'no-store');
-
-  const reader = upstream.body.getReader();
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    res.write(Buffer.from(value));
+  for (let i = 0; i < attempts; i++) {
+    let token = null;
+    try {
+      token = qobuz.acquireToken(customQbz);
+      file = await qobuz.fileUrl(trackId, quality, token);
+      break; // Éxito
+    } catch (e) {
+      if (token) qobuz.benchToken(token);
+      lastErr = e;
+      file = null;
+    }
   }
+
+  if (!file || !file.url) {
+    throw lastErr || new Error('No se pudo resolver el medio en Qobuz');
+  }
+
+  // ¡Mejora de escalabilidad! En lugar de que Vercel descargue y reenvíe el archivo
+  // (lo que consume cuota de ancho de banda y arriesga Timeouts de 10s en Serverless),
+  // enviamos un Redirect 302 para que la app lo baje directamente de la CDN de Qobuz.
+  res.statusCode = 302;
+  res.setHeader('Location', file.url);
+  // Cache en la CDN de Vercel por 1 hora. Evita agotar la API de Qobuz para canciones populares.
+  res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=600');
   res.end();
 }
 
 // ── GET /health ─────────────────────────────────────────────────────────────
 async function health(req, res) {
+  const customArl = req.headers['x-deezer-arl'];
+  const customQbz = req.headers['x-qobuz-token'];
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   const out = { ok: false, signed: !!process.env.RESOLVER_SECRET, sources: {} };
 
-  if (providers.deezerConfigured()) {
+  if (providers.deezerConfigured(customArl)) {
     try {
-      const { canLossless } = await deezer.acquireSession();
+      const { canLossless } = await deezer.acquireSession(false, customArl);
       out.sources.deezer = { configured: true, ok: true, lossless: canLossless, pool: deezer.poolHealth() };
     } catch (e) {
       out.sources.deezer = { configured: true, ok: false, message: e.message, pool: deezer.poolHealth() };
@@ -184,10 +200,10 @@ async function health(req, res) {
     out.sources.deezer = { configured: false };
   }
 
-  if (providers.qobuzConfigured()) {
+  if (providers.qobuzConfigured(customQbz)) {
     try {
       const cfg = await qobuz.getConfig();
-      out.sources.qobuz = { configured: true, reverseEngineered: { appId: cfg.appId, secrets: cfg.secrets.length } };
+      out.sources.qobuz = { configured: true, reverseEngineered: { appId: cfg.appId, secrets: cfg.secrets.length }, pool: qobuz.poolHealth() };
     } catch (e) {
       out.sources.qobuz = { configured: true, reverseEngineered: false, message: e.message };
     }

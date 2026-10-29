@@ -17,7 +17,6 @@ import java.util.concurrent.atomic.AtomicLongArray
 import java.util.concurrent.atomic.AtomicReference
 
 internal class RotatingProxySelector : ProxySelector() {
-
     private class Pool(
         val proxies: Array<Proxy>,
         val deadUntil: AtomicLongArray,
@@ -31,12 +30,13 @@ internal class RotatingProxySelector : ProxySelector() {
     }
 
     fun loadProxies(configs: List<ProxyConfig>) {
-        val newProxies = Array(configs.size) { i ->
-            Proxy(
-                Proxy.Type.HTTP,
-                InetSocketAddress.createUnresolved(configs[i].host, configs[i].port)
-            )
-        }
+        val newProxies =
+            Array(configs.size) { i ->
+                Proxy(
+                    Proxy.Type.HTTP,
+                    InetSocketAddress.createUnresolved(configs[i].host, configs[i].port),
+                )
+            }
         poolRef.set(Pool(newProxies, AtomicLongArray(newProxies.size)))
         index.set(0)
     }
@@ -65,7 +65,11 @@ internal class RotatingProxySelector : ProxySelector() {
         return listOf(pool.proxies[start])
     }
 
-    override fun connectFailed(uri: URI?, sa: SocketAddress?, ioe: IOException?) {
+    override fun connectFailed(
+        uri: URI?,
+        sa: SocketAddress?,
+        ioe: IOException?,
+    ) {
         if (sa == null) return
         val pool = poolRef.get()
         for (i in pool.proxies.indices) {

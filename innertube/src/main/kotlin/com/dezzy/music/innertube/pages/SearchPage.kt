@@ -41,11 +41,11 @@ object SearchPage {
                     album =
                         metadata.getOrNull(1)?.firstOrNull()
                             ?.takeIf { it.navigationEndpoint?.browseEndpoint != null }?.let {
-                            Album(
-                                name = it.text,
-                                id = it.navigationEndpoint?.browseEndpoint?.browseId!!,
-                            )
-                        },
+                                Album(
+                                    name = it.text,
+                                    id = it.navigationEndpoint?.browseEndpoint?.browseId!!,
+                                )
+                            },
                     duration = metadata.duration(),
                     thumbnail = thumbnail ?: return null,
                     explicit = renderer.isExplicit,

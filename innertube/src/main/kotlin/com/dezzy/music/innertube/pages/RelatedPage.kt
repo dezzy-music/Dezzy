@@ -75,12 +75,16 @@ data class RelatedPage(
                             renderer.title.runs
                                 ?.firstOrNull()
                                 ?.text ?: return null,
-                        artists = listOfNotNull(Artist(
-                                name = "",
-                                id = renderer.menu?.menuRenderer?.items?.find {
-                                    it.menuNavigationItemRenderer?.icon?.iconType == "ARTIST"
-                                }?.menuNavigationItemRenderer?.navigationEndpoint?.browseEndpoint?.browseId,
-                            )),
+                        artists =
+                            listOfNotNull(
+                                Artist(
+                                    name = "",
+                                    id =
+                                        renderer.menu?.menuRenderer?.items?.find {
+                                            it.menuNavigationItemRenderer?.icon?.iconType == "ARTIST"
+                                        }?.menuNavigationItemRenderer?.navigationEndpoint?.browseEndpoint?.browseId,
+                                ),
+                            ),
                         year =
                             renderer.subtitle
                                 ?.runs

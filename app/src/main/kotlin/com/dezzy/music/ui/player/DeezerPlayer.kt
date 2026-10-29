@@ -81,6 +81,8 @@ fun DeezerPlayer(
     sliderPosition: Long?,
     onSliderPositionChange: (Long?) -> Unit,
     onQueueClick: () -> Unit,
+    onLyricsClick: () -> Unit,
+
     onSleepTimerClick: () -> Unit = {},
     onMenuClick: () -> Unit = {},
     onVisualizerClick: () -> Unit = {},
@@ -104,8 +106,6 @@ fun DeezerPlayer(
     val currentPos = sliderPosition ?: position
 
     val context = LocalContext.current
-
-    var lyricsFullscreen by remember { mutableStateOf(false) }
     var showShareSheet by remember { mutableStateOf(false) }
 
     // Bloquear orientación horizontal para este reproductor DeezerPlayer (forzar modo vertical/portrait)
@@ -598,7 +598,7 @@ fun DeezerPlayer(
                                         .padding(16.dp)
                                         .clip(RoundedCornerShape(10.dp))
                                         .background(Color.White)
-                                        .clickable { lyricsFullscreen = true }
+                                        .clickable { onLyricsClick() }
                                         .padding(horizontal = 14.dp, vertical = 9.dp)
                                 ) {
                                     Icon(
@@ -901,60 +901,6 @@ fun DeezerPlayer(
             Spacer(Modifier.height(8.dp))
         }
 
-        if (lyricsFullscreen) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Brush.verticalGradient(colors = listOf(lyricsBg, Color.Black)))
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .statusBarsPadding()
-                        .navigationBarsPadding()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = { lyricsFullscreen = false }) {
-                            Icon(
-                                painter = painterResource(R.drawable.expand_more),
-                                contentDescription = "Cerrar letra",
-                                tint = Color.White
-                            )
-                        }
-                        Text(
-                            text = mediaMetadata?.title ?: "",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier
-                                .padding(start = 8.dp)
-                                .weight(1f)
-                        )
-                        // Traducir la letra con el proveedor configurado
-                        // (gratuito online / offline ML Kit / IA).
-                        IconButton(onClick = { LyricsTranslationHelper.triggerManualTranslation() }) {
-                            Icon(
-                                painter = painterResource(R.drawable.translate),
-                                contentDescription = "Traducir letra",
-                                tint = Color.White
-                            )
-                        }
-                    }
-                    Lyrics(
-                        lyricsSyncOffset = 0,
-                        sliderPositionProvider = { sliderPosition },
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-            }
-        }
-
         if (showShareSheet) {
             ShareBottomSheet(
                 title = mediaMetadata?.title ?: "",
@@ -968,3 +914,4 @@ fun DeezerPlayer(
         }
     }
 }
+

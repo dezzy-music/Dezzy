@@ -23,28 +23,35 @@ class KizzyRepository {
 
     // Simple in-memory cache for resolved image ids to speed up repeated resolves.
     // Keep it very small to avoid memory pressure.
-    private val imageCache = object {
-        private val map = LinkedHashMap<String, String>(16, 0.75f, true)
-        private val maxSize = 64
-        @Synchronized
-        fun get(key: String): String? = map[key]
-        @Synchronized
-        fun put(key: String, value: String) {
-            map[key] = value
-            if (map.size > maxSize) {
-                // remove eldest entry (LinkedHashMap with accessOrder=true maintains LRU ordering)
-                val it = map.entries.iterator()
-                if (it.hasNext()) {
-                    it.next()
-                    it.remove()
+    private val imageCache =
+        object {
+            private val map = LinkedHashMap<String, String>(16, 0.75f, true)
+            private val maxSize = 64
+
+            @Synchronized
+            fun get(key: String): String? = map[key]
+
+            @Synchronized
+            fun put(
+                key: String,
+                value: String,
+            ) {
+                map[key] = value
+                if (map.size > maxSize) {
+                    // remove eldest entry (LinkedHashMap with accessOrder=true maintains LRU ordering)
+                    val it = map.entries.iterator()
+                    if (it.hasNext()) {
+                        it.next()
+                        it.remove()
+                    }
                 }
             }
+
+            @Synchronized
+            fun remove(key: String) {
+                map.remove(key)
+            }
         }
-        @Synchronized
-        fun remove(key: String) {
-            map.remove(key)
-        }
-    }
 
     /**
      * Public helper to seed the in-memory cache from callers (e.g. when an external
@@ -52,7 +59,10 @@ class KizzyRepository {
      * external URL repeatedly.
      */
     @Synchronized
-    fun putToCache(key: String?, value: String?) {
+    fun putToCache(
+        key: String?,
+        value: String?,
+    ) {
         if (key.isNullOrBlank() || value.isNullOrBlank()) return
         imageCache.put(key, value)
     }

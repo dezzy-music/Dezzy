@@ -103,11 +103,13 @@ data class PlayerResponse(
             @SerialName("baseUrl")
             val baseUrl: String?,
         )
+
         @Serializable
         data class VideostatsWatchtimeUrl(
             @SerialName("baseUrl")
             val baseUrl: String?,
         )
+
         @Serializable
         data class AtrUrl(
             @SerialName("baseUrl")

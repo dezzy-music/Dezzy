@@ -701,15 +701,4 @@ if (showProviderDialog) {
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
-
-    ,
-            icon = { Icon(painterResource(R.drawable.mic), null) },
-            initialTextFieldValue = androidx.compose.ui.text.input.TextFieldValue(text = elevenLabsApiKey),
-            onDone = {
-                elevenLabsApiKey = it
-                showElevenLabsDialog = false
-            },
-            onDismiss = { showElevenLabsDialog = false }
-        )
-    }
 }

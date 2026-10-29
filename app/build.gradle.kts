@@ -1,11 +1,11 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import java.util.Properties
-import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.Properties
 import java.util.regex.Pattern
 
 plugins {
+    id("io.gitlab.arturbosch.detekt")
     alias(libs.plugins.android.application)
     alias(libs.plugins.hilt)
     alias(libs.plugins.kotlin.ksp)
@@ -17,10 +17,11 @@ fun fetchGitCommitHash(): String {
     // Primero intenta obtener del repositorio local
     try {
         val rootDir = rootProject.projectDir
-        val process = ProcessBuilder("git", "rev-parse", "--short", "HEAD")
-            .directory(rootDir)
-            .redirectErrorStream(true)
-            .start()
+        val process =
+            ProcessBuilder("git", "rev-parse", "--short", "HEAD")
+                .directory(rootDir)
+                .redirectErrorStream(true)
+                .start()
         val output = process.inputStream.bufferedReader().readText().trim()
         process.waitFor()
         if (output.isNotEmpty() && output != "unknown" && !output.contains("fatal")) {
@@ -81,8 +82,11 @@ val keystorePropertiesFile = file("keystore/keystore.properties")
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(keystorePropertiesFile.inputStream())
 }
-fun signingProp(propKey: String, envKey: String): String? =
-    keystoreProperties.getProperty(propKey) ?: System.getenv(envKey)
+
+fun signingProp(
+    propKey: String,
+    envKey: String,
+): String? = keystoreProperties.getProperty(propKey) ?: System.getenv(envKey)
 
 val gitCommit = fetchGitCommitHash()
 
@@ -118,7 +122,26 @@ android {
                 ?: ""
         buildConfigField("String", "TOGETHER_BEARER_TOKEN", "\"$togetherBearerToken\"")
 
+        val geminiApiKey =
+            localProperties.getProperty("GEMINI_API_KEY")
+                ?: System.getenv("GEMINI_API_KEY")
+                ?: ""
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
+
+        val elevenLabsApiKey =
+            localProperties.getProperty("ELEVENLABS_API_KEY")
+                ?: System.getenv("ELEVENLABS_API_KEY")
+                ?: ""
+        buildConfigField("String", "ELEVENLABS_API_KEY", "\"$elevenLabsApiKey\"")
+
         buildConfigField("String", "GIT_COMMIT", "\"$gitCommit\"")
+
+        externalNativeBuild {
+            cmake {
+                cppFlags.add("-std=c++20")
+                arguments.add("-DANDROID_STL=c++_shared")
+            }
+        }
     }
 
     flavorDimensions += "abi"
@@ -168,7 +191,7 @@ android {
             isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
         debug {
@@ -187,6 +210,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        prefab = true
     }
 
     dependenciesInfo {
@@ -208,16 +232,23 @@ android {
     packaging {
         jniLibs {
             useLegacyPackaging = false
-            keepDebugSymbols += listOf(
-                "**/libandroidx.graphics.path.so",
-                "**/libdatastore_shared_counter.so"
-            )
+            keepDebugSymbols +=
+                listOf(
+                    "**/libandroidx.graphics.path.so",
+                    "**/libdatastore_shared_counter.so",
+                )
         }
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
             excludes += "META-INF/NOTICE.md"
             excludes += "META-INF/CONTRIBUTORS.md"
             excludes += "META-INF/LICENSE.md"
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
         }
     }
 }
@@ -231,6 +262,7 @@ ksp {
 }
 
 dependencies {
+    implementation("com.google.oboe:oboe:1.8.1")
     implementation(libs.guava)
     implementation(libs.coroutines.guava)
     implementation(libs.concurrent.futures)
@@ -342,7 +374,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
         freeCompilerArgs.add("-Xannotation-default-target=param-property")
         freeCompilerArgs.addAll(
             "-opt-in=kotlin.RequiresOptIn",
-            "-Xcontext-parameters"
+            "-Xcontext-parameters",
         )
         suppressWarnings.set(true)
     }

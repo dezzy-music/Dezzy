@@ -12,8 +12,8 @@ import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
-import io.ktor.serialization.kotlinx.json.json
 import io.ktor.serialization.kotlinx.KotlinxSerializationConverter
+import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -32,20 +32,20 @@ import java.util.concurrent.ConcurrentHashMap
  * Results are cached for 24 hours.
  */
 object AppleMusicArtistBackgroundProvider {
-
     // Public read-only JWT used by the Apple Music web player for unauthenticated catalog reads.
     private const val APPLE_MUSIC_TOKEN =
         "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6IldlYlBsYXlLaWQifQ" +
-        ".eyJpc3MiOiJBTVBXZWJQbGF5IiwiaWF0IjoxNzgxMDMyODU1LCJleHAiOjE3ODQwNTY4NTUsInJvb3RfaHR0cHNfb3JpZ2luIjpbImFwcGxlLmNvbSJdfQ" +
-        ".fiMFcJWkfSlxKP9NVA0UW9CbItD1Rge0SISuepz203XcpU762OqdCpU9M-YkmtKkjRmaIWtjsfGgqZPrlMonpA"
+            ".eyJpc3MiOiJBTVBXZWJQbGF5IiwiaWF0IjoxNzgxMDMyODU1LCJleHAiOjE3ODQwNTY4NTUsInJvb3RfaHR0cHNfb3JpZ2luIjpbImFwcGxlLmNvbSJdfQ" +
+            ".fiMFcJWkfSlxKP9NVA0UW9CbItD1Rge0SISuepz203XcpU762OqdCpU9M-YkmtKkjRmaIWtjsfGgqZPrlMonpA"
 
     private const val AMP_BASE_URL = "https://amp-api.music.apple.com"
 
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-        explicitNulls = false
-    }
+    private val json =
+        Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+            explicitNulls = false
+        }
 
     private val client by lazy {
         HttpClient(OkHttp) {
@@ -94,37 +94,45 @@ object AppleMusicArtistBackgroundProvider {
     ): String? {
         return runCatching {
             val url = "$AMP_BASE_URL/v1/catalog/$storefront/search"
-            val response = client.get(url) {
-                header("Authorization", "Bearer $APPLE_MUSIC_TOKEN")
-                header("Origin", "https://music.apple.com")
-                header("Referer", "https://music.apple.com/")
-                header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-                parameter("term", artistName)
-                parameter("types", "artists")
-                parameter("limit", "3")
-            }
+            val response =
+                client.get(url) {
+                    header("Authorization", "Bearer $APPLE_MUSIC_TOKEN")
+                    header("Origin", "https://music.apple.com")
+                    header("Referer", "https://music.apple.com/")
+                    header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                    parameter("term", artistName)
+                    parameter("types", "artists")
+                    parameter("limit", "3")
+                }
             if (response.status != HttpStatusCode.OK) return@runCatching null
 
             val root = response.body<JsonObject>()
             val results = root["results"]?.jsonObject?.get("artists")?.jsonObject?.get("data")?.jsonArray ?: return@runCatching null
-            
-            val scoredResults = results.mapNotNull { item ->
-                val obj = item.jsonObject
-                val attributes = obj["attributes"]?.jsonObject ?: return@mapNotNull null
-                val resultName = attributes["name"]?.jsonPrimitive?.contentOrNull ?: ""
-                
-                if (!resultName.contains(artistName, ignoreCase = true) && 
-                    !artistName.contains(resultName, ignoreCase = true)) return@mapNotNull null
-                
-                var score = 0
-                if (resultName.equals(artistName, ignoreCase = true)) score += 10
-                else if (resultName.contains(artistName, ignoreCase = true) || artistName.contains(resultName, ignoreCase = true)) score += 5
-                
-                score to obj
-            }.sortedByDescending { it.first }
-            
+
+            val scoredResults =
+                results.mapNotNull { item ->
+                    val obj = item.jsonObject
+                    val attributes = obj["attributes"]?.jsonObject ?: return@mapNotNull null
+                    val resultName = attributes["name"]?.jsonPrimitive?.contentOrNull ?: ""
+
+                    if (!resultName.contains(artistName, ignoreCase = true) &&
+                        !artistName.contains(resultName, ignoreCase = true)
+                    ) {
+                        return@mapNotNull null
+                    }
+
+                    var score = 0
+                    if (resultName.equals(artistName, ignoreCase = true)) {
+                        score += 10
+                    } else if (resultName.contains(artistName, ignoreCase = true) || artistName.contains(resultName, ignoreCase = true)) {
+                        score += 5
+                    }
+
+                    score to obj
+                }.sortedByDescending { it.first }
+
             for ((score, obj) in scoredResults) {
-                if (score < 4) continue 
+                if (score < 4) continue
                 val artistId = obj["id"]?.jsonPrimitive?.contentOrNull ?: continue
                 val fetched = fetchArtistMotionByAppleId(artistId, storefront)
                 if (fetched != null) return@runCatching fetched
@@ -139,22 +147,23 @@ object AppleMusicArtistBackgroundProvider {
     ): String? {
         return runCatching {
             val url = "$AMP_BASE_URL/v1/catalog/$storefront/artists/$artistId"
-            val response = client.get(url) {
-                header("Authorization", "Bearer $APPLE_MUSIC_TOKEN")
-                header("Origin", "https://music.apple.com")
-                header("Referer", "https://music.apple.com/")
-                header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-                parameter("extend", "editorialVideo,editorialArtwork")
-            }
+            val response =
+                client.get(url) {
+                    header("Authorization", "Bearer $APPLE_MUSIC_TOKEN")
+                    header("Origin", "https://music.apple.com")
+                    header("Referer", "https://music.apple.com/")
+                    header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                    parameter("extend", "editorialVideo,editorialArtwork")
+                }
             if (response.status != HttpStatusCode.OK) return@runCatching null
 
             val root = response.body<JsonObject>()
             val data = root["data"]?.jsonArray
             if (data.isNullOrEmpty()) return@runCatching null
-            
+
             val artistObj = data.firstOrNull()?.jsonObject ?: return@runCatching null
             val attributes = artistObj["attributes"]?.jsonObject
-            
+
             // Look for editorialVideo first
             val ev = attributes?.get("editorialVideo")?.jsonObject
             if (ev != null) {
@@ -178,7 +187,8 @@ object AppleMusicArtistBackgroundProvider {
     }
 
     private fun extractEditorialVideoUrl(editorialData: JsonObject): String? {
-        val preferredKeys = listOf("motionDetailRaw", "motionDetailTall", "motionDetailSquare", "motionSquareVideo1x1", "motionTallVideo3x4")
+        val preferredKeys =
+            listOf("motionDetailRaw", "motionDetailTall", "motionDetailSquare", "motionSquareVideo1x1", "motionTallVideo3x4")
         for (key in preferredKeys) {
             val videoUrl = editorialData[key]?.jsonObject?.get("video")?.jsonPrimitive?.contentOrNull
             if (!videoUrl.isNullOrBlank()) return videoUrl
@@ -190,7 +200,10 @@ object AppleMusicArtistBackgroundProvider {
         return null
     }
 
-    private fun cacheKey(prefix: String, vararg parts: String): String {
+    private fun cacheKey(
+        prefix: String,
+        vararg parts: String,
+    ): String {
         return "$prefix|" + parts.joinToString("|") { it.trim().lowercase(Locale.ROOT) }
     }
 }

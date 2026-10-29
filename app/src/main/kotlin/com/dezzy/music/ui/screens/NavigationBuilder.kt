@@ -107,6 +107,8 @@ fun NavGraphBuilder.navigationBuilder(
     scrollBehavior: TopAppBarScrollBehavior,
     latestVersionName: String,
 ) {
+
+    
     composable(Screens.Home.route) {
         // Share the Activity-scoped HomeViewModel that MainActivity already creates
         // (for the shuffle button and account avatar). Scoping this one to the nav
@@ -136,7 +138,13 @@ fun NavGraphBuilder.navigationBuilder(
         StatsScreen(navController)
     }
     composable("year_in_music") {
-        YearInMusicScreen(navController)
+        com.dezzy.music.ui.screens.YearInMusicScreen(navController)
+    }
+    composable("search") {
+        // Dummy screen. MainActivity intercepts this route to show the TopSearch overlay.
+    }
+    composable("dj_dezzy") {
+        com.dezzy.music.ui.screens.DJDezzyScreen(navController)
     }
     composable(MusicRecognitionRoute) {
         MusicRecognitionScreen(navController)

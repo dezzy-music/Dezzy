@@ -4,12 +4,10 @@
  * Licensed Under GPL-3.0 | see git history for contributors
  */
 
-
-
 package com.my.kizzy.rpc
 
-import com.my.kizzy.KizzyLogger
 import com.my.kizzy.DefaultKizzyLogger
+import com.my.kizzy.KizzyLogger
 import com.my.kizzy.gateway.DiscordWebSocket
 import com.my.kizzy.gateway.entities.presence.Activity
 import com.my.kizzy.gateway.entities.presence.Assets
@@ -22,7 +20,6 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
 import org.json.JSONObject
-import java.util.logging.Logger
 
 /**
  * Modified by Dezzy
@@ -32,6 +29,7 @@ open class KizzyRPC(private val token: String, private val injectedLogger: Kizzy
     private val discordWebSocket = DiscordWebSocket(token)
     private var platform: String? = null
     private val logTag = "RPC"
+
     // Use injected logger if provided, otherwise fall back to DefaultKizzyLogger which uses java.util.logging
     private val logger: KizzyLogger = injectedLogger ?: DefaultKizzyLogger("MainRPC")
 
@@ -62,8 +60,7 @@ open class KizzyRPC(private val token: String, private val injectedLogger: Kizzy
         return image?.resolveImage(kizzyRepository)
     }
 
-    private fun String.sanitize(): String =
-        if (length > 128) substring(0, 128) else this
+    private fun String.sanitize(): String = if (length > 128) substring(0, 128) else this
 
     private suspend fun makePresence(
         name: String,
@@ -91,36 +88,39 @@ open class KizzyRPC(private val token: String, private val injectedLogger: Kizzy
 
         try {
             logger.info("Resolved assets: large=$resolvedLarge small=$resolvedSmall")
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+        }
         val finalApplicationId = applicationId
 
         return Presence(
-            activities = listOf(
-                Activity(
-                    name = name,
-                    state = state,
-                    stateUrl = stateUrl,
-                    details = details,
-                    detailsUrl = detailsUrl,
-                    assets = Assets(
-                        largeImage = resolvedLarge,
-                        smallImage = resolvedSmall,
-                        largeText = largeText,
-                        smallText = smallText
+            activities =
+                listOf(
+                    Activity(
+                        name = name,
+                        state = state,
+                        stateUrl = stateUrl,
+                        details = details,
+                        detailsUrl = detailsUrl,
+                        assets =
+                            Assets(
+                                largeImage = resolvedLarge,
+                                smallImage = resolvedSmall,
+                                largeText = largeText,
+                                smallText = smallText,
+                            ),
+                        type = type.value,
+                        platform = platform?.sanitize(),
+                        statusDisplayType = statusDisplayType.value,
+                        timestamps = Timestamps(startTime, endTime),
+                        buttons = buttons?.map { it.first },
+                        metadata = Metadata(buttonUrls = buttons?.map { it.second }),
+                        applicationId = finalApplicationId,
+                        url = streamUrl,
                     ),
-                    type = type.value,
-                    platform = platform?.sanitize(),
-                    statusDisplayType = statusDisplayType.value,
-                    timestamps = Timestamps(startTime, endTime),
-                    buttons = buttons?.map { it.first },
-                    metadata = Metadata(buttonUrls = buttons?.map { it.second }),
-                    applicationId = finalApplicationId,
-                    url = streamUrl
-                )
-            ),
+                ),
             afk = false,
             since = since,
-            status = status ?: "online"
+            status = status ?: "online",
         )
     }
 
@@ -145,7 +145,12 @@ open class KizzyRPC(private val token: String, private val injectedLogger: Kizzy
         since: Long? = null,
     ) {
         if (!isRpcRunning()) {
-            val shortToken = try { token.take(8) + "…" } catch (_: Exception) { "(token)" }
+            val shortToken =
+                try {
+                    token.take(8) + "…"
+                } catch (_: Exception) {
+                    "(token)"
+                }
             logger.fine("trying to connect WebSocket with token=$shortToken")
             try {
                 discordWebSocket.connect()
@@ -161,14 +166,15 @@ open class KizzyRPC(private val token: String, private val injectedLogger: Kizzy
             }
         }
 
-        val success = discordWebSocket.sendActivity(
-            makePresence(
-                name, state, stateUrl, details, detailsUrl,
-                largeImage, smallImage, largeText, smallText,
-                buttons, startTime, endTime, type, statusDisplayType,
-                streamUrl, applicationId, status, since
+        val success =
+            discordWebSocket.sendActivity(
+                makePresence(
+                    name, state, stateUrl, details, detailsUrl,
+                    largeImage, smallImage, largeText, smallText,
+                    buttons, startTime, endTime, type, statusDisplayType,
+                    streamUrl, applicationId, status, since,
+                ),
             )
-        )
         if (!success) {
             logger.warning("sendActivity returned false - presence may not have been sent")
         }
@@ -203,8 +209,8 @@ open class KizzyRPC(private val token: String, private val injectedLogger: Kizzy
                 name, state, stateUrl, details, detailsUrl,
                 largeImage, smallImage, largeText, smallText,
                 buttons, startTime, endTime, type, statusDisplayType,
-                streamUrl, applicationId, status, since
-            )
+                streamUrl, applicationId, status, since,
+            ),
         )
     }
 
@@ -229,19 +235,20 @@ open class KizzyRPC(private val token: String, private val injectedLogger: Kizzy
         since: Long? = null,
     ) {
         if (discordWebSocket.isFullyConnected()) {
-            val success = updateActivity(
-                name, state, stateUrl, details, detailsUrl,
-                largeImage, smallImage, largeText, smallText,
-                buttons, startTime, endTime, type, statusDisplayType,
-                streamUrl, applicationId, status, since
-            )
+            val success =
+                updateActivity(
+                    name, state, stateUrl, details, detailsUrl,
+                    largeImage, smallImage, largeText, smallText,
+                    buttons, startTime, endTime, type, statusDisplayType,
+                    streamUrl, applicationId, status, since,
+                )
             if (!success) {
                 logger.warning("refreshRPC: updateActivity failed, trying buildActivity")
                 buildActivity(
                     name, state, stateUrl, details, detailsUrl,
                     largeImage, smallImage, largeText, smallText,
                     buttons, startTime, endTime, type, statusDisplayType,
-                    streamUrl, applicationId, status, since
+                    streamUrl, applicationId, status, since,
                 )
             }
         } else {
@@ -249,37 +256,38 @@ open class KizzyRPC(private val token: String, private val injectedLogger: Kizzy
                 name, state, stateUrl, details, detailsUrl,
                 largeImage, smallImage, largeText, smallText,
                 buttons, startTime, endTime, type, statusDisplayType,
-                streamUrl, applicationId, status, since
+                streamUrl, applicationId, status, since,
             )
         }
     }
-
 
     enum class Type(val value: Int) {
         PLAYING(0),
         STREAMING(1),
         LISTENING(2),
         WATCHING(3),
-        COMPETING(5)
+        COMPETING(5),
     }
 
     enum class StatusDisplayType(val value: Int) {
         NAME(0),
         STATE(1),
-        DETAILS(2)
+        DETAILS(2),
     }
 
     companion object {
-        suspend fun getUserInfo(token: String): Result<UserInfo> = runCatching {
-            val client = HttpClient()
-            val response = client.get("https://discord.com/api/v9/users/@me") {
-                header("Authorization", token)
-            }.bodyAsText()
-            val json = JSONObject(response)
-            val username = json.getString("username")
-            val name = json.optString("global_name", username)
-            client.close()
-            UserInfo(username, name)
-        }
+        suspend fun getUserInfo(token: String): Result<UserInfo> =
+            runCatching {
+                val client = HttpClient()
+                val response =
+                    client.get("https://discord.com/api/v9/users/@me") {
+                        header("Authorization", token)
+                    }.bodyAsText()
+                val json = JSONObject(response)
+                val username = json.getString("username")
+                val name = json.optString("global_name", username)
+                client.close()
+                UserInfo(username, name)
+            }
     }
 }

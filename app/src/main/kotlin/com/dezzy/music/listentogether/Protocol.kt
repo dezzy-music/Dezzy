@@ -83,8 +83,9 @@ object PlaybackActions {
  */
 @Serializable
 data class Message(
-    val type: String,
-    val payload: ByteArray? = null
+    val type: String = "",
+    val payload: ByteArray? = null,
+    val compressed: Boolean = false
 )
 
 /**
@@ -92,11 +93,11 @@ data class Message(
  */
 @Serializable
 data class TrackInfo(
-    val id: String,
-    val title: String,
-    val artist: String,
+    val id: String = "",
+    val title: String = "",
+    val artist: String = "",
     val album: String? = null,
-    val duration: Long, // milliseconds
+    val duration: Long = 0L, // milliseconds
     val thumbnail: String? = null,
     @SerialName("suggested_by") val suggestedBy: String? = null
 )
@@ -106,9 +107,9 @@ data class TrackInfo(
  */
 @Serializable
 data class UserInfo(
-    @SerialName("user_id") val userId: String,
-    val username: String,
-    @SerialName("is_host") val isHost: Boolean,
+    @SerialName("user_id") val userId: String = "",
+    val username: String = "",
+    @SerialName("is_host") val isHost: Boolean = false,
     @SerialName("is_connected") val isConnected: Boolean = true
 )
 
@@ -117,13 +118,13 @@ data class UserInfo(
  */
 @Serializable
 data class RoomState(
-    @SerialName("room_code") val roomCode: String,
-    @SerialName("host_id") val hostId: String,
-    val users: List<UserInfo>,
+    @SerialName("room_code") val roomCode: String = "",
+    @SerialName("host_id") val hostId: String = "",
+    val users: List<UserInfo> = emptyList(),
     @SerialName("current_track") val currentTrack: TrackInfo? = null,
-    @SerialName("is_playing") val isPlaying: Boolean,
-    val position: Long, // milliseconds
-    @SerialName("last_update") val lastUpdate: Long, // unix timestamp ms
+    @SerialName("is_playing") val isPlaying: Boolean = false,
+    val position: Long = 0L, // milliseconds
+    @SerialName("last_update") val lastUpdate: Long = 0L, // unix timestamp ms
     val volume: Float = 1f,
     val queue: List<TrackInfo> = emptyList()
 )
@@ -132,29 +133,29 @@ data class RoomState(
 
 @Serializable
 data class CreateRoomPayload(
-    val username: String
+    val username: String = ""
 )
 
 @Serializable
 data class JoinRoomPayload(
-    @SerialName("room_code") val roomCode: String,
-    val username: String
+    @SerialName("room_code") val roomCode: String = "",
+    val username: String = ""
 )
 
 @Serializable
 data class ApproveJoinPayload(
-    @SerialName("user_id") val userId: String
+    @SerialName("user_id") val userId: String = ""
 )
 
 @Serializable
 data class RejectJoinPayload(
-    @SerialName("user_id") val userId: String,
+    @SerialName("user_id") val userId: String = "",
     val reason: String? = null
 )
 
 @Serializable
 data class PlaybackActionPayload(
-    val action: String,
+    val action: String = "",
     @SerialName("track_id") val trackId: String? = null,
     val position: Long? = null, // milliseconds
     @SerialName("track_info") val trackInfo: TrackInfo? = null,
@@ -167,23 +168,23 @@ data class PlaybackActionPayload(
 
 @Serializable
 data class BufferReadyPayload(
-    @SerialName("track_id") val trackId: String
+    @SerialName("track_id") val trackId: String = ""
 )
 
 @Serializable
 data class KickUserPayload(
-    @SerialName("user_id") val userId: String,
+    @SerialName("user_id") val userId: String = "",
     val reason: String? = null
 )
 
 @Serializable
 data class TransferHostPayload(
-    @SerialName("new_host_id") val newHostId: String
+    @SerialName("new_host_id") val newHostId: String = ""
 )
 
 @Serializable
 data class ChatPayload(
-    val message: String,
+    val message: String = "",
     @SerialName("message_id") val messageId: String? = null,
     @SerialName("reply_to_id") val replyToId: String? = null,
     @SerialName("reply_to_text") val replyToText: String? = null,
@@ -192,58 +193,58 @@ data class ChatPayload(
 
 @Serializable
 data class TypingPayload(
-    @SerialName("is_typing") val isTyping: Boolean,
+    @SerialName("is_typing") val isTyping: Boolean = false,
     @SerialName("user_id") val userId: String? = null,
     val username: String? = null
 )
 
 @Serializable
 data class EditMessagePayload(
-    @SerialName("message_id") val messageId: String,
-    @SerialName("new_message") val newMessage: String
+    @SerialName("message_id") val messageId: String = "",
+    @SerialName("new_message") val newMessage: String = ""
 )
 
 @Serializable
 data class ChatAckPayload(
-    @SerialName("message_id") val messageId: String,
-    val status: String // "delivered", "read"
+    @SerialName("message_id") val messageId: String = "",
+    val status: String = "" // "delivered", "read"
 )
 
 // Suggestions payloads
 
 @Serializable
 data class SuggestTrackPayload(
-    @SerialName("track_info") val trackInfo: TrackInfo
+    @SerialName("track_info") val trackInfo: TrackInfo = TrackInfo()
 )
 
 @Serializable
 data class SuggestionReceivedPayload(
-    @SerialName("suggestion_id") val suggestionId: String,
-    @SerialName("from_user_id") val fromUserId: String,
-    @SerialName("from_username") val fromUsername: String,
-    @SerialName("track_info") val trackInfo: TrackInfo
+    @SerialName("suggestion_id") val suggestionId: String = "",
+    @SerialName("from_user_id") val fromUserId: String = "",
+    @SerialName("from_username") val fromUsername: String = "",
+    @SerialName("track_info") val trackInfo: TrackInfo = TrackInfo()
 )
 
 @Serializable
 data class ApproveSuggestionPayload(
-    @SerialName("suggestion_id") val suggestionId: String
+    @SerialName("suggestion_id") val suggestionId: String = ""
 )
 
 @Serializable
 data class RejectSuggestionPayload(
-    @SerialName("suggestion_id") val suggestionId: String,
+    @SerialName("suggestion_id") val suggestionId: String = "",
     val reason: String? = null
 )
 
 @Serializable
 data class SuggestionApprovedPayload(
-    @SerialName("suggestion_id") val suggestionId: String,
-    @SerialName("track_info") val trackInfo: TrackInfo
+    @SerialName("suggestion_id") val suggestionId: String = "",
+    @SerialName("track_info") val trackInfo: TrackInfo = TrackInfo()
 )
 
 @Serializable
 data class SuggestionRejectedPayload(
-    @SerialName("suggestion_id") val suggestionId: String,
+    @SerialName("suggestion_id") val suggestionId: String = "",
     val reason: String? = null
 )
 
@@ -251,65 +252,65 @@ data class SuggestionRejectedPayload(
 
 @Serializable
 data class RoomCreatedPayload(
-    @SerialName("room_code") val roomCode: String,
-    @SerialName("user_id") val userId: String,
-    @SerialName("session_token") val sessionToken: String
+    @SerialName("room_code") val roomCode: String = "",
+    @SerialName("user_id") val userId: String = "",
+    @SerialName("session_token") val sessionToken: String = ""
 )
 
 @Serializable
 data class JoinRequestPayload(
-    @SerialName("user_id") val userId: String,
-    val username: String
+    @SerialName("user_id") val userId: String = "",
+    val username: String = ""
 )
 
 @Serializable
 data class JoinApprovedPayload(
-    @SerialName("room_code") val roomCode: String,
-    @SerialName("user_id") val userId: String,
-    @SerialName("session_token") val sessionToken: String,
-    val state: RoomState
+    @SerialName("room_code") val roomCode: String = "",
+    @SerialName("user_id") val userId: String = "",
+    @SerialName("session_token") val sessionToken: String = "",
+    val state: RoomState = RoomState()
 )
 
 @Serializable
 data class JoinRejectedPayload(
-    val reason: String
+    val reason: String = ""
 )
 
 @Serializable
 data class UserJoinedPayload(
-    @SerialName("user_id") val userId: String,
-    val username: String
+    @SerialName("user_id") val userId: String = "",
+    val username: String = ""
 )
 
 @Serializable
 data class UserLeftPayload(
-    @SerialName("user_id") val userId: String,
-    val username: String
+    @SerialName("user_id") val userId: String = "",
+    val username: String = ""
 )
 
 @Serializable
 data class BufferWaitPayload(
-    @SerialName("track_id") val trackId: String,
-    @SerialName("waiting_for") val waitingFor: List<String>
+    @SerialName("track_id") val trackId: String = "",
+    @SerialName("waiting_for") val waitingFor: List<String> = emptyList()
 )
 
 @Serializable
 data class BufferCompletePayload(
-    @SerialName("track_id") val trackId: String
+    @SerialName("track_id") val trackId: String = ""
 )
 
 @Serializable
 data class ErrorPayload(
-    val code: String,
-    val message: String
+    val code: String = "",
+    val message: String = ""
 )
 
 @Serializable
 data class ChatMessagePayload(
-    @SerialName("user_id") val userId: String,
-    val username: String,
-    val message: String,
-    val timestamp: Long,
+    @SerialName("user_id") val userId: String = "",
+    val username: String = "",
+    val message: String = "",
+    val timestamp: Long = 0L,
     @SerialName("message_id") val messageId: String = "",
     @SerialName("reply_to_id") val replyToId: String? = null,
     @SerialName("reply_to_text") val replyToText: String? = null,
@@ -320,13 +321,13 @@ data class ChatMessagePayload(
 
 @Serializable
 data class HostChangedPayload(
-    @SerialName("new_host_id") val newHostId: String,
-    @SerialName("new_host_name") val newHostName: String
+    @SerialName("new_host_id") val newHostId: String = "",
+    @SerialName("new_host_name") val newHostName: String = ""
 )
 
 @Serializable
 data class KickedPayload(
-    val reason: String
+    val reason: String = ""
 )
 
 /**
@@ -334,10 +335,10 @@ data class KickedPayload(
  */
 @Serializable
 data class SyncStatePayload(
-    @SerialName("current_track") val currentTrack: TrackInfo?,
-    @SerialName("is_playing") val isPlaying: Boolean,
-    val position: Long,
-    @SerialName("last_update") val lastUpdate: Long,
+    @SerialName("current_track") val currentTrack: TrackInfo? = null,
+    @SerialName("is_playing") val isPlaying: Boolean = false,
+    val position: Long = 0L,
+    @SerialName("last_update") val lastUpdate: Long = 0L,
     val queue: List<TrackInfo>? = null,
     val volume: Float? = null
 )
@@ -346,25 +347,25 @@ data class SyncStatePayload(
 
 @Serializable
 data class ReconnectPayload(
-    @SerialName("session_token") val sessionToken: String
+    @SerialName("session_token") val sessionToken: String = ""
 )
 
 @Serializable
 data class ReconnectedPayload(
-    @SerialName("room_code") val roomCode: String,
-    @SerialName("user_id") val userId: String,
-    val state: RoomState,
-    @SerialName("is_host") val isHost: Boolean
+    @SerialName("room_code") val roomCode: String = "",
+    @SerialName("user_id") val userId: String = "",
+    val state: RoomState = RoomState(),
+    @SerialName("is_host") val isHost: Boolean = false
 )
 
 @Serializable
 data class UserReconnectedPayload(
-    @SerialName("user_id") val userId: String,
-    val username: String
+    @SerialName("user_id") val userId: String = "",
+    val username: String = ""
 )
 
 @Serializable
 data class UserDisconnectedPayload(
-    @SerialName("user_id") val userId: String,
-    val username: String
+    @SerialName("user_id") val userId: String = "",
+    val username: String = ""
 )

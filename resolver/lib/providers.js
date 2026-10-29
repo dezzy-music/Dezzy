@@ -10,31 +10,31 @@
 const deezer = require('./deezer');
 const qobuz = require('./qobuz');
 
-function deezerConfigured() {
-  return !!process.env.DEEZER_ARL;
+function deezerConfigured(customArl) {
+  return !!customArl || !!process.env.DEEZER_ARL;
 }
-function qobuzConfigured() {
-  return !!process.env.QOBUZ_TOKEN;
+function qobuzConfigured(customQbz) {
+  return !!customQbz || !!process.env.QOBUZ_TOKEN;
 }
 
 /** Lista de proveedores activos, con el preferido primero. */
-function activeProviders(preferred) {
+function activeProviders(preferred, customArl, customQbz) {
   const all = [];
-  if (deezerConfigured()) all.push('dzr');
-  if (qobuzConfigured()) all.push('qbz');
+  if (deezerConfigured(customArl)) all.push('dzr');
+  if (qobuzConfigured(customQbz)) all.push('qbz');
   // preferido al frente
   return all.sort((a, b) => (a === preferred ? -1 : b === preferred ? 1 : 0));
 }
 
 // ── Resolución por proveedor: localizar la pista y su tamaño (sin descargar) ──
 
-async function planDeezer({ id, isrc, title, artist, quality }) {
+async function planDeezer({ id, isrc, title, artist, quality, customArl }) {
   let sngId = /^\d+$/.test(String(id || '')) ? String(id) : null;
   if (!sngId && isrc) sngId = await deezer.trackIdFromIsrc(isrc);
   if (!sngId && (title || artist)) sngId = await deezer.searchTrackId(title || '', artist || '');
   if (!sngId) return null;
 
-  const { session } = await deezer.acquireSession();
+  const { session } = await deezer.acquireSession(false, customArl);
   const song = await deezer.songData(session, sngId);
   const size =
     quality === 'flac'
@@ -54,10 +54,10 @@ async function planDeezer({ id, isrc, title, artist, quality }) {
   };
 }
 
-async function planQobuz({ id, isrc, title, artist, quality }) {
+async function planQobuz({ id, isrc, title, artist, quality, customQbz }) {
   let track = null;
-  if (isrc) track = await qobuz.trackByIsrc(isrc);
-  if (!track && (title || artist)) track = await qobuz.searchTrackId(title || '', artist || '');
+  if (isrc) track = await qobuz.trackByIsrc(isrc, customQbz);
+  if (!track && (title || artist)) track = await qobuz.searchTrackId(title || '', artist || '', customQbz);
   if (!track) return null;
   return {
     provider: 'qbz',
@@ -76,7 +76,7 @@ const PLANNERS = { dzr: planDeezer, qbz: planQobuz };
  * app (resolverPath). Si se pidió FLAC, priorizamos un proveedor que lo tenga.
  */
 async function plan(preferred, params) {
-  const providers = activeProviders(preferred);
+  const providers = activeProviders(preferred, params.customArl, params.customQbz);
   if (providers.length === 0) {
     throw new Error('El resolver no tiene ninguna credencial configurada (DEEZER_ARL o QOBUZ_TOKEN)');
   }

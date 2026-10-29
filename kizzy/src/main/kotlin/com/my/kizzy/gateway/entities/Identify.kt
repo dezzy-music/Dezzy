@@ -4,8 +4,6 @@
  * Licensed Under GPL-3.0 | see git history for contributors
  */
 
-
-
 package com.my.kizzy.gateway.entities
 
 import kotlinx.serialization.SerialName
@@ -25,17 +23,19 @@ data class Identify(
     val token: String,
 ) {
     companion object {
-        fun String.toIdentifyPayload() = Identify(
-            capabilities = 65,
-            compress = false,
-            largeThreshold = 100,
-            properties = Properties(
-                browser = "Discord Client",
-                device = "ktor",
-                os = "Windows"
-            ),
-            token = this
-        )
+        fun String.toIdentifyPayload() =
+            Identify(
+                capabilities = 65,
+                compress = false,
+                largeThreshold = 100,
+                properties =
+                    Properties(
+                        browser = "Discord Client",
+                        device = "ktor",
+                        os = "Windows",
+                    ),
+                token = this,
+            )
     }
 }
 

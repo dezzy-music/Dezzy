@@ -44,9 +44,10 @@ object NewReleaseAlbumPage {
                     .lastOrNull()
                     ?.text
                     ?.toIntOrNull(),
-            releaseType = AlbumReleaseType.fromLabel(
-                subtitleGroups.firstOrNull()?.joinToString(separator = "") { it.text }
-            ),
+            releaseType =
+                AlbumReleaseType.fromLabel(
+                    subtitleGroups.firstOrNull()?.joinToString(separator = "") { it.text },
+                ),
             thumbnail = renderer.thumbnailRenderer.musicThumbnailRenderer?.getThumbnailUrl() ?: return null,
             explicit =
                 renderer.subtitleBadges?.find {

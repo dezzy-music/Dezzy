@@ -134,17 +134,30 @@ async function sessionFor(arl, forceRefresh = false) {
   return fresh;
 }
 
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
 /**
  * Devuelve una sesión de un ARL sano del pool, rotando si alguno falla. Los que
  * fallan se bancarizan (cooldown) para no reintentarlos en cada descarga.
  * Devuelve { session, canLossless, arl }.
  */
-async function acquireSession(forceRefresh = false) {
+async function acquireSession(forceRefresh = false, customArl = null) {
+  if (customArl) {
+    const s = await sessionFor(customArl, forceRefresh);
+    return { ...s, arl: customArl };
+  }
   const pool = arlPool();
   if (pool.length === 0) throw new Error('No hay DEEZER_ARL configurado');
   const now = Date.now();
   const healthy = pool.filter((a) => (cooldownUntil.get(a) || 0) < now);
-  const order = healthy.length ? healthy : pool; // si todos en cooldown, probamos igual
+  // Distribución de carga: Shuffle aleatorio
+  const order = shuffle(healthy.length ? healthy : [...pool]);
   let lastErr = null;
   for (const arl of order) {
     try {
@@ -187,20 +200,36 @@ function invalidateSession() {
   sessionCache.clear();
 }
 
+const searchCache = new Map();
+function getCached(key) { return searchCache.get(key); }
+function setCached(key, val) { 
+  if (searchCache.size > 1000) searchCache.clear();
+  searchCache.set(key, val); 
+  return val;
+}
+
 /** Resuelve un ISRC a un id de pista de Deezer usando la API pública (sin auth). */
 async function trackIdFromIsrc(isrc) {
   if (!isrc) return null;
+  const cacheKey = `isrc:${isrc}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
+
   const res = await fetch(`${PUBLIC_API}/track/isrc:${encodeURIComponent(isrc)}`, {
     headers: { Accept: 'application/json' },
   });
   if (!res.ok) return null;
   const json = await res.json();
-  if (json && json.id && !json.error) return String(json.id);
+  if (json && json.id && !json.error) return setCached(cacheKey, String(json.id));
   return null;
 }
 
 /** Busca la mejor pista por título + artista (fallback cuando no hay id ni ISRC). */
 async function searchTrackId(title, artist) {
+  const cacheKey = `search:${title}:${artist}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
+
   const q = `track:"${title}" artist:"${artist}"`;
   const res = await fetch(`${PUBLIC_API}/search?q=${encodeURIComponent(q)}&limit=1`, {
     headers: { Accept: 'application/json' },
@@ -208,15 +237,20 @@ async function searchTrackId(title, artist) {
   if (!res.ok) return null;
   const json = await res.json();
   const first = json && json.data && json.data[0];
-  return first ? String(first.id) : null;
+  if (first && first.id) return setCached(cacheKey, String(first.id));
+  return null;
 }
 
 /** Datos de la pista (TRACK_TOKEN + tamaños) desde el gateway autenticado. */
 async function songData(session, sngId) {
+  const cacheKey = `songData:${sngId}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
+
   const data = await session.gw('song.getData', { sng_id: String(sngId) });
   const r = data && data.results;
   if (!r || !r.SNG_ID) throw new Error('La pista no existe en Deezer');
-  return r;
+  return setCached(cacheKey, r);
 }
 
 /**

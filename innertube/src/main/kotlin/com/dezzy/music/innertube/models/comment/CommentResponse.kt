@@ -114,6 +114,7 @@ data class CommentResponse(
         data class NextContinuationData(
             val continuation: String = "",
         )
+
         @Serializable
         data class ReloadContinuationData(
             val continuation: String = "",

@@ -22,5 +22,4 @@ data class Continuation(
     )
 }
 
-fun List<Continuation>.getContinuation() =
-    firstOrNull()?.nextContinuationData?.continuation
+fun List<Continuation>.getContinuation() = firstOrNull()?.nextContinuationData?.continuation

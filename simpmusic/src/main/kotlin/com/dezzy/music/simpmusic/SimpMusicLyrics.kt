@@ -4,8 +4,6 @@
  * Licensed Under GPL-3.0 | see git history for contributors
  */
 
-
-
 package com.dezzy.music.simpmusic
 
 import com.dezzy.music.simpmusic.models.LyricsData
@@ -13,9 +11,9 @@ import com.dezzy.music.simpmusic.models.SimpMusicApiResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
-import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.http.HttpHeaders
@@ -56,44 +54,48 @@ object SimpMusicLyrics {
         }
     }
 
-    suspend fun getLyricsByVideoId(videoId: String): List<LyricsData> = runCatching {
-        val response = client.get(BASE_URL + videoId)
-        
-        if (response.status == HttpStatusCode.OK) {
-            val apiResponse = response.body<SimpMusicApiResponse>()
-            if (apiResponse.success) {
-                apiResponse.data
+    suspend fun getLyricsByVideoId(videoId: String): List<LyricsData> =
+        runCatching {
+            val response = client.get(BASE_URL + videoId)
+
+            if (response.status == HttpStatusCode.OK) {
+                val apiResponse = response.body<SimpMusicApiResponse>()
+                if (apiResponse.success) {
+                    apiResponse.data
+                } else {
+                    emptyList()
+                }
             } else {
                 emptyList()
             }
-        } else {
-            emptyList()
-        }
-    }.getOrDefault(emptyList())
+        }.getOrDefault(emptyList())
 
     suspend fun getLyrics(
         videoId: String,
         duration: Int = 0,
-    ): Result<String> = runCatching {
-        val tracks = getLyricsByVideoId(videoId)
-        
-        if (tracks.isEmpty()) {
-            throw IllegalStateException("Lyrics unavailable")
-        }
+    ): Result<String> =
+        runCatching {
+            val tracks = getLyricsByVideoId(videoId)
 
-        val bestMatch = if (duration > 0 && tracks.size > 1) {
-            tracks.minByOrNull { track ->
-                abs((track.duration ?: 0) - duration)
+            if (tracks.isEmpty()) {
+                throw IllegalStateException("Lyrics unavailable")
             }
-        } else {
-            tracks.firstOrNull()
-        }
 
-        val lyrics = bestMatch?.syncedLyrics ?: bestMatch?.plainLyrics
-            ?: throw IllegalStateException("Lyrics unavailable")
-        
-        lyrics
-    }
+            val bestMatch =
+                if (duration > 0 && tracks.size > 1) {
+                    tracks.minByOrNull { track ->
+                        abs((track.duration ?: 0) - duration)
+                    }
+                } else {
+                    tracks.firstOrNull()
+                }
+
+            val lyrics =
+                bestMatch?.syncedLyrics ?: bestMatch?.plainLyrics
+                    ?: throw IllegalStateException("Lyrics unavailable")
+
+            lyrics
+        }
 
     suspend fun getAllLyrics(
         videoId: String,
@@ -104,11 +106,12 @@ object SimpMusicLyrics {
         var count = 0
         var plain = 0
 
-        val sortedTracks = if (duration > 0) {
-            tracks.sortedBy { abs((it.duration ?: 0) - duration) }
-        } else {
-            tracks
-        }
+        val sortedTracks =
+            if (duration > 0) {
+                tracks.sortedBy { abs((it.duration ?: 0) - duration) }
+            } else {
+                tracks
+            }
 
         sortedTracks.forEach { track ->
             if (count <= 4) {

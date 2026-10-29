@@ -118,6 +118,7 @@ data class NextResponse(
             }
         }
     }
+
     @Serializable
     data class Contents(
         val singleColumnMusicWatchNextResultsRenderer: SingleColumnMusicWatchNextResultsRenderer?,

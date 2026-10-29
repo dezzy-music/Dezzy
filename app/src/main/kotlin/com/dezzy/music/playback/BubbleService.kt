@@ -145,8 +145,6 @@ class BubbleService : Service() {
                         val color2 = adjustAlpha(vibrant, 0.6f)
                         val color3 = adjustAlpha(muted, 0.7f)
 
-                        // Recycle old art bitmap before assigning new one
-                        val oldBitmap = currentArtBitmap
                         withContext(Dispatchers.Main) {
                             currentArtBitmap = bitmap
                             accentColor = vibrant
@@ -155,7 +153,6 @@ class BubbleService : Service() {
                             updateExpandedUI()
                             updateBubblePlayState()
                         }
-                        oldBitmap?.recycle()
                     } catch (_: Exception) {}
                 }
             }

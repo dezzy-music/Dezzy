@@ -33,17 +33,18 @@ data class PlaybackAuthState(
         get() = if (hasPlaybackLoginContext) dataSyncId else visitorData
 
     val fingerprint: String
-        get() = sha1(
-            listOf(
-                cookie.orEmpty(),
-                visitorData.orEmpty(),
-                dataSyncId.orEmpty(),
-                poToken.orEmpty(),
-                poTokenGvs.orEmpty(),
-                poTokenPlayer.orEmpty(),
-                webClientPoTokenEnabled.toString(),
-            ).joinToString(separator = "\u0000")
-        )
+        get() =
+            sha1(
+                listOf(
+                    cookie.orEmpty(),
+                    visitorData.orEmpty(),
+                    dataSyncId.orEmpty(),
+                    poToken.orEmpty(),
+                    poTokenGvs.orEmpty(),
+                    poTokenPlayer.orEmpty(),
+                    webClientPoTokenEnabled.toString(),
+                ).joinToString(separator = "\u0000"),
+            )
 
     fun normalized(): PlaybackAuthState =
         copy(
@@ -76,15 +77,7 @@ data class PlaybackAuthState(
         val EMPTY = PlaybackAuthState()
 
         internal fun needsServiceIntegrity(client: YouTubeClient): Boolean {
-            val name = client.clientName.uppercase(Locale.US)
-            return name == "WEB" ||
-                    name == "WEB_REMIX" ||
-                    name == "WEB_CREATOR" ||
-                    name == "MWEB" ||
-                    name == "WEB_EMBEDDED_PLAYER" ||
-                    name == "TVHTML5" ||
-                    name == "TVHTML5_SIMPLY_EMBEDDED_PLAYER" ||
-                    name == "TVHTML5_SIMPLY"
+            return true
         }
     }
 }

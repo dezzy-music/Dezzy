@@ -31,7 +31,8 @@ data class Album(
 enum class AlbumReleaseType {
     ALBUM,
     SINGLE,
-    EP;
+    EP,
+    ;
 
     companion object {
         fun fromLabel(label: String?): AlbumReleaseType {

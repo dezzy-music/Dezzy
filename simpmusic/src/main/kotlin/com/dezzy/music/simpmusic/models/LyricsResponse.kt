@@ -4,8 +4,6 @@
  * Licensed Under GPL-3.0 | see git history for contributors
  */
 
-
-
 package com.dezzy.music.simpmusic.models
 
 import kotlinx.serialization.SerialName

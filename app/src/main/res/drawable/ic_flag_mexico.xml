@@ -1,0 +1,53 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="18dp"
+    android:viewportWidth="640"
+    android:viewportHeight="480">
+    <!-- Green Stripe -->
+    <path
+        android:fillColor="#006847"
+        android:pathData="M0,0h213.3v480H0z"/>
+    <!-- White Stripe -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M213.3,0h213.4v480H213.3z"/>
+    <!-- Red Stripe -->
+    <path
+        android:fillColor="#CE1126"
+        android:pathData="M426.7,0H640v480H426.7z"/>
+    <!-- Stylized Mexican Coat of Arms (Escudo Nacional) -->
+    <!-- Base Rock & Branches -->
+    <path
+        android:fillColor="#2E7D32"
+        android:pathData="M270,300 C290,320 350,320 370,300 C350,312 290,312 270,300 Z"/>
+    <path
+        android:fillColor="#795548"
+        android:pathData="M295,295 C295,285 310,280 320,283 C330,280 345,285 345,295 C335,298 305,298 295,295 Z"/>
+    <!-- Nopal -->
+    <path
+        android:fillColor="#388E3C"
+        android:pathData="M305,275 C305,260 335,260 335,275 C335,290 305,290 305,275 Z"/>
+    <!-- Eagle Body & Wings -->
+    <path
+        android:fillColor="#8D6415"
+        android:pathData="M305,245 C290,230 270,240 260,250 C270,255 285,250 300,250 Z"/>
+    <path
+        android:fillColor="#8D6415"
+        android:pathData="M335,245 C350,230 370,240 380,250 C370,255 355,250 340,250 Z"/>
+    <path
+        android:fillColor="#A67C1E"
+        android:pathData="M310,260 C300,240 315,220 325,215 C335,220 340,235 330,255 C325,265 315,265 310,260 Z"/>
+    <!-- Eagle Head & Beak -->
+    <path
+        android:fillColor="#C59B27"
+        android:pathData="M325,215 C330,210 338,206 342,210 C345,214 340,220 332,220 Z"/>
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M342,210 L350,212 L342,216 Z"/>
+    <!-- Rattlesnake -->
+    <path
+        android:strokeColor="#1565C0"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M345,212 C355,215 350,225 340,228 C332,232 340,240 342,246"/>
+</vector>

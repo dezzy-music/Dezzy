@@ -4,8 +4,6 @@
  * Licensed Under GPL-3.0 | see git history for contributors
  */
 
-
-
 package com.my.kizzy.gateway
 
 import com.my.kizzy.gateway.entities.Heartbeat
@@ -66,13 +64,15 @@ open class DiscordWebSocket(
     private var resumeGatewayUrl: String? = null
     private var heartbeatJob: Job? = null
     private var connected = false
-    private var client: HttpClient = HttpClient {
-        install(WebSockets)
-    }
-    private val json = Json {
-        ignoreUnknownKeys = true
-        encodeDefaults = true
-    }
+    private var client: HttpClient =
+        HttpClient {
+            install(WebSockets)
+        }
+    private val json =
+        Json {
+            ignoreUnknownKeys = true
+            encodeDefaults = true
+        }
 
     override val coroutineContext: CoroutineContext
         get() = SupervisorJob() + Dispatchers.Default
@@ -108,12 +108,15 @@ open class DiscordWebSocket(
         heartbeatJob?.cancel()
         connected = false
         val close = websocket?.closeReason?.await()
-        Logger.getLogger("Kizzy").log(INFO, "Gateway: Closed with code: ${close?.code}, reason: ${close?.message},  can_reconnect: ${close?.code?.toInt() == 4000}")
+        Logger.getLogger(
+            "Kizzy",
+        ).log(INFO, "Gateway: Closed with code: ${close?.code}, reason: ${close?.message},  can_reconnect: ${close?.code?.toInt() == 4000}")
         if (close?.code?.toInt() == 4000) {
             delay(200.milliseconds)
             connect()
-        } else
+        } else {
             close()
+        }
     }
 
     private suspend fun onMessage(payload: Payload) {
@@ -182,8 +185,8 @@ open class DiscordWebSocket(
         websocket?.close(
             CloseReason(
                 code = 4000,
-                message = "Attempting to reconnect"
-            )
+                message = "Attempting to reconnect",
+            ),
         )
     }
 
@@ -191,7 +194,7 @@ open class DiscordWebSocket(
         Logger.getLogger("Kizzy").log(INFO, "Gateway: Sending $IDENTIFY")
         send(
             op = IDENTIFY,
-            d = token.toIdentifyPayload()
+            d = token.toIdentifyPayload(),
         )
     }
 
@@ -199,22 +202,24 @@ open class DiscordWebSocket(
         Logger.getLogger("Kizzy").log(INFO, "Gateway: Sending $RESUME")
         send(
             op = RESUME,
-            d = Resume(
-                seq = sequence,
-                sessionId = sessionId,
-                token = token
-            )
+            d =
+                Resume(
+                    seq = sequence,
+                    sessionId = sessionId,
+                    token = token,
+                ),
         )
     }
 
     private fun startHeartbeatJob(interval: Long) {
         heartbeatJob?.cancel()
-        heartbeatJob = launch {
-            while (isActive) {
-                sendHeartBeat()
-                delay(interval)
+        heartbeatJob =
+            launch {
+                while (isActive) {
+                    sendHeartBeat()
+                    delay(interval)
+                }
             }
-        }
     }
 
     private fun isSocketConnectedToAccount(): Boolean {
@@ -242,14 +247,18 @@ open class DiscordWebSocket(
         return true
     }
 
-    private suspend inline fun <reified T> send(op: OpCode, d: T?) {
+    private suspend inline fun <reified T> send(
+        op: OpCode,
+        d: T?,
+    ) {
         if (websocket?.isActive == true) {
-            val payload = json.encodeToString(
-                Payload(
-                    op = op,
-                    d = json.encodeToJsonElement(d),
+            val payload =
+                json.encodeToString(
+                    Payload(
+                        op = op,
+                        d = json.encodeToJsonElement(d),
+                    ),
                 )
-            )
             websocket?.send(Frame.Text(payload))
         }
     }
@@ -280,9 +289,8 @@ open class DiscordWebSocket(
         Logger.getLogger("Kizzy").log(INFO, "Gateway: Sending $PRESENCE_UPDATE")
         send(
             op = PRESENCE_UPDATE,
-            d = presence
+            d = presence,
         )
         return true
     }
-
 }

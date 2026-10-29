@@ -64,6 +64,10 @@ import com.dezzy.music.ui.component.NavigationTitle
 import com.dezzy.music.ui.utils.SnapLayoutInfoProvider
 import com.dezzy.music.utils.rememberPreference
 import com.dezzy.music.viewmodels.HomeViewModel
+import androidx.datastore.preferences.core.edit
+import com.dezzy.music.utils.dataStore
+import kotlinx.coroutines.launch
+import androidx.compose.ui.platform.LocalContext
 
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
@@ -84,6 +88,9 @@ fun HomeScreen(
     val speedDialSongs by viewModel.speedDialSongs.collectAsState()
     val quickPicks = quickPicksState?.takeIf { it.isNotEmpty() } ?: speedDialSongs
     val recentPlaylists by viewModel.recentPlaylistsDb.collectAsState()
+    val pinnedPlaylist1 by viewModel.pinnedPlaylist1.collectAsState()
+    val pinnedPlaylist2 by viewModel.pinnedPlaylist2.collectAsState()
+    var showPinnedPlaylistSelector by remember { androidx.compose.runtime.mutableStateOf<Int?>(null) }
     val forgottenFavorites by viewModel.forgottenFavorites.collectAsState()
     val keepListening by viewModel.keepListening.collectAsState()
     val homePage by viewModel.homePage.collectAsState()
@@ -328,9 +335,20 @@ fun HomeScreen(
 
 // ── Cajones estilo Spotify: 8 atajos rápidos ──
                 item {
+                    val context = LocalContext.current
                     SpotifyGreetingGrid(
                         quickPicks = quickPicks,
-                        recentPlaylists = recentPlaylists,
+                        pinnedPlaylist1 = pinnedPlaylist1,
+                        pinnedPlaylist2 = pinnedPlaylist2,
+                        onAddPlaylistClick = { slotIndex ->
+                            showPinnedPlaylistSelector = slotIndex
+                        },
+                        onRemovePlaylistClick = { slotIndex ->
+                            scope.launch {
+                                val key = if (slotIndex == 1) com.dezzy.music.constants.PinnedPlaylist1Key else com.dezzy.music.constants.PinnedPlaylist2Key
+                                context.dataStore.edit { it.remove(key) }
+                            }
+                        },
                         playerConnection = playerConnection,
                         navController = navController
                     )
@@ -522,5 +540,19 @@ fun HomeScreen(
                     }
             )
         }
+
+        showPinnedPlaylistSelector?.let { slotIndex ->
+            val context = LocalContext.current
+            com.dezzy.music.ui.menu.PinnedPlaylistDialog(
+                onDismiss = { showPinnedPlaylistSelector = null },
+                onPlaylistSelected = { playlist ->
+                    scope.launch {
+                        val key = if (slotIndex == 1) com.dezzy.music.constants.PinnedPlaylist1Key else com.dezzy.music.constants.PinnedPlaylist2Key
+                        context.dataStore.edit { it[key] = playlist.id }
+                    }
+                }
+            )
+        }
     }
 }
+

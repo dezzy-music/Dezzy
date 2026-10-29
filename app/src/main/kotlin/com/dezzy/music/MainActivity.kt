@@ -1181,12 +1181,13 @@ class MainActivity : ComponentActivity() {
 
                     var showAccountDialog by remember { mutableStateOf(false) }
 
-
+                    val djViewModel: com.dezzy.music.ui.screens.DJDezzyViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 
                     CompositionLocalProvider(
                         LocalDatabase provides database,
                         LocalContentColor provides if (pureBlack) Color.White else contentColorFor(MaterialTheme.colorScheme.surface),
                         LocalPlayerConnection provides playerConnection,
+                        LocalDjViewModel provides djViewModel,
                         LocalPlayerAwareWindowInsets provides playerAwareWindowInsets,
                         LocalDownloadUtil provides downloadUtil,
                         LocalShimmerTheme provides ShimmerTheme,
@@ -1407,7 +1408,9 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                     AnimatedVisibility(
-                                        visible = active || navBackStackEntry?.destination?.route?.startsWith("search/") == true,
+                                        visible = active || 
+                                                  navBackStackEntry?.destination?.route?.startsWith("search/") == true ||
+                                                  navBackStackEntry?.destination?.route == "search",
                                         enter = fadeIn(animationSpec = tween(durationMillis = 300)),
                                         exit = fadeOut(animationSpec = tween(durationMillis = 200))
                                     ) {
@@ -1534,7 +1537,7 @@ class MainActivity : ComponentActivity() {
                                                 modifier =
                                                     Modifier
                                                         .fillMaxSize()
-                                                        .padding(bottom = if (!playerBottomSheetState.isDismissed) MiniPlayerHeight else 0.dp)
+                                                        .padding(bottom = if (!playerBottomSheetState.isDismissed && currentRoute != "music_map" && currentRoute != "dj_dezzy") MiniPlayerHeight else 0.dp)
                                                         .navigationBarsPadding(),
                                             ) { searchSource ->
                                                 when (searchSource) {
@@ -1585,7 +1588,7 @@ class MainActivity : ComponentActivity() {
                                 bottomBar = {
                                     Box {
                                         // Hide the mini player on the immersive Music Map screen.
-                                        if (currentRoute != "music_map") {
+                                        if (currentRoute != "music_map" && currentRoute != "dj_dezzy") {
                                             BottomSheetPlayer(
                                                 state = playerBottomSheetState,
                                                 navController = navController,
@@ -1879,6 +1882,15 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleDeepLinkIntent(intent: Intent, navController: NavHostController) {
+        if (intent.action == android.content.Intent.ACTION_SEARCH || intent.action == ACTION_SEARCH) {
+            val query = intent.getStringExtra(android.app.SearchManager.QUERY)
+            if (!query.isNullOrBlank()) {
+                val encoded = java.net.URLEncoder.encode(query, "UTF-8")
+                navController.navigate("search/$encoded")
+                return
+            }
+        }
+
         if (intent.action == ACTION_DOWNLOAD_QUEUE) {
             navController.navigate(Screens.DownloadQueue.route)
             return
@@ -2027,6 +2039,7 @@ class MainActivity : ComponentActivity() {
 val LocalDatabase = staticCompositionLocalOf<MusicDatabase> { error("No database provided") }
 val LocalPlayerConnection =
     staticCompositionLocalOf<PlayerConnection?> { error("No PlayerConnection provided") }
+val LocalDjViewModel = staticCompositionLocalOf<com.dezzy.music.ui.screens.DJDezzyViewModel?> { null }
 val LocalPlayerAwareWindowInsets =
     compositionLocalOf<WindowInsets> { error("No WindowInsets provided") }
 val LocalDownloadUtil = staticCompositionLocalOf<DownloadUtil> { error("No DownloadUtil provided") }
