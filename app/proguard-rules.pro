@@ -132,3 +132,13 @@
 -dontwarn javax.imageio.**
 -dontwarn javax.swing.**
 -keep class org.jaudiotagger.** { *; }
+
+
+## Native JNI Video Resolver
+-keep class com.dezzy.music.utils.NativeVideoResolver {
+    native <methods>;
+    *;
+}
+-keepclasseswithmembernames class * {
+    native <methods>;
+}

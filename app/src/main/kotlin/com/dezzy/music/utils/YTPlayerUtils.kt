@@ -206,7 +206,13 @@ object YTPlayerUtils {
         val adaptiveAudioUrl: String? = null,
     )
 
-    private val VIDEO_MODE_CLIENTS: List<YouTubeClient> = listOf(IOS, ANDROID_TESTSUITE, TVHTML5, WEB_REMIX, ANDROID_VR_NO_AUTH, ANDROID_MUSIC)
+    private val VIDEO_MODE_CLIENTS: List<YouTubeClient> = listOf(
+        ANDROID_VR_1_61_48,
+        ANDROID_VR_1_43_32,
+        IOS,
+        ANDROID_TESTSUITE,
+        TVHTML5,
+    )
 
     /**
      * Resolves a video+audio stream for "watch the music video" mode.

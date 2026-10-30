@@ -103,6 +103,7 @@ output-metadata.json
 core
 core.*
 *.so
+!app/src/main/jniLibs/**/libdezzy_video_resolver.so
 *.bin
 /.trae
 
@@ -128,3 +129,7 @@ chromecast_dashboard/
 log*.txt
 logcat*.txt
 
+
+# Rust build artifacts
+target/
+**/target/

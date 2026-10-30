@@ -448,6 +448,32 @@ class MusicService :
             val currentTitle = player.mediaMetadata.title?.toString()
             val currentArtist = player.mediaMetadata.artist?.toString()
             val result = withContext(Dispatchers.IO) {
+                // 1. Ultra-fast native Rust video resolver (direct unthrottled streams)
+                val nativeResolved = com.dezzy.music.utils.NativeVideoResolver.resolveVideo(mediaId, maxHeight)
+                if (nativeResolved != null && nativeResolved.success && nativeResolved.videoUrl != null) {
+                    android.util.Log.i("MusicService", "Resolved video instantaneously via native Rust: isMuxed=${nativeResolved.isMuxed}, height=${nativeResolved.height}")
+                    return@withContext Result.success(com.dezzy.music.utils.NativeVideoResolver.toVideoPlaybackData(nativeResolved))
+                }
+
+                val query = if (!currentTitle.isNullOrBlank()) "$currentTitle $currentArtist".trim() else null
+                val searchVidId = if (!query.isNullOrBlank()) {
+                    runCatching {
+                        val searchRes = com.dezzy.music.innertube.YouTube.search(
+                            query = query,
+                            filter = com.dezzy.music.innertube.YouTube.SearchFilter.FILTER_VIDEO
+                        ).getOrNull()
+                        searchRes?.items?.firstOrNull()?.id
+                    }.getOrNull()
+                } else null
+
+                if (!searchVidId.isNullOrBlank() && searchVidId != mediaId) {
+                    val nativeSearchResolved = com.dezzy.music.utils.NativeVideoResolver.resolveVideo(searchVidId, maxHeight)
+                    if (nativeSearchResolved != null && nativeSearchResolved.success && nativeSearchResolved.videoUrl != null) {
+                        android.util.Log.i("MusicService", "Resolved video search ($searchVidId) instantaneously via native Rust")
+                        return@withContext Result.success(com.dezzy.music.utils.NativeVideoResolver.toVideoPlaybackData(nativeSearchResolved))
+                    }
+                }
+
                 val isValidUrl: suspend (String) -> Boolean = { url ->
                     android.util.Log.w("MusicService", "isValidUrl bypassed for $url")
                     true
@@ -455,23 +481,10 @@ class MusicService :
                 val direct = YTPlayerUtils.videoPlaybackDataForPlayback(mediaId, maxHeight = maxHeight, isValidUrl = isValidUrl)
                 if (direct.isSuccess) {
                     direct
+                } else if (!searchVidId.isNullOrBlank()) {
+                    YTPlayerUtils.videoPlaybackDataForPlayback(searchVidId, maxHeight = maxHeight, isValidUrl = isValidUrl)
                 } else {
-                    val query = if (!currentTitle.isNullOrBlank()) "$currentTitle $currentArtist".trim() else null
-                    val searchVidId = if (!query.isNullOrBlank()) {
-                        runCatching {
-                            val searchRes = com.dezzy.music.innertube.YouTube.search(
-                                query = query,
-                                filter = com.dezzy.music.innertube.YouTube.SearchFilter.FILTER_VIDEO
-                            ).getOrNull()
-                            searchRes?.items?.firstOrNull()?.id
-                        }.getOrNull()
-                    } else null
-
-                    if (!searchVidId.isNullOrBlank()) {
-                        YTPlayerUtils.videoPlaybackDataForPlayback(searchVidId, maxHeight = maxHeight, isValidUrl = isValidUrl)
-                    } else {
-                        direct
-                    }
+                    direct
                 }
             }
             videoModeLoading.value = false
