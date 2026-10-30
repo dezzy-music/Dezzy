@@ -4,8 +4,6 @@
  * Licensed Under GPL-3.0 | see git history for contributors
  */
 
-
-
 package com.dezzy.music.ui.screens
 
 import androidx.annotation.DrawableRes
@@ -55,7 +53,14 @@ sealed class Screens(
         route = "mood_and_genres"
     )
 
+    object Together : Screens(
+        titleId = R.string.together_rooms,
+        iconIdInactive = R.drawable.group,
+        iconIdActive = R.drawable.group,
+        route = "public_rooms"
+    )
+
     companion object {
-        val MainScreens = listOf(Home, Search, MoodAndGenres, Library)
+        val MainScreens = listOf(Home, Search, Library, Together)
     }
 }

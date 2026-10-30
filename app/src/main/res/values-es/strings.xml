@@ -672,6 +672,7 @@
     <string name="you_might_like">Tal vez te guste</string>
     <string name="refresh_suggestions">Actualizar sugerencias</string>
     <string name="music_together">Listen Together</string>
+    <string name="together_rooms">Salas</string>
     <string name="together_display_name">Mostrar nombre</string>
     <string name="together_display_name_placeholder">Tú nombre</string>
     <string name="together_port">Puerto de sesión</string>

@@ -1,5 +1,19 @@
 package com.dezzy.music.ui.player
 
+import com.dezzy.music.ui.component.ConnectDeviceBottomSheet
+
+import com.dezzy.music.connect.ConnectState
+
+import com.dezzy.music.connect.LinerConnectManager
+
+import kotlinx.coroutines.flow.distinctUntilChanged
+
+import androidx.compose.runtime.snapshotFlow
+
+import androidx.compose.foundation.pager.rememberPagerState
+
+import androidx.compose.foundation.pager.HorizontalPager
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -120,6 +134,43 @@ fun SpotifyPlayer(
     val context = LocalContext.current
 
     val isLocalSong = mediaMetadata?.id?.startsWith("local_") == true
+    val queueWindows by playerConnection.queueWindows.collectAsState()
+    val currentWindowIndex by playerConnection.currentWindowIndex.collectAsState()
+    val linerManager = remember { LinerConnectManager.getInstance(context) }
+    val linerConnState by linerManager.connectionState.collectAsState()
+    val linerDeviceName by linerManager.connectedDeviceName.collectAsState()
+    val isConnectedToDesktop = linerConnState == ConnectState.CONNECTED
+    val activeDeviceName = if (isConnectedToDesktop) {
+        linerDeviceName ?: "Liner Desktop"
+    } else {
+        linerManager.getPhoneDisplayName()
+    }
+    var showDevicePicker by remember { mutableStateOf(false) }
+
+    val pageCount = queueWindows.size.coerceAtLeast(1)
+    val artworkPagerState = rememberPagerState(
+        initialPage = if (currentWindowIndex in 0 until pageCount) currentWindowIndex else 0,
+        pageCount = { pageCount }
+    )
+
+    LaunchedEffect(currentWindowIndex, queueWindows.size) {
+        if (currentWindowIndex in 0 until queueWindows.size &&
+            artworkPagerState.currentPage != currentWindowIndex &&
+            !artworkPagerState.isScrollInProgress
+        ) {
+            artworkPagerState.scrollToPage(currentWindowIndex)
+        }
+    }
+
+    LaunchedEffect(artworkPagerState, queueWindows) {
+        snapshotFlow { artworkPagerState.settledPage }
+            .distinctUntilChanged()
+            .collect { page ->
+                if (page != currentWindowIndex && page in 0 until queueWindows.size) {
+                    playerConnection.player.seekToDefaultPosition(page)
+                }
+            }
+    }
 
     // ---- Synced lyrics (live line + preview) ----
     val lyricsEntity by playerConnection.currentLyrics.collectAsState(initial = null)
@@ -638,7 +689,7 @@ fun SpotifyPlayer(
                     }
                 }
             } else {
-                // ---------- Artwork ----------
+                // ---------- Artwork with HorizontalPager swipe-to-skip ----------
                 if (hasCanvas && !isLandscape) {
                     Spacer(Modifier.height(screenHeightDp * 0.40f))
                 } else {
@@ -646,29 +697,44 @@ fun SpotifyPlayer(
                         modifier = Modifier
                             .padding(top = 8.dp)
                             .fillMaxWidth()
-                            .aspectRatio(1f)
-                            .shadow(
-                                elevation = 24.dp,
-                                shape = RoundedCornerShape(8.dp),
-                                clip = false
-                            )
-                            .clip(RoundedCornerShape(8.dp))
-                            .then(swipeToChangeSong)
+                            .aspectRatio(1f),
+                        contentAlignment = Alignment.Center
                     ) {
-                        AsyncImage(
-                            model = mediaMetadata?.thumbnailUrl,
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                        // En horizontal el canvas se muestra dentro del recuadro (sin fondo completo).
-                        if (hasCanvas && isLandscape) {
-                            CanvasArtworkPlayer(
-                                primaryUrl = canvasPrimary,
-                                fallbackUrl = canvasFallback,
-                                isPlaying = isPlaying,
-                                modifier = Modifier.fillMaxSize(),
-                            )
+                        if (queueWindows.isEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .shadow(elevation = 24.dp, shape = RoundedCornerShape(12.dp), clip = false)
+                                    .clip(RoundedCornerShape(12.dp))
+                            ) {
+                                AsyncImage(
+                                    model = mediaMetadata?.thumbnailUrl,
+                                    contentDescription = mediaMetadata?.title,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                        } else {
+                            HorizontalPager(
+                                state = artworkPagerState,
+                                modifier = Modifier.fillMaxSize()
+                            ) { page ->
+                                val itemMeta = queueWindows.getOrNull(page)?.mediaItem?.metadata ?: mediaMetadata
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(horizontal = 6.dp)
+                                        .shadow(elevation = 24.dp, shape = RoundedCornerShape(12.dp), clip = false)
+                                        .clip(RoundedCornerShape(12.dp))
+                                ) {
+                                    AsyncImage(
+                                        model = itemMeta?.thumbnailUrl ?: mediaMetadata?.thumbnailUrl,
+                                        contentDescription = itemMeta?.title,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -753,34 +819,61 @@ fun SpotifyPlayer(
 
                 Spacer(Modifier.height(16.dp))
 
-                // ---------- Bottom actions ----------
+                // ---------- Bottom actions: Spotify Connect active device + queue ----------
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Cambiar a modo video: los audífonos duplicaban el CastButton de arriba.
-                    run {
-                        val videoModeActive by playerConnection.videoModeActive.collectAsState()
-                        val videoModeLoading by playerConnection.videoModeLoading.collectAsState()
-                        IconButton(
-                            onClick = {
-                                if (videoModeActive) {
-                                    playerConnection.disableVideoMode()
-                                } else if (!videoModeLoading) {
-                                    playerConnection.enableVideoMode()
-                                }
-                            },
+                    // Spotify Connect device indicator & picker
+                    Surface(
+                        onClick = { showDevicePicker = true },
+                        shape = RoundedCornerShape(16.dp),
+                        color = if (isConnectedToDesktop) SpotifyGreen.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.1f),
+                        contentColor = if (isConnectedToDesktop) SpotifyGreen else Color.White
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                         ) {
                             Icon(
-                                painter = painterResource(R.drawable.slow_motion_video),
-                                contentDescription = "Cambiar a video",
-                                tint = if (videoModeActive) Color(0xFF1DB954) else Color.White.copy(alpha = 0.8f),
-                                modifier = Modifier.size(22.dp)
+                                painter = painterResource(R.drawable.speaker),
+                                contentDescription = "Dispositivos conectados",
+                                tint = if (isConnectedToDesktop) SpotifyGreen else Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                text = activeDeviceName,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
+
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        run {
+                            val videoModeActive by playerConnection.videoModeActive.collectAsState()
+                            val videoModeLoading by playerConnection.videoModeLoading.collectAsState()
+                            IconButton(
+                                onClick = {
+                                    if (videoModeActive) {
+                                        playerConnection.disableVideoMode()
+                                    } else if (!videoModeLoading) {
+                                        playerConnection.enableVideoMode()
+                                    }
+                                },
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.slow_motion_video),
+                                    contentDescription = "Cambiar a video",
+                                    tint = if (videoModeActive) SpotifyGreen else Color.White.copy(alpha = 0.8f),
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                        }
                         IconButton(onClick = onSleepTimerClick) {
                             Icon(
                                 painter = painterResource(R.drawable.timer),
@@ -976,6 +1069,12 @@ fun SpotifyPlayer(
             lyrics = playerConnection.currentLyrics.collectAsState(initial = null).value?.lyrics,
             mediaId = mediaMetadata?.id,
             onDismiss = { showShareSheet = false }
+        )
+    }
+
+    if (showDevicePicker) {
+        ConnectDeviceBottomSheet(
+            onDismissRequest = { showDevicePicker = false }
         )
     }
     }

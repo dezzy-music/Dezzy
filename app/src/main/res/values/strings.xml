@@ -745,6 +745,7 @@ Dezzy will only extract your token, and everything else is stored locally.</stri
     <string name="you_might_like">You might like</string>
     <string name="refresh_suggestions">Refresh suggestions</string>
     <string name="music_together">Listen Together</string>
+    <string name="together_rooms">Rooms</string>
     <string name="together_display_name">Display name</string>
     <string name="together_display_name_placeholder">Your name</string>
     <string name="together_port">Session port</string>

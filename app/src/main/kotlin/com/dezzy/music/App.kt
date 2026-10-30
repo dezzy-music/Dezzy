@@ -152,7 +152,7 @@ class App : Application(), SingletonImageLoader.Factory {
                         settings[KeepPlayerScreenAwakeKey] = true
                         settings[UseNewMiniPlayerDesignKey] = true
                         settings[DynamicMiniPlayerColorKey] = true
-                        settings[PlayerDesignStyleKey] = PlayerDesignStyle.APPLE_MUSIC.name
+                        settings[PlayerDesignStyleKey] = PlayerDesignStyle.SPOTIFY.name
                         settings[PlayerBackgroundStyleKey] = PlayerBackgroundStyle.GLOW_ANIMATED.name
                         settings[MiniPlayerBackgroundStyleKey] = "LIVE_MESH"
                         settings[CanvasModeKey] = CanvasMode.APPLE_WITH_FALLBACK.name

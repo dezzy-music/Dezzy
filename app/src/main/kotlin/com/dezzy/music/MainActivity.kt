@@ -810,8 +810,9 @@ class MainActivity : ComponentActivity() {
                         listOf(
                             Screens.Home.route,
                             Screens.Search.route,
-                            Screens.MoodAndGenres.route,
                             Screens.Library.route,
+                            Screens.Together.route,
+                            Screens.MoodAndGenres.route,
                             "settings",
                         )
 
