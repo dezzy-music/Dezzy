@@ -6,6 +6,25 @@
 
 package com.dezzy.music.ui.screens.settings
 
+import android.os.Build
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import com.dezzy.music.constants.ListenTogetherServerUrlKey
+import com.dezzy.music.constants.TogetherDisplayNameKey
+import com.dezzy.music.listentogether.ListenTogetherClient
+import com.dezzy.music.utils.rememberPreference
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.json.JSONArray
+import org.json.JSONObject
+
+
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -129,9 +148,80 @@ fun PublicRoomsScreen(
     val haptic = LocalHapticFeedback.current
     var selectedTheme by remember { mutableStateOf<TogetherRoomTheme?>(null) }
 
-    // Public rooms feed — populated when backend integration is complete.
-    // Currently shows hosted public room from the active session if available.
-    val publicRooms: List<TogetherPublicRoom> = remember { emptyList() }
+    val scope = rememberCoroutineScope()
+    val (serverUrl, _) = rememberPreference(
+        ListenTogetherServerUrlKey,
+        defaultValue = "https://huggingface.co/spaces/Dezzyyyy/listen-together"
+    )
+    val (displayName, _) = rememberPreference(
+        TogetherDisplayNameKey,
+        defaultValue = Build.MODEL?.takeIf { it.isNotBlank() } ?: "Oyente",
+    )
+
+    var publicRooms by remember { mutableStateOf<List<TogetherPublicRoom>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(false) }
+
+    fun fetchRooms() {
+        scope.launch(Dispatchers.IO) {
+            isLoading = true
+            try {
+                val baseUrl = if (serverUrl.contains("huggingface.co/spaces/Dezzyyyy/listen-together")) {
+                    "https://dezzyyyy-listen-together.hf.space"
+                } else {
+                    serverUrl.trimEnd('/')
+                }
+                val request = Request.Builder()
+                    .url("$baseUrl/api/v1/public-rooms")
+                    .header("Accept", "application/json")
+                    .build()
+                val client = OkHttpClient.Builder()
+                    .connectTimeout(6, java.util.concurrent.TimeUnit.SECONDS)
+                    .readTimeout(6, java.util.concurrent.TimeUnit.SECONDS)
+                    .build()
+                val response = client.newCall(request).execute()
+                if (response.isSuccessful) {
+                    val bodyStr = response.body?.string().orEmpty()
+                    val json = JSONObject(bodyStr)
+                    val roomsArray = json.optJSONArray("rooms") ?: JSONArray()
+                    val list = mutableListOf<TogetherPublicRoom>()
+                    for (i in 0 until roomsArray.length()) {
+                        val r = roomsArray.getJSONObject(i)
+                        val themeStr = r.optString("theme", "MIXED")
+                        val themeEnum = runCatching { TogetherRoomTheme.valueOf(themeStr) }.getOrDefault(TogetherRoomTheme.MIXED)
+                        list.add(
+                            TogetherPublicRoom(
+                                sessionId = r.optString("sessionId", r.optString("code")),
+                                code = r.optString("code"),
+                                hostName = r.optString("hostName", "Anfitrión"),
+                                theme = themeEnum,
+                                participantCount = r.optInt("participantCount", 0),
+                                currentTrackTitle = r.optString("currentTrackTitle").takeIf { it.isNotBlank() },
+                                currentTrackArtist = r.optString("currentTrackArtist").takeIf { it.isNotBlank() },
+                                currentTrackThumbnail = r.optString("currentTrackThumbnail").takeIf { it.isNotBlank() },
+                                isPublic = r.optBoolean("isPublic", true)
+                            )
+                        )
+                    }
+                    withContext(Dispatchers.Main) {
+                        publicRooms = list
+                    }
+                }
+            } catch (_: Exception) {
+            } finally {
+                withContext(Dispatchers.Main) {
+                    isLoading = false
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        fetchRooms()
+        while (isActive) {
+            delay(5000)
+            fetchRooms()
+        }
+    }
 
     val filteredRooms = if (selectedTheme == null) publicRooms
     else publicRooms.filter { it.theme == selectedTheme }
@@ -158,6 +248,28 @@ fun PublicRoomsScreen(
             navigationIcon = {
                 androidx.compose.material3.IconButton(onClick = { navController.navigateUp() }) {
                     Icon(painter = painterResource(R.drawable.arrow_back), contentDescription = null)
+                }
+            },
+            actions = {
+                androidx.compose.material3.IconButton(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        fetchRooms()
+                    }
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    } else {
+                        Icon(
+                            painter = painterResource(R.drawable.sync),
+                            contentDescription = "Actualizar",
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
                 }
             },
             scrollBehavior = scrollBehavior,
@@ -241,9 +353,13 @@ fun PublicRoomsScreen(
                         room = room,
                         onJoin = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            // The music_together route takes no joinCode arg; navigate to the
-                            // registered route (settings/music_together) to avoid a crash.
-                            navController.navigate("settings/music_together")
+                            val client = ListenTogetherClient.getInstance()
+                            if (client != null) {
+                                client.joinRoom(room.code, displayName)
+                                navController.navigate("listen_together_chat")
+                            } else {
+                                navController.navigate("settings/music_together")
+                            }
                         },
                     )
                 }

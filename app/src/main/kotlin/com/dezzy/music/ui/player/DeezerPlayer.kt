@@ -48,6 +48,7 @@ import com.dezzy.music.extensions.toggleRepeatMode
 import com.dezzy.music.playback.queues.YouTubeQueue
 import com.dezzy.music.ui.component.BottomSheetState
 import com.dezzy.music.ui.component.CastButton
+import com.dezzy.music.ui.component.ConnectDeviceBottomSheet
 import com.dezzy.music.ui.component.Lyrics
 import com.dezzy.music.ui.component.PlayerSliderTrack
 import com.dezzy.music.ui.component.ShareBottomSheet
@@ -107,6 +108,7 @@ fun DeezerPlayer(
 
     val context = LocalContext.current
     var showShareSheet by remember { mutableStateOf(false) }
+    var showDevicePicker by remember { mutableStateOf(false) }
 
     // Bloquear orientación horizontal para este reproductor DeezerPlayer (forzar modo vertical/portrait)
     DisposableEffect(Unit) {
@@ -865,12 +867,15 @@ fun DeezerPlayer(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Output device — same Cast picker under Deezer's speaker-box glyph.
-                CastButton(
-                    tint = onColor,
-                    icon = R.drawable.speaker,
-                    iconConnected = R.drawable.speaker
-                )
+                // Output device — Spotify Connect / Liner / Cast picker under speaker glyph
+                IconButton(onClick = { showDevicePicker = true }) {
+                    Icon(
+                        painter = painterResource(R.drawable.speaker),
+                        contentDescription = "Dispositivos conectados",
+                        tint = onColor,
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = onColor.copy(alpha = 0.10f),
@@ -910,6 +915,12 @@ fun DeezerPlayer(
                 lyrics = lyricsEntity?.lyrics,
                 mediaId = mediaMetadata?.id,
                 onDismiss = { showShareSheet = false }
+            )
+        }
+
+        if (showDevicePicker) {
+            ConnectDeviceBottomSheet(
+                onDismissRequest = { showDevicePicker = false }
             )
         }
     }

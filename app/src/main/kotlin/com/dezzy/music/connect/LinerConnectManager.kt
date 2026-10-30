@@ -43,6 +43,23 @@ data class DesktopPlaybackState(
 class LinerConnectManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
+    init {
+        instance = this
+    }
+
+    companion object {
+        @Volatile
+        private var instance: LinerConnectManager? = null
+
+        fun getInstance(context: Context? = null): LinerConnectManager {
+            return instance ?: synchronized(this) {
+                instance ?: LinerConnectManager(
+                    context?.applicationContext ?: throw IllegalStateException("Context required to initialize LinerConnectManager")
+                ).also { instance = it }
+            }
+        }
+    }
+
     private val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     private val _connectionState = MutableStateFlow(ConnectState.DISCONNECTED)

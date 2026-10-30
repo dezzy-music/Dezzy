@@ -171,6 +171,7 @@ fun Queue(
     var dismissJob: Job? by remember { mutableStateOf(null) }
 
     var showSleepTimerDialog by remember { mutableStateOf(false) }
+    var showDevicePicker by remember { mutableStateOf(false) }
     var sleepTimerValue by remember { mutableStateOf(30f) }
     val sleepTimerEnabled = remember(
         playerConnection.service.sleepTimer.triggerTime,
@@ -389,12 +390,19 @@ fun Queue(
                 }
 
                 PlayerDesignStyle.V7 -> {
+                    val linerManager = remember { com.dezzy.music.connect.LinerConnectManager.getInstance(context) }
+                    val linerConnectedDevice by linerManager.connectedDevice.collectAsState()
                     val audioManager = remember { context.getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager }
-                    val activeDevice = remember(audioManager) {
-                        audioManager.getDevices(android.media.AudioManager.GET_DEVICES_OUTPUTS)
-                            .firstOrNull { it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP || it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO || it.type == android.media.AudioDeviceInfo.TYPE_BLE_HEADSET }
-                            ?.productName?.toString() ?: "Speaker"
+                    val isConnectedToLiner = linerConnectedDevice != null
+                    val activeDevice = remember(audioManager, linerConnectedDevice) {
+                        linerConnectedDevice?.name ?: (
+                            audioManager.getDevices(android.media.AudioManager.GET_DEVICES_OUTPUTS)
+                                .firstOrNull { it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP || it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO || it.type == android.media.AudioDeviceInfo.TYPE_BLE_HEADSET }
+                                ?.productName?.toString() ?: "Speaker"
+                        )
                     }
+                    val deviceIcon = if (isConnectedToLiner) R.drawable.speaker else R.drawable.bluetooth
+
                     QueueCollapsedContentV7(
                         showCodecOnPlayer = showCodecOnPlayer,
                         currentFormat = currentFormat,
@@ -402,11 +410,10 @@ fun Queue(
                         onExpandQueue = { state.expandSoft() },
                         onShowLyrics = onShowLyrics,
                         onDeviceClick = {
-                            val intent = android.content.Intent(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS)
-                            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                            context.startActivity(intent)
+                            showDevicePicker = true
                         },
-                        deviceName = activeDevice
+                        deviceName = activeDevice,
+                        deviceIcon = deviceIcon
                     )
                 }
 
@@ -445,6 +452,12 @@ fun Queue(
                         playerConnection.service.sleepTimer.start(-1)
                     },
                     initialValue = sleepTimerValue
+                )
+            }
+
+            if (showDevicePicker) {
+                com.dezzy.music.ui.component.ConnectDeviceBottomSheet(
+                    onDismissRequest = { showDevicePicker = false }
                 )
             }
         },

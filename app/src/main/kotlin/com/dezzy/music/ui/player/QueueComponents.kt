@@ -1150,7 +1150,8 @@ fun QueueCollapsedContentV7(
     onShowLyrics: () -> Unit,
     onDeviceClick: () -> Unit,
     deviceName: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    deviceIcon: Int = R.drawable.bluetooth,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         if (showCodecOnPlayer && currentFormat != null) {
@@ -1236,7 +1237,7 @@ fun QueueCollapsedContentV7(
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.bluetooth),
+                        painter = painterResource(id = deviceIcon),
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.primary
