@@ -3738,8 +3738,12 @@ class MusicService :
                 }
 
                 is com.dezzy.music.together.ControlAction.SetRepeatMode -> {
-                    if (player.repeatMode != action.repeatMode) {
-                        player.repeatMode = action.repeatMode
+                    val safeActionMode = when (action.repeatMode) {
+                        Player.REPEAT_MODE_OFF, Player.REPEAT_MODE_ONE, Player.REPEAT_MODE_ALL -> action.repeatMode
+                        else -> Player.REPEAT_MODE_OFF
+                    }
+                    if (player.repeatMode != safeActionMode) {
+                        player.repeatMode = safeActionMode
                     }
                 }
 
@@ -3866,7 +3870,10 @@ class MusicService :
                     queueTitle = null
                     player.setMediaItems(desiredItems, startIndex, targetPos)
                     player.prepare()
-                    player.repeatMode = state.repeatMode
+                    player.repeatMode = when (state.repeatMode) {
+                        Player.REPEAT_MODE_OFF, Player.REPEAT_MODE_ONE, Player.REPEAT_MODE_ALL -> state.repeatMode
+                        else -> Player.REPEAT_MODE_OFF
+                    }
                     player.shuffleModeEnabled = state.shuffleEnabled
                     player.playWhenReady = state.isPlaying
                     togetherLastRemoteAppliedIndex = startIndex
@@ -3883,7 +3890,11 @@ class MusicService :
                         player.prepare()
                         player.playWhenReady = state.isPlaying
                     } else if (stateChanged) {
-                        if (player.repeatMode != state.repeatMode) player.repeatMode = state.repeatMode
+                        val safeRemoteMode = when (state.repeatMode) {
+                            Player.REPEAT_MODE_OFF, Player.REPEAT_MODE_ONE, Player.REPEAT_MODE_ALL -> state.repeatMode
+                            else -> Player.REPEAT_MODE_OFF
+                        }
+                        if (player.repeatMode != safeRemoteMode) player.repeatMode = safeRemoteMode
                         if (player.shuffleModeEnabled != state.shuffleEnabled) player.shuffleModeEnabled = state.shuffleEnabled
                         if (player.playWhenReady != state.isPlaying) {
                             player.playWhenReady = state.isPlaying
@@ -4063,8 +4074,12 @@ class MusicService :
                     togetherTargetHostTimestampMs = payload.serverTime ?: System.currentTimeMillis()
 
                     payload.repeatMode?.let { rm ->
-                        if (player.repeatMode != rm) {
-                            player.repeatMode = rm
+                        val safeMode = when (rm) {
+                            Player.REPEAT_MODE_OFF, Player.REPEAT_MODE_ONE, Player.REPEAT_MODE_ALL -> rm
+                            else -> Player.REPEAT_MODE_OFF
+                        }
+                        if (player.repeatMode != safeMode) {
+                            player.repeatMode = safeMode
                         }
                     }
                     payload.shuffleEnabled?.let { sh ->

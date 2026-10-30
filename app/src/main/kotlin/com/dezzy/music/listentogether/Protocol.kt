@@ -9,6 +9,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.protobuf.ProtoNumber
 
 /**
  * Message types for Listen Together protocol
@@ -118,28 +119,31 @@ data class UserInfo(
 /**
  * Room state
  */
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class RoomState(
-    @SerialName("room_code") val roomCode: String = "",
-    @SerialName("host_id") val hostId: String = "",
-    val users: List<UserInfo> = emptyList(),
-    @SerialName("current_track") val currentTrack: TrackInfo? = null,
-    @SerialName("is_playing") val isPlaying: Boolean = false,
-    val position: Long = 0L, // milliseconds
-    @SerialName("last_update") val lastUpdate: Long = 0L, // unix timestamp ms
-    val volume: Float = 1f,
-    val queue: List<TrackInfo> = emptyList(),
-    @SerialName("repeat_mode") val repeatMode: Int = 0,
-    @SerialName("shuffle_enabled") val shuffleEnabled: Boolean = false
+    @ProtoNumber(1) @SerialName("room_code") val roomCode: String = "",
+    @ProtoNumber(2) @SerialName("host_id") val hostId: String = "",
+    @ProtoNumber(3) val users: List<UserInfo> = emptyList(),
+    @ProtoNumber(4) @SerialName("current_track") val currentTrack: TrackInfo? = null,
+    @ProtoNumber(5) @SerialName("is_playing") val isPlaying: Boolean = false,
+    @ProtoNumber(6) val position: Long = 0L, // milliseconds
+    @ProtoNumber(7) @SerialName("last_update") val lastUpdate: Long = 0L, // unix timestamp ms
+    @ProtoNumber(8) val volume: Float = 1f,
+    @ProtoNumber(9) val queue: List<TrackInfo> = emptyList(),
+    @ProtoNumber(10) @SerialName("seq_nbr") val seqNbr: Long = 0L,
+    @ProtoNumber(12) @SerialName("repeat_mode") val repeatMode: Int = 0,
+    @ProtoNumber(13) @SerialName("shuffle_enabled") val shuffleEnabled: Boolean = false
 )
 
 // Request payloads
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class CreateRoomPayload(
-    val username: String = "",
-    @SerialName("is_public") val isPublic: Boolean = false,
-    val theme: String = "MIXED"
+    @ProtoNumber(1) val username: String = "",
+    @ProtoNumber(2) @SerialName("is_public") val isPublic: Boolean = false,
+    @ProtoNumber(3) val theme: String = "MIXED"
 )
 
 @Serializable
@@ -159,19 +163,22 @@ data class RejectJoinPayload(
     val reason: String? = null
 )
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class PlaybackActionPayload(
-    val action: String = "",
-    @SerialName("track_id") val trackId: String? = null,
-    val position: Long? = null, // milliseconds
-    @SerialName("track_info") val trackInfo: TrackInfo? = null,
-    @SerialName("insert_next") val insertNext: Boolean? = null,
-    val queue: List<TrackInfo>? = null,
-    @SerialName("queue_title") val queueTitle: String? = null,
-    val volume: Float? = null,
-    @SerialName("server_time") val serverTime: Long? = null,
-    @SerialName("repeat_mode") val repeatMode: Int? = null,
-    @SerialName("shuffle_enabled") val shuffleEnabled: Boolean? = null
+    @ProtoNumber(1) val action: String = "",
+    @ProtoNumber(2) @SerialName("track_id") val trackId: String? = null,
+    @ProtoNumber(3) val position: Long? = null, // milliseconds
+    @ProtoNumber(4) @SerialName("track_info") val trackInfo: TrackInfo? = null,
+    @ProtoNumber(5) @SerialName("insert_next") val insertNext: Boolean? = null,
+    @ProtoNumber(6) val queue: List<TrackInfo>? = null,
+    @ProtoNumber(7) @SerialName("queue_title") val queueTitle: String? = null,
+    @ProtoNumber(8) val volume: Float? = null,
+    @ProtoNumber(9) @SerialName("server_time") val serverTime: Long? = null,
+    @ProtoNumber(10) @SerialName("seq_nbr") val seqNbr: Long? = null,
+    @ProtoNumber(11) @SerialName("play_at") val playAt: Long? = null,
+    @ProtoNumber(12) @SerialName("repeat_mode") val repeatMode: Int? = null,
+    @ProtoNumber(13) @SerialName("shuffle_enabled") val shuffleEnabled: Boolean? = null
 )
 
 @Serializable
