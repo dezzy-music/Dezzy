@@ -85,7 +85,7 @@ data class LogEntry(
  * Pending action to execute when connected
  */
 sealed class PendingAction {
-    data class CreateRoom(val username: String) : PendingAction()
+    data class CreateRoom(val username: String, val isPublic: Boolean = false, val theme: String = "MIXED") : PendingAction()
     data class JoinRoom(val roomCode: String, val username: String) : PendingAction()
 }
 
@@ -466,8 +466,8 @@ class ListenTogetherClient @Inject constructor(
         
         when (action) {
             is PendingAction.CreateRoom -> {
-                log(LogLevel.INFO, "Executing pending create room", action.username)
-                sendMessage(MessageTypes.CREATE_ROOM, CreateRoomPayload(action.username))
+                log(LogLevel.INFO, "Executing pending create room", "${action.username} (public=${action.isPublic}, theme=${action.theme})")
+                sendMessage(MessageTypes.CREATE_ROOM, CreateRoomPayload(action.username, action.isPublic, action.theme))
             }
             is PendingAction.JoinRoom -> {
                 log(LogLevel.INFO, "Executing pending join room", "${action.roomCode} as ${action.username}")
@@ -1164,7 +1164,7 @@ class ListenTogetherClient @Inject constructor(
         sendMessage<Unit>(type, null)
     }
 
-    fun createRoom(username: String) {
+    fun createRoom(username: String, isPublic: Boolean = false, theme: String = "MIXED") {
         clearPersistedSession()
         sessionToken = null
         storedRoomCode = null
@@ -1172,10 +1172,10 @@ class ListenTogetherClient @Inject constructor(
         storedUsername = username
         
         if (_connectionState.value == ConnectionState.CONNECTED) {
-            sendMessage(MessageTypes.CREATE_ROOM, CreateRoomPayload(username))
+            sendMessage(MessageTypes.CREATE_ROOM, CreateRoomPayload(username, isPublic, theme))
         } else {
             log(LogLevel.INFO, "Not connected, queueing create room action")
-            pendingAction = PendingAction.CreateRoom(username)
+            pendingAction = PendingAction.CreateRoom(username, isPublic, theme)
             if (_connectionState.value == ConnectionState.DISCONNECTED || 
                 _connectionState.value == ConnectionState.ERROR) {
                 connect()
@@ -1269,7 +1269,9 @@ class ListenTogetherClient @Inject constructor(
         insertNext: Boolean? = null, 
         queue: List<TrackInfo>? = null,
         queueTitle: String? = null,
-        volume: Float? = null
+        volume: Float? = null,
+        repeatMode: Int? = null,
+        shuffleEnabled: Boolean? = null
     ) {
         if (!isInRoom) {
             log(LogLevel.ERROR, "Cannot control playback", "Not in room")
@@ -1284,7 +1286,18 @@ class ListenTogetherClient @Inject constructor(
         }
         sendMessage(
             MessageTypes.PLAYBACK_ACTION,
-            PlaybackActionPayload(action, trackId, position, trackInfo, insertNext, queue, queueTitle, volume)
+            PlaybackActionPayload(
+                action = action,
+                trackId = trackId,
+                position = position,
+                trackInfo = trackInfo,
+                insertNext = insertNext,
+                queue = queue,
+                queueTitle = queueTitle,
+                volume = volume,
+                repeatMode = repeatMode,
+                shuffleEnabled = shuffleEnabled
+            )
         )
     }
 

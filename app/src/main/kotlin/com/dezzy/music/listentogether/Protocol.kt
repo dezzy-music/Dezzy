@@ -76,6 +76,8 @@ object PlaybackActions {
     const val QUEUE_CLEAR = "queue_clear"
     const val SYNC_QUEUE = "sync_queue"
     const val SET_VOLUME = "set_volume"
+    const val SET_REPEAT_MODE = "set_repeat_mode"
+    const val SET_SHUFFLE = "set_shuffle"
 }
 
 /**
@@ -126,14 +128,18 @@ data class RoomState(
     val position: Long = 0L, // milliseconds
     @SerialName("last_update") val lastUpdate: Long = 0L, // unix timestamp ms
     val volume: Float = 1f,
-    val queue: List<TrackInfo> = emptyList()
+    val queue: List<TrackInfo> = emptyList(),
+    @SerialName("repeat_mode") val repeatMode: Int = 0,
+    @SerialName("shuffle_enabled") val shuffleEnabled: Boolean = false
 )
 
 // Request payloads
 
 @Serializable
 data class CreateRoomPayload(
-    val username: String = ""
+    val username: String = "",
+    @SerialName("is_public") val isPublic: Boolean = false,
+    val theme: String = "MIXED"
 )
 
 @Serializable
@@ -163,7 +169,9 @@ data class PlaybackActionPayload(
     val queue: List<TrackInfo>? = null,
     @SerialName("queue_title") val queueTitle: String? = null,
     val volume: Float? = null,
-    @SerialName("server_time") val serverTime: Long? = null
+    @SerialName("server_time") val serverTime: Long? = null,
+    @SerialName("repeat_mode") val repeatMode: Int? = null,
+    @SerialName("shuffle_enabled") val shuffleEnabled: Boolean? = null
 )
 
 @Serializable

@@ -37,6 +37,7 @@ data class TogetherRoomSettings(
     val requireHostApprovalToJoin: Boolean = false,
     val isPublic: Boolean = false,
     val djModeEnabled: Boolean = false,
+    val theme: TogetherRoomTheme = TogetherRoomTheme.MIXED,
 )
 
 @Serializable

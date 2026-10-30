@@ -47,6 +47,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import com.dezzy.music.together.TogetherRoomTheme
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -153,6 +156,7 @@ fun MusicTogetherScreen(
     )
     var isPublicRoom by rememberSaveable { mutableStateOf(false) }
     var djModeEnabled by rememberSaveable { mutableStateOf(false) }
+    var selectedTheme by rememberSaveable { mutableStateOf(TogetherRoomTheme.MIXED) }
 
     val sessionStateFlow = remember(playerConnection) {
         playerConnection?.service?.togetherSessionState ?: MutableStateFlow(TogetherSessionState.Idle)
@@ -418,6 +422,8 @@ fun MusicTogetherScreen(
                 requireApproval = requireApproval,
                 isPublicRoom = isPublicRoom,
                 djModeEnabled = djModeEnabled,
+                selectedTheme = selectedTheme,
+                onSelectedThemeChange = { selectedTheme = it },
                 onShowNameDialog = { showNameDialog = true },
                 onShowPortDialog = { showPortDialog = true },
                 onShowServerUrlDialog = { showServerUrlDialog = true },
@@ -442,6 +448,7 @@ fun MusicTogetherScreen(
                                 requireHostApprovalToJoin = requireApproval,
                                 isPublic = isPublicRoom,
                                 djModeEnabled = djModeEnabled,
+                                theme = selectedTheme,
                             ),
                         )
                     }
@@ -525,6 +532,8 @@ private fun HostSectionCard(
     requireApproval: Boolean,
     isPublicRoom: Boolean,
     djModeEnabled: Boolean,
+    selectedTheme: TogetherRoomTheme,
+    onSelectedThemeChange: (TogetherRoomTheme) -> Unit,
     onShowNameDialog: () -> Unit,
     onShowPortDialog: () -> Unit,
     onShowServerUrlDialog: () -> Unit,
@@ -665,6 +674,49 @@ private fun HostSectionCard(
                 checked = isPublicRoom,
                 onCheckedChange = onIsPublicRoomChange,
             )
+            if (isPublicRoom) {
+                Divider()
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 18.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        "Tipo de sala / Género",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        themeFilters.filter { it.theme != null }.forEach { filter ->
+                            val th = filter.theme ?: return@forEach
+                            FilterChip(
+                                selected = selectedTheme == th,
+                                onClick = { onSelectedThemeChange(th) },
+                                leadingIcon = {
+                                    Icon(
+                                        painter = painterResource(filter.iconRes),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = if (selectedTheme == th) themeColor(th) else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                },
+                                label = { Text(filter.label) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = themeColor(th).copy(alpha = 0.2f),
+                                    selectedLabelColor = themeColor(th),
+                                ),
+                            )
+                        }
+                    }
+                }
+            }
             Divider()
             ToggleRow(
                 icon = R.drawable.queue_music,

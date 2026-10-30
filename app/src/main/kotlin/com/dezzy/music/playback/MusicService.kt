@@ -894,6 +894,14 @@ class MusicService :
     @Volatile
     private var togetherApplyingRemote: Boolean = false
     @Volatile
+    private var togetherTargetHostPositionMs: Long = 0L
+    @Volatile
+    private var togetherTargetHostTimestampMs: Long = 0L
+    @Volatile
+    private var togetherTargetHostIsPlaying: Boolean = false
+    @Volatile
+    private var togetherPendingInitialSync: Boolean = false
+    @Volatile
     private var togetherSuppressEchoUntilElapsedMs: Long = 0L
     @Volatile
     private var togetherLastAppliedRoomStateSentAtElapsedMs: Long = 0L
@@ -1988,7 +1996,9 @@ class MusicService :
 
     private fun isTogetherGuestSession(): Boolean {
         val joined = togetherSessionState.value as? com.dezzy.music.together.TogetherSessionState.Joined
-        return joined?.role is com.dezzy.music.together.TogetherRole.Guest
+        if (joined?.role is com.dezzy.music.together.TogetherRole.Guest) return true
+        val client = com.dezzy.music.listentogether.ListenTogetherClient.getInstance()
+        return client != null && client.isInRoom && !client.isHost
     }
 
     private fun handleDeviceMuteStateChanged() {
@@ -2913,7 +2923,11 @@ class MusicService :
                     com.dezzy.music.listentogether.ListenTogetherClient.setInstance(it)
                 }
                 
-            client.createRoom(displayName.trim().ifBlank { getString(R.string.app_name) })
+            client.createRoom(
+                displayName.trim().ifBlank { getString(R.string.app_name) },
+                isPublic = settings.isPublic,
+                theme = settings.theme.name
+            )
             
             togetherClientEventsJob?.cancel()
             togetherClientEventsJob = ioScope.launch(SilentHandler) {
@@ -3231,15 +3245,21 @@ class MusicService :
                             // Initial sync: mirror whatever the room is already playing,
                             // extrapolating the position for the time since the host reported it.
                             event.state.currentTrack?.let { track ->
+                                togetherTargetHostPositionMs = event.state.position
+                                togetherTargetHostTimestampMs = event.state.lastUpdate
+                                togetherTargetHostIsPlaying = event.state.isPlaying
+                                togetherPendingInitialSync = true
                                 val extra = if (event.state.isPlaying) {
                                     (System.currentTimeMillis() - event.state.lastUpdate)
-                                        .coerceIn(0L, 30_000L)
+                                        .coerceIn(0L, 60_000L)
                                 } else 0L
                                 applyListenTogetherSync(
                                     com.dezzy.music.listentogether.PlaybackActionPayload(
                                         action = com.dezzy.music.listentogether.PlaybackActions.CHANGE_TRACK,
                                         trackInfo = track,
                                         position = event.state.position + extra,
+                                        repeatMode = event.state.repeatMode,
+                                        shuffleEnabled = event.state.shuffleEnabled,
                                     )
                                 )
                                 if (!event.state.isPlaying) {
@@ -3247,6 +3267,8 @@ class MusicService :
                                         com.dezzy.music.listentogether.PlaybackActionPayload(
                                             action = com.dezzy.music.listentogether.PlaybackActions.PAUSE,
                                             position = event.state.position,
+                                            repeatMode = event.state.repeatMode,
+                                            shuffleEnabled = event.state.shuffleEnabled,
                                         )
                                     )
                                 }
@@ -3987,9 +4009,18 @@ class MusicService :
         position: Long? = null,
         trackId: String? = null,
         trackInfo: com.dezzy.music.listentogether.TrackInfo? = null,
+        repeatMode: Int? = null,
+        shuffleEnabled: Boolean? = null,
     ) {
         val client = listenTogetherHostClient() ?: return
-        client.sendPlaybackAction(action, trackId = trackId, position = position, trackInfo = trackInfo)
+        client.sendPlaybackAction(
+            action = action,
+            trackId = trackId,
+            position = position,
+            trackInfo = trackInfo,
+            repeatMode = repeatMode ?: player.repeatMode,
+            shuffleEnabled = shuffleEnabled ?: player.shuffleModeEnabled,
+        )
     }
 
     private fun com.dezzy.music.models.MediaMetadata.toListenTogetherTrackInfo() =
@@ -4028,8 +4059,23 @@ class MusicService :
                 togetherApplyingRemote = true
                 togetherSuppressEchoUntilElapsedMs = android.os.SystemClock.elapsedRealtime() + 800L
                 try {
+                    payload.position?.let { togetherTargetHostPositionMs = it }
+                    togetherTargetHostTimestampMs = payload.serverTime ?: System.currentTimeMillis()
+
+                    payload.repeatMode?.let { rm ->
+                        if (player.repeatMode != rm) {
+                            player.repeatMode = rm
+                        }
+                    }
+                    payload.shuffleEnabled?.let { sh ->
+                        if (player.shuffleModeEnabled != sh) {
+                            player.shuffleModeEnabled = sh
+                        }
+                    }
+
                     when (payload.action) {
                         com.dezzy.music.listentogether.PlaybackActions.PLAY -> {
+                            togetherTargetHostIsPlaying = true
                             payload.position?.let { pos ->
                                 if (kotlin.math.abs(player.currentPosition - pos) > 1500) player.seekTo(pos)
                             }
@@ -4039,6 +4085,7 @@ class MusicService :
                         }
 
                         com.dezzy.music.listentogether.PlaybackActions.PAUSE -> {
+                            togetherTargetHostIsPlaying = false
                             togetherLastRemoteAppliedPlayWhenReady = false
                             player.playWhenReady = false
                             payload.position?.let { pos ->
@@ -4058,7 +4105,14 @@ class MusicService :
                         com.dezzy.music.listentogether.PlaybackActions.CHANGE_TRACK -> {
                             val ti = payload.trackInfo ?: return@withContext
                             val currentId = player.currentMetadata?.id
-                            if (currentId == ti.id) return@withContext
+                            togetherTargetHostIsPlaying = true
+                            togetherPendingInitialSync = true
+                            if (currentId == ti.id) {
+                                payload.position?.let { pos ->
+                                    if (kotlin.math.abs(player.currentPosition - pos) > 1000) player.seekTo(pos)
+                                }
+                                return@withContext
+                            }
                             suppressAutoPlayback = false
                             player.setMediaItems(
                                 listOf(ti.toMediaMetadata().toMediaItem()),
@@ -4675,6 +4729,30 @@ class MusicService :
         }
     }
 
+    if (playbackState == Player.STATE_READY && isTogetherGuestSession()) {
+        val elapsed = if (togetherTargetHostIsPlaying) {
+            (System.currentTimeMillis() - togetherTargetHostTimestampMs).coerceAtLeast(0L)
+        } else 0L
+        val targetPos = togetherTargetHostPositionMs + elapsed
+        val delta = kotlin.math.abs(player.currentPosition - targetPos)
+        if (delta > 400L || togetherPendingInitialSync) {
+            togetherPendingInitialSync = false
+            togetherApplyingRemote = true
+            player.seekTo(targetPos)
+            togetherApplyingRemote = false
+        }
+        if (player.playWhenReady != togetherTargetHostIsPlaying) {
+            togetherApplyingRemote = true
+            player.playWhenReady = togetherTargetHostIsPlaying
+            togetherApplyingRemote = false
+        }
+    }
+
+    if (playbackState == Player.STATE_ENDED && isTogetherGuestSession()) {
+        // Guest follows host track transitions; suppress local auto playback recommendations
+        return
+    }
+
     if (playbackState == Player.STATE_IDLE || playbackState == Player.STATE_ENDED) {
         crossfadeAudio?.stop(resetMainFade = true)
         scrobbleManager?.onSongStop()
@@ -5095,6 +5173,13 @@ class MusicService :
             }
             return
         }
+        if (listenTogetherHostClient() != null) {
+            relayListenTogetherPlayback(
+                com.dezzy.music.listentogether.PlaybackActions.SET_SHUFFLE,
+                position = player.currentPosition,
+                shuffleEnabled = shuffleModeEnabled,
+            )
+        }
         if (shuffleModeEnabled) {
             // Fija el crossfade en la pista real antes de reordenar la cola, para
             // que el "actual" del shuffle sea la canción que de verdad suena.
@@ -5129,6 +5214,13 @@ class MusicService :
                 )
             }
             return
+        }
+        if (listenTogetherHostClient() != null) {
+            relayListenTogetherPlayback(
+                com.dezzy.music.listentogether.PlaybackActions.SET_REPEAT_MODE,
+                position = player.currentPosition,
+                repeatMode = repeatMode,
+            )
         }
         scope.launch {
             dataStore.edit { settings ->

@@ -147,6 +147,7 @@ fun PublicRoomsScreen(
 ) {
     val haptic = LocalHapticFeedback.current
     var selectedTheme by remember { mutableStateOf<TogetherRoomTheme?>(null) }
+    var searchQuery by remember { mutableStateOf("") }
 
     val scope = rememberCoroutineScope()
     val (serverUrl, _) = rememberPreference(
@@ -165,10 +166,13 @@ fun PublicRoomsScreen(
         scope.launch(Dispatchers.IO) {
             isLoading = true
             try {
-                val baseUrl = if (serverUrl.contains("huggingface.co/spaces/Dezzyyyy/listen-together")) {
-                    "https://dezzyyyy-listen-together.hf.space"
-                } else {
-                    serverUrl.trimEnd('/')
+                val baseUrl = when {
+                    serverUrl.contains("dezzyyyy-listen-together") || serverUrl.contains("huggingface.co/spaces/Dezzyyyy/listen-together") -> {
+                        "https://dezzyyyy-listen-together.hf.space"
+                    }
+                    serverUrl.startsWith("wss://") -> "https://" + serverUrl.removePrefix("wss://").removeSuffix("/ws").trimEnd('/')
+                    serverUrl.startsWith("ws://") -> "http://" + serverUrl.removePrefix("ws://").removeSuffix("/ws").trimEnd('/')
+                    else -> serverUrl.trimEnd('/')
                 }
                 val request = Request.Builder()
                     .url("$baseUrl/api/v1/public-rooms")
@@ -230,8 +234,16 @@ fun PublicRoomsScreen(
         }
     }
 
-    val filteredRooms = if (selectedTheme == null) publicRooms
-    else publicRooms.filter { it.theme == selectedTheme }
+    val filteredRooms = publicRooms.filter { room ->
+        val matchesTheme = selectedTheme == null || room.theme == selectedTheme
+        val matchesQuery = searchQuery.isBlank() ||
+            room.hostName.contains(searchQuery, ignoreCase = true) ||
+            room.code.contains(searchQuery, ignoreCase = true) ||
+            (room.currentTrackTitle?.contains(searchQuery, ignoreCase = true) == true) ||
+            (room.currentTrackArtist?.contains(searchQuery, ignoreCase = true) == true) ||
+            room.theme.name.contains(searchQuery, ignoreCase = true)
+        matchesTheme && matchesQuery
+    }
 
     Column(
         modifier = Modifier
@@ -292,6 +304,31 @@ fun PublicRoomsScreen(
             modifier = Modifier.windowInsetsPadding(
                 LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
             ),
+        )
+
+        androidx.compose.material3.OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            placeholder = { Text("Buscar salas por anfitrión, código o tema...", style = MaterialTheme.typography.bodyMedium) },
+            leadingIcon = {
+                Icon(painter = painterResource(R.drawable.search), contentDescription = null, modifier = Modifier.size(18.dp))
+            },
+            trailingIcon = {
+                if (searchQuery.isNotEmpty()) {
+                    androidx.compose.material3.IconButton(onClick = { searchQuery = "" }) {
+                        Icon(painter = painterResource(R.drawable.close), contentDescription = null, modifier = Modifier.size(18.dp))
+                    }
+                }
+            },
+            singleLine = true,
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+            )
         )
 
         // Theme filter chips
