@@ -95,10 +95,15 @@ fun <E> ChipsRow(
                         )
                     }
                 },
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(20.dp),
                 border = null,
                 colors = FilterChipDefaults.filterChipColors(
-                    containerColor = containerColor,
+                    containerColor = Color(0xFF2A2A2A),
+                    labelColor = Color.White,
+                    iconColor = Color(0xFFB3B3B3),
+                    selectedContainerColor = Color(0xFF1DB954),
+                    selectedLabelColor = Color.Black,
+                    selectedLeadingIconColor = Color.Black,
                 ),
             )
 

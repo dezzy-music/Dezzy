@@ -141,7 +141,7 @@ fun NavGraphBuilder.navigationBuilder(
         com.dezzy.music.ui.screens.YearInMusicScreen(navController)
     }
     composable("search") {
-        // Dummy screen. MainActivity intercepts this route to show the TopSearch overlay.
+        MoodAndGenresScreen(navController)
     }
     composable("dj_dezzy") {
         com.dezzy.music.ui.screens.DJDezzyScreen(navController)

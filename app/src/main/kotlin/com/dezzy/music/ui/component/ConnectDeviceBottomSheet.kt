@@ -117,7 +117,7 @@ fun ConnectDeviceBottomSheet(
                         onClick = {
                             if (!isThisConnected) {
                                 linerManager.connectToHost(device.ip, device.port, device.name)
-                                playerConnection?.currentMetadata?.value?.let { meta ->
+                                playerConnection?.mediaMetadata?.value?.let { meta ->
                                     playerConnection.player.pause()
                                     linerManager.handoffQueueToDesktop(
                                         title = meta.title,
@@ -147,7 +147,7 @@ fun ConnectDeviceBottomSheet(
                     onClick = {
                         if (!isConnectedToDesktop) {
                             linerManager.startDiscoveryAndConnect()
-                            playerConnection?.currentMetadata?.value?.let { meta ->
+                            playerConnection?.mediaMetadata?.value?.let { meta ->
                                 playerConnection.player.pause()
                                 linerManager.handoffQueueToDesktop(
                                     title = meta.title,

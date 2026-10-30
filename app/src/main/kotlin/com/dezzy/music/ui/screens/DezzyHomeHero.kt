@@ -77,42 +77,6 @@ fun DezzyHomeHero(
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        // ── Saludo según la hora + fecha, racha y minutos de hoy ──
-        val greeting = remember {
-            when (LocalTime.now().hour) {
-                in 6..11 -> "Buenos días"
-                in 12..19 -> "Buenas tardes"
-                else -> "Buenas noches"
-            }
-        }
-        val name = accountName.takeIf { it.isNotBlank() && it != "Guest" }
-        val subLine = remember(streakDays, todayMinutes) {
-            val locale = Locale.getDefault()
-            val today = LocalDate.now()
-            buildString {
-                append(today.dayOfWeek.getDisplayName(TextStyle.FULL, locale))
-                append(" ").append(today.dayOfMonth)
-                append(" de ").append(today.month.getDisplayName(TextStyle.FULL, locale))
-                if (streakDays >= 2) append(" · racha de $streakDays días")
-                if (todayMinutes > 0) append(" · $todayMinutes min hoy")
-            }
-        }
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
-            Text(
-                text = if (name != null) "$greeting, $name" else greeting,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = subLine,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-
         // ── "Sigue donde ibas": última escucha con su canvas animado ──
         val resumeSong = lastEvent?.song?.takeIf { it.id != mediaMetadata?.id }
         if (resumeSong != null) {
@@ -122,39 +86,6 @@ fun DezzyHomeHero(
                     playerConnection.playQueue(YouTubeQueue.radio(resumeSong.toMediaMetadata()))
                 },
             )
-        }
-
-        // ── Accesos rápidos ──
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            QuickPill(
-                iconRes = R.drawable.shuffle,
-                label = "Aleatorio",
-                modifier = Modifier.weight(1f),
-            ) {
-                quickPicks?.takeIf { it.isNotEmpty() }?.let { picks ->
-                    playerConnection.playQueue(
-                        ListQueue(
-                            title = "Aleatorio · Dezzy",
-                            items = picks.shuffled().map { it.toMediaItem() },
-                        ),
-                    )
-                }
-            }
-            QuickPill(
-                iconRes = R.drawable.favorite,
-                label = "Me gusta",
-                modifier = Modifier.weight(1f),
-            ) { navController.navigate("auto_playlist/liked") }
-            QuickPill(
-                iconRes = R.drawable.download,
-                label = "Descargas",
-                modifier = Modifier.weight(1f),
-            ) { navController.navigate("auto_playlist/downloaded") }
         }
 
         // ── Mixes por género en bento ──

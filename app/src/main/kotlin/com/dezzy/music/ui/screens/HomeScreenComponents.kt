@@ -76,6 +76,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import coil3.request.CachePolicy
@@ -1159,9 +1161,39 @@ fun SpotifyGreetingGrid(
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        val currentHour = remember { java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY) }
+        val greeting = when {
+            currentHour < 12 -> "Buenos días"
+            currentHour < 19 -> "Buenas tardes"
+            else -> "Buenas noches"
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = greeting,
+                color = Color.White,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
+            )
+            IconButton(onClick = { navController.navigate("settings") }) {
+                Icon(
+                    painter = painterResource(R.drawable.settings),
+                    contentDescription = "Ajustes",
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+
         val gridItems = mutableListOf<Any>()
 
-        // Slot 1: Mis Me gusta
+        // Slot 1: Canciones que te gustan
         gridItems.add("LIKED")
 
         // Slot 2: DJ Dezzy
@@ -1281,7 +1313,7 @@ fun SpotifyGenericCajon(
                     }
                 }
             ),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        color = Color(0xFF282828),
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
@@ -1290,22 +1322,26 @@ fun SpotifyGenericCajon(
             when (item) {
                 is String -> {
                     if (item == "LIKED") {
-                        // "Mis Me gusta" - cuadrado con ícono de corazón
+                        // "Canciones que te gustan" - degradado púrpura de Spotify
                         Box(
                             modifier = Modifier
                                 .size(56.dp)
-                                .background(MaterialTheme.colorScheme.primary),
+                                .background(
+                                    Brush.linearGradient(
+                                        listOf(Color(0xFF450AF5), Color(0xFF8E8EE5))
+                                    )
+                                ),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.favorite),
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimary,
+                                tint = Color.White,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
                         Text(
-                            text = "Mis Me gusta",
+                            text = "Canciones que te gustan",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                             maxLines = 2,

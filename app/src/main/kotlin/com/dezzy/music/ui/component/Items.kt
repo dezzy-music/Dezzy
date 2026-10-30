@@ -469,43 +469,71 @@ fun LibraryPinnedCollectionTile(
     subtitle: String? = null,
     accentColor: Color = MaterialTheme.colorScheme.primary,
 ) {
-    val animatedColor by animateColorAsState(accentColor, spring())
+    val isLiked = iconRes == R.drawable.favorite
+    val isDownloaded = iconRes == R.drawable.offline
+
+    val tileBrush = when {
+        isLiked -> Brush.linearGradient(listOf(Color(0xFF450AF5), Color(0xFF8E8EE5)))
+        isDownloaded -> Brush.linearGradient(listOf(Color(0xFF006450), Color(0xFF1DB954)))
+        else -> Brush.linearGradient(listOf(accentColor.copy(alpha = 0.85f), accentColor))
+    }
 
     Card(
-        shape = RoundedCornerShape(26.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            containerColor = Color(0xFF242424)
         ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = modifier,
     ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(10.dp),
         ) {
-            Surface(shape = CircleShape) {
+            Box(
+                modifier = Modifier
+                    .size(54.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(tileBrush),
+                contentAlignment = Alignment.Center
+            ) {
                 Icon(
                     painter = painterResource(iconRes),
                     contentDescription = null,
-                    tint = animatedColor,
-                    modifier = Modifier.padding(12.dp),
+                    tint = Color.White,
+                    modifier = Modifier.size(26.dp),
                 )
             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Spacer(Modifier.width(12.dp))
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.weight(1f)
+            ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                subtitle?.takeIf { it.isNotBlank() }?.let {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_pin),
+                        contentDescription = "Fijado",
+                        tint = Color(0xFF1DB954),
+                        modifier = Modifier.size(12.dp)
+                    )
                     Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = subtitle?.takeIf { it.isNotBlank() } ?: if (isLiked) "Lista fijada" else "Descargas",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFFB3B3B3),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )

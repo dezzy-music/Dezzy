@@ -61,6 +61,7 @@ import coil3.request.allowHardware
 import coil3.toBitmap
 import com.dezzy.music.LocalPlayerConnection
 import com.dezzy.music.R
+import com.dezzy.music.extensions.metadata
 import com.dezzy.music.db.entities.LyricsEntity.Companion.LYRICS_NOT_FOUND
 import com.dezzy.music.extensions.togglePlayPause
 import com.dezzy.music.extensions.toggleRepeatMode
@@ -143,7 +144,7 @@ fun SpotifyPlayer(
     val activeDeviceName = if (isConnectedToDesktop) {
         linerDeviceName ?: "Liner Desktop"
     } else {
-        linerManager.getPhoneDisplayName()
+        LinerConnectManager.getExactPhoneDeviceName(context)
     }
     var showDevicePicker by remember { mutableStateOf(false) }
 
