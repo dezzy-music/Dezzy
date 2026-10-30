@@ -391,15 +391,18 @@ fun Queue(
 
                 PlayerDesignStyle.V7 -> {
                     val linerManager = remember { com.dezzy.music.connect.LinerConnectManager.getInstance(context) }
-                    val linerConnectedDevice by linerManager.connectedDevice.collectAsState()
+                    val connectionState by linerManager.connectionState.collectAsState()
+                    val connectedDeviceName by linerManager.connectedDeviceName.collectAsState()
+                    val isConnectedToLiner = connectionState == com.dezzy.music.connect.ConnectState.CONNECTED
                     val audioManager = remember { context.getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager }
-                    val isConnectedToLiner = linerConnectedDevice != null
-                    val activeDevice = remember(audioManager, linerConnectedDevice) {
-                        linerConnectedDevice?.name ?: (
+                    val activeDevice = remember(audioManager, isConnectedToLiner, connectedDeviceName) {
+                        if (isConnectedToLiner && !connectedDeviceName.isNullOrBlank()) {
+                            connectedDeviceName!!
+                        } else {
                             audioManager.getDevices(android.media.AudioManager.GET_DEVICES_OUTPUTS)
                                 .firstOrNull { it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP || it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO || it.type == android.media.AudioDeviceInfo.TYPE_BLE_HEADSET }
-                                ?.productName?.toString() ?: "Speaker"
-                        )
+                                ?.productName?.toString() ?: com.dezzy.music.connect.LinerConnectManager.getExactPhoneDeviceName(context)
+                        }
                     }
                     val deviceIcon = if (isConnectedToLiner) R.drawable.speaker else R.drawable.bluetooth
 

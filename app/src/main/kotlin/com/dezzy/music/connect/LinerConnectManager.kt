@@ -1,6 +1,9 @@
 package com.dezzy.music.connect
 
+import android.bluetooth.BluetoothManager
 import android.content.Context
+import android.os.Build
+import android.provider.Settings
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,6 +25,13 @@ enum class ConnectState {
     CONNECTING,
     CONNECTED
 }
+
+data class DiscoveredDevice(
+    val name: String,
+    val ip: String,
+    val port: Int = 4884,
+    val isConnected: Boolean = false
+)
 
 data class DesktopTrack(
     val id: String,
@@ -58,7 +68,60 @@ class LinerConnectManager @Inject constructor(
                 ).also { instance = it }
             }
         }
+
+        /**
+         * Obtiene el nombre exacto asignado al celular (ej. "Galaxy de Dezzy", "Samsung Galaxy S24 Ultra",
+         * o el nombre Bluetooth/comercial exacto configurado por el usuario en Ajustes).
+         */
+        fun getExactPhoneDeviceName(context: Context): String {
+            // 1. Nombre de dispositivo configurado en Ajustes de Android (Settings.Global.device_name)
+            val userConfigured = runCatching {
+                Settings.Global.getString(context.contentResolver, "device_name")
+            }.getOrNull()?.trim()
+            if (!userConfigured.isNullOrBlank()) {
+                return userConfigured
+            }
+
+            // 2. Nombre Bluetooth configurado por el usuario (Settings.Secure.bluetooth_name)
+            val btName = runCatching {
+                Settings.Secure.getString(context.contentResolver, "bluetooth_name")
+            }.getOrNull()?.trim()
+            if (!btName.isNullOrBlank()) {
+                return btName
+            }
+
+            // 3. Nombre del adaptador Bluetooth local
+            val btAdapterName = runCatching {
+                val manager = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
+                manager?.adapter?.name?.trim()
+            }.getOrNull()
+            if (!btAdapterName.isNullOrBlank()) {
+                return btAdapterName
+            }
+
+            // 4. Nombre comercial exacto de fabricante + modelo (ej. "Samsung Galaxy S24", "Google Pixel 8")
+            val manufacturer = Build.MANUFACTURER.orEmpty().trim().replaceFirstChar { it.uppercase() }
+            val model = Build.MODEL.orEmpty().trim()
+            return if (model.startsWith(manufacturer, ignoreCase = true)) {
+                model
+            } else if (manufacturer.isNotBlank() && model.isNotBlank()) {
+                "$manufacturer $model"
+            } else if (model.isNotBlank()) {
+                model
+            } else {
+                "Teléfono"
+            }
+        }
     }
+
+    private val prefs = context.getSharedPreferences("liner_connect_prefs", Context.MODE_PRIVATE)
+
+    /**
+     * Último nombre de laptop/desktop recordado. Si el usuario tiene su laptop llamada "Dezzy",
+     * este valor se recordará o iniciará con "Dezzy".
+     */
+    val lastDeviceName: String
+        get() = prefs.getString("last_device_name", "Dezzy") ?: "Dezzy"
 
     private val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -67,6 +130,9 @@ class LinerConnectManager @Inject constructor(
 
     private val _connectedDeviceName = MutableStateFlow<String?>(null)
     val connectedDeviceName: StateFlow<String?> = _connectedDeviceName.asStateFlow()
+
+    private val _discoveredDevices = MutableStateFlow<List<DiscoveredDevice>>(emptyList())
+    val discoveredDevices: StateFlow<List<DiscoveredDevice>> = _discoveredDevices.asStateFlow()
 
     private val _desktopState = MutableStateFlow<DesktopPlaybackState?>(null)
     val desktopState: StateFlow<DesktopPlaybackState?> = _desktopState.asStateFlow()
@@ -94,11 +160,12 @@ class LinerConnectManager @Inject constructor(
                 }
 
                 val probeMsg = "DISCOVER_LINER".toByteArray()
-                // Broadcast to standard LAN broadcast addresses
+                // Broadcast a direcciones de subred comunes y loopback
                 val broadcastAddrs = listOf(
                     InetAddress.getByName("255.255.255.255"),
                     InetAddress.getByName("192.168.1.255"),
-                    InetAddress.getByName("192.168.0.255")
+                    InetAddress.getByName("192.168.0.255"),
+                    InetAddress.getByName("127.0.0.1")
                 )
 
                 for (addr in broadcastAddrs) {
@@ -116,22 +183,55 @@ class LinerConnectManager @Inject constructor(
                 val json = JSONObject(responseStr)
                 if (json.optString("service") == "dezzy-connect") {
                     val port = json.optInt("port", 4884)
-                    val ip = respPacket.address.hostAddress
-                    val name = json.optString("name", "Liner Desktop")
-                    _connectedDeviceName.value = name
-                    connectToHost(ip, port)
+                    val ip = respPacket.address.hostAddress ?: "127.0.0.1"
+                    val rawName = json.optString("name").trim()
+
+                    // Resolver el nombre exacto de la máquina (ej. "Dezzy", "DESKTOP-ABC1234", etc.)
+                    val exactName = if (rawName.isNotBlank() && !rawName.equals("Liner Desktop", ignoreCase = true)) {
+                        rawName
+                    } else {
+                        runCatching {
+                            respPacket.address.hostName
+                        }.getOrNull()?.takeIf { it.isNotBlank() && it != ip } ?: rawName.takeIf { it.isNotBlank() } ?: lastDeviceName
+                    }
+
+                    _connectedDeviceName.value = exactName
+                    prefs.edit().putString("last_device_name", exactName).apply()
+
+                    val currentList = _discoveredDevices.value.filter { it.ip != ip }
+                    _discoveredDevices.value = currentList + DiscoveredDevice(name = exactName, ip = ip, port = port, isConnected = true)
+
+                    connectToHost(ip, port, exactName)
                 }
                 socket.close()
             } catch (e: Exception) {
                 Timber.d(e, "[LinerConnect] Auto-discovery timeout, attempting local loopback fallback")
-                // If local testing on emulator / same machine
-                connectToHost("10.0.2.2", 4884)
+                val fallbackName = lastDeviceName
+                _connectedDeviceName.value = fallbackName
+                connectToHost("10.0.2.2", 4884, fallbackName)
             }
         }
     }
 
-    fun connectToHost(ip: String, port: Int = 4884) {
+    fun connectToHost(ip: String, port: Int = 4884, initialName: String? = null) {
         _connectionState.value = ConnectState.CONNECTING
+        if (initialName != null) {
+            _connectedDeviceName.value = initialName
+        }
+
+        // Si aún no tenemos nombre exacto, resolverlo por DNS inverso
+        if (_connectedDeviceName.value.isNullOrBlank() || _connectedDeviceName.value == "Liner Desktop") {
+            coroutineScope.launch {
+                val host = runCatching {
+                    InetAddress.getByName(ip).hostName
+                }.getOrNull()?.takeIf { it.isNotBlank() && it != ip }
+                if (host != null) {
+                    _connectedDeviceName.value = host
+                    prefs.edit().putString("last_device_name", host).apply()
+                }
+            }
+        }
+
         val request = Request.Builder()
             .url("ws://$ip:$port")
             .build()
@@ -142,11 +242,12 @@ class LinerConnectManager @Inject constructor(
                 Timber.i("[LinerConnect] WebSocket connected to $ip:$port")
                 _connectionState.value = ConnectState.CONNECTED
 
-                // Send client greeting
+                // Enviar saludo con el nombre exacto de este celular
+                val phoneName = getExactPhoneDeviceName(context)
                 val hello = JSONObject().apply {
                     put("type", "CLIENT_HELLO")
                     put("payload", JSONObject().apply {
-                        put("deviceName", android.os.Build.MODEL)
+                        put("deviceName", phoneName)
                         put("deviceType", "android")
                     })
                 }
@@ -157,8 +258,26 @@ class LinerConnectManager @Inject constructor(
                 try {
                     val msg = JSONObject(text)
                     when (msg.optString("type")) {
+                        "DEVICE_INFO", "HELLO_ACK" -> {
+                            val payload = msg.optJSONObject("payload")
+                            val exactDevName = payload?.optString("deviceName")?.takeIf { it.isNotBlank() }
+                                ?: payload?.optString("name")?.takeIf { it.isNotBlank() }
+                            if (exactDevName != null) {
+                                _connectedDeviceName.value = exactDevName
+                                prefs.edit().putString("last_device_name", exactDevName).apply()
+                            }
+                        }
+
                         "STATE_SYNC" -> {
                             val payload = msg.optJSONObject("payload") ?: return
+
+                            // Si el payload incluye el nombre del dispositivo de la computadora, actualizarlo
+                            val devName = payload.optString("deviceName").takeIf { it.isNotBlank() }
+                            if (devName != null) {
+                                _connectedDeviceName.value = devName
+                                prefs.edit().putString("last_device_name", devName).apply()
+                            }
+
                             val trackObj = payload.optJSONObject("track")
                             val desktopTrack = if (trackObj != null) {
                                 DesktopTrack(

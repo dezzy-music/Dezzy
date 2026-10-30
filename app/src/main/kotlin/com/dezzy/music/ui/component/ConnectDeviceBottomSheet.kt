@@ -7,7 +7,6 @@
 package com.dezzy.music.ui.component
 
 import android.content.Intent
-import android.os.Build
 import android.provider.Settings
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -43,10 +42,14 @@ fun ConnectDeviceBottomSheet(
 
     val connectionState by linerManager.connectionState.collectAsState()
     val connectedDeviceName by linerManager.connectedDeviceName.collectAsState()
+    val discoveredDevices by linerManager.discoveredDevices.collectAsState()
     val desktopState by linerManager.desktopState.collectAsState()
 
     val isConnectedToDesktop = connectionState == ConnectState.CONNECTED
     val isPlayingLocal = playerConnection?.isPlaying?.value == true && !isConnectedToDesktop
+
+    // Nombre exacto asignado al celular (ej. "Galaxy de Dezzy", "Samsung S24 Ultra", etc.)
+    val exactPhoneName = remember(context) { LinerConnectManager.getExactPhoneDeviceName(context) }
 
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
@@ -64,7 +67,7 @@ fun ConnectDeviceBottomSheet(
             // Header
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.padding(top = 8.dp)
             ) {
                 Icon(
                     painter = painterResource(R.drawable.speaker),
@@ -81,18 +84,18 @@ fun ConnectDeviceBottomSheet(
             }
 
             Text(
-                text = "Escucha en cualquier lugar y controla la reproducción desde tu teléfono.",
+                text = "Escucha en cualquier lugar y controla la reproducción desde tu dispositivo.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
 
-            // Sección 1: Este teléfono
+            // Sección 1: Celular local con su nombre exacto
             DeviceOptionRow(
                 icon = R.drawable.headphones,
-                title = Build.MODEL ?: "Este dispositivo",
-                subtitle = if (isPlayingLocal) "Reproduciendo localmente" else "Listo para reproducir",
+                title = exactPhoneName,
+                subtitle = if (isPlayingLocal) "Este dispositivo • Reproduciendo aquí" else "Este dispositivo",
                 isActive = isPlayingLocal,
                 onClick = {
                     if (isConnectedToDesktop) {
@@ -102,37 +105,62 @@ fun ConnectDeviceBottomSheet(
                 }
             )
 
-            // Sección 2: Liner Desktop (Spotify Connect Engine)
-            val desktopSubtitle = when (connectionState) {
-                ConnectState.DISCONNECTED -> "Toca para conectar en red local (Liner)"
-                ConnectState.DISCOVERING -> "Buscando Liner en tu red WiFi…"
-                ConnectState.CONNECTING -> "Conectando con Liner…"
-                ConnectState.CONNECTED -> "Reproduciendo en ${connectedDeviceName ?: "Liner PC"}"
-            }
+            // Sección 2: Computadoras / Laptops (nombre exacto como "Dezzy", "DESKTOP-XXXXXX", etc.)
+            if (discoveredDevices.isNotEmpty()) {
+                discoveredDevices.forEach { device ->
+                    val isThisConnected = isConnectedToDesktop && connectedDeviceName == device.name
+                    DeviceOptionRow(
+                        icon = R.drawable.speaker,
+                        title = device.name,
+                        subtitle = if (isThisConnected) "Reproduciendo en ${device.name}" else "En red local (${device.ip})",
+                        isActive = isThisConnected,
+                        onClick = {
+                            if (!isThisConnected) {
+                                linerManager.connectToHost(device.ip, device.port, device.name)
+                                playerConnection?.currentMetadata?.value?.let { meta ->
+                                    playerConnection.player.pause()
+                                    linerManager.handoffQueueToDesktop(
+                                        title = meta.title,
+                                        artist = meta.artists.joinToString(", ") { it.name },
+                                        coverUrl = meta.thumbnailUrl
+                                    )
+                                }
+                            }
+                        }
+                    )
+                }
+            } else {
+                val targetDesktopName = connectedDeviceName ?: linerManager.lastDeviceName
+                val desktopSubtitle = when (connectionState) {
+                    ConnectState.DISCONNECTED -> "Toca para conectar en red local"
+                    ConnectState.DISCOVERING -> "Buscando $targetDesktopName en tu red WiFi…"
+                    ConnectState.CONNECTING -> "Conectando con $targetDesktopName…"
+                    ConnectState.CONNECTED -> "Reproduciendo en $targetDesktopName"
+                }
 
-            DeviceOptionRow(
-                icon = R.drawable.speaker,
-                title = connectedDeviceName ?: "Liner Desktop (PC / Linux)",
-                subtitle = desktopSubtitle,
-                isActive = isConnectedToDesktop,
-                isLoading = connectionState == ConnectState.DISCOVERING || connectionState == ConnectState.CONNECTING,
-                onClick = {
-                    if (!isConnectedToDesktop) {
-                        linerManager.startDiscoveryAndConnect()
-                        // Handoff track si hay algo reproduciéndose
-                        playerConnection?.currentMetadata?.value?.let { meta ->
-                            playerConnection.player.pause()
-                            linerManager.handoffQueueToDesktop(
-                                title = meta.title,
-                                artist = meta.artists.joinToString(", ") { it.name },
-                                coverUrl = meta.thumbnailUrl
-                            )
+                DeviceOptionRow(
+                    icon = R.drawable.speaker,
+                    title = targetDesktopName,
+                    subtitle = desktopSubtitle,
+                    isActive = isConnectedToDesktop,
+                    isLoading = connectionState == ConnectState.DISCOVERING || connectionState == ConnectState.CONNECTING,
+                    onClick = {
+                        if (!isConnectedToDesktop) {
+                            linerManager.startDiscoveryAndConnect()
+                            playerConnection?.currentMetadata?.value?.let { meta ->
+                                playerConnection.player.pause()
+                                linerManager.handoffQueueToDesktop(
+                                    title = meta.title,
+                                    artist = meta.artists.joinToString(", ") { it.name },
+                                    coverUrl = meta.thumbnailUrl
+                                )
+                            }
                         }
                     }
-                }
-            )
+                )
+            }
 
-            // Controles remotos en vivo si Liner está conectado
+            // Controles remotos en vivo si la computadora está conectada
             AnimatedVisibility(visible = isConnectedToDesktop) {
                 Surface(
                     shape = RoundedCornerShape(16.dp),
@@ -144,7 +172,7 @@ fun ConnectDeviceBottomSheet(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "Control remoto de Liner",
+                            text = "Control remoto • ${connectedDeviceName ?: linerManager.lastDeviceName}",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold
@@ -182,7 +210,7 @@ fun ConnectDeviceBottomSheet(
                             }
                         }
 
-                        // Desconectar
+                        // Desconectar / Regresar audio al celular
                         TextButton(
                             onClick = {
                                 linerManager.disconnect()
@@ -190,7 +218,7 @@ fun ConnectDeviceBottomSheet(
                             },
                             modifier = Modifier.align(Alignment.CenterHorizontally)
                         ) {
-                            Text("Cambiar reproducción de vuelta a este teléfono")
+                            Text("Cambiar reproducción de vuelta a $exactPhoneName")
                         }
                     }
                 }
@@ -198,7 +226,7 @@ fun ConnectDeviceBottomSheet(
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
 
-            // Sección 3: Otros destinos de audio
+            // Sección 3: Otros destinos de audio (Google Cast / Bluetooth)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -270,38 +298,39 @@ private fun DeviceOptionRow(
     val activeColor = Color(0xFF1DB954) // Verde Spotify Connect
 
     Surface(
+        onClick = onClick,
         shape = RoundedCornerShape(16.dp),
-        color = if (isActive) activeColor.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
+        color = if (isActive) activeColor.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(CircleShape)
-                    .background(if (isActive) activeColor.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant),
+                    .background(if (isActive) activeColor.copy(alpha = 0.2f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     painter = painterResource(icon),
                     contentDescription = null,
-                    tint = if (isActive) activeColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = if (isActive) activeColor else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                     modifier = Modifier.size(22.dp)
                 )
             }
 
-            Spacer(Modifier.width(16.dp))
+            Spacer(Modifier.width(14.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.SemiBold,
                     color = if (isActive) activeColor else MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -309,7 +338,7 @@ private fun DeviceOptionRow(
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (isActive) activeColor.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    color = if (isActive) activeColor.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -317,16 +346,17 @@ private fun DeviceOptionRow(
 
             if (isLoading) {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(18.dp),
+                    modifier = Modifier.size(20.dp),
                     strokeWidth = 2.dp,
-                    color = activeColor
+                    color = MaterialTheme.colorScheme.primary
                 )
             } else if (isActive) {
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .clip(CircleShape)
-                        .background(activeColor)
+                // Indicador de ecualizador / conectado
+                Icon(
+                    painter = painterResource(R.drawable.volume_up),
+                    contentDescription = "Activo",
+                    tint = activeColor,
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
