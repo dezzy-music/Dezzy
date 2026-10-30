@@ -210,6 +210,46 @@ fun ConnectDeviceBottomSheet(
                             }
                         }
 
+                        // Control de volumen remoto en vivo
+                        var remoteVolume by remember(desktopState?.volume) {
+                            mutableFloatStateOf(desktopState?.volume ?: 1f)
+                        }
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.volume_off),
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                            Slider(
+                                value = remoteVolume,
+                                onValueChange = { newVol ->
+                                    remoteVolume = newVol
+                                    linerManager.setVolume(newVol)
+                                },
+                                valueRange = 0f..1f,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(horizontal = 8.dp),
+                                colors = SliderDefaults.colors(
+                                    thumbColor = MaterialTheme.colorScheme.primary,
+                                    activeTrackColor = MaterialTheme.colorScheme.primary
+                                )
+                            )
+                            Icon(
+                                painter = painterResource(R.drawable.volume_up),
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                        }
+
                         // Desconectar / Regresar audio al celular
                         TextButton(
                             onClick = {
