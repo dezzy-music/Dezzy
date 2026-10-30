@@ -38,39 +38,26 @@ fn current_time_ms() -> u64 {
         .as_millis() as u64
 }
 
-fn follow_redirects_for_stream(initial_url: &str) -> String {
-    let mut current_url = initial_url.to_string();
-    let client = ureq::AgentBuilder::new()
-        .timeout(std::time::Duration::from_secs(4))
-        .redirects(0) // We follow manually to capture Location
-        .build();
-
-    for _ in 0..4 {
-        let resp = match client
-            .head(&current_url)
-            .set("User-Agent", ANDROID_VR_USER_AGENT)
-            .call()
-        {
-            Ok(r) => r,
-            Err(ureq::Error::Status(302, r)) | Err(ureq::Error::Status(303, r)) => r,
-            Err(_) => break,
-        };
-
-        if let Some(loc) = resp.header("location") {
-            current_url = loc.to_string();
-        } else {
-            break;
+fn attach_pot(url: &str, po_token: Option<&str>) -> String {
+    if let Some(token) = po_token {
+        if !token.is_empty() && !url.contains("pot=") {
+            let sep = if url.contains('?') { "&" } else { "?" };
+            return format!("{}{}pot={}", url, sep, token);
         }
     }
-
-    current_url
+    url.to_string()
 }
 
-pub fn resolve_youtube_video(video_id: &str, max_height: i32) -> ResolutionResult {
-    let cache_key = format!("{}:{}", video_id, max_height);
+pub fn resolve_youtube_video(
+    video_id: &str,
+    max_height: i32,
+    po_token: Option<&str>,
+    visitor_data: Option<&str>,
+) -> ResolutionResult {
+    let cache_key = format!("{}:{}:{:?}", video_id, max_height, po_token.is_some());
     let now = current_time_ms();
 
-    // Check fast cache
+    // Check fast in-memory cache
     if let Ok(cache) = CACHE.read() {
         if let Some(entry) = cache.get(&cache_key) {
             if entry.expires_at_ms > now + 60_000 {
@@ -79,7 +66,7 @@ pub fn resolve_youtube_video(video_id: &str, max_height: i32) -> ResolutionResul
         }
     }
 
-    let payload = serde_json::json!({
+    let mut payload = serde_json::json!({
         "context": {
             "client": {
                 "clientName": "ANDROID_VR",
@@ -99,6 +86,20 @@ pub fn resolve_youtube_video(video_id: &str, max_height: i32) -> ResolutionResul
             }
         }
     });
+
+    if let Some(vd) = visitor_data {
+        if !vd.is_empty() {
+            payload["context"]["client"]["visitorData"] = serde_json::Value::String(vd.to_string());
+        }
+    }
+
+    if let Some(token) = po_token {
+        if !token.is_empty() {
+            payload["serviceIntegrityDimensions"] = serde_json::json!({
+                "poToken": token
+            });
+        }
+    }
 
     let client = ureq::AgentBuilder::new()
         .timeout(std::time::Duration::from_secs(6))
@@ -171,7 +172,7 @@ pub fn resolve_youtube_video(video_id: &str, max_height: i32) -> ResolutionResul
                 is_muxed: false,
                 height: 0,
                 expires_in: 0,
-                error: Some("No streamingData".to_string()),
+                error: Some("No streamingData in player response".to_string()),
             };
         }
     };
@@ -181,7 +182,7 @@ pub fn resolve_youtube_video(video_id: &str, max_height: i32) -> ResolutionResul
         .and_then(|v| v.as_str().and_then(|s| s.parse::<i64>().ok()).or_else(|| v.as_i64()))
         .unwrap_or(21600);
 
-    // 1. Try muxed format
+    // 1. Try muxed format first (video + audio together)
     if let Some(formats) = streaming_data.get("formats").and_then(|v| v.as_array()) {
         let mut candidates: Vec<&serde_json::Value> = formats
             .iter()
@@ -203,7 +204,8 @@ pub fn resolve_youtube_video(video_id: &str, max_height: i32) -> ResolutionResul
         if let Some(best) = candidates.first() {
             if let Some(raw_url) = best.get("url").and_then(|u| u.as_str()) {
                 let h = best.get("height").and_then(|h| h.as_i64()).unwrap_or(360) as i32;
-                let final_url = follow_redirects_for_stream(raw_url);
+                let final_url = attach_pot(raw_url, po_token);
+
                 let res = ResolutionResult {
                     success: true,
                     video_url: Some(final_url),
@@ -229,7 +231,7 @@ pub fn resolve_youtube_video(video_id: &str, max_height: i32) -> ResolutionResul
         }
     }
 
-    // 2. Fallback to adaptive video + adaptive audio
+    // 2. Fallback to adaptive separate streams (1080p/720p video track + audio track)
     if let Some(adaptives) = streaming_data.get("adaptiveFormats").and_then(|v| v.as_array()) {
         let mut video_candidates: Vec<&serde_json::Value> = adaptives
             .iter()
@@ -265,13 +267,13 @@ pub fn resolve_youtube_video(video_id: &str, max_height: i32) -> ResolutionResul
         });
 
         if let (Some(best_v), Some(best_a)) = (video_candidates.first(), audio_candidates.first()) {
-            if let (Some(v_url), Some(a_url)) = (
+            if let (Some(v_raw), Some(a_raw)) = (
                 best_v.get("url").and_then(|u| u.as_str()),
                 best_a.get("url").and_then(|u| u.as_str()),
             ) {
                 let h = best_v.get("height").and_then(|h| h.as_i64()).unwrap_or(720) as i32;
-                let final_v_url = follow_redirects_for_stream(v_url);
-                let final_a_url = follow_redirects_for_stream(a_url);
+                let final_v_url = attach_pot(v_raw, po_token);
+                let final_a_url = attach_pot(a_raw, po_token);
 
                 let res = ResolutionResult {
                     success: true,
@@ -305,7 +307,7 @@ pub fn resolve_youtube_video(video_id: &str, max_height: i32) -> ResolutionResul
         is_muxed: false,
         height: 0,
         expires_in: 0,
-        error: Some("No suitable video format found".to_string()),
+        error: Some("No suitable unthrottled video format found".to_string()),
     }
 }
 
@@ -317,13 +319,32 @@ pub extern "system" fn Java_com_dezzy_music_utils_NativeVideoResolver_resolveVid
     _class: JClass<'local>,
     j_video_id: JString<'local>,
     max_height: jint,
+    j_po_token: JString<'local>,
+    j_visitor_data: JString<'local>,
 ) -> jstring {
     let video_id: String = match env.get_string(&j_video_id) {
         Ok(s) => s.into(),
         Err(_) => String::new(),
     };
 
-    let result = resolve_youtube_video(&video_id, max_height as i32);
+    let po_token: Option<String> = if !j_po_token.is_null() {
+        env.get_string(&j_po_token).ok().map(|s| s.into()).filter(|s: &String| !s.is_empty())
+    } else {
+        None
+    };
+
+    let visitor_data: Option<String> = if !j_visitor_data.is_null() {
+        env.get_string(&j_visitor_data).ok().map(|s| s.into()).filter(|s: &String| !s.is_empty())
+    } else {
+        None
+    };
+
+    let result = resolve_youtube_video(
+        &video_id,
+        max_height as i32,
+        po_token.as_deref(),
+        visitor_data.as_deref(),
+    );
     let json_str = serde_json::to_string(&result).unwrap_or_else(|_| "{}".to_string());
 
     let output = env.new_string(json_str).expect("Couldn't create java string");

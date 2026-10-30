@@ -448,8 +448,19 @@ class MusicService :
             val currentTitle = player.mediaMetadata.title?.toString()
             val currentArtist = player.mediaMetadata.artist?.toString()
             val result = withContext(Dispatchers.IO) {
+                val poToken = com.dezzy.music.innertube.YouTube.poTokenPlayer
+                    ?: com.dezzy.music.innertube.YouTube.poTokenMinter?.invoke(mediaId)
+                    ?: com.dezzy.music.innertube.YouTube.poTokenGvs
+                    ?: com.dezzy.music.innertube.YouTube.poToken
+                val visitorData = com.dezzy.music.innertube.YouTube.visitorData
+
                 // 1. Ultra-fast native Rust video resolver (direct unthrottled streams)
-                val nativeResolved = com.dezzy.music.utils.NativeVideoResolver.resolveVideo(mediaId, maxHeight)
+                val nativeResolved = com.dezzy.music.utils.NativeVideoResolver.resolveVideo(
+                    videoId = mediaId,
+                    maxHeight = maxHeight,
+                    poToken = poToken,
+                    visitorData = visitorData,
+                )
                 if (nativeResolved != null && nativeResolved.success && nativeResolved.videoUrl != null) {
                     android.util.Log.i("MusicService", "Resolved video instantaneously via native Rust: isMuxed=${nativeResolved.isMuxed}, height=${nativeResolved.height}")
                     return@withContext Result.success(com.dezzy.music.utils.NativeVideoResolver.toVideoPlaybackData(nativeResolved))
@@ -467,7 +478,15 @@ class MusicService :
                 } else null
 
                 if (!searchVidId.isNullOrBlank() && searchVidId != mediaId) {
-                    val nativeSearchResolved = com.dezzy.music.utils.NativeVideoResolver.resolveVideo(searchVidId, maxHeight)
+                    val searchPoToken = com.dezzy.music.innertube.YouTube.poTokenPlayer
+                        ?: com.dezzy.music.innertube.YouTube.poTokenMinter?.invoke(searchVidId)
+                        ?: poToken
+                    val nativeSearchResolved = com.dezzy.music.utils.NativeVideoResolver.resolveVideo(
+                        videoId = searchVidId,
+                        maxHeight = maxHeight,
+                        poToken = searchPoToken,
+                        visitorData = visitorData,
+                    )
                     if (nativeSearchResolved != null && nativeSearchResolved.success && nativeSearchResolved.videoUrl != null) {
                         android.util.Log.i("MusicService", "Resolved video search ($searchVidId) instantaneously via native Rust")
                         return@withContext Result.success(com.dezzy.music.utils.NativeVideoResolver.toVideoPlaybackData(nativeSearchResolved))
@@ -1871,17 +1890,15 @@ class MusicService :
 
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
                 hasAudioFocus = false
-                audioFocusVolumeFactor.value = 1f
+                audioFocusVolumeFactor.value = 0.2f
                 if (!wasPlayingBeforeAudioFocusLoss) {
                     wasPlayingBeforeAudioFocusLoss = player.isPlaying
                 }
                 lastAudioFocusState = focusChange
 
-                // Task-switch gestures / launcher UI sounds often grab focus for a fraction
-                // of a second and hand it right back — pausing immediately here produced an
-                // audible pause-then-resume hiccup on every app switch. Give focus a brief
-                // grace period to come back on its own before actually pausing; a genuine
-                // longer loss (call, another player) still pauses normally after the delay.
+                // Notifications and transient sounds often take 1-2 seconds.
+                // Duck volume instead of immediately cutting playback, and give a 2-second
+                // grace period before actually pausing if the transient loss persists.
                 pendingTransientPauseJob?.cancel()
                 pendingTransientPauseJob = scope.launch {
                     delay(TRANSIENT_FOCUS_LOSS_GRACE_MS)
@@ -1892,20 +1909,21 @@ class MusicService :
             }
 
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
-
                 hasAudioFocus = false
                 pendingTransientPauseJob?.cancel()
                 pendingTransientPauseJob = null
 
-                wasPlayingBeforeAudioFocusLoss = player.isPlaying
+                if (!wasPlayingBeforeAudioFocusLoss) {
+                    wasPlayingBeforeAudioFocusLoss = player.isPlaying
+                }
 
                 audioFocusVolumeFactor.value = 0.2f
 
                 lastAudioFocusState = focusChange
             }
 
-            AudioManager.AUDIOFOCUS_GAIN_TRANSIENT -> {
-
+            AudioManager.AUDIOFOCUS_GAIN_TRANSIENT,
+            AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK -> {
                 hasAudioFocus = true
                 audioFocusVolumeFactor.value = 1f
                 pendingTransientPauseJob?.cancel()
@@ -1915,15 +1933,6 @@ class MusicService :
                     resumeAfterFocusRegained()
                 }
                 wasPlayingBeforeAudioFocusLoss = false
-
-                lastAudioFocusState = focusChange
-            }
-
-            AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK -> {
-                hasAudioFocus = true
-                audioFocusVolumeFactor.value = 1f
-                pendingTransientPauseJob?.cancel()
-                pendingTransientPauseJob = null
 
                 lastAudioFocusState = focusChange
             }
@@ -6347,8 +6356,8 @@ class MusicService :
         const val CHANNEL_ID = "music_channel_01"
         const val NOTIFICATION_ID = 888
         // How long to wait after AUDIOFOCUS_LOSS_TRANSIENT before actually pausing — absorbs
-        // the sub-second focus blips some launchers/OS gestures fire on every app switch.
-        const val TRANSIENT_FOCUS_LOSS_GRACE_MS = 400L
+        // notifications, typing clicks, and transient alerts without jarring cuts.
+        const val TRANSIENT_FOCUS_LOSS_GRACE_MS = 2_000L
         /** Pasado este punto, "anterior" reinicia la pista en vez de retroceder. */
         const val PREVIOUS_RESTART_THRESHOLD_MS = 3_000L
         // Backoff del sondeo de reintento tras un error de red (ver scheduleNetworkErrorRetry).

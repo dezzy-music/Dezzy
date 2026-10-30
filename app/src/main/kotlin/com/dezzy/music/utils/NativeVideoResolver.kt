@@ -6,7 +6,7 @@ import timber.log.Timber
 
 /**
  * High-performance native Rust video resolver for YouTube video mode.
- * Loads `libdezzy_video_resolver.so` to resolve unthrottled, botguard-free video streams
+ * Loads `libdezzy_video_resolver.so` to resolve unthrottled, botguard-signed video streams
  * with sub-200ms latency.
  */
 object NativeVideoResolver {
@@ -19,9 +19,9 @@ object NativeVideoResolver {
         try {
             System.loadLibrary("dezzy_video_resolver")
             isLoaded = true
-            Timber.tag(TAG).i("Loaded libdezzy_video_resolver.so successfully")
+            android.util.Log.i(TAG, "Loaded libdezzy_video_resolver.so successfully")
         } catch (t: Throwable) {
-            Timber.tag(TAG).e(t, "Failed to load libdezzy_video_resolver.so")
+            android.util.Log.e(TAG, "Failed to load libdezzy_video_resolver.so", t)
             isLoaded = false
         }
     }
@@ -37,14 +37,30 @@ object NativeVideoResolver {
     )
 
     @JvmStatic
-    private external fun resolveVideoNative(videoId: String, maxHeight: Int): String
+    private external fun resolveVideoNative(
+        videoId: String,
+        maxHeight: Int,
+        poToken: String?,
+        visitorData: String?,
+    ): String
 
     fun isAvailable(): Boolean = isLoaded
 
-    fun resolveVideo(videoId: String, maxHeight: Int = 720): ResolvedVideo? {
+    suspend fun resolveVideo(
+        videoId: String,
+        maxHeight: Int = 720,
+        poToken: String? = null,
+        visitorData: String? = null,
+    ): ResolvedVideo? {
         if (!isLoaded) return null
         return try {
-            val jsonStr = resolveVideoNative(videoId, maxHeight)
+            val token = poToken
+                ?: com.dezzy.music.innertube.YouTube.poTokenPlayer
+                ?: com.dezzy.music.innertube.YouTube.poTokenMinter?.invoke(videoId)
+                ?: com.dezzy.music.innertube.YouTube.poTokenGvs
+                ?: com.dezzy.music.innertube.YouTube.poToken
+            val vd = visitorData ?: com.dezzy.music.innertube.YouTube.visitorData
+            val jsonStr = resolveVideoNative(videoId, maxHeight, token, vd)
             val json = JSONObject(jsonStr)
             val success = json.optBoolean("success", false)
             val videoUrl = json.optString("video_url").takeIf { it.isNotEmpty() }
@@ -53,6 +69,10 @@ object NativeVideoResolver {
             val height = json.optInt("height", 0)
             val expiresIn = json.optLong("expires_in", 0)
             val error = json.optString("error").takeIf { it.isNotEmpty() }
+
+            if (!success && error != null) {
+                android.util.Log.w(TAG, "Native resolution for $videoId: $error")
+            }
 
             ResolvedVideo(
                 success = success,
@@ -64,7 +84,7 @@ object NativeVideoResolver {
                 error = error,
             )
         } catch (t: Throwable) {
-            Timber.tag(TAG).e(t, "Native video resolution failed for videoId: $videoId")
+            android.util.Log.e(TAG, "Native video resolution failed for videoId: $videoId", t)
             null
         }
     }
