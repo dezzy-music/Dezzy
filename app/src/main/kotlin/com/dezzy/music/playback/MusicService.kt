@@ -5891,11 +5891,10 @@ class MusicService :
         synchronized(persistentStateLock) {
             runCatching {
                 FileOutputStream(tempFile).use { fos ->
-                    ObjectOutputStream(fos).use { output ->
-                        output.writeObject(payload)
-                        output.flush()
-                    }
-                    fos.fd.sync()
+                    val output = ObjectOutputStream(fos)
+                    output.writeObject(payload)
+                    output.flush()
+                    runCatching { fos.fd.sync() }
                 }
 
                 if (persistentFile.exists() && !persistentFile.delete()) {
