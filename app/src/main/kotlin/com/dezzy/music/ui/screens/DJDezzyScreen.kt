@@ -79,7 +79,8 @@ fun DJDezzyScreen(
             playerConnection = playerConnection,
             mediaMetadata = mediaMetadata,
             isDjTalking = isDjTalking,
-            transparentBackground = true
+            transparentBackground = true,
+            alwaysShowOrb = true
         )
 
         // Spotify DJ Top Header Bar
@@ -146,8 +147,13 @@ fun DJDezzyScreen(
                 color = Color.Black.copy(alpha = 0.65f),
                 border = BorderStroke(1.dp, NeonPurpleAccent.copy(alpha = 0.6f))
             ) {
+                val cleanStatus = if (statusText.startsWith("Error", ignoreCase = true)) {
+                    "DJ en vivo"
+                } else {
+                    statusText
+                }
                 Text(
-                    text = statusText,
+                    text = cleanStatus,
                     color = Color.White,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,

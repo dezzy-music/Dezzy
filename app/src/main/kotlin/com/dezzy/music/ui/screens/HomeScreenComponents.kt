@@ -1153,6 +1153,8 @@ fun SpotifyGreetingGrid(
     onRemovePlaylistClick: (Int) -> Unit,
     playerConnection: PlayerConnection,
     navController: NavController,
+    accountImageUrl: String? = null,
+    onAccountClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -1178,16 +1180,92 @@ fun SpotifyGreetingGrid(
             Text(
                 text = greeting,
                 color = Color.White,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
             )
-            IconButton(onClick = { navController.navigate("settings") }) {
-                Icon(
-                    painter = painterResource(R.drawable.settings),
-                    contentDescription = "Ajustes",
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
-                )
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                // Notificaciones (novedades)
+                IconButton(
+                    onClick = { navController.navigate("new_release") },
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.notifications),
+                        contentDescription = stringResource(R.string.new_release_albums),
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                // Historial de reproducción
+                IconButton(
+                    onClick = { navController.navigate("history") },
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.history),
+                        contentDescription = stringResource(R.string.history),
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                // Estadísticas
+                IconButton(
+                    onClick = { navController.navigate("stats") },
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.stats),
+                        contentDescription = stringResource(R.string.stats),
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                // Perfil (a un lado del engranaje)
+                IconButton(
+                    onClick = onAccountClick,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    if (accountImageUrl != null) {
+                        AsyncImage(
+                            model = accountImageUrl,
+                            contentDescription = stringResource(R.string.account),
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(CircleShape)
+                        )
+                    } else {
+                        Icon(
+                            painter = painterResource(R.drawable.account),
+                            contentDescription = stringResource(R.string.account),
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+
+                // Engranaje (Ajustes)
+                IconButton(
+                    onClick = { navController.navigate("settings") },
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.settings),
+                        contentDescription = "Ajustes",
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
             }
         }
 

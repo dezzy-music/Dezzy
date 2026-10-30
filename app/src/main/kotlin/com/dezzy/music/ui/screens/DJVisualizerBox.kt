@@ -96,7 +96,8 @@ fun DJVisualizerBox(
     playerConnection: PlayerConnection?,
     mediaMetadata: MediaMetadata?,
     isDjTalking: Boolean,
-    transparentBackground: Boolean = false
+    transparentBackground: Boolean = false,
+    alwaysShowOrb: Boolean = false
 ) {
     val context = LocalContext.current
     var hasPermission by remember {
@@ -181,7 +182,7 @@ fun DJVisualizerBox(
     val stars = remember { buildStars() }
     val sparkles = remember { buildSparkles() }
     val nativeCoords = remember { FloatArray(SPHERE_POINTS * 4) }
-    val orbAlpha by animateFloatAsState(targetValue = if (isDjTalking) 1f else 0f, animationSpec = tween(1500))
+    val orbAlpha by animateFloatAsState(targetValue = if (isDjTalking || alwaysShowOrb) 1f else 0f, animationSpec = tween(1500))
 
     Box(
         modifier = modifier.then(
@@ -198,7 +199,22 @@ fun DJVisualizerBox(
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val t = timeSec
-            val loud = engine.loudness
+            val isPlaying = playerConnection?.player?.isPlaying == true
+            val isRealAudio = engineRunning && engine.loudness > 0.001f
+            val simLoudness = if (isPlaying || isDjTalking) {
+                0.28f + 0.14f * sin(t * 3.2f) + 0.08f * cos(t * 5.4f)
+            } else {
+                0.12f + 0.04f * sin(t * 1.5f)
+            }
+            val loud = if (isRealAudio) engine.loudness else simLoudness.coerceIn(0.05f, 0.95f)
+
+            if (!isRealAudio) {
+                for (i in 0 until AudioSpectrumEngine.BANDS) {
+                    val freq = (i + 1).toFloat() / AudioSpectrumEngine.BANDS
+                    val wave = (0.22f + 0.38f * sin(t * 3.8f + freq * 7.5f) * cos(t * 2.2f - freq * 3.8f)).coerceIn(0.05f, 0.95f)
+                    engine.bands[i] = if (isPlaying || isDjTalking) wave * (0.4f + loud * 0.6f) else 0.08f
+                }
+            }
             val w = size.width
             val h = size.height
             val cx = w / 2f
@@ -297,25 +313,6 @@ fun DJVisualizerBox(
             }
         }
 
-        if (!hasPermission) {
-            Column(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(32.dp)
-                    .background(Color.Black.copy(alpha = 0.7f), MaterialTheme.shapes.medium)
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Permiso de audio necesario para el visualizador.",
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                Button(onClick = { permissionLauncher.launch(Manifest.permission.RECORD_AUDIO) }) {
-                    Text("Conceder")
-                }
-            }
-        }
+
     }
 }

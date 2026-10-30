@@ -280,7 +280,6 @@ fun BottomSheetPlayer(
     val djUiState by (djViewModel?.uiState ?: kotlinx.coroutines.flow.MutableStateFlow(com.dezzy.music.ui.screens.DJUiState.IDLE)).collectAsState()
     val isUserTyping by (djViewModel?.isUserTyping ?: kotlinx.coroutines.flow.MutableStateFlow(false)).collectAsState()
     val isDjTalking = (djUiState == com.dezzy.music.ui.screens.DJUiState.SPEAKING || djUiState == com.dezzy.music.ui.screens.DJUiState.GENERATING || isUserTyping)
-    var showDjBottomSheet by remember { mutableStateOf(false) }
 
     val isSystemInDarkTheme = isSystemInDarkTheme()
     val darkTheme by rememberEnumPreference(DarkModeKey, defaultValue = DarkMode.AUTO)
@@ -1497,45 +1496,6 @@ fun BottomSheetPlayer(
         }
     }
 
-    // Spotify-style Circular Floating DJ Button (FAB) at bottom-right of player
-    androidx.compose.animation.AnimatedVisibility(
-        visible = state.isExpanded,
-        enter = androidx.compose.animation.fadeIn(),
-        exit = androidx.compose.animation.fadeOut(),
-        modifier = Modifier
-            .align(Alignment.BottomEnd)
-            .navigationBarsPadding()
-            .padding(end = 20.dp, bottom = 24.dp)
-    ) {
-        Surface(
-            onClick = { showDjBottomSheet = true },
-            shape = androidx.compose.foundation.shape.CircleShape,
-            color = Color(0xFF1E0A38),
-            border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFA855F7)),
-            shadowElevation = 8.dp,
-            modifier = Modifier.size(52.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(androidx.compose.foundation.shape.CircleShape)
-                        .background(Color.Transparent)
-                        .border(androidx.compose.foundation.BorderStroke(2.5.dp, Color(0xFFA855F7)), androidx.compose.foundation.shape.CircleShape)
-                )
-            }
-        }
-    }
-
-    // Spotify DJ Interaction Modal Bottom Sheet
-    if (showDjBottomSheet && djViewModel != null) {
-        com.dezzy.music.ui.screens.DJInteractionBottomSheet(
-            onDismissRequest = { showDjBottomSheet = false },
-            viewModel = djViewModel,
-            playerConnection = playerConnection,
-            mediaMetadata = mediaMetadata
-        )
-    }
 } // Closes Box
 } // Closes BottomSheetPlayer
 

@@ -92,21 +92,21 @@ import com.dezzy.music.together.TogetherRoomTheme
 data class ThemeFilter(
     val theme: TogetherRoomTheme?,
     val label: String,
-    val emoji: String,
+    val iconRes: Int,
 )
 
 val themeFilters = listOf(
-    ThemeFilter(null, "Todos", "🌍"),
-    ThemeFilter(TogetherRoomTheme.LOFI, "Lofi", "☕"),
-    ThemeFilter(TogetherRoomTheme.POP, "Pop", "⭐"),
-    ThemeFilter(TogetherRoomTheme.HIP_HOP, "Hip-Hop", "🎤"),
-    ThemeFilter(TogetherRoomTheme.ELECTRONIC, "Electronic", "🎧"),
-    ThemeFilter(TogetherRoomTheme.REGGAETON, "Reggaeton", "🔥"),
-    ThemeFilter(TogetherRoomTheme.LATIN, "Latin", "💃"),
-    ThemeFilter(TogetherRoomTheme.KPOP, "K-Pop", "🌸"),
-    ThemeFilter(TogetherRoomTheme.ROCK, "Rock", "🎸"),
-    ThemeFilter(TogetherRoomTheme.RNB, "R&B", "🎶"),
-    ThemeFilter(TogetherRoomTheme.JAZZ, "Jazz", "🎷"),
+    ThemeFilter(null, "Todos", R.drawable.resource_public),
+    ThemeFilter(TogetherRoomTheme.LOFI, "Lofi", R.drawable.ic_coffee),
+    ThemeFilter(TogetherRoomTheme.POP, "Pop", R.drawable.star),
+    ThemeFilter(TogetherRoomTheme.HIP_HOP, "Hip-Hop", R.drawable.mic),
+    ThemeFilter(TogetherRoomTheme.ELECTRONIC, "Electronic", R.drawable.ic_radio_waves),
+    ThemeFilter(TogetherRoomTheme.REGGAETON, "Reggaeton", R.drawable.fire),
+    ThemeFilter(TogetherRoomTheme.LATIN, "Latin", R.drawable.music_note),
+    ThemeFilter(TogetherRoomTheme.ROCK, "Rock", R.drawable.ic_guitar),
+    ThemeFilter(TogetherRoomTheme.KPOP, "K-Pop", R.drawable.star),
+    ThemeFilter(TogetherRoomTheme.RNB, "R&B", R.drawable.music_note),
+    ThemeFilter(TogetherRoomTheme.JAZZ, "Jazz", R.drawable.queue_music),
 )
 
 fun themeColor(theme: TogetherRoomTheme): Color = when (theme) {
@@ -124,19 +124,19 @@ fun themeColor(theme: TogetherRoomTheme): Color = when (theme) {
     TogetherRoomTheme.MIXED -> Color(0xFF81C784)
 }
 
-fun themeEmoji(theme: TogetherRoomTheme): String = when (theme) {
-    TogetherRoomTheme.LOFI -> "☕"
-    TogetherRoomTheme.REGGAETON -> "🔥"
-    TogetherRoomTheme.POP -> "⭐"
-    TogetherRoomTheme.ELECTRONIC -> "🎧"
-    TogetherRoomTheme.HIP_HOP -> "🎤"
-    TogetherRoomTheme.RNB -> "🎶"
-    TogetherRoomTheme.LATIN -> "💃"
-    TogetherRoomTheme.KPOP -> "🌸"
-    TogetherRoomTheme.ROCK -> "🎸"
-    TogetherRoomTheme.JAZZ -> "🎷"
-    TogetherRoomTheme.CLASSICAL -> "🎻"
-    TogetherRoomTheme.MIXED -> "🌍"
+fun themeIcon(theme: TogetherRoomTheme): Int = when (theme) {
+    TogetherRoomTheme.LOFI -> R.drawable.ic_coffee
+    TogetherRoomTheme.REGGAETON -> R.drawable.fire
+    TogetherRoomTheme.POP -> R.drawable.star
+    TogetherRoomTheme.ELECTRONIC -> R.drawable.ic_radio_waves
+    TogetherRoomTheme.HIP_HOP -> R.drawable.mic
+    TogetherRoomTheme.RNB -> R.drawable.music_note
+    TogetherRoomTheme.LATIN -> R.drawable.music_note
+    TogetherRoomTheme.KPOP -> R.drawable.star
+    TogetherRoomTheme.ROCK -> R.drawable.ic_guitar
+    TogetherRoomTheme.JAZZ -> R.drawable.queue_music
+    TogetherRoomTheme.CLASSICAL -> R.drawable.library_music
+    TogetherRoomTheme.MIXED -> R.drawable.resource_public
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -186,13 +186,20 @@ fun PublicRoomsScreen(
                     val list = mutableListOf<TogetherPublicRoom>()
                     for (i in 0 until roomsArray.length()) {
                         val r = roomsArray.getJSONObject(i)
+                        val hostName = r.optString("hostName", "Anfitrión")
+                        val code = r.optString("code")
+                        val sessionId = r.optString("sessionId", code)
+                        // Ocultar salas de test
+                        if (hostName.contains("Test", ignoreCase = true) || hostName.equals("TestDezzy", ignoreCase = true) || code.equals("S6F4D5", ignoreCase = true) || sessionId.equals("S6F4D5", ignoreCase = true)) {
+                            continue
+                        }
                         val themeStr = r.optString("theme", "MIXED")
                         val themeEnum = runCatching { TogetherRoomTheme.valueOf(themeStr) }.getOrDefault(TogetherRoomTheme.MIXED)
                         list.add(
                             TogetherPublicRoom(
-                                sessionId = r.optString("sessionId", r.optString("code")),
-                                code = r.optString("code"),
-                                hostName = r.optString("hostName", "Anfitrión"),
+                                sessionId = sessionId,
+                                code = code,
+                                hostName = hostName,
                                 theme = themeEnum,
                                 participantCount = r.optInt("participantCount", 0),
                                 currentTrackTitle = r.optString("currentTrackTitle").takeIf { it.isNotBlank() },
@@ -240,10 +247,19 @@ fun PublicRoomsScreen(
     ) {
         TopAppBar(
             title = {
-                Text(
-                    text = "🌐 Salas Públicas",
-                    fontWeight = FontWeight.Bold,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        painter = painterResource(R.drawable.resource_public),
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "Salas Públicas",
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
             },
             navigationIcon = {
                 androidx.compose.material3.IconButton(onClick = { navController.navigateUp() }) {
@@ -293,7 +309,19 @@ fun PublicRoomsScreen(
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         selectedTheme = if (selectedTheme == filter.theme) null else filter.theme
                     },
-                    label = { Text("${filter.emoji} ${filter.label}") },
+                    leadingIcon = {
+                        Icon(
+                            painter = painterResource(filter.iconRes),
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = if (selectedTheme == filter.theme) {
+                                filter.theme?.let { themeColor(it) } ?: MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        )
+                    },
+                    label = { Text(filter.label) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = filter.theme?.let { themeColor(it) }?.copy(alpha = 0.2f)
                             ?: MaterialTheme.colorScheme.primaryContainer,
@@ -315,7 +343,12 @@ fun PublicRoomsScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.padding(32.dp),
                 ) {
-                    Text("🎵", fontSize = 56.sp)
+                    Icon(
+                        painter = painterResource(R.drawable.resource_public),
+                        contentDescription = null,
+                        modifier = Modifier.size(56.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                     Text(
                         text = "No hay salas públicas activas",
                         style = MaterialTheme.typography.titleMedium,
@@ -403,17 +436,23 @@ fun PublicRoomCard(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    // Theme badge
+                    // Theme badge (Clean minimalist vector icon)
                     Surface(
                         shape = CircleShape,
                         color = color.copy(alpha = 0.15f),
                         modifier = Modifier.scale(pulse),
                     ) {
-                        Text(
-                            text = themeEmoji(room.theme),
-                            modifier = Modifier.padding(10.dp),
-                            fontSize = 22.sp,
-                        )
+                        Box(
+                            modifier = Modifier.size(44.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                painter = painterResource(themeIcon(room.theme)),
+                                contentDescription = null,
+                                tint = color,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
                     }
                     Spacer(Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {

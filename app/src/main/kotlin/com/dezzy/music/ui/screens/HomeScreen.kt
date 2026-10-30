@@ -11,6 +11,10 @@ package com.dezzy.music.ui.screens
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -91,6 +95,7 @@ fun HomeScreen(
     val pinnedPlaylist1 by viewModel.pinnedPlaylist1.collectAsState()
     val pinnedPlaylist2 by viewModel.pinnedPlaylist2.collectAsState()
     var showPinnedPlaylistSelector by remember { androidx.compose.runtime.mutableStateOf<Int?>(null) }
+    var showAccountDialog by remember { androidx.compose.runtime.mutableStateOf(false) }
     val forgottenFavorites by viewModel.forgottenFavorites.collectAsState()
     val keepListening by viewModel.keepListening.collectAsState()
     val homePage by viewModel.homePage.collectAsState()
@@ -325,9 +330,16 @@ fun HomeScreen(
                 )
             }
 
+            val playerInsets = LocalPlayerAwareWindowInsets.current
+            val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+            val bottomPadding = playerInsets.asPaddingValues().calculateBottomPadding()
+
             LazyColumn(
                 state = lazylistState,
-                contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues()
+                contentPadding = PaddingValues(
+                    top = statusBarPadding + 8.dp,
+                    bottom = bottomPadding
+                )
             ) {
                 item {
                     com.dezzy.music.ui.component.WelcomeGuideCard()
@@ -350,7 +362,9 @@ fun HomeScreen(
                             }
                         },
                         playerConnection = playerConnection,
-                        navController = navController
+                        navController = navController,
+                        accountImageUrl = url,
+                        onAccountClick = { showAccountDialog = true }
                     )
                 }
 
@@ -551,6 +565,14 @@ fun HomeScreen(
                         context.dataStore.edit { it[key] = playlist.id }
                     }
                 }
+            )
+        }
+
+        if (showAccountDialog) {
+            com.dezzy.music.ui.component.AccountSettingsDialog(
+                navController = navController,
+                onDismiss = { showAccountDialog = false },
+                latestVersionName = com.dezzy.music.BuildConfig.VERSION_NAME
             )
         }
     }

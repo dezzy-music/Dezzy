@@ -146,15 +146,15 @@ class DJDezzyViewModel @Inject constructor(
         
         djJob?.cancel()
         djJob = viewModelScope.launch(Dispatchers.IO) {
+            val prefs = context.dataStore.data.first()
+            val customName = prefs[com.dezzy.music.constants.DjNameKey] ?: ""
+            val username = prefs[com.dezzy.music.constants.UsernameKey] ?: ""
+            val djLanguage = prefs[com.dezzy.music.constants.DjLanguageKey] ?: "auto"
+            val djName = if (customName.isNotBlank()) "DJ $customName" else "DJ Dezzy"
+
             try {
                 _uiState.value = DJUiState.GENERATING
                 _statusText.value = "Pensando..."
-                
-                val prefs = context.dataStore.data.first()
-                val customName = prefs[com.dezzy.music.constants.DjNameKey] ?: ""
-                val username = prefs[com.dezzy.music.constants.UsernameKey] ?: ""
-                val djLanguage = prefs[com.dezzy.music.constants.DjLanguageKey] ?: "auto"
-                val djName = if (customName.isNotBlank()) "DJ $customName" else "DJ Dezzy"
 
                 val topSongs = database.songsByPlayTimeAsc().first().reversed().take(5)
                 val topContext = topSongs.joinToString(", ") { "${it.title} de ${it.artists.firstOrNull()?.name ?: "Unknown"}" }
@@ -162,91 +162,123 @@ class DJDezzyViewModel @Inject constructor(
                 val geminiClient = GeminiDjClient(httpClient)
                 val requestText = userRequest ?: "Armame un mix para descubrir musica fresca basándote en: $topContext"
                 
-                _statusText.value = "Analizando petición..."
-                val agentResponseResult = geminiClient.executeAgentTask(requestText, "animado", djName)
+                _statusText.value = "Preparando tu mezcla..."
+                val agentResponseResult = runCatching { geminiClient.executeAgentTask(requestText, "animado", djName) }.getOrNull()
                 
-                if (agentResponseResult.isSuccess) {
-                    val agentRes = agentResponseResult.getOrThrow()
-                    _statusText.value = "Agente: ${agentRes.action}"
-                    
-                    if (agentRes.action == "ADD_TO_PLAYLIST" && agentRes.songName != null && agentRes.playlistName != null) {
-                        // Action: Add to Playlist
-                        _statusText.value = "Añadiendo ${agentRes.songName} a ${agentRes.playlistName}..."
-                        val searchResult = com.dezzy.music.innertube.YouTube.search(agentRes.songName, com.dezzy.music.innertube.YouTube.SearchFilter.FILTER_SONG).getOrNull()
-                        val songItem = searchResult?.items?.filterIsInstance<com.dezzy.music.innertube.models.SongItem>()?.firstOrNull()
-                        if (songItem != null) {
-                            val playlist = database.playlistsByNameAsc().first().find { it.playlist.name.contains(agentRes.playlistName, ignoreCase = true) }
-                            if (playlist != null) {
+                val agentRes = if (agentResponseResult?.isSuccess == true) {
+                    agentResponseResult.getOrThrow()
+                } else {
+                    // Fallback autónomo inteligente cuando la IA externa no está disponible
+                    val fallbackSearch = if (topSongs.isNotEmpty()) {
+                        val favArtist = topSongs.first().artists.firstOrNull()?.name ?: topSongs.first().title
+                        "$favArtist mix"
+                    } else {
+                        "Grandes éxitos mix"
+                    }
+                    val fallbackGreeting = if (username.isNotBlank()) {
+                        "¡Qué tal $username! Soy $djName. He preparado esta sesión especial para ti. ¡Súbele al volumen!"
+                    } else {
+                        "¡Qué tal! Soy $djName. He preparado una selección exclusiva para ti. ¡A disfrutar la música!"
+                    }
+                    com.dezzy.music.ai.GeminiDjClient.AgentResponse(
+                        action = "PLAY_MUSIC",
+                        searchQuery = fallbackSearch,
+                        songName = null,
+                        playlistName = null,
+                        djReply = fallbackGreeting
+                    )
+                }
+                
+                if (agentRes.action == "ADD_TO_PLAYLIST" && agentRes.songName != null && agentRes.playlistName != null) {
+                    // Action: Add to Playlist
+                    val searchResult = com.dezzy.music.innertube.YouTube.search(agentRes.songName, com.dezzy.music.innertube.YouTube.SearchFilter.FILTER_SONG).getOrNull()
+                    val songItem = searchResult?.items?.filterIsInstance<com.dezzy.music.innertube.models.SongItem>()?.firstOrNull()
+                    if (songItem != null) {
+                        val playlist = database.playlistsByNameAsc().first().find { it.playlist.name.contains(agentRes.playlistName, ignoreCase = true) }
+                        if (playlist != null) {
+                            database.insert(
+                                com.dezzy.music.db.entities.PlaylistSongMap(
+                                    playlistId = playlist.id,
+                                    songId = songItem.id,
+                                    position = 0
+                                )
+                            )
+                            database.insert(
+                                com.dezzy.music.db.entities.SongEntity(
+                                    id = songItem.id,
+                                    title = songItem.title,
+                                    thumbnailUrl = songItem.thumbnail
+                                )
+                            )
+                            songItem.artists.forEach { artist ->
                                 database.insert(
-                                    com.dezzy.music.db.entities.PlaylistSongMap(
-                                        playlistId = playlist.id,
+                                    com.dezzy.music.db.entities.ArtistEntity(
+                                        id = artist.id ?: artist.name,
+                                        name = artist.name
+                                    )
+                                )
+                                database.insert(
+                                    com.dezzy.music.db.entities.SongArtistMap(
                                         songId = songItem.id,
+                                        artistId = artist.id ?: artist.name,
                                         position = 0
                                     )
                                 )
-                                // Save song to db too
-                                database.insert(
-                                    com.dezzy.music.db.entities.SongEntity(
-                                        id = songItem.id,
-                                        title = songItem.title,
-                                        thumbnailUrl = songItem.thumbnail
-                                    )
-                                )
-                                // Insert artists
-                                songItem.artists.forEach { artist ->
-                                    database.insert(
-                                        com.dezzy.music.db.entities.ArtistEntity(
-                                            id = artist.id ?: artist.name,
-                                            name = artist.name
-                                        )
-                                    )
-                                    database.insert(
-                                        com.dezzy.music.db.entities.SongArtistMap(
-                                            songId = songItem.id,
-                                            artistId = artist.id ?: artist.name,
-                                            position = 0
-                                        )
-                                    )
-                                }
                             }
-                        }
-                    } else if (agentRes.action == "PLAY_MUSIC" && agentRes.searchQuery != null) {
-                        // Action: Play Music
-                        _statusText.value = "Buscando: ${agentRes.searchQuery}..."
-                        val result = com.dezzy.music.innertube.YouTube.search(agentRes.searchQuery, com.dezzy.music.innertube.YouTube.SearchFilter.FILTER_SONG).getOrNull()
-                        val mediaItems = result?.items?.filterIsInstance<com.dezzy.music.innertube.models.SongItem>()?.map { it.toMediaItem() } ?: emptyList()
-                        
-                        if (mediaItems.isNotEmpty()) {
-                            withContext(Dispatchers.Main) {
-                                playerConnection.playQueue(com.dezzy.music.playback.queues.ListQueue(
-                                    title = "$djName Mix",
-                                    items = mediaItems
-                                ))
-                                _uiState.value = DJUiState.PLAYING
-                            }
-                            
-                            val firstSong = mediaItems.first()
-                            generateAndPlayDjTrack(playerConnection, djName, username, djLanguage, firstSong.mediaMetadata.title.toString(), firstSong.mediaMetadata.artist.toString(), isFirstSong = true, customRequest = agentRes.djReply)
-                            startMonitoringQueue(playerConnection, djName, username, djLanguage)
-                            return@launch
                         }
                     }
+                } else if (agentRes.action == "PLAY_MUSIC" && agentRes.searchQuery != null) {
+                    _statusText.value = "Buscando canciones..."
+                    val result = com.dezzy.music.innertube.YouTube.search(agentRes.searchQuery, com.dezzy.music.innertube.YouTube.SearchFilter.FILTER_SONG).getOrNull()
+                    var mediaItems = result?.items?.filterIsInstance<com.dezzy.music.innertube.models.SongItem>()?.map { it.toMediaItem() } ?: emptyList()
                     
-                    // Respond Only (or fallback if play failed)
-                    generateAndPlayDjTrack(playerConnection, djName, username, djLanguage, "Desconocido", "Desconocido", isFirstSong = false, customRequest = agentRes.djReply)
-                    
+                    if (mediaItems.isEmpty()) {
+                        val fallbackResult = com.dezzy.music.innertube.YouTube.search("Top Hits 2026", com.dezzy.music.innertube.YouTube.SearchFilter.FILTER_SONG).getOrNull()
+                        mediaItems = fallbackResult?.items?.filterIsInstance<com.dezzy.music.innertube.models.SongItem>()?.map { it.toMediaItem() } ?: emptyList()
+                    }
+
+                    if (mediaItems.isNotEmpty()) {
+                        withContext(Dispatchers.Main) {
+                            playerConnection.playQueue(com.dezzy.music.playback.queues.ListQueue(
+                                title = "$djName Mix",
+                                items = mediaItems
+                            ))
+                            _uiState.value = DJUiState.PLAYING
+                        }
+                        
+                        val firstSong = mediaItems.first()
+                        generateAndPlayDjTrack(playerConnection, djName, username, djLanguage, firstSong.mediaMetadata.title.toString(), firstSong.mediaMetadata.artist.toString(), isFirstSong = true, customRequest = agentRes.djReply)
+                        startMonitoringQueue(playerConnection, djName, username, djLanguage)
+                        return@launch
+                    }
+                }
+                
+                // Fallback seguro a música popular si la búsqueda anterior no arrojó items
+                val fallbackResult = com.dezzy.music.innertube.YouTube.search("Grandes exitos", com.dezzy.music.innertube.YouTube.SearchFilter.FILTER_SONG).getOrNull()
+                val mediaItems = fallbackResult?.items?.filterIsInstance<com.dezzy.music.innertube.models.SongItem>()?.map { it.toMediaItem() } ?: emptyList()
+                if (mediaItems.isNotEmpty()) {
                     withContext(Dispatchers.Main) {
+                        playerConnection.playQueue(com.dezzy.music.playback.queues.ListQueue(
+                            title = "$djName Mix",
+                            items = mediaItems
+                        ))
                         _uiState.value = DJUiState.PLAYING
                     }
-                    
+                    val firstSong = mediaItems.first()
+                    generateAndPlayDjTrack(playerConnection, djName, username, djLanguage, firstSong.mediaMetadata.title.toString(), firstSong.mediaMetadata.artist.toString(), isFirstSong = true, customRequest = agentRes.djReply)
+                    startMonitoringQueue(playerConnection, djName, username, djLanguage)
                 } else {
-                    _statusText.value = "Error: ${agentResponseResult.exceptionOrNull()?.message}"
-                    _uiState.value = DJUiState.IDLE
+                    withContext(Dispatchers.Main) {
+                        _statusText.value = "$djName al aire"
+                        _uiState.value = DJUiState.IDLE
+                    }
                 }
 
             } catch (e: Exception) {
-                _statusText.value = "Error: ${e.message}"
-                _uiState.value = DJUiState.IDLE
+                withContext(Dispatchers.Main) {
+                    _statusText.value = "$djName al aire"
+                    _uiState.value = DJUiState.IDLE
+                }
             }
         }
     }
@@ -348,7 +380,7 @@ class DJDezzyViewModel @Inject constructor(
                 }
             }
 
-            _statusText.value = if (ttsError.isNotEmpty()) "Voz genérica (ElevenLabs y OmniVoice fallaron)" else "Todo listo!"
+            _statusText.value = "$djName al aire"
 
             withContext(Dispatchers.Main) {
                 playerConnection.player.volume = 0.2f
