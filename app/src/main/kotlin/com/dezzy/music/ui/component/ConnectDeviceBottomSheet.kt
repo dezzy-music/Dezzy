@@ -48,6 +48,12 @@ fun ConnectDeviceBottomSheet(
     val isConnectedToDesktop = connectionState == ConnectState.CONNECTED
     val isPlayingLocal = playerConnection?.isPlaying?.value == true && !isConnectedToDesktop
 
+    // Al abrir la hoja, buscar TODOS los dispositivos de la red (estilo
+    // Spotify Connect) para que la lista se llene sola.
+    LaunchedEffect(Unit) {
+        linerManager.discoverDevices()
+    }
+
     // Nombre exacto asignado al celular (ej. "Galaxy de Dezzy", "Samsung S24 Ultra", etc.)
     val exactPhoneName = remember(context) { LinerConnectManager.getExactPhoneDeviceName(context) }
 
@@ -88,6 +94,22 @@ fun ConnectDeviceBottomSheet(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
+
+            // Buscar de nuevo (estilo Spotify Connect): re-escanea la red.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (discoveredDevices.isEmpty()) "Buscando dispositivos en tu red…" else "${discoveredDevices.size} dispositivo(s) encontrado(s)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
+                TextButton(onClick = { linerManager.discoverDevices() }) {
+                    Text("Buscar de nuevo")
+                }
+            }
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
 

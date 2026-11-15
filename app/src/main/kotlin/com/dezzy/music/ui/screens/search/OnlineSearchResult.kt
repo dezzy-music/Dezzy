@@ -88,6 +88,9 @@ import com.dezzy.music.ui.menu.YouTubePlaylistMenu
 import com.dezzy.music.ui.menu.YouTubeSongMenu
 import com.dezzy.music.innertube.pages.SearchSummary
 import com.dezzy.music.viewmodels.OnlineSearchViewModel
+import com.dezzy.music.ui.component.SpotifyTrackRow
+import com.dezzy.music.ui.component.rememberSpotifyTrackPlayer
+import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.launch
 import kotlin.text.get
 
@@ -107,6 +110,7 @@ fun OnlineSearchResult(
     val lazyListState = rememberLazyListState()
 
     val searchFilter by viewModel.filter.collectAsState()
+    val spotifyPlayer = rememberSpotifyTrackPlayer()
     val searchSummary = viewModel.summaryPage
     val itemsPage by remember(searchFilter) {
         derivedStateOf {
@@ -155,40 +159,79 @@ fun OnlineSearchResult(
         }
     }
 
-    val ytItemContent: @Composable LazyItemScope.(YTItem) -> Unit = { item: YTItem ->
-        val longClick = {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            menuState.show {
-                when (item) {
-                    is SongItem ->
-                        YouTubeSongMenu(
-                            song = item,
-                            navController = navController,
-                            onDismiss = menuState::dismiss,
-                        )
+    val showItemMenu: (YTItem) -> Unit = { item ->
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        menuState.show {
+            when (item) {
+                is SongItem ->
+                    YouTubeSongMenu(
+                        song = item,
+                        navController = navController,
+                        onDismiss = menuState::dismiss,
+                    )
 
-                    is AlbumItem ->
-                        YouTubeAlbumMenu(
-                            albumItem = item,
-                            navController = navController,
-                            onDismiss = menuState::dismiss,
-                        )
+                is AlbumItem ->
+                    YouTubeAlbumMenu(
+                        albumItem = item,
+                        navController = navController,
+                        onDismiss = menuState::dismiss,
+                    )
 
-                    is ArtistItem ->
-                        YouTubeArtistMenu(
-                            artist = item,
-                            onDismiss = menuState::dismiss,
-                        )
+                is ArtistItem ->
+                    YouTubeArtistMenu(
+                        artist = item,
+                        onDismiss = menuState::dismiss,
+                    )
 
-                    is PlaylistItem ->
-                        YouTubePlaylistMenu(
-                            playlist = item,
-                            coroutineScope = coroutineScope,
-                            onDismiss = menuState::dismiss,
-                        )
-                }
+                is PlaylistItem ->
+                    YouTubePlaylistMenu(
+                        playlist = item,
+                        coroutineScope = coroutineScope,
+                        onDismiss = menuState::dismiss,
+                    )
             }
         }
+    }
+
+    val openItem: (YTItem) -> Unit = { item ->
+        when (item) {
+            is SongItem -> {
+                if (item.id == mediaMetadata?.id) {
+                    playerConnection.player.togglePlayPause()
+                } else {
+                    playerConnection.playQueue(
+                        YouTubeQueue(
+                            WatchEndpoint(videoId = item.id),
+                            item.toMediaMetadata()
+                        )
+                    )
+                }
+            }
+
+            is AlbumItem -> navController.navigate("album/${item.id}")
+            is ArtistItem -> navController.navigate("artist/${item.id}")
+            is PlaylistItem -> navController.navigate("online_playlist/${item.id}")
+        }
+    }
+
+    // Acciones de la tarjeta «Mejor resultado».
+    fun playActionFor(item: YTItem): (() -> Unit)? = when (item) {
+        is SongItem -> ({ openItem(item) })
+        is AlbumItem -> ({ playerConnection.playQueue(YouTubeQueue(WatchEndpoint(playlistId = item.playlistId))) })
+        is ArtistItem -> (item.playEndpoint ?: item.shuffleEndpoint)?.let { endpoint -> { playerConnection.playQueue(YouTubeQueue(endpoint)) } }
+        is PlaylistItem -> item.playEndpoint?.let { endpoint -> { playerConnection.playQueue(YouTubeQueue(endpoint)) } }
+    }
+
+    fun shuffleActionFor(item: YTItem): (() -> Unit)? = when (item) {
+        is ArtistItem -> item.shuffleEndpoint
+        is PlaylistItem -> item.shuffleEndpoint
+        else -> null
+    }?.let { endpoint -> { playerConnection.playQueue(YouTubeQueue(endpoint)) } }
+
+    val hasTopResultSection = searchSummary?.summaries?.firstOrNull()?.items?.isNotEmpty() == true
+
+    val ytItemContent: @Composable LazyItemScope.(YTItem) -> Unit = { item: YTItem ->
+        val longClick = { showItemMenu(item) }
         YouTubeListItem(
             item = item,
             isActive =
@@ -211,26 +254,7 @@ fun OnlineSearchResult(
             modifier =
                 Modifier
                     .combinedClickable(
-                        onClick = {
-                            when (item) {
-                                is SongItem -> {
-                                    if (item.id == mediaMetadata?.id) {
-                                        playerConnection.player.togglePlayPause()
-                                    } else {
-                                        playerConnection.playQueue(
-                                            YouTubeQueue(
-                                                WatchEndpoint(videoId = item.id),
-                                                item.toMediaMetadata()
-                                            )
-                                        )
-                                    }
-                                }
-
-                                is AlbumItem -> navController.navigate("album/${item.id}")
-                                is ArtistItem -> navController.navigate("artist/${item.id}")
-                                is PlaylistItem -> navController.navigate("online_playlist/${item.id}")
-                            }
-                        },
+                        onClick = { openItem(item) },
                         onLongClick = longClick,
                     )
                     .animateItem(),
@@ -245,18 +269,9 @@ fun OnlineSearchResult(
                 .asPaddingValues(),
     ) {
         if (searchFilter == null) {
-            allModeSections.forEachIndexed { index, summary ->
-                if (index > 0) {
-                    item(key = "divider_$index") {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
-                            thickness = 0.5.dp,
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
-                        )
-                    }
-                }
-
-                item(key = "section_header_${summary.title}_$index") {
+            // Resultados de Spotify (Ajustes > Spotify > Usar para búsquedas).
+            if (viewModel.spotifyTracks.isNotEmpty()) {
+                item(key = "spotify_header") {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
@@ -266,20 +281,54 @@ fun OnlineSearchResult(
                                 .width(3.dp)
                                 .height(18.dp)
                                 .clip(RoundedCornerShape(2.dp))
-                                .background(MaterialTheme.colorScheme.primary)
+                                .background(Color(0xFF1DB954))
                         )
                         Spacer(Modifier.width(10.dp))
                         Text(
-                            text = summary.title,
+                            text = "Spotify",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                 }
+                items(
+                    items = viewModel.spotifyTracks,
+                    key = { "spotify/${it.id}" },
+                ) { track ->
+                    SpotifyTrackRow(track = track, player = spotifyPlayer)
+                }
+                item(key = "spotify_divider") {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                    )
+                }
+            }
+
+            allModeSections.forEachIndexed { index, summary ->
+                val topItem = if (index == 0 && hasTopResultSection) summary.items.first() else null
+
+                item(key = "section_header_${summary.title}_$index") {
+                    SearchResultSectionHeader(title = summary.title)
+                }
+
+                if (topItem != null) {
+                    item(key = "top_result_${topItem.id}") {
+                        SearchTopResultCard(
+                            item = topItem,
+                            onOpen = { openItem(topItem) },
+                            onPlay = playActionFor(topItem),
+                            onShuffle = shuffleActionFor(topItem),
+                            onMenu = { showItemMenu(topItem) },
+                            modifier = Modifier.animateItem(),
+                        )
+                    }
+                }
 
                 itemsIndexed(
-                    items = summary.items,
+                    items = if (topItem != null) summary.items.drop(1) else summary.items,
                     key = { itemIndex, item -> "${summary.title}/${item.id}/$itemIndex" },
                 ) { _, item ->
                     ytItemContent(item)

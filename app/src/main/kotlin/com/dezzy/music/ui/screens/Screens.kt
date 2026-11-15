@@ -60,7 +60,14 @@ sealed class Screens(
         route = "public_rooms"
     )
 
+    object Social : Screens(
+        titleId = R.string.social_tab,
+        iconIdInactive = R.drawable.social_friends,
+        iconIdActive = R.drawable.social_friends,
+        route = "social"
+    )
+
     companion object {
-        val MainScreens = listOf(Home, Search, Library, Together)
+        val MainScreens = listOf(Home, Search, Library, Together, Social)
     }
 }

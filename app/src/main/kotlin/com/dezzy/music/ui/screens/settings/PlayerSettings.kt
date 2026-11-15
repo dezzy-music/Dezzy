@@ -320,8 +320,8 @@ fun PlayerSettings(
         )
 
         SwitchPreference(
-            title = { Text("Motor de Audio Nativo (64-bits)") },
-            description = "Procesamiento DSP en C++ (Oboe) con latencia ultrabaja y ecualización grado audiófilo. Evita el mezclador de Android.",
+            title = { Text("Motor de audio Hi-Res (32-bit float)") },
+            description = "Decodifica, ecualiza y envía el audio en coma flotante de 32 bits: conserva la resolución de FLAC de 24 bits y el ecualizador no recorta. Desactiva \"Omitir silencio\". Se aplica al reiniciar la app.",
             icon = { Icon(painterResource(R.drawable.graphic_eq), null) },
             checked = highResEngine,
             onCheckedChange = onHighResEngineChange

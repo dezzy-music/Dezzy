@@ -9,7 +9,7 @@
 
 package com.dezzy.music.ui.utils
 
-private const val PlayerArtworkHighResPx = 544
+private const val PlayerArtworkHighResPx = 1080
 
 fun String.resize(
     width: Int? = null,

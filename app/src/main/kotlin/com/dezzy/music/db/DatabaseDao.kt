@@ -8,6 +8,7 @@
 
 package com.dezzy.music.db
 
+import com.dezzy.music.db.entities.EventPlayTime
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
@@ -415,6 +416,10 @@ interface DatabaseDao {
 
     @Query("SELECT COALESCE(SUM(playTime), 0) FROM event WHERE timestamp >= :fromTimeStamp")
     fun playTimeSince(fromTimeStamp: Long): Flow<Long>
+
+    // ── Estadísticas: tiempo escuchado de cada evento del periodo (barras) ──
+    @Query("SELECT timestamp, playTime FROM event WHERE timestamp > :fromTimeStamp AND timestamp <= :toTimeStamp")
+    fun eventPlayTimes(fromTimeStamp: Long, toTimeStamp: Long): Flow<List<EventPlayTime>>
 
     @Transaction
     @Query(
@@ -1662,6 +1667,26 @@ interface DatabaseDao {
 
     @Query("SELECT MAX(position) FROM playlist_song_map WHERE playlistId = :playlistId")
     fun maxPlaylistSongPosition(playlistId: String): Int?
+
+    // ── Hoja «Añadir a» (fase 9) ──────────────────────────────────────────────
+    @Query("SELECT songId FROM playlist_song_map WHERE playlistId = :playlistId")
+    fun playlistSongIds(playlistId: String): Flow<List<String>>
+
+    @Query("SELECT id FROM song WHERE liked")
+    fun likedSongIds(): Flow<List<String>>
+
+    /** Canciones escuchadas, de la más reciente a la más antigua, sin repetir. */
+    @Transaction
+    @Query(
+        """
+        SELECT song.* FROM song
+        JOIN (SELECT songId, MAX(rowId) AS lastPlayed FROM event GROUP BY songId) AS recent
+            ON recent.songId = song.id
+        ORDER BY recent.lastPlayed DESC
+        LIMIT :limit
+        """
+    )
+    fun recentlyPlayedSongs(limit: Int): Flow<List<Song>>
 
     @RawQuery
     fun raw(supportSQLiteQuery: SupportSQLiteQuery): Int

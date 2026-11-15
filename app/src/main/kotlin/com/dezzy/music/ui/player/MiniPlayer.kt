@@ -4,7 +4,7 @@
  * Licensed Under GPL-3.0 | see git history for contributors
  */
 
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 
 package com.dezzy.music.ui.player
 
@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -123,9 +122,9 @@ private fun NewMiniPlayer(
     val swipeSensitivity by rememberPreference(SwipeSensitivityKey, 0.73f)
     val swipeThumbnail by rememberPreference(com.dezzy.music.constants.SwipeThumbnailKey, true)
 
-    val (savedStyle, setStyle) = rememberPreference(MiniPlayerStyleKey, defaultValue = MiniPlayerStyle.PILL.name)
+    val (savedStyle, setStyle) = rememberPreference(MiniPlayerStyleKey, defaultValue = MiniPlayerStyle.CARD.name)
     val miniPlayerStyle = remember(savedStyle) {
-        try { MiniPlayerStyle.valueOf(savedStyle) } catch (e: Exception) { MiniPlayerStyle.PILL }
+        try { MiniPlayerStyle.valueOf(savedStyle) } catch (e: Exception) { MiniPlayerStyle.CARD }
     }
     
     val (dynamicColorEnabled) = rememberPreference(DynamicMiniPlayerColorKey, defaultValue = true)
@@ -198,7 +197,7 @@ private fun NewMiniPlayer(
         }
         val baseBackgroundColor = when (miniPlayerStyle) {
             MiniPlayerStyle.PILL -> MaterialTheme.colorScheme.surfaceContainer
-            MiniPlayerStyle.CARD -> MaterialTheme.colorScheme.surfaceContainerHigh
+            MiniPlayerStyle.CARD -> MaterialTheme.colorScheme.surfaceContainerHighest
             MiniPlayerStyle.GLASS -> MaterialTheme.colorScheme.surface.copy(alpha = 0.4f)
             MiniPlayerStyle.COMPACT -> Color.Transparent
             MiniPlayerStyle.GLOW_ANIMATED -> Color.Transparent
@@ -325,7 +324,7 @@ private fun NewMiniPlayer(
                 .fillMaxWidth()
                 .height(64.dp)
                 .offset { IntOffset(offsetX.roundToInt(), 0) }
-                .then(if (miniPlayerStyle == MiniPlayerStyle.CARD) Modifier.shadow(8.dp, shape) else Modifier)
+                .then(if (miniPlayerStyle == MiniPlayerStyle.CARD) Modifier.shadow(3.dp, shape) else Modifier)
                 .clip(shape)
                 .then(if (miniPlayerBackground == MiniPlayerBackgroundStyle.DEFAULT) glowModifier else Modifier)
                 .then(if (miniPlayerStyle == MiniPlayerStyle.GLASS || miniPlayerStyle == MiniPlayerStyle.GLOW_ANIMATED) Modifier.border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha=0.2f), shape) else Modifier)

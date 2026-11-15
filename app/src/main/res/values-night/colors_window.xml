@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fondo de la ventana antes de que Compose dibuje (sigue el modo claro/oscuro del sistema). -->
+    <color name="dezzy_window_background">#121212</color>
+</resources>

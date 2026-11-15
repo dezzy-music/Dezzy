@@ -6,6 +6,10 @@
 
 package com.dezzy.music.ui.component
 
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.heading
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -103,20 +107,24 @@ fun PreferenceEntry(
                     onClick = onClick ?: {},
                 )
                 .alpha(if (isEnabled) 1f else 0.5f)
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(horizontal = 16.dp, vertical = 16.dp),
         ) {
             if (icon != null) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.CenterVertically)
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center,
                 ) {
-                    icon()
+                    CompositionLocalProvider(
+                        LocalContentColor provides MaterialTheme.colorScheme.onPrimaryContainer,
+                    ) {
+                        icon()
+                    }
                 }
-                Spacer(Modifier.width(14.dp))
+                Spacer(Modifier.width(16.dp))
             }
 
             Column(
@@ -150,14 +158,14 @@ fun PreferenceEntry(
         rowContent()
     } else {
         Card(
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             modifier = modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 3.dp)
+                .padding(horizontal = 16.dp, vertical = 1.dp)
                 .graphicsLayer { scaleX = scale; scaleY = scale },
         ) {
             rowContent()
@@ -647,15 +655,18 @@ fun PreferenceGroup(
     Column(modifier = modifier.padding(horizontal = 16.dp)) {
         if (title != null) {
             Text(
-                text = title.uppercase(),
-                style = MaterialTheme.typography.labelSmall,
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp),
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .padding(start = 12.dp, end = 4.dp, top = 16.dp, bottom = 8.dp)
+                    .semantics { heading() },
             )
         }
         Card(
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
             ),
@@ -684,9 +695,13 @@ fun PreferenceGroupTitle(
     modifier: Modifier = Modifier,
 ) {
     Text(
-        text = title.uppercase(),
-        style = MaterialTheme.typography.labelLarge,
+        text = title,
+        style = MaterialTheme.typography.titleSmall,
+        fontSize = 14.sp,
+        fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.primary,
-        modifier = modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+        modifier = modifier
+            .padding(start = 28.dp, end = 20.dp, top = 20.dp, bottom = 8.dp)
+            .semantics { heading() },
     )
 }

@@ -6,17 +6,26 @@
 
 package com.dezzy.music.ui.player
 
+import android.content.res.Configuration
+import android.os.Build
+import android.view.WindowManager
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,7 +33,9 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -34,6 +45,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -42,43 +54,63 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.media3.common.C
 import androidx.media3.common.Player
-import androidx.media3.ui.AspectRatioFrameLayout
-import androidx.media3.ui.PlayerView
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.palette.graphics.Palette
+import coil3.compose.AsyncImage
+import coil3.imageLoader
+import coil3.request.ImageRequest
+import coil3.request.allowHardware
+import coil3.toBitmap
 import com.dezzy.music.LocalDatabase
 import com.dezzy.music.R
 import com.dezzy.music.canvas.models.CanvasArtwork
 import com.dezzy.music.constants.VideoResizeMode
 import com.dezzy.music.constants.VideoResizeModeKey
-import com.dezzy.music.innertube.YouTube
 import com.dezzy.music.innertube.models.SongItem
-import com.dezzy.music.innertube.models.WatchEndpoint
 import com.dezzy.music.models.toMediaMetadata
 import com.dezzy.music.playback.PlayerConnection
 import com.dezzy.music.playback.queues.YouTubeQueue
@@ -88,16 +120,20 @@ import com.dezzy.music.utils.makeTimeString
 import com.dezzy.music.utils.rememberEnumPreference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+/** Fondo del modo video: casi negro, para que el resplandor del video se note. */
+private val VideoBackground = Color(0xFF0C0C0F)
+
 /**
- * Full-size overlay that shows the standalone video player (see MusicService's isolated
- * `videoPlayer`) when video mode is active, on top of whatever the current player design style
- * renders underneath — this is what lets video mode work with every skin (V4/V5/V7/etc.) without
- * threading a video surface through each one individually. Also owns the floating toggle button
- * (shown bottom-end when video mode is off) for the same reason: one self-contained component
- * instead of wiring a button into every style's own action row.
+ * Capa a tamaño completo con el reproductor de video aislado (`videoPlayer` de MusicService)
+ * cuando el modo video está activo, encima del estilo de reproductor que haya debajo: así el
+ * modo video funciona con todos los skins sin pasar una superficie de video por cada uno.
+ * También lleva el botón flotante para activarlo (abajo a la derecha) en los estilos que no
+ * tienen su propia píldora Canción/Video.
+ *
+ * Dentro hay dos pantallas que comparten estado (recomendados, pantalla completa):
+ * el modo video inmersivo y "Solo videos".
  */
 @Composable
 fun VideoModeOverlay(
@@ -107,33 +143,81 @@ fun VideoModeOverlay(
     showFloatingToggle: Boolean = true,
     /** Baja el reproductor a mini-player (la flecha ⌄ de arriba a la izquierda). */
     onCollapse: () -> Unit = {},
-    /** Abre la cola (el asa inferior con el nombre de la lista). */
+    /** Abre la cola (la barra inferior "A continuación"). */
     onQueueClick: () -> Unit = {},
 ) {
     val videoModeActive by playerConnection.videoModeActive.collectAsState()
     val videoModeLoading by playerConnection.videoModeLoading.collectAsState()
     val videoPlayer by playerConnection.videoPlayerInstance.collectAsState()
     val videoModeError by playerConnection.videoModeError.collectAsState()
+    val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
+
+    val scope = rememberCoroutineScope()
+    val recommendations = remember { VideoRecommendations(scope) }
+    var feedOpen by rememberSaveable { mutableStateOf(false) }
+    var recoFilter by rememberSaveable { mutableStateOf(VideoRecoFilter.FOR_SONG) }
+
+    // Al pasar de canción el servicio apaga el modo video un instante y lo vuelve a encender
+    // (VideoKeepModeOnSongChangeKey): mientras carga el siguiente video la capa se queda
+    // visible con un indicador, en vez de parpadear a la pantalla de audio y perder "Solo videos".
+    val showScreen = videoModeActive && videoPlayer != null
+    var keepShown by remember { mutableStateOf(false) }
+    LaunchedEffect(showScreen, videoModeLoading) {
+        if (showScreen) keepShown = true else if (!videoModeLoading) keepShown = false
+    }
+    val visible = showScreen || (keepShown && videoModeLoading)
+    LaunchedEffect(visible) {
+        if (!visible) feedOpen = false
+    }
+
+    val songId = mediaMetadata?.id
+    val songTitle = mediaMetadata?.title.orEmpty()
+    val songArtist = mediaMetadata?.artists?.firstOrNull()?.name.orEmpty()
+    LaunchedEffect(visible, songId, recoFilter) {
+        if (visible && songId != null) {
+            recommendations.load(songId, songTitle, songArtist, recoFilter)
+        }
+    }
 
     Box(modifier = modifier) {
         AnimatedVisibility(
-            visible = videoModeActive && videoPlayer != null,
+            visible = visible,
             enter = fadeIn(tween(200)),
             exit = fadeOut(tween(200)),
             modifier = Modifier.fillMaxSize(),
         ) {
-            val player = videoPlayer
-            if (player != null) {
+            val retry = {
+                if (songId != null) recommendations.retry(songId, songTitle, songArtist, recoFilter)
+            }
+            if (feedOpen) {
+                BackHandler { feedOpen = false }
+                VideoFeedScreen(
+                    playerConnection = playerConnection,
+                    videoPlayer = videoPlayer,
+                    loading = videoModeLoading || !videoModeActive,
+                    recommendations = recommendations,
+                    filter = recoFilter,
+                    artistName = songArtist,
+                    onFilterChange = { recoFilter = it },
+                    onRetry = retry,
+                    onBack = { feedOpen = false },
+                    onQueueClick = onQueueClick,
+                )
+            } else {
                 VideoModeScreen(
                     playerConnection = playerConnection,
-                    videoPlayer = player,
+                    videoPlayer = videoPlayer,
+                    loading = videoModeLoading || !videoModeActive,
+                    recommendations = recommendations,
+                    onRetry = retry,
+                    onOpenFeed = { feedOpen = true },
                     onCollapse = onCollapse,
                     onQueueClick = onQueueClick,
                 )
             }
         }
 
-        if (!videoModeActive && showFloatingToggle) {
+        if (!videoModeActive && !visible && showFloatingToggle) {
             Surface(
                 onClick = { playerConnection.enableVideoMode() },
                 shape = CircleShape,
@@ -163,389 +247,353 @@ fun VideoModeOverlay(
     }
 }
 
+/** Estado de reproducción del reproductor de VIDEO (independiente del de la app). */
+@Stable
+internal class VideoPlaybackState {
+    var isPlaying by mutableStateOf(false)
+    var buffering by mutableStateOf(false)
+    var position by mutableLongStateOf(0L)
+    var duration by mutableLongStateOf(0L)
+}
+
+@Composable
+internal fun rememberVideoPlaybackState(player: ExoPlayer?): VideoPlaybackState {
+    val state = remember { VideoPlaybackState() }
+    DisposableEffect(player) {
+        val listener = object : Player.Listener {
+            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+                state.isPlaying = playWhenReady
+            }
+
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                state.buffering = playbackState == Player.STATE_BUFFERING
+            }
+        }
+        if (player != null) {
+            state.isPlaying = player.playWhenReady
+            state.buffering = player.playbackState == Player.STATE_BUFFERING
+            player.addListener(listener)
+        }
+        onDispose { player?.removeListener(listener) }
+    }
+    LaunchedEffect(player) {
+        val p = player ?: return@LaunchedEffect
+        while (true) {
+            state.position = p.currentPosition
+            state.duration = p.duration.takeIf { it > 0 } ?: 0L
+            delay(500)
+        }
+    }
+    return state
+}
+
 /**
- * Pantalla de video al estilo YouTube Music: barra superior (bajar / selector
- * audio-video / cast / menú), el video en 16:9 arriba, y abajo el bloque de
- * información — título, artista, acciones (me gusta, comentarios, guardar),
- * barra de progreso, controles de transporte y el asa de la cola.
- *
- * Los controles se dibujan aquí en Compose en vez de usar el controlador propio
- * de `PlayerView` (que era el diseño anterior): el de media3 solo sabe de este
- * reproductor aislado, así que no podía ofrecer anterior/siguiente de la cola,
- * aleatorio, repetir ni "me gusta". Play/pausa y la barra actúan sobre el
- * reproductor de VIDEO; el resto, sobre la cola real de la app.
+ * Modo video inmersivo: el video arriba con los controles encima (se ocultan a los 3 s; un
+ * toque los muestra, doble toque salta ±10 s), un resplandor del color de la portada, y
+ * debajo la píldora Canción/Video, título, acciones, "Recomendados" y la barra
+ * "A continuación". Play/pausa y la barra actúan sobre el reproductor de VIDEO; anterior,
+ * siguiente, aleatorio y repetir, sobre la cola real de la app.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun VideoModeScreen(
     playerConnection: PlayerConnection,
-    videoPlayer: androidx.media3.exoplayer.ExoPlayer,
+    videoPlayer: ExoPlayer?,
+    loading: Boolean,
+    recommendations: VideoRecommendations,
+    onRetry: () -> Unit,
+    onOpenFeed: () -> Unit,
     onCollapse: () -> Unit,
     onQueueClick: () -> Unit,
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
     val database = LocalDatabase.current
-    val coroutineScope = rememberCoroutineScope()
 
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
     val queueTitle by playerConnection.queueTitle.collectAsState()
     val liked by playerConnection.currentSongLiked.collectAsState()
     val shuffleEnabled by playerConnection.shuffleModeEnabled.collectAsState()
     val repeatMode by playerConnection.repeatMode.collectAsState()
-    val videoModeLoading by playerConnection.videoModeLoading.collectAsState()
-    val resizeModePref by rememberEnumPreference(VideoResizeModeKey, VideoResizeMode.FIT)
-
-    // El reproductor de video es independiente del de la app: su posición y su
-    // estado de reproducción hay que leerlos de él directamente.
-    var isVideoPlaying by remember(videoPlayer) { mutableStateOf(videoPlayer.playWhenReady) }
-    var position by remember(videoPlayer) { mutableLongStateOf(videoPlayer.currentPosition) }
-    var duration by remember(videoPlayer) { mutableLongStateOf(videoPlayer.duration.coerceAtLeast(0L)) }
-    var sliderPosition by remember { mutableStateOf<Long?>(null) }
-
-    DisposableEffect(videoPlayer) {
-        val listener = object : Player.Listener {
-            override fun onIsPlayingChanged(playing: Boolean) { isVideoPlaying = playing }
-            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
-                isVideoPlaying = playWhenReady
-            }
-        }
-        videoPlayer.addListener(listener)
-        onDispose { videoPlayer.removeListener(listener) }
-    }
-
-    LaunchedEffect(videoPlayer) {
-        while (true) {
-            position = videoPlayer.currentPosition
-            duration = videoPlayer.duration.takeIf { it > 0 } ?: 0L
-            delay(500)
-        }
-    }
-
-    // Al cambiar de canción el servicio apaga el modo video; si el salto lo pidió
-    // el usuario desde AQUÍ, se vuelve a encender solo para no echarlo a la
-    // pantalla de audio en cada "siguiente".
-    var keepVideoOnTrackChange by remember { mutableStateOf(false) }
     val videoModeActive by playerConnection.videoModeActive.collectAsState()
+    var resizeModePref by rememberEnumPreference(VideoResizeModeKey, VideoResizeMode.FIT)
+
+    val playback = rememberVideoPlaybackState(videoPlayer)
+    val ambient = rememberAmbientColor(mediaMetadata?.thumbnailUrl)
+
+    // Al cambiar de canción el servicio apaga el modo video; si el salto lo pidió el usuario
+    // desde AQUÍ, se vuelve a encender para no echarlo a la pantalla de audio.
+    var keepVideoOnTrackChange by remember { mutableStateOf(false) }
     LaunchedEffect(mediaMetadata?.id, videoModeActive) {
         if (keepVideoOnTrackChange && !videoModeActive && mediaMetadata != null) {
             keepVideoOnTrackChange = false
-            playerConnection.enableVideoMode()
+            if (!playerConnection.videoModeLoading.value) playerConnection.enableVideoMode()
         }
     }
 
+    // Título de la siguiente canción de la cola, para la barra "A continuación".
+    val nextTitle = remember(mediaMetadata?.id, shuffleEnabled, repeatMode) {
+        runCatching {
+            val p = playerConnection.player
+            val index = p.nextMediaItemIndex
+            if (index == C.INDEX_UNSET) null else p.getMediaItemAt(index).mediaMetadata.title?.toString()
+        }.getOrNull()
+    }
+
+    var fullscreen by rememberSaveable { mutableStateOf(false) }
     var showComments by remember { mutableStateOf(false) }
-    var showRelated by remember { mutableStateOf(false) }
     var showPlaylistDialog by remember { mutableStateOf(false) }
-    var showOverflow by remember { mutableStateOf(false) }
+
+    val togglePlay: () -> Unit = {
+        videoPlayer?.let { it.playWhenReady = !it.playWhenReady }
+    }
+    val seekTo: (Long) -> Unit = { ms -> videoPlayer?.seekTo(ms.coerceAtLeast(0L)) }
+    val previous: () -> Unit = {
+        keepVideoOnTrackChange = true
+        playerConnection.seekToPrevious()
+    }
+    val next: () -> Unit = {
+        keepVideoOnTrackChange = true
+        playerConnection.seekToNext()
+    }
+    val menuItems: @Composable ColumnScope.(close: () -> Unit) -> Unit = { close ->
+        DropdownMenuItem(
+            text = { Text(if (shuffleEnabled) "Aleatorio: activado" else "Aleatorio: desactivado") },
+            leadingIcon = {
+                Icon(painterResource(if (shuffleEnabled) R.drawable.shuffle_on else R.drawable.shuffle), null)
+            },
+            onClick = { playerConnection.player.shuffleModeEnabled = !shuffleEnabled },
+        )
+        DropdownMenuItem(
+            text = {
+                Text(
+                    when (repeatMode) {
+                        Player.REPEAT_MODE_ONE -> "Repetir: esta canción"
+                        Player.REPEAT_MODE_ALL -> "Repetir: toda la cola"
+                        else -> "Repetir: no"
+                    },
+                )
+            },
+            leadingIcon = {
+                Icon(
+                    painterResource(
+                        when (repeatMode) {
+                            Player.REPEAT_MODE_ONE -> R.drawable.repeat_one_on
+                            Player.REPEAT_MODE_ALL -> R.drawable.repeat_on
+                            else -> R.drawable.repeat
+                        },
+                    ),
+                    null,
+                )
+            },
+            onClick = {
+                playerConnection.player.repeatMode = when (repeatMode) {
+                    Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
+                    Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
+                    else -> Player.REPEAT_MODE_OFF
+                }
+            },
+        )
+        DropdownMenuItem(
+            text = {
+                Text(
+                    when (resizeModePref) {
+                        VideoResizeMode.FIT -> "Ajuste: encajar"
+                        VideoResizeMode.CROP -> "Ajuste: recortar"
+                        VideoResizeMode.FILL -> "Ajuste: estirar"
+                    },
+                )
+            },
+            leadingIcon = { Icon(painterResource(R.drawable.fullscreen), null) },
+            onClick = {
+                resizeModePref = when (resizeModePref) {
+                    VideoResizeMode.FIT -> VideoResizeMode.CROP
+                    VideoResizeMode.CROP -> VideoResizeMode.FILL
+                    VideoResizeMode.FILL -> VideoResizeMode.FIT
+                }
+            },
+        )
+        DropdownMenuItem(
+            text = { Text("Solo videos") },
+            leadingIcon = { Icon(painterResource(R.drawable.slow_motion_video), null) },
+            onClick = { close(); onOpenFeed() },
+        )
+        DropdownMenuItem(
+            text = { Text("Descargar video") },
+            leadingIcon = { Icon(painterResource(R.drawable.download), null) },
+            onClick = {
+                close()
+                videoPlayer?.let { downloadCurrentVideo(context, it, mediaMetadata?.title) }
+            },
+        )
+        DropdownMenuItem(
+            text = { Text("Cerrar video") },
+            leadingIcon = { Icon(painterResource(R.drawable.close), null) },
+            onClick = { close(); playerConnection.disableVideoMode() },
+        )
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black),
+            .background(VideoBackground),
     ) {
+        // Resplandor ambiental con el color de la portada.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(460.dp)
+                .background(
+                    Brush.verticalGradient(
+                        0f to ambient.copy(alpha = 0.55f),
+                        0.55f to ambient.copy(alpha = 0.16f),
+                        1f to Color.Transparent,
+                    ),
+                ),
+        )
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding(),
+                .statusBarsPadding(),
         ) {
-            // ── Barra superior ────────────────────────────────────────────
-            Row(
+            VideoStage(
+                player = videoPlayer,
+                surfaceActive = !fullscreen,
+                loading = loading,
+                playback = playback,
+                resizeMode = resizeModePref.toPlayerViewMode(),
+                fullscreen = false,
+                title = null,
+                onTogglePlay = togglePlay,
+                onSeekTo = seekTo,
+                onPrevious = previous,
+                onNext = next,
+                onCollapse = onCollapse,
+                onToggleFullscreen = { fullscreen = true },
+                menuItems = menuItems,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 6.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                    .aspectRatio(16f / 9f),
+            )
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
             ) {
-                IconButton(onClick = onCollapse) {
-                    Icon(
-                        painter = painterResource(R.drawable.expand_more),
-                        contentDescription = "Minimizar",
-                        tint = Color.White,
-                    )
-                }
-                Spacer(Modifier.weight(1f))
-                AudioVideoIconPill(
-                    videoSelected = true,
-                    loading = videoModeLoading,
-                    onSelectAudio = { playerConnection.disableVideoMode() },
-                    onSelectVideo = {},
+                Spacer(Modifier.height(16.dp))
+                SongVideoToggle(
+                    playerConnection = playerConnection,
+                    modifier = Modifier.padding(horizontal = 20.dp),
                 )
-                Spacer(Modifier.weight(1f))
-                com.dezzy.music.ui.component.CastButton(tint = Color.White)
-                Box {
-                    IconButton(onClick = { showOverflow = true }) {
-                        Icon(
-                            painter = painterResource(R.drawable.more_vert),
-                            contentDescription = "Más opciones",
-                            tint = Color.White,
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = showOverflow,
-                        onDismissRequest = { showOverflow = false },
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Videos similares") },
-                            onClick = { showOverflow = false; showRelated = true },
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Descargar video") },
-                            onClick = {
-                                showOverflow = false
-                                downloadCurrentVideo(context, videoPlayer, mediaMetadata?.title)
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Cerrar video") },
-                            onClick = { showOverflow = false; playerConnection.disableVideoMode() },
-                        )
-                    }
-                }
-            }
-
-            // ── Video ─────────────────────────────────────────────────────
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(16f / 9f)
-                    .background(Color.Black),
-            ) {
-                AndroidView(
-                    factory = { ctx ->
-                        PlayerView(ctx).apply {
-                            // El controlador propio de media3 se apaga: los controles
-                            // son los de abajo, como en YouTube Music.
-                            useController = false
-                            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-                        }
-                    },
-                    update = { view ->
-                        view.player = videoPlayer
-                        view.resizeMode = when (resizeModePref) {
-                            VideoResizeMode.FIT -> AspectRatioFrameLayout.RESIZE_MODE_FIT
-                            VideoResizeMode.CROP -> AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                            VideoResizeMode.FILL -> AspectRatioFrameLayout.RESIZE_MODE_FILL
-                        }
-                    },
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
-
-            Spacer(Modifier.weight(1f))
-
-            // ── Título + artista ──────────────────────────────────────────
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onQueueClick() }
-                    .padding(start = 20.dp, end = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+                Spacer(Modifier.height(14.dp))
                 Text(
                     text = mediaMetadata?.title.orEmpty(),
                     color = Color.White,
-                    fontSize = 24.sp,
+                    fontSize = 22.sp,
+                    lineHeight = 28.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     modifier = Modifier
-                        .weight(1f)
+                        .padding(horizontal = 20.dp)
                         .basicMarquee(),
                 )
-                Icon(
-                    painter = painterResource(R.drawable.arrow_forward),
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp),
-                )
-            }
-            Text(
-                text = mediaMetadata?.artists?.joinToString(", ") { it.name }.orEmpty(),
-                color = Color.White.copy(alpha = 0.6f),
-                fontSize = 16.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 2.dp),
-            )
-
-            Spacer(Modifier.height(14.dp))
-
-            // ── Acciones: me gusta / comentarios / guardar ─────────────────
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                LikeChip(
-                    liked = liked,
-                    onLike = { playerConnection.toggleLike() },
-                    // "No me gusta" quita el me gusta: la app no guarda un voto
-                    // negativo, así que fingirlo sería un botón que no hace nada.
-                    onDislike = { if (liked) playerConnection.toggleLike() },
-                )
-                VideoActionChip(
-                    iconRes = R.drawable.chat_bubble,
-                    label = "Comentarios",
-                    onClick = { showComments = true },
-                )
-                VideoActionChip(
-                    iconRes = R.drawable.playlist_add,
-                    label = "Guardar",
-                    onClick = { showPlaylistDialog = true },
-                )
-            }
-
-            Spacer(Modifier.height(18.dp))
-
-            // ── Progreso ──────────────────────────────────────────────────
-            val maxDuration = duration.coerceAtLeast(1L).toFloat()
-            val currentPos = (sliderPosition ?: position).toFloat().coerceIn(0f, maxDuration)
-            Slider(
-                value = currentPos,
-                valueRange = 0f..maxDuration,
-                onValueChange = { sliderPosition = it.toLong() },
-                onValueChangeFinished = {
-                    sliderPosition?.let { videoPlayer.seekTo(it) }
-                    sliderPosition = null
-                },
-                colors = SliderDefaults.colors(
-                    thumbColor = Color.White,
-                    activeTrackColor = Color.White,
-                    inactiveTrackColor = Color.White.copy(alpha = 0.28f),
-                ),
-                modifier = Modifier.padding(horizontal = 16.dp),
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 22.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
                 Text(
-                    text = makeTimeString((sliderPosition ?: position)),
-                    color = Color.White.copy(alpha = 0.7f),
-                    fontSize = 13.sp,
-                )
-                Text(
-                    text = makeTimeString(duration),
-                    color = Color.White.copy(alpha = 0.7f),
-                    fontSize = 13.sp,
-                )
-            }
-
-            Spacer(Modifier.height(10.dp))
-
-            // ── Transporte ────────────────────────────────────────────────
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = {
-                    playerConnection.player.shuffleModeEnabled = !shuffleEnabled
-                }) {
-                    Icon(
-                        painter = painterResource(if (shuffleEnabled) R.drawable.shuffle_on else R.drawable.shuffle),
-                        contentDescription = "Aleatorio",
-                        tint = Color.White,
-                        modifier = Modifier.size(28.dp),
-                    )
-                }
-                IconButton(onClick = {
-                    keepVideoOnTrackChange = true
-                    playerConnection.seekToPrevious()
-                }) {
-                    Icon(
-                        painter = painterResource(R.drawable.skip_previous),
-                        contentDescription = "Anterior",
-                        tint = Color.White,
-                        modifier = Modifier.size(36.dp),
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .size(74.dp)
-                        .clip(CircleShape)
-                        .background(Color.White)
-                        .clickable {
-                            videoPlayer.playWhenReady = !videoPlayer.playWhenReady
-                            isVideoPlaying = videoPlayer.playWhenReady
-                        },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        painter = painterResource(if (isVideoPlaying) R.drawable.pause else R.drawable.play),
-                        contentDescription = if (isVideoPlaying) "Pausar" else "Reproducir",
-                        tint = Color.Black,
-                        modifier = Modifier.size(36.dp),
-                    )
-                }
-                IconButton(onClick = {
-                    keepVideoOnTrackChange = true
-                    playerConnection.seekToNext()
-                }) {
-                    Icon(
-                        painter = painterResource(R.drawable.skip_next),
-                        contentDescription = "Siguiente",
-                        tint = Color.White,
-                        modifier = Modifier.size(36.dp),
-                    )
-                }
-                IconButton(onClick = {
-                    playerConnection.player.repeatMode = when (repeatMode) {
-                        Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
-                        Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
-                        else -> Player.REPEAT_MODE_OFF
-                    }
-                }) {
-                    Icon(
-                        painter = painterResource(
-                            when (repeatMode) {
-                                Player.REPEAT_MODE_ONE -> R.drawable.repeat_one_on
-                                Player.REPEAT_MODE_ALL -> R.drawable.repeat_on
-                                else -> R.drawable.repeat
-                            }
-                        ),
-                        contentDescription = "Repetir",
-                        tint = Color.White,
-                        modifier = Modifier.size(28.dp),
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            // ── Asa de la cola ────────────────────────────────────────────
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onQueueClick() }
-                    .padding(vertical = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .width(44.dp)
-                        .height(4.dp)
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.45f)),
-                )
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    text = queueTitle.orEmpty(),
-                    color = Color.White,
+                    text = mediaMetadata?.artists?.joinToString(", ") { it.name }.orEmpty(),
+                    color = Color.White.copy(alpha = 0.68f),
                     fontSize = 15.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(horizontal = 24.dp),
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 2.dp),
                 )
+
+                Spacer(Modifier.height(14.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    VideoActionChip(
+                        iconRes = if (liked) R.drawable.favorite else R.drawable.favorite_border,
+                        label = if (liked) "Te gusta" else "Me gusta",
+                        highlighted = liked,
+                        onClick = { playerConnection.toggleLike() },
+                    )
+                    VideoActionChip(
+                        iconRes = R.drawable.playlist_add,
+                        label = "Guardar",
+                        onClick = { showPlaylistDialog = true },
+                    )
+                    VideoActionChip(
+                        iconRes = R.drawable.chat_bubble,
+                        label = "Comentarios",
+                        onClick = { showComments = true },
+                    )
+                    VideoActionChip(
+                        iconRes = R.drawable.download,
+                        label = null,
+                        contentDescription = "Descargar video",
+                        onClick = { videoPlayer?.let { downloadCurrentVideo(context, it, mediaMetadata?.title) } },
+                    )
+                }
+
+                Spacer(Modifier.height(22.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 20.dp, end = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "Recomendados",
+                        color = Color.White,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = onOpenFeed) {
+                        Text("Ver todos", color = Color.White.copy(alpha = 0.85f), fontSize = 14.sp)
+                    }
+                }
+                RecommendedCarousel(
+                    recommendations = recommendations,
+                    onRetry = onRetry,
+                    onPlay = { playRelatedVideo(playerConnection, it) },
+                )
+                Spacer(Modifier.height(16.dp))
             }
 
-            Spacer(Modifier.height(8.dp))
+            UpNextBar(
+                nextTitle = nextTitle,
+                queueTitle = queueTitle,
+                onClick = onQueueClick,
+            )
+        }
+    }
+
+    if (fullscreen) {
+        VideoFullscreenDialog(onDismiss = { fullscreen = false }) {
+            VideoStage(
+                player = videoPlayer,
+                surfaceActive = true,
+                loading = loading,
+                playback = playback,
+                resizeMode = resizeModePref.toPlayerViewMode(),
+                fullscreen = true,
+                title = mediaMetadata?.title,
+                onTogglePlay = togglePlay,
+                onSeekTo = seekTo,
+                onPrevious = previous,
+                onNext = next,
+                onCollapse = { fullscreen = false },
+                onToggleFullscreen = { fullscreen = false },
+                menuItems = menuItems,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
     }
 
@@ -553,11 +601,10 @@ private fun VideoModeScreen(
     mediaMetadata?.let { metadata ->
         AddToPlaylistDialog(
             isVisible = showPlaylistDialog,
-            onGetSong = { playlist ->
+            onGetSong = {
+                // Solo deja la canción en la base de datos: la sincronización con YouTube
+                // Music la hace el propio diálogo para cada playlist elegida.
                 database.transaction { insert(metadata) }
-                coroutineScope.launch(Dispatchers.IO) {
-                    playlist.playlist.browseId?.let { YouTube.addToPlaylist(it, metadata.id) }
-                }
                 listOf(metadata.id)
             },
             onDismiss = { showPlaylistDialog = false },
@@ -575,163 +622,630 @@ private fun VideoModeScreen(
             }
         }
     }
+}
 
-    if (showRelated) {
-        RelatedVideosSheet(
-            playerConnection = playerConnection,
-            currentVideoId = mediaMetadata?.id,
-            onDismiss = { showRelated = false },
+/**
+ * El video con sus controles superpuestos. Se usa en el modo video (16:9) y en la pantalla
+ * completa (llena la capa girada).
+ */
+@Composable
+private fun VideoStage(
+    player: ExoPlayer?,
+    surfaceActive: Boolean,
+    loading: Boolean,
+    playback: VideoPlaybackState,
+    resizeMode: Int,
+    fullscreen: Boolean,
+    title: String?,
+    onTogglePlay: () -> Unit,
+    onSeekTo: (Long) -> Unit,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+    onCollapse: () -> Unit,
+    onToggleFullscreen: () -> Unit,
+    menuItems: @Composable ColumnScope.(close: () -> Unit) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var controlsVisible by remember { mutableStateOf(true) }
+    var hideTick by remember { mutableIntStateOf(0) }
+    var menuOpen by remember { mutableStateOf(false) }
+    var seekPreview by remember { mutableStateOf<Long?>(null) }
+    var seekHint by remember { mutableStateOf<Int?>(null) }
+    var seekHintTick by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(controlsVisible, playback.isPlaying, hideTick, menuOpen, seekPreview) {
+        if (controlsVisible && playback.isPlaying && !menuOpen && seekPreview == null) {
+            delay(3000)
+            controlsVisible = false
+        }
+    }
+    LaunchedEffect(seekHintTick) {
+        if (seekHint != null) {
+            delay(700)
+            seekHint = null
+        }
+    }
+    val poke = {
+        controlsVisible = true
+        hideTick++
+    }
+    val busy = loading || playback.buffering
+    val currentSeekTo by rememberUpdatedState(onSeekTo)
+
+    Box(
+        modifier = modifier
+            .background(Color.Black)
+            .pointerInput(player) {
+                detectTapGestures(
+                    onTap = {
+                        controlsVisible = !controlsVisible
+                        hideTick++
+                    },
+                    onDoubleTap = onDouble@{ offset ->
+                        val forward = offset.x > size.width / 2f
+                        val p = player ?: return@onDouble
+                        val delta = if (forward) 10_000L else -10_000L
+                        currentSeekTo((p.currentPosition + delta).coerceIn(0L, p.duration.coerceAtLeast(0L)))
+                        seekHint = if (forward) 10 else -10
+                        seekHintTick++
+                    },
+                )
+            },
+    ) {
+        VideoSurface(
+            player = player,
+            active = surfaceActive,
+            resizeMode = resizeMode,
+            modifier = Modifier.fillMaxSize(),
+        )
+
+        seekHint?.let { hint ->
+            Surface(
+                shape = CircleShape,
+                color = Color.Black.copy(alpha = 0.55f),
+                modifier = Modifier
+                    .align(if (hint > 0) Alignment.CenterEnd else Alignment.CenterStart)
+                    .padding(horizontal = 36.dp),
+            ) {
+                Text(
+                    text = if (hint > 0) "+10 s" else "−10 s",
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                )
+            }
+        }
+
+        AnimatedVisibility(
+            visible = controlsVisible || busy,
+            enter = fadeIn(tween(150)),
+            exit = fadeOut(tween(250)),
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = if (controlsVisible) 0.38f else 0f)),
+            ) {
+                if (!controlsVisible) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center).size(36.dp),
+                        strokeWidth = 3.dp,
+                        color = Color.White,
+                    )
+                } else {
+                    // Arriba: bajar · (título en pantalla completa) · cast · menú
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.TopCenter)
+                            .padding(horizontal = 4.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        IconButton(onClick = onCollapse) {
+                            Icon(
+                                painter = painterResource(R.drawable.expand_more),
+                                contentDescription = if (fullscreen) "Salir de pantalla completa" else "Minimizar",
+                                tint = Color.White,
+                            )
+                        }
+                        if (fullscreen && title != null) {
+                            Text(
+                                text = title,
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f),
+                            )
+                        } else {
+                            Spacer(Modifier.weight(1f))
+                        }
+                        com.dezzy.music.ui.component.CastButton(tint = Color.White)
+                        Box {
+                            IconButton(onClick = { menuOpen = true }) {
+                                Icon(
+                                    painter = painterResource(R.drawable.more_vert),
+                                    contentDescription = "Más opciones",
+                                    tint = Color.White,
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = menuOpen,
+                                onDismissRequest = { menuOpen = false },
+                            ) {
+                                menuItems { menuOpen = false }
+                            }
+                        }
+                    }
+
+                    // Centro: anterior · play/pausa · siguiente
+                    Row(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalArrangement = Arrangement.spacedBy(if (fullscreen) 48.dp else 28.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        IconButton(onClick = { onPrevious(); poke() }) {
+                            Icon(
+                                painter = painterResource(R.drawable.skip_previous),
+                                contentDescription = "Anterior",
+                                tint = Color.White,
+                                modifier = Modifier.size(32.dp),
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .size(if (fullscreen) 64.dp else 56.dp)
+                                .clip(CircleShape)
+                                .background(Color.Black.copy(alpha = 0.35f))
+                                .clickable(enabled = !busy) { onTogglePlay(); poke() }
+                                .semantics { contentDescription = if (playback.isPlaying) "Pausar" else "Reproducir" },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (busy) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(28.dp),
+                                    strokeWidth = 2.5.dp,
+                                    color = Color.White,
+                                )
+                            } else {
+                                Icon(
+                                    painter = painterResource(if (playback.isPlaying) R.drawable.pause else R.drawable.play),
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(34.dp),
+                                )
+                            }
+                        }
+                        IconButton(onClick = { onNext(); poke() }) {
+                            Icon(
+                                painter = painterResource(R.drawable.skip_next),
+                                contentDescription = "Siguiente",
+                                tint = Color.White,
+                                modifier = Modifier.size(32.dp),
+                            )
+                        }
+                    }
+
+                    // Abajo: tiempo · pantalla completa, y la barra de progreso
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.BottomCenter)
+                            .padding(horizontal = if (fullscreen) 20.dp else 8.dp),
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "${makeTimeString(seekPreview ?: playback.position)} / ${makeTimeString(playback.duration)}",
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                modifier = Modifier.padding(start = 8.dp),
+                            )
+                            Spacer(Modifier.weight(1f))
+                            IconButton(onClick = onToggleFullscreen) {
+                                Icon(
+                                    painter = painterResource(if (fullscreen) R.drawable.fullscreen_exit else R.drawable.fullscreen),
+                                    contentDescription = if (fullscreen) "Salir de pantalla completa" else "Pantalla completa",
+                                    tint = Color.White,
+                                )
+                            }
+                        }
+                        VideoSeekBar(
+                            position = seekPreview ?: playback.position,
+                            duration = playback.duration,
+                            onPreview = { seekPreview = it; poke() },
+                            onCommit = { ms ->
+                                onSeekTo(ms)
+                                seekPreview = null
+                                poke()
+                            },
+                        )
+                    }
+                }
+            }
+        }
+
+        // Línea de progreso fina con los controles ocultos (no en pantalla completa).
+        if (!controlsVisible && !fullscreen && playback.duration > 0) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth(fraction = (playback.position.toFloat() / playback.duration).coerceIn(0f, 1f))
+                    .height(2.dp)
+                    .background(Color.White),
+            )
+        }
+    }
+}
+
+/** Barra de progreso fina y arrastrable (la Slider de M3 es demasiado alta sobre el video). */
+@Composable
+private fun VideoSeekBar(
+    position: Long,
+    duration: Long,
+    onPreview: (Long) -> Unit,
+    onCommit: (Long) -> Unit,
+) {
+    val fraction = if (duration > 0) (position.toFloat() / duration).coerceIn(0f, 1f) else 0f
+    var dragFraction by remember { mutableFloatStateOf(-1f) }
+    val preview by rememberUpdatedState(onPreview)
+    val commit by rememberUpdatedState(onCommit)
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(24.dp)
+            .pointerInput(duration) {
+                detectTapGestures { offset ->
+                    if (duration > 0) commit((offset.x / size.width * duration).toLong())
+                }
+            }
+            .pointerInput(duration) {
+                detectHorizontalDragGestures(
+                    onDragStart = { offset ->
+                        dragFraction = (offset.x / size.width).coerceIn(0f, 1f)
+                        preview((dragFraction * duration).toLong())
+                    },
+                    onDragEnd = {
+                        if (dragFraction >= 0f) commit((dragFraction * duration).toLong())
+                        dragFraction = -1f
+                    },
+                    onDragCancel = { dragFraction = -1f },
+                    onHorizontalDrag = { change, _ ->
+                        change.consume()
+                        dragFraction = (change.position.x / size.width).coerceIn(0f, 1f)
+                        preview((dragFraction * duration).toLong())
+                    },
+                )
+            },
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        val shown = if (dragFraction >= 0f) dragFraction else fraction
+        val dragging = dragFraction >= 0f
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(3.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.3f)),
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(shown)
+                .height(3.dp)
+                .clip(CircleShape)
+                .background(Color.White),
+        )
+        val thumb = if (dragging) 16.dp else 12.dp
+        Box(
+            modifier = Modifier
+                .offset(x = (maxWidth - thumb) * shown)
+                .size(thumb)
+                .clip(CircleShape)
+                .background(Color.White),
         )
     }
 }
 
-/** Píldora audio/video de la barra superior (auriculares ↔ video). */
+/** Carrusel de "Recomendados": tarjetas 16:9 de 200 dp. */
 @Composable
-private fun AudioVideoIconPill(
-    videoSelected: Boolean,
-    loading: Boolean,
-    onSelectAudio: () -> Unit,
-    onSelectVideo: () -> Unit,
+private fun RecommendedCarousel(
+    recommendations: VideoRecommendations,
+    onRetry: () -> Unit,
+    onPlay: (SongItem) -> Unit,
 ) {
-    Surface(
-        shape = CircleShape,
-        color = Color.White.copy(alpha = 0.14f),
-    ) {
-        Row(
-            modifier = Modifier.padding(3.dp),
-            verticalAlignment = Alignment.CenterVertically,
+    when {
+        recommendations.loading -> LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 20.dp),
+            userScrollEnabled = false,
         ) {
-            PillSegment(
-                selected = !videoSelected,
-                iconRes = R.drawable.headphones,
-                contentDescription = "Solo audio",
-                onClick = onSelectAudio,
-            )
-            if (loading) {
-                Box(
-                    modifier = Modifier.size(46.dp, 34.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
-                        color = Color.White,
+            items(3) {
+                Column(Modifier.width(200.dp)) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(16f / 9f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.White.copy(alpha = 0.08f)),
+                    )
+                    Box(
+                        Modifier
+                            .padding(top = 10.dp)
+                            .fillMaxWidth(0.8f)
+                            .height(12.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.08f)),
                     )
                 }
-            } else {
-                PillSegment(
-                    selected = videoSelected,
-                    iconRes = R.drawable.play,
-                    contentDescription = "Video",
-                    onClick = onSelectVideo,
-                )
+            }
+        }
+
+        recommendations.items.isEmpty() -> Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = if (recommendations.failed) "No se pudieron cargar los videos." else "No encontramos videos para esta canción.",
+                color = Color.White.copy(alpha = 0.65f),
+                fontSize = 14.sp,
+                modifier = Modifier.weight(1f),
+            )
+            if (recommendations.failed) {
+                TextButton(onClick = onRetry) { Text("Reintentar", color = Color.White) }
+            }
+        }
+
+        else -> LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 20.dp),
+        ) {
+            items(recommendations.items, key = { it.id }) { item ->
+                Column(
+                    modifier = Modifier
+                        .width(200.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { onPlay(item) },
+                ) {
+                    VideoThumbnail(item = item, corner = 12.dp)
+                    Text(
+                        text = item.title,
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        lineHeight = 18.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                    Text(
+                        text = item.artists.joinToString(", ") { it.name },
+                        color = Color.White.copy(alpha = 0.6f),
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
     }
 }
 
+/** Miniatura 16:9 con las insignias OFICIAL y duración. */
 @Composable
-private fun PillSegment(
-    selected: Boolean,
-    iconRes: Int,
-    contentDescription: String,
+internal fun VideoThumbnail(
+    item: SongItem,
+    corner: androidx.compose.ui.unit.Dp,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .aspectRatio(16f / 9f)
+            .clip(RoundedCornerShape(corner))
+            .background(Color.White.copy(alpha = 0.08f)),
+    ) {
+        AsyncImage(
+            model = videoThumb(item.id),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
+        if (item.isOfficialVideo()) {
+            VideoBadge(text = "OFICIAL", modifier = Modifier.align(Alignment.TopStart).padding(8.dp))
+        }
+        item.duration?.takeIf { it > 0 }?.let { seconds ->
+            VideoBadge(
+                text = makeTimeString(seconds * 1000L),
+                modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun VideoBadge(text: String, modifier: Modifier = Modifier) {
+    Surface(
+        shape = RoundedCornerShape(6.dp),
+        color = Color.Black.copy(alpha = 0.72f),
+        modifier = modifier,
+    ) {
+        Text(
+            text = text,
+            color = Color.White,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+        )
+    }
+}
+
+/** Barra fija inferior: siguiente canción de la cola; abre la cola. */
+@Composable
+private fun UpNextBar(
+    nextTitle: String?,
+    queueTitle: String?,
     onClick: () -> Unit,
 ) {
     Surface(
         onClick = onClick,
-        shape = CircleShape,
-        color = if (selected) Color.White.copy(alpha = 0.28f) else Color.Transparent,
+        color = Color.White.copy(alpha = 0.07f),
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        Box(
-            modifier = Modifier.size(46.dp, 34.dp),
-            contentAlignment = Alignment.Center,
+        Row(
+            modifier = Modifier
+                .navigationBarsPadding()
+                .heightIn(min = 60.dp)
+                .padding(horizontal = 20.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                painter = painterResource(iconRes),
-                contentDescription = contentDescription,
+                painter = painterResource(R.drawable.queue_music),
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.85f),
+                modifier = Modifier.size(22.dp),
+            )
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = "A continuación",
+                    color = Color.White.copy(alpha = 0.6f),
+                    fontSize = 12.sp,
+                )
+                Text(
+                    text = nextTitle ?: queueTitle ?: "Cola de reproducción",
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (nextTitle != null && !queueTitle.isNullOrBlank()) {
+                    Text(
+                        text = queueTitle,
+                        color = Color.White.copy(alpha = 0.6f),
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            Icon(
+                painter = painterResource(R.drawable.expand_less),
+                contentDescription = "Abrir la cola",
                 tint = Color.White,
-                modifier = Modifier.size(20.dp),
             )
         }
     }
 }
 
-/** Píldora "me gusta / no me gusta", como la de YouTube Music. */
 @Composable
-private fun LikeChip(
-    liked: Boolean,
-    onLike: () -> Unit,
-    onDislike: () -> Unit,
+private fun VideoActionChip(
+    iconRes: Int,
+    label: String?,
+    onClick: () -> Unit,
+    highlighted: Boolean = false,
+    contentDescription: String? = null,
 ) {
-    Surface(
-        shape = CircleShape,
-        color = Color.White.copy(alpha = 0.12f),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .clickable(onClick = onLike)
-                    .padding(horizontal = 18.dp, vertical = 10.dp),
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.thumbup),
-                    contentDescription = "Me gusta",
-                    tint = if (liked) Color.White else Color.White.copy(alpha = 0.75f),
-                    modifier = Modifier.size(22.dp),
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .width(1.dp)
-                    .height(22.dp)
-                    .background(Color.White.copy(alpha = 0.22f)),
-            )
-            Box(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .clickable(enabled = liked, onClick = onDislike)
-                    .padding(horizontal = 18.dp, vertical = 10.dp)
-                    .alpha(if (liked) 1f else 0.45f),
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.thumbdown),
-                    contentDescription = "No me gusta",
-                    tint = Color.White,
-                    modifier = Modifier.size(22.dp),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun VideoActionChip(iconRes: Int, label: String, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         shape = CircleShape,
-        color = Color.White.copy(alpha = 0.12f),
+        color = if (highlighted) Color.White.copy(alpha = 0.22f) else Color.White.copy(alpha = 0.12f),
+        modifier = Modifier.heightIn(min = 40.dp),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = if (label == null) 12.dp else 16.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 painter = painterResource(iconRes),
-                contentDescription = null,
+                contentDescription = if (label == null) contentDescription else null,
                 tint = Color.White,
                 modifier = Modifier.size(20.dp),
             )
-            Spacer(Modifier.width(8.dp))
-            Text(text = label, color = Color.White, fontSize = 14.sp)
+            if (label != null) {
+                Spacer(Modifier.width(8.dp))
+                Text(text = label, color = Color.White, fontSize = 14.sp)
+            }
         }
     }
 }
 
 /**
+ * Pantalla completa: un diálogo a toda pantalla sin barras del sistema; en vertical gira
+ * el contenido 90° (no se rota la Activity). Atrás o el botón la cierran.
+ */
+@Composable
+private fun VideoFullscreenDialog(
+    onDismiss: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false,
+        ),
+    ) {
+        val view = LocalView.current
+        val window = (view.parent as? DialogWindowProvider)?.window
+        DisposableEffect(window) {
+            val controller = window?.let { WindowCompat.getInsetsController(it, it.decorView) }
+            window?.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
+            window?.setDimAmount(0f)
+            if (window != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                window.attributes = window.attributes.apply {
+                    layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+                }
+            }
+            controller?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            controller?.hide(WindowInsetsCompat.Type.systemBars())
+            onDispose { controller?.show(WindowInsetsCompat.Type.systemBars()) }
+        }
+        val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .rotateQuarterTurn(enabled = !landscape),
+        ) {
+            content()
+        }
+    }
+}
+
+/** Color vivo (o dominante) de la portada, animado, para el resplandor del fondo. */
+@Composable
+private fun rememberAmbientColor(url: String?): Color {
+    val context = LocalContext.current
+    var target by remember { mutableStateOf(Color(0xFF3A3A48)) }
+    LaunchedEffect(url) {
+        val thumbnailUrl = url ?: return@LaunchedEffect
+        val rgb = withContext(Dispatchers.IO) {
+            runCatching {
+                val request = ImageRequest.Builder(context)
+                    .data(thumbnailUrl)
+                    .size(100, 100)
+                    .allowHardware(false)
+                    .build()
+                val bitmap = context.imageLoader.execute(request).image?.toBitmap() ?: return@runCatching null
+                val palette = Palette.from(bitmap).maximumColorCount(16).generate()
+                palette.vibrantSwatch?.rgb ?: palette.dominantSwatch?.rgb
+            }.getOrNull()
+        }
+        if (rgb != null) target = Color(rgb)
+    }
+    val animated by animateColorAsState(targetValue = target, animationSpec = tween(600), label = "videoAmbient")
+    return animated
+}
+
+/**
  * YouTube-Music-style "Canción / Video" segmented pill shown above the artwork on the four
- * classic player styles (V1–V4). Tapping "Video" switches to the music-video stream via the
- * same video-mode pipeline the floating toggle uses; "Canción" returns to audio.
+ * classic player styles (V1–V4) and under the video in video mode. Tapping "Video" switches
+ * to the music-video stream via the video-mode pipeline; "Canción" returns to audio.
  */
 @Composable
 fun SongVideoToggle(
@@ -746,7 +1260,7 @@ fun SongVideoToggle(
 ) {
     val videoModeActive by playerConnection.videoModeActive.collectAsState()
     val videoModeLoading by playerConnection.videoModeLoading.collectAsState()
-    val songSelected = !videoModeActive
+    val songSelected = !videoModeActive && !videoModeLoading
 
     Surface(
         shape = CircleShape,
@@ -782,7 +1296,7 @@ fun SongVideoToggle(
                         CircularProgressIndicator(
                             modifier = Modifier.size(16.dp),
                             strokeWidth = 2.dp,
-                            color = Color.White,
+                            color = if (!songSelected) Color.Black else Color.White,
                         )
                     } else {
                         Text(
@@ -797,104 +1311,10 @@ fun SongVideoToggle(
     }
 }
 
-/**
- * Videos similares (InnerTube next/related) en una hoja, en vez del panel fijo
- * que antes tapaba el video. Tocar uno salta la cola a esa canción y deja pedida
- * la reactivación del modo video.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun RelatedVideosSheet(
-    playerConnection: PlayerConnection,
-    currentVideoId: String?,
-    onDismiss: () -> Unit,
-) {
-    var related by remember(currentVideoId) { mutableStateOf<List<SongItem>>(emptyList()) }
-    var loading by remember(currentVideoId) { mutableStateOf(true) }
-
-    LaunchedEffect(currentVideoId) {
-        val id = currentVideoId
-        if (id == null) { loading = false; return@LaunchedEffect }
-        related = withContext(Dispatchers.IO) {
-            runCatching {
-                YouTube.next(WatchEndpoint(videoId = id))
-                    .getOrNull()
-                    ?.items
-                    .orEmpty()
-                    .filter { it.id != id }
-                    .distinctBy { it.id }
-                    .take(20)
-            }.getOrDefault(emptyList())
-        }
-        loading = false
-    }
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-    ) {
-        Column(Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
-            Text(
-                text = "Videos similares",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(start = 20.dp, bottom = 10.dp),
-            )
-            when {
-                loading -> Box(
-                    Modifier.fillMaxWidth().padding(32.dp),
-                    contentAlignment = Alignment.Center,
-                ) { CircularProgressIndicator() }
-
-                related.isEmpty() -> Text(
-                    text = "No hay videos similares para esta canción.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
-                )
-
-                else -> LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(horizontal = 20.dp),
-                ) {
-                    items(related, key = { it.id }) { item ->
-                        Column(
-                            modifier = Modifier
-                                .width(150.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .clickable {
-                                    onDismiss()
-                                    playRelatedVideo(playerConnection, item)
-                                },
-                        ) {
-                            coil3.compose.AsyncImage(
-                                model = item.thumbnail,
-                                contentDescription = null,
-                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(84.dp)
-                                    .clip(RoundedCornerShape(10.dp)),
-                            )
-                            Text(
-                                text = item.title,
-                                fontSize = 12.sp,
-                                lineHeight = 15.sp,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.padding(top = 6.dp),
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
 /** Descarga el stream de video actual a Películas/Dezzy con el DownloadManager. */
 private fun downloadCurrentVideo(
     context: android.content.Context,
-    videoPlayer: androidx.media3.exoplayer.ExoPlayer,
+    videoPlayer: ExoPlayer,
     title: String?,
 ) {
     val uri = videoPlayer.currentMediaItem?.localConfiguration?.uri
@@ -925,7 +1345,7 @@ private fun downloadCurrentVideo(
 }
 
 /** Salta la cola a [item] (radio) y deja pedida la re-activación del modo video. */
-private fun playRelatedVideo(
+internal fun playRelatedVideo(
     playerConnection: PlayerConnection,
     item: SongItem,
 ) {

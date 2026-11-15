@@ -337,7 +337,6 @@ fun AutoPlaylistScreen(
         com.dezzy.music.ui.screens.playlist.AddSongsToLikedScreen(
             playlistId = "LIKED",
             onDismiss = { showAddSongsScreen = false },
-            onSearchClick = { navController.navigate(com.dezzy.music.ui.screens.Screens.Search.route) }
         )
     }
 
@@ -543,6 +542,18 @@ fun AutoPlaylistScreen(
                             icon = R.drawable.music_note,
                             text = stringResource(R.string.playlist_is_empty),
                         )
+                    }
+                    if (playlistType == PlaylistType.LIKE) {
+                        item(key = "empty_add") {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                            ) {
+                                AddSongsButton(onClick = { showAddSongsScreen = true }, filled = true)
+                            }
+                        }
                     }
                 } else {
                     if (!isSearching) {
@@ -849,6 +860,15 @@ fun AutoPlaylistScreen(
                                     }
                                 }
 
+                                // Añadir canciones (fase 9): sólo en Me gusta; antes era una fila al principio de la lista.
+                                if (playlistType == PlaylistType.LIKE) {
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    AddSongsButton(
+                                        onClick = { showAddSongsScreen = true },
+                                        modifier = Modifier.fillMaxWidth(),
+                                    )
+                                }
+
                                 Spacer(modifier = Modifier.height(24.dp))
                             }
                         }
@@ -874,38 +894,6 @@ fun AutoPlaylistScreen(
                                     }
                                 },
                                 modifier = Modifier.weight(1f),
-                            )
-                        }
-                    }
-
-                    // Botón Agregar a esta playlist
-                    item {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { showAddSongsScreen = true }
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(56.dp)
-                                    .background(Color.White.copy(alpha=0.15f), RoundedCornerShape(4.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.add),
-                                    contentDescription = "Add",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(32.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Text(
-                                text = "Agregar a esta playlist",
-                                color = Color.White,
-                                fontSize = 17.sp,
-                                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
                             )
                         }
                     }

@@ -62,6 +62,7 @@ import com.dezzy.music.LocalPlayerConnection
 import com.dezzy.music.R
 import com.dezzy.music.constants.HistorySource
 import com.dezzy.music.constants.InnerTubeCookieKey
+import com.dezzy.music.security.SessionCrypto
 import com.dezzy.music.db.entities.EventWithSong
 import com.dezzy.music.extensions.metadata
 import com.dezzy.music.extensions.toMediaItem
@@ -130,7 +131,7 @@ fun HistoryScreen(
 
     val innerTubeCookie by rememberPreference(InnerTubeCookieKey, "")
     val isLoggedIn = remember(innerTubeCookie) {
-        "SAPISID" in parseCookieString(innerTubeCookie)
+        "SAPISID" in parseCookieString(SessionCrypto.decrypt(innerTubeCookie))
     }
 
     fun dateAgoToString(dateAgo: DateAgo): String {

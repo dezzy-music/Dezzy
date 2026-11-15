@@ -6,6 +6,11 @@
 
 package com.dezzy.music.ui.screens.settings
 
+import com.dezzy.music.utils.rememberPreference
+import com.dezzy.music.security.SessionCrypto
+import com.dezzy.music.innertube.utils.parseCookieString
+import com.dezzy.music.constants.InnerTubeCookieKey
+import androidx.compose.runtime.collectAsState
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -123,6 +128,16 @@ fun SettingsScreen(
     val settingsGroups = buildSettingsGroups(navController, isAndroid12OrLater, hasUpdate, context, resetSearch)
     val internalItems = buildInternalItems(navController, resetSearch)
 
+    // Fase 7: lista principal estilo Android con el valor actual de cada ajuste.
+    val dezzyGroups = rememberDezzySettingsGroups(navController, isAndroid12OrLater, hasUpdate, latestVersionName)
+    val homeViewModel = rememberActivityHomeViewModel()
+    val accountName by homeViewModel.accountName.collectAsState()
+    val accountImageUrl by homeViewModel.accountImageUrl.collectAsState()
+    val (innerTubeCookie) = rememberPreference(InnerTubeCookieKey, "")
+    val isLoggedIn = remember(innerTubeCookie) {
+        "SAPISID" in parseCookieString(SessionCrypto.decrypt(innerTubeCookie))
+    }
+
     val queryText = query.text.trim()
     val showSearchBar = isSearching || queryText.isNotBlank()
 
@@ -197,17 +212,6 @@ fun SettingsScreen(
                             )
                         }
                     },
-                    actions = {
-                        IconButton(
-                            onClick = { isSearching = true },
-                            onLongClick = {},
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.search),
-                                contentDescription = null,
-                            )
-                        }
-                    },
                     scrollBehavior = scrollBehavior,
                     colors = TopAppBarDefaults.largeTopAppBarColors(
                         containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
@@ -222,8 +226,15 @@ fun SettingsScreen(
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize()) {
             if (!showSearchBar) {
-                AdaptiveSettingsLayout(
-                    state = contentState,
+                DezzySettingsHome(
+                    groups = dezzyGroups,
+                    accountName = accountName,
+                    accountImageUrl = accountImageUrl,
+                    isLoggedIn = isLoggedIn,
+                    showPermissionBanner = contentState.showPermissionBanner,
+                    onRequestPermission = contentState.onRequestPermission,
+                    onSearchClick = { isSearching = true },
+                    onAccountClick = { navController.navigate("settings/accounts") },
                     listState = listState,
                     topPadding = innerPadding.calculateTopPadding(),
                     modifier = Modifier.fillMaxSize(),

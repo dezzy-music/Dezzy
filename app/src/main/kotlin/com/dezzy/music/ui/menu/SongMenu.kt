@@ -68,8 +68,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.dezzy.music.social.DezzySocial
-import com.dezzy.music.social.SupabaseAuth
 import androidx.media3.exoplayer.offline.Download
 import androidx.media3.exoplayer.offline.DownloadRequest
 import androidx.media3.exoplayer.offline.DownloadService
@@ -329,14 +327,20 @@ fun SongMenu(
         )
     }
 
-    // Compartir a amigos estilo Spotify (enviar por mensaje directo + sistema).
+    // Canción en formato de la red social P2P (chats, publicaciones).
+    val p2pSong = com.dezzy.music.p2p.P2PSong(
+        videoId = song.song.id,
+        title = song.song.title,
+        artist = song.artists.joinToString(", ") { it.name },
+        thumbnail = song.song.thumbnailUrl,
+        durationSec = song.song.duration.coerceAtLeast(0),
+    )
+
+    // Compartir a amigos estilo Spotify (enviar por mensaje directo cifrado).
     var showShareToFriends by rememberSaveable { mutableStateOf(false) }
     if (showShareToFriends) {
-        com.dezzy.music.ui.screens.social.ShareSongSheet(
-            videoId = song.song.id,
-            title = song.song.title,
-            artist = song.artists.joinToString { it.name }.ifBlank { null },
-            artworkUrl = song.song.thumbnailUrl,
+        com.dezzy.music.ui.screens.p2p.P2PShareSongSheet(
+            song = p2pSong,
             onDismiss = { showShareToFriends = false; onDismiss() },
         )
     }
@@ -363,16 +367,19 @@ fun SongMenu(
                     onClick = {
                         val text = commentText.trim()
                         showCommentDialog = false
-                        if (!SupabaseAuth.isLoggedIn) {
-                            Toast.makeText(context, "Entra a la comunidad para comentar", Toast.LENGTH_SHORT).show()
+                        if (com.dezzy.music.p2p.P2PSocial.keys.value == null) {
+                            Toast.makeText(context, "Activa tu cuenta en la pestaña Social para comentar", Toast.LENGTH_SHORT).show()
                         } else {
-                            coroutineScope.launch {
-                                val id = DezzySocial.addTrackComment(song.song.id, 0, text)
-                                Toast.makeText(
-                                    context,
-                                    if (id != null) "Comentario publicado" else "No se pudo comentar",
-                                    Toast.LENGTH_SHORT,
-                                ).show()
+                            // Ámbito de la app: el menú se cierra antes de que termine la publicación.
+                            com.dezzy.music.p2p.P2PSocial.scope.launch {
+                                val ok = runCatching { com.dezzy.music.p2p.P2PSocial.createPost(text, p2pSong, null) }.getOrDefault(false)
+                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                    Toast.makeText(
+                                        context,
+                                        if (ok) "Comentario publicado en Comunidad" else "No se pudo comentar",
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                                }
                             }
                         }
                         onDismiss()
@@ -507,7 +514,7 @@ fun SongMenu(
     val shareToCommunityText = "Compartir en Comunidad"
     val sharedToCommunityText = "Compartido en Comunidad"
     val shareFailedText = "No se pudo compartir"
-    val communityNeedsAccountText = "Entra a la comunidad para compartir"
+    val communityNeedsAccountText = "Activa tu cuenta en la pestaña Social para compartir"
     val editText = stringResource(R.string.edit)
 
     // Cambiar la carátula de canciones locales importadas (música IA)
@@ -647,23 +654,18 @@ fun SongMenu(
                 text = shareToCommunityText,
                 onClick = {
                     onDismiss()
-                    if (!SupabaseAuth.isLoggedIn) {
+                    if (com.dezzy.music.p2p.P2PSocial.keys.value == null) {
                         Toast.makeText(context, communityNeedsAccountText, Toast.LENGTH_SHORT).show()
                     } else {
-                        coroutineScope.launch {
-                            val postId = DezzySocial.createPost(
-                                entityType = "song",
-                                entityId = song.id,
-                                entityTitle = song.song.title,
-                                entitySubtitle = song.artists.joinToString(", ") { it.name }
-                                    .ifBlank { null },
-                                artworkUrl = song.song.thumbnailUrl,
-                            )
-                            Toast.makeText(
-                                context,
-                                if (postId != null) sharedToCommunityText else shareFailedText,
-                                Toast.LENGTH_SHORT,
-                            ).show()
+                        com.dezzy.music.p2p.P2PSocial.scope.launch {
+                            val ok = runCatching { com.dezzy.music.p2p.P2PSocial.createPost("", p2pSong, null) }.getOrDefault(false)
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                Toast.makeText(
+                                    context,
+                                    if (ok) sharedToCommunityText else shareFailedText,
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            }
                         }
                     }
                 },

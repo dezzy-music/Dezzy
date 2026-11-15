@@ -70,6 +70,9 @@ object NextPage {
                 renderer.badges?.find {
                     it.musicInlineBadgeRenderer?.icon?.iconType == "MUSIC_EXPLICIT_BADGE"
                 } != null,
+            // Trae el tipo de video (oficial / subido / Art Track) para poder filtrar
+            // los videos de una radio, p. ej. en los "Recomendados" del modo video.
+            endpoint = renderer.navigationEndpoint.watchEndpoint,
         )
     }
 }

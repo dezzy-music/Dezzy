@@ -31,6 +31,9 @@ val LosslessDefaultProviderKey = stringPreferencesKey("losslessDefaultProvider")
 /** Calidad preseleccionada (id de [LosslessQuality]). */
 val LosslessDefaultQualityKey = stringPreferencesKey("losslessDefaultQuality")
 
+/** Últimas búsquedas de la pantalla lossless, una por línea (la más reciente primero). */
+val LosslessRecentSearchesKey = stringPreferencesKey("losslessRecentSearches")
+
 /** Ids de extensiones instaladas/activas, separados por coma. */
 val LosslessInstalledExtensionsKey = stringPreferencesKey("losslessInstalledExtensions")
 

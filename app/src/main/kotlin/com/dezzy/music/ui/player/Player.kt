@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 
 /*
  * Dezzy Project Original (2026)
@@ -95,7 +95,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.foundation.focusable
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -519,7 +518,6 @@ fun BottomSheetPlayer(
                         showSleepTimerDialog = false
                         playerConnection.service.sleepTimer.start(sleepTimerValue.roundToInt())
                     },
-                    shapes = ButtonDefaults.shapes(),
                 ) {
                     Text(stringResource(android.R.string.ok))
                 }
@@ -527,7 +525,6 @@ fun BottomSheetPlayer(
             dismissButton = {
                 TextButton(
                     onClick = { showSleepTimerDialog = false },
-                    shapes = ButtonDefaults.shapes(),
                 ) {
                     Text(stringResource(android.R.string.cancel))
                 }
@@ -671,7 +668,11 @@ fun BottomSheetPlayer(
             // through behind them. Car Mode's huge transport buttons sit at the bottom too,
             // so the same peeking header intercepted their taps.
             playerDesignStyle == PlayerDesignStyle.V7 ||
-            playerDesignStyle == PlayerDesignStyle.CAR
+            playerDesignStyle == PlayerDesignStyle.CAR ||
+            // Aurora draws its own Cola/Letra buttons; the peeking queue header overlapped them.
+            playerDesignStyle == PlayerDesignStyle.AURORA ||
+            // Clásico (rediseño fase 2) también dibuja sus propias acciones.
+            playerDesignStyle == PlayerDesignStyle.V1
         ) {
             0.dp
         } else {
@@ -973,7 +974,10 @@ fun BottomSheetPlayer(
             playerDesignStyle != PlayerDesignStyle.CAR &&
             // APPLE_MUSIC and LIVE_MESH are fully independent players — no overlay
             playerDesignStyle != PlayerDesignStyle.APPLE_MUSIC &&
-            playerDesignStyle != PlayerDesignStyle.LIVE_MESH
+            playerDesignStyle != PlayerDesignStyle.LIVE_MESH &&
+            playerDesignStyle != PlayerDesignStyle.AURORA &&
+            // Clásico pinta su propio degradado con el color de la carátula.
+            playerDesignStyle != PlayerDesignStyle.V1
         ) {
             PlayerBackground(
                 playerBackground = playerBackground,
@@ -1105,6 +1109,73 @@ fun BottomSheetPlayer(
                 onLyricsClick = lyricsSheetState::expandSoft,
 
                 onSleepTimerClick = { showSleepTimerDialog = true },
+                onVisualizerClick = { canvasSheetState.expandSoft() },
+                modifier = Modifier,
+            )
+        } else if (playerDesignStyle == PlayerDesignStyle.AURORA) {
+            // Aurora: nuevo diseño con fondo aurora y pastilla Spotify Connect.
+            AuroraPlayer(
+                state = state,
+                navController = navController,
+                positionState = rememberUpdatedState(position),
+                durationState = rememberUpdatedState(duration),
+                sliderPosition = sliderPosition,
+                onSliderPositionChange = { sliderPosition = it },
+                onQueueClick = queueSheetState::expandSoft,
+                onLyricsClick = lyricsSheetState::expandSoft,
+
+                onSleepTimerClick = { showSleepTimerDialog = true },
+                onMenuClick = {
+                    enrichedMetadata?.let { metadata ->
+                        menuState.show {
+                            PlayerMenu(
+                                mediaMetadata = metadata,
+                                navController = navController,
+                                playerBottomSheetState = state,
+                                onShowDetailsDialog = {
+                                    bottomSheetPageState.show {
+                                        ShowMediaInfo(metadata.id)
+                                    }
+                                },
+                                onDismiss = menuState::dismiss
+                            )
+                        }
+                    }
+                },
+                onVisualizerClick = { canvasSheetState.expandSoft() },
+                modifier = Modifier
+            )
+        } else if (playerDesignStyle == PlayerDesignStyle.V1) {
+            // Clásico: reproductor M3 enfocado (rediseño fase 2, Boceto A).
+            ClassicPlayer(
+                state = state,
+                navController = navController,
+                positionState = rememberUpdatedState(position),
+                durationState = rememberUpdatedState(duration),
+                sliderPosition = sliderPosition,
+                onSliderPositionChange = { sliderPosition = it },
+                onQueueClick = queueSheetState::expandSoft,
+                onLyricsClick = lyricsSheetState::expandSoft,
+                onSleepTimerClick = { showSleepTimerDialog = true },
+                sleepTimerEnabled = sleepTimerEnabled,
+                sleepTimerTimeLeft = sleepTimerTimeLeft,
+                onMenuClick = {
+                    enrichedMetadata?.let { metadata ->
+                        menuState.show {
+                            PlayerMenu(
+                                mediaMetadata = metadata,
+                                navController = navController,
+                                playerBottomSheetState = state,
+                                onShowDetailsDialog = {
+                                    bottomSheetPageState.show {
+                                        ShowMediaInfo(metadata.id)
+                                    }
+                                },
+                                onDismiss = menuState::dismiss
+                            )
+                        }
+                    }
+                },
                 onVisualizerClick = { canvasSheetState.expandSoft() },
                 modifier = Modifier,
             )

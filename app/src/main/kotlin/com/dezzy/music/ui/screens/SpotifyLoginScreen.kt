@@ -21,7 +21,6 @@ import android.webkit.WebResourceError
 import android.webkit.WebResourceResponse
 import android.webkit.WebViewClient
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -30,17 +29,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -56,7 +50,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.datastore.preferences.core.edit
@@ -68,6 +61,7 @@ import com.dezzy.music.constants.SpotifySpKeyKey
 import com.dezzy.music.constants.SpotifyTokenExpiryKey
 import com.dezzy.music.constants.SpotifyUserIdKey
 import com.dezzy.music.constants.SpotifyUsernameKey
+import com.dezzy.music.security.SessionCrypto
 import com.dezzy.music.spotify.Spotify
 import com.dezzy.music.spotify.SpotifyAuth
 import com.dezzy.music.ui.component.IconButton
@@ -100,13 +94,9 @@ fun SpotifyLoginScreen(navController: NavController) {
     val tokenFetchStarted = remember { AtomicBoolean(false) }
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
 
-    var showManualInput by remember { mutableStateOf(false) }
-    var manualSpDc by remember { mutableStateOf("") }
-
     // Watchdog: if the login page never starts loading, show the retry overlay
     // instead of leaving an empty screen.
-    LaunchedEffect(loadAttempt, showManualInput) {
-        if (showManualInput) return@LaunchedEffect
+    LaunchedEffect(loadAttempt) {
         delay(12_000)
         if (!pageStarted && webViewLoadError == null && !isProcessing) {
             isLoading = false
@@ -117,7 +107,7 @@ fun SpotifyLoginScreen(navController: NavController) {
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text(if (showManualInput) "Ingresar cookie sp_dc" else "Iniciar sesion en Spotify") },
+            title = { Text("Iniciar sesion en Spotify") },
             navigationIcon = {
                 IconButton(
                     onClick = navController::navigateUp,
@@ -126,231 +116,155 @@ fun SpotifyLoginScreen(navController: NavController) {
                     Icon(painterResource(R.drawable.arrow_back), contentDescription = null)
                 }
             },
-            actions = {
-                TextButton(
-                    onClick = {
-                        showManualInput = !showManualInput
-                        pageStarted = false
-                        webViewLoadError = null
-                        hasError = false
-                        statusMessage = ""
-                        isProcessing = false
-                    },
-                ) {
-                    Text(if (showManualInput) "Usar navegador" else "Ingresar cookie")
-                }
-            },
         )
 
-        if ((isLoading || isProcessing) && !showManualInput) {
+        if (isLoading || isProcessing) {
             LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
         }
 
-        if (showManualInput) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.Top,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "El inicio de sesion automatico no funciona?",
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "Obtén tu cookie sp_dc desde la PC:\n\n" +
-                        "1. Abre open.spotify.com en Chrome e inicia sesion.\n" +
-                        "2. Presiona F12, luego la pestana Aplicacion (Application).\n" +
-                        "3. En el panel izquierdo: Almacenamiento > Cookies > https://open.spotify.com\n" +
-                        "4. Busca la cookie sp_dc y copia su valor.\n" +
-                        "5. Pegala aqui abajo.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                OutlinedTextField(
-                    value = manualSpDc,
-                    onValueChange = { manualSpDc = it.trim() },
-                    label = { Text("Valor de la cookie sp_dc") },
-                    placeholder = { Text("AQBx...") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = false,
-                    maxLines = 6,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    isError = hasError,
-                    supportingText = if (hasError && statusMessage.isNotEmpty()) {
-                        { Text(statusMessage, color = MaterialTheme.colorScheme.error) }
-                    } else null,
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = {
-                        if (manualSpDc.isNotBlank()) {
-                            hasError = false
-                            statusMessage = ""
-                            loginWithSpDc(
-                                spDc = manualSpDc,
-                                spKey = "",
-                                context = context,
-                                scope = scope,
-                                navController = navController,
-                                setProcessing = { isProcessing = it },
-                                setStatus = { statusMessage = it },
-                                setError = { hasError = it },
-                            )
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = manualSpDc.isNotBlank() && !isProcessing,
-                ) {
-                    if (isProcessing) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimary,
+        Box(modifier = Modifier.fillMaxSize()) {
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { ctx ->
+                    val cookieManager = CookieManager.getInstance()
+                    cookieManager.setAcceptCookie(true)
+                    // Start from a clean Spotify session. Done before the WebView exists
+                    // so the login page never depends on the async cookie callback.
+                    cookieManager.removeAllCookies(null)
+                    cookieManager.flush()
+
+                    WebView(ctx).apply {
+                        layoutParams = ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT,
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                    }
-                    Text(
-                        if (isProcessing) statusMessage.ifEmpty { "Conectando..." }
-                        else "Conectar con Spotify",
-                    )
-                }
-                if (hasError) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    TextButton(
-                        onClick = {
-                            hasError = false
-                            statusMessage = ""
-                            if (manualSpDc.isNotBlank()) {
-                                loginWithSpDc(
-                                    spDc = manualSpDc,
-                                    spKey = "",
-                                    context = context,
-                                    scope = scope,
-                                    navController = navController,
-                                    setProcessing = { isProcessing = it },
-                                    setStatus = { statusMessage = it },
-                                    setError = { hasError = it },
-                                )
-                            }
-                        },
-                    ) { Text("Reintentar") }
-                }
-            }
-        } else {
-            Box(modifier = Modifier.fillMaxSize()) {
-                AndroidView(
-                    modifier = Modifier.fillMaxSize(),
-                    factory = { ctx ->
-                        val cookieManager = CookieManager.getInstance()
-                        cookieManager.setAcceptCookie(true)
-                        // Start from a clean Spotify session. Done before the WebView exists
-                        // so the login page never depends on the async cookie callback.
-                        cookieManager.removeAllCookies(null)
-                        cookieManager.flush()
+                        cookieManager.setAcceptThirdPartyCookies(this, true)
 
-                        WebView(ctx).apply {
-                            layoutParams = ViewGroup.LayoutParams(
-                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                ViewGroup.LayoutParams.MATCH_PARENT,
-                            )
-                            cookieManager.setAcceptThirdPartyCookies(this, true)
+                        settings.javaScriptEnabled = true
+                        settings.domStorageEnabled = true
+                        settings.databaseEnabled = true
+                        settings.loadWithOverviewMode = true
+                        settings.useWideViewPort = true
+                        settings.mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+                        settings.javaScriptCanOpenWindowsAutomatically = true
+                        settings.setSupportMultipleWindows(true)
+                        settings.cacheMode = WebSettings.LOAD_DEFAULT
+                        settings.mediaPlaybackRequiresUserGesture = false
+                        settings.userAgentString = USER_AGENT_MOBILE
 
-                            settings.javaScriptEnabled = true
-                            settings.domStorageEnabled = true
-                            settings.databaseEnabled = true
-                            settings.loadWithOverviewMode = true
-                            settings.useWideViewPort = true
-                            settings.mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
-                            settings.javaScriptCanOpenWindowsAutomatically = true
-                            settings.setSupportMultipleWindows(true)
-                            settings.cacheMode = WebSettings.LOAD_DEFAULT
-                            settings.mediaPlaybackRequiresUserGesture = false
-                            settings.userAgentString = USER_AGENT_MOBILE
-
-                            webChromeClient = object : WebChromeClient() {
-                                override fun onCreateWindow(
-                                    view: WebView,
-                                    isDialog: Boolean,
-                                    isUserGesture: Boolean,
-                                    resultMsg: Message,
-                                ): Boolean {
-                                    val transport = resultMsg.obj as? WebView.WebViewTransport
-                                        ?: return false
-                                    val dummyWebView = WebView(view.context)
-                                    dummyWebView.webViewClient = object : WebViewClient() {
-                                        override fun shouldOverrideUrlLoading(
-                                            view: WebView,
-                                            request: WebResourceRequest,
-                                        ): Boolean {
-                                            this@apply.loadUrl(request.url.toString())
-                                            return true
-                                        }
+                        webChromeClient = object : WebChromeClient() {
+                            override fun onCreateWindow(
+                                view: WebView,
+                                isDialog: Boolean,
+                                isUserGesture: Boolean,
+                                resultMsg: Message,
+                            ): Boolean {
+                                val transport = resultMsg.obj as? WebView.WebViewTransport
+                                    ?: return false
+                                val dummyWebView = WebView(view.context)
+                                dummyWebView.webViewClient = object : WebViewClient() {
+                                    override fun shouldOverrideUrlLoading(
+                                        view: WebView,
+                                        request: WebResourceRequest,
+                                    ): Boolean {
+                                        this@apply.loadUrl(request.url.toString())
+                                        return true
                                     }
-                                    transport.webView = dummyWebView
-                                    resultMsg.sendToTarget()
-                                    return true
+                                }
+                                transport.webView = dummyWebView
+                                resultMsg.sendToTarget()
+                                return true
+                            }
+                        }
+
+                        webViewClient = object : WebViewClient() {
+                            override fun onPageStarted(
+                                view: WebView?,
+                                url: String?,
+                                favicon: Bitmap?,
+                            ) {
+                                isLoading = true
+                                pageStarted = true
+                                webViewLoadError = null
+                                view?.evaluateJavascript(ANTI_BOT_JS, null)
+                            }
+
+                            override fun onReceivedError(
+                                view: WebView?,
+                                request: WebResourceRequest?,
+                                error: WebResourceError?,
+                            ) {
+                                if (request?.isForMainFrame == true) {
+                                    isLoading = false
+                                    webViewLoadError = "No se pudo cargar la pagina de inicio de sesion (${error?.errorCode ?: "?"}). Revisa tu conexion e intentalo de nuevo."
+                                    Timber.e("SpotifyLogin: WebView error ${error?.errorCode}: ${error?.description} url=${request.url}")
                                 }
                             }
 
-                            webViewClient = object : WebViewClient() {
-                                override fun onPageStarted(
-                                    view: WebView?,
-                                    url: String?,
-                                    favicon: Bitmap?,
-                                ) {
-                                    isLoading = true
-                                    pageStarted = true
-                                    webViewLoadError = null
-                                    view?.evaluateJavascript(ANTI_BOT_JS, null)
-                                }
+                            @Deprecated("Deprecated in Java")
+                            override fun onReceivedError(
+                                view: WebView?,
+                                errorCode: Int,
+                                description: String?,
+                                failingUrl: String?,
+                            ) {
+                                isLoading = false
+                                webViewLoadError = "No se pudo cargar la pagina de inicio de sesion ($errorCode). Revisa tu conexion e intentalo de nuevo."
+                                Timber.e("SpotifyLogin: WebView error $errorCode: $description url=$failingUrl")
+                            }
 
-                                override fun onReceivedError(
-                                    view: WebView?,
-                                    request: WebResourceRequest?,
-                                    error: WebResourceError?,
+                            override fun onReceivedHttpError(
+                                view: WebView?,
+                                request: WebResourceRequest?,
+                                errorResponse: WebResourceResponse?,
+                            ) {
+                                if (request?.isForMainFrame == true) {
+                                    isLoading = false
+                                    webViewLoadError = "Spotify respondio con un error (HTTP ${errorResponse?.statusCode ?: "?"}). Intentalo de nuevo."
+                                    Timber.e("SpotifyLogin: WebView HTTP error ${errorResponse?.statusCode} url=${request.url}")
+                                }
+                            }
+
+                            override fun onPageFinished(view: WebView?, url: String?) {
+                                isLoading = false
+                                view?.evaluateJavascript(ANTI_BOT_JS, null)
+
+                                if (url?.startsWith("https://open.spotify.com") == true &&
+                                    tokenFetchStarted.compareAndSet(false, true)
                                 ) {
-                                    if (request?.isForMainFrame == true) {
-                                        isLoading = false
-                                        webViewLoadError = "No se pudo cargar la pagina de inicio de sesion (${error?.errorCode ?: "?"}). Revisa tu conexion e intentalo de nuevo."
-                                        Timber.e("SpotifyLogin: WebView error ${error?.errorCode}: ${error?.description} url=${request.url}")
+                                    extractAndFetchToken(
+                                        view, ctx, scope, navController,
+                                        { isProcessing = it }, { statusMessage = it },
+                                        { hasError = it }, tokenFetchStarted,
+                                    )
+                                }
+                            }
+
+                            override fun shouldOverrideUrlLoading(
+                                view: WebView?,
+                                request: WebResourceRequest?,
+                            ): Boolean {
+                                val requestUrl = request?.url?.toString() ?: return false
+
+                                if (requestUrl.startsWith("intent://") ||
+                                    requestUrl.startsWith("spotify://")
+                                ) {
+                                    try {
+                                        val intent = Intent.parseUri(
+                                            requestUrl,
+                                            Intent.URI_INTENT_SCHEME,
+                                        )
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        ctx.startActivity(intent)
+                                        return true
+                                    } catch (e: Exception) {
+                                        Timber.e(e, "Failed to launch intent: $requestUrl")
                                     }
                                 }
 
-                                @Deprecated("Deprecated in Java")
-                                override fun onReceivedError(
-                                    view: WebView?,
-                                    errorCode: Int,
-                                    description: String?,
-                                    failingUrl: String?,
-                                ) {
-                                    isLoading = false
-                                    webViewLoadError = "No se pudo cargar la pagina de inicio de sesion ($errorCode). Revisa tu conexion e intentalo de nuevo."
-                                    Timber.e("SpotifyLogin: WebView error $errorCode: $description url=$failingUrl")
-                                }
-
-                                override fun onReceivedHttpError(
-                                    view: WebView?,
-                                    request: WebResourceRequest?,
-                                    errorResponse: WebResourceResponse?,
-                                ) {
-                                    if (request?.isForMainFrame == true) {
-                                        isLoading = false
-                                        webViewLoadError = "Spotify respondio con un error (HTTP ${errorResponse?.statusCode ?: "?"}). Intentalo de nuevo."
-                                        Timber.e("SpotifyLogin: WebView HTTP error ${errorResponse?.statusCode} url=${request.url}")
-                                    }
-                                }
-
-                                override fun onPageFinished(view: WebView?, url: String?) {
-                                    isLoading = false
-                                    view?.evaluateJavascript(ANTI_BOT_JS, null)
-
-                                    if (url?.startsWith("https://open.spotify.com") == true &&
+                                if (requestUrl.startsWith("https://open.spotify.com")) {
+                                    val spDc = extractSpDcCookie()
+                                    if (spDc != null &&
                                         tokenFetchStarted.compareAndSet(false, true)
                                     ) {
                                         extractAndFetchToken(
@@ -358,146 +272,95 @@ fun SpotifyLoginScreen(navController: NavController) {
                                             { isProcessing = it }, { statusMessage = it },
                                             { hasError = it }, tokenFetchStarted,
                                         )
+                                        return true
                                     }
                                 }
-
-                                override fun shouldOverrideUrlLoading(
-                                    view: WebView?,
-                                    request: WebResourceRequest?,
-                                ): Boolean {
-                                    val requestUrl = request?.url?.toString() ?: return false
-
-                                    if (requestUrl.startsWith("intent://") ||
-                                        requestUrl.startsWith("spotify://")
-                                    ) {
-                                        try {
-                                            val intent = Intent.parseUri(
-                                                requestUrl,
-                                                Intent.URI_INTENT_SCHEME,
-                                            )
-                                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                            ctx.startActivity(intent)
-                                            return true
-                                        } catch (e: Exception) {
-                                            Timber.e(e, "Failed to launch intent: $requestUrl")
-                                        }
-                                    }
-
-                                    if (requestUrl.startsWith("https://open.spotify.com")) {
-                                        val spDc = extractSpDcCookie()
-                                        if (spDc != null &&
-                                            tokenFetchStarted.compareAndSet(false, true)
-                                        ) {
-                                            extractAndFetchToken(
-                                                view, ctx, scope, navController,
-                                                { isProcessing = it }, { statusMessage = it },
-                                                { hasError = it }, tokenFetchStarted,
-                                            )
-                                            return true
-                                        }
-                                    }
-                                    return false
-                                }
+                                return false
                             }
-
-                            // Clear any previous Spotify session first, then load the
-                            // login page. Loading before the async cookie-clear finishes
-                            // can leave a stale session behind and Spotify then skips
-                            // the login form entirely (redirect to open.spotify.com
-                            // with no usable sp_dc), so the interface never appears.
-                            // Load immediately. Deferring this into removeAllCookies { post { } }
-                            // left the WebView blank when the callback never ran.
-                            loadUrl(SpotifyAuth.LOGIN_URL)
-                        }.also { webViewRef = it }
-                    },
-                )
-
-                if (webViewLoadError != null && !isProcessing) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.surface),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.padding(24.dp),
-                        ) {
-                            Text(
-                                text = webViewLoadError ?: "",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(
-                                onClick = {
-                                    webViewLoadError = null
-                                    isLoading = true
-                                    pageStarted = false
-                                    loadAttempt++
-                                    webViewRef?.loadUrl(SpotifyAuth.LOGIN_URL)
-                                },
-                            ) { Text("Reintentar") }
-                            TextButton(
-                                onClick = {
-                                    webViewLoadError = null
-                                    showManualInput = true
-                                },
-                            ) { Text("Ingresar cookie manualmente") }
                         }
+
+                        // Clear any previous Spotify session first, then load the
+                        // login page. Loading before the async cookie-clear finishes
+                        // can leave a stale session behind and Spotify then skips
+                        // the login form entirely (redirect to open.spotify.com
+                        // with no usable sp_dc), so the interface never appears.
+                        // Load immediately. Deferring this into removeAllCookies { post { } }
+                        // left the WebView blank when the callback never ran.
+                        loadUrl(SpotifyAuth.LOGIN_URL)
+                    }.also { webViewRef = it }
+                },
+            )
+
+            if (webViewLoadError != null && !isProcessing) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surface),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(24.dp),
+                    ) {
+                        Text(
+                            text = webViewLoadError ?: "",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = {
+                                webViewLoadError = null
+                                isLoading = true
+                                pageStarted = false
+                                loadAttempt++
+                                webViewRef?.loadUrl(SpotifyAuth.LOGIN_URL)
+                            },
+                        ) { Text("Reintentar") }
                     }
                 }
+            }
 
-                if (isProcessing || hasError) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.surface),
-                        contentAlignment = Alignment.Center,
+            if (isProcessing || hasError) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surface),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(24.dp),
                     ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.padding(24.dp),
-                        ) {
-                            if (!hasError) {
-                                CircularProgressIndicator()
-                                Spacer(modifier = Modifier.height(16.dp))
-                            }
-                            Text(
-                                text = statusMessage.ifEmpty { "Iniciando sesion..." },
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = if (hasError) {
-                                    MaterialTheme.colorScheme.error
-                                } else {
-                                    MaterialTheme.colorScheme.onSurface
+                        if (!hasError) {
+                            CircularProgressIndicator()
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+                        Text(
+                            text = statusMessage.ifEmpty { "Iniciando sesion..." },
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (hasError) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            },
+                        )
+                        if (hasError) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            TextButton(
+                                onClick = {
+                                    hasError = false
+                                    statusMessage = ""
+                                    retryCount++
+                                    tokenFetchStarted.set(true)
+                                    extractAndFetchToken(
+                                        webViewRef, context, scope, navController,
+                                        { isProcessing = it }, { statusMessage = it },
+                                        { hasError = it }, tokenFetchStarted,
+                                    )
                                 },
-                            )
-                            if (hasError) {
-                                Spacer(modifier = Modifier.height(16.dp))
-                                TextButton(
-                                    onClick = {
-                                        hasError = false
-                                        statusMessage = ""
-                                        retryCount++
-                                        tokenFetchStarted.set(true)
-                                        extractAndFetchToken(
-                                            webViewRef, context, scope, navController,
-                                            { isProcessing = it }, { statusMessage = it },
-                                            { hasError = it }, tokenFetchStarted,
-                                        )
-                                    },
-                                    modifier = Modifier.padding(horizontal = 16.dp),
-                                ) { Text("Reintentar") }
-                                TextButton(
-                                    onClick = {
-                                        hasError = false
-                                        statusMessage = ""
-                                        isProcessing = false
-                                        showManualInput = true
-                                    },
-                                    modifier = Modifier.padding(horizontal = 16.dp),
-                                ) { Text("Ingresar cookie manualmente") }
-                            }
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                            ) { Text("Reintentar") }
                         }
                     }
                 }
@@ -582,32 +445,44 @@ private fun loginWithSpDc(
 
     scope.launch(Dispatchers.IO) {
         try {
-            context.dataStore.edit { prefs ->
-                prefs[SpotifySpDcKey] = spDc
-                prefs[SpotifySpKeyKey] = spKey
-            }
-
+            // In-memory verification & project data retrieval without storing plaintext cookies
             withContext(Dispatchers.Main) { setStatus("Conectando con Spotify...") }
 
             val token = SpotifyAuth.fetchAccessToken(spDc, spKey).getOrThrow()
             Spotify.accessToken = token.accessToken
 
             withContext(Dispatchers.Main) { setStatus("Cargando perfil...") }
-            Spotify.me()
-                .onSuccess { user ->
-                    context.dataStore.edit { prefs ->
-                        prefs[SpotifyUsernameKey] = user.displayName ?: user.id
-                        prefs[SpotifyUserIdKey] = user.id
-                    }
-                }
-                .onFailure { e -> Timber.w(e, "SpotifyLogin: profile fetch failed (non-fatal)") }
+            val profileUser = Spotify.me().getOrNull()
+
+            // Encrypt cookies using Android KeyStore before saving to persistent storage
+            val encryptedSpDc = SessionCrypto.encrypt(spDc)
+            val encryptedSpKey = if (spKey.isNotBlank()) SessionCrypto.encrypt(spKey) else ""
 
             context.dataStore.edit { prefs ->
+                prefs[SpotifySpDcKey] = encryptedSpDc
+                if (encryptedSpKey.isNotEmpty()) {
+                    prefs[SpotifySpKeyKey] = encryptedSpKey
+                }
+                if (profileUser != null) {
+                    prefs[SpotifyUsernameKey] = profileUser.displayName ?: profileUser.id
+                    prefs[SpotifyUserIdKey] = profileUser.id
+                }
                 prefs[SpotifyAccessTokenKey] = token.accessToken
                 prefs[SpotifyTokenExpiryKey] = token.accessTokenExpirationTimestampMs
             }
 
-            withContext(Dispatchers.Main) { setStatus("Conectado a Spotify!") }
+            // Also keep in Keystore-backed SharedPreferences
+            SessionCrypto.getSecurePreferences(context).edit()
+                .putString(SpotifySpDcKey.name, spDc)
+                .apply()
+
+            // Purge unencrypted session cookies from WebView disk storage
+            withContext(Dispatchers.Main) {
+                val cookieManager = android.webkit.CookieManager.getInstance()
+                cookieManager.removeAllCookies(null)
+                cookieManager.flush()
+                setStatus("Conectado a Spotify!")
+            }
             delay(300)
             withContext(Dispatchers.Main) { navController.navigateUp() }
         } catch (e: CancellationException) {

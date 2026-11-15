@@ -7,9 +7,7 @@
 package com.dezzy.music.ui.screens.musicmap
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.Context
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -17,7 +15,6 @@ import android.graphics.ColorMatrixColorFilter
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.drawable.BitmapDrawable
-import android.location.LocationManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -67,7 +64,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavController
@@ -83,22 +79,20 @@ import com.dezzy.music.R
 import com.dezzy.music.constants.MusicMapShareLocationKey
 import com.dezzy.music.extensions.togglePlayPause
 import com.dezzy.music.innertube.YouTube
-import com.dezzy.music.social.SupabaseAuth
+import com.dezzy.music.p2p.P2PSocial
 import com.dezzy.music.innertube.models.SongItem
 import com.dezzy.music.innertube.models.WatchEndpoint
-import com.dezzy.music.innertube.pages.ChartsPage
 import com.dezzy.music.models.toMediaMetadata
 import com.dezzy.music.musicmap.MapPresence
+import com.dezzy.music.musicmap.MusicMapCharts
+import com.dezzy.music.musicmap.MusicMapLocation
 import com.dezzy.music.musicmap.MusicMapRepository
 import com.dezzy.music.playback.OmegaMathIntegration
 import com.dezzy.music.playback.queues.YouTubeQueue
 import com.dezzy.music.ui.utils.highRes
 import com.dezzy.music.utils.rememberPreference
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -153,14 +147,6 @@ private val COUNTRIES = listOf(
 
 /** Fallback "worldwide" group used when per-country charts don't return anything. */
 private val WORLD = Country("ZZ", "Mundial", 15.0, 0.0)
-
-private fun ChartsPage.topSongs(): List<SongItem> =
-    sections
-        .filter { it.chartType == ChartsPage.ChartType.TOP || it.chartType == ChartsPage.ChartType.TRENDING }
-        .flatMap { it.items }
-        .filterIsInstance<SongItem>()
-        .ifEmpty { sections.flatMap { it.items }.filterIsInstance<SongItem>() }
-        .distinctBy { it.id }
 
 /**
  * Clustering grid size (in degrees) for a given zoom level. Bigger cells at low zoom → fewer, larger
@@ -284,12 +270,12 @@ fun MusicMapScreen(navController: NavController) {
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
-            ownLatLng = lastKnownLocation(context)
-            setShareLocation(true)
             OmegaMathIntegration.shareLocation = true
-            ownLatLng?.let {
-                OmegaMathIntegration.latitude = it.first
-                OmegaMathIntegration.longitude = it.second
+            if (shareLocation) {
+                // Ya estaba activado (permiso revocado y vuelto a dar): pide ubicación ahora.
+                coroutineScope.launch { MusicMapLocation.refresh(context)?.let { ownLatLng = it } }
+            } else {
+                setShareLocation(true) // LaunchedEffect(shareLocation) pide la ubicación
             }
         } else {
             setShareLocation(false)
@@ -297,39 +283,27 @@ fun MusicMapScreen(navController: NavController) {
         }
     }
 
-    // Load each country's REAL chart, incrementally and with limited concurrency so YouTube doesn't
-    // throttle 16 simultaneous requests. Falls back to the global chart if per-country yields nothing.
+    // Top real de cada país: caché local → descarga en el dispositivo (playlists de charts
+    // por país), sin servidor propio. El mapa se pinta según llegan los datos.
     LaunchedEffect(Unit) {
-        val acc = ArrayList<CountryChart>()
-        val gate = Semaphore(4)
-        coroutineScope {
-            COUNTRIES.forEach { country ->
-                launch(Dispatchers.IO) {
-                    gate.withPermit {
-                        val songs = runCatching {
-                            YouTube.getChartsPage(countryCode = country.code).getOrNull()?.topSongs()
-                        }.getOrNull()?.take(5).orEmpty()
-                        if (songs.isNotEmpty()) {
-                            val snapshot: List<CountryChart>
-                            synchronized(acc) {
-                                acc.add(CountryChart(country, songs))
-                                snapshot = acc.sortedBy { COUNTRIES.indexOf(it.country) }.toList()
-                            }
-                            withContext(Dispatchers.Main) { countryCharts = snapshot }
-                        }
-                    }
-                }
+        val codes = COUNTRIES.map { it.code } + MusicMapCharts.GLOBAL
+        fun toCharts(byCode: Map<String, List<SongItem>>): List<CountryChart> {
+            val perCountry = COUNTRIES.mapNotNull { country ->
+                byCode[country.code]?.takeIf { it.isNotEmpty() }?.let { CountryChart(country, it.take(10)) }
             }
+            if (perCountry.isNotEmpty()) return perCountry
+            // Sin datos por país → el chart mundial, solo en la lista.
+            return byCode[MusicMapCharts.GLOBAL]?.takeIf { it.isNotEmpty() }
+                ?.let { listOf(CountryChart(WORLD, it.take(20))) }
+                .orEmpty()
         }
-        // Fallback: nothing per-country (e.g. region blocked) → show the global chart so the list works.
-        if (acc.isEmpty()) {
-            val global = runCatching {
-                YouTube.getChartsPage().getOrNull()?.topSongs()
-            }.getOrNull()?.take(20).orEmpty()
-            if (global.isNotEmpty()) {
-                withContext(Dispatchers.Main) { countryCharts = listOf(CountryChart(WORLD, global)) }
+        val loaded = runCatching {
+            MusicMapCharts.load(context, codes) { partial ->
+                val charts = toCharts(partial)
+                if (charts.isNotEmpty()) withContext(Dispatchers.Main) { countryCharts = charts }
             }
-        }
+        }.getOrNull().orEmpty()
+        toCharts(loaded).takeIf { it.isNotEmpty() }?.let { countryCharts = it }
         chartsLoaded = true
     }
 
@@ -342,14 +316,16 @@ fun MusicMapScreen(navController: NavController) {
 
     LaunchedEffect(shareLocation) {
         OmegaMathIntegration.shareLocation = shareLocation
-        if (shareLocation && hasLocationPermission(context)) {
-            ownLatLng = lastKnownLocation(context)
-            ownLatLng?.let {
-                OmegaMathIntegration.latitude = it.first
-                OmegaMathIntegration.longitude = it.second
+        if (shareLocation) {
+            // Muestra al instante la última guardada y luego pide una nueva (aprox. ~1 km).
+            MusicMapLocation.ensureRestored(context)
+            ownLatLng = MusicMapLocation.stored(context)
+            if (MusicMapLocation.hasPermission(context)) {
+                MusicMapLocation.refresh(context)?.let { ownLatLng = it }
             }
-        } else if (!shareLocation) {
+        } else {
             ownLatLng = null
+            MusicMapLocation.clear(context)
         }
     }
 
@@ -378,12 +354,13 @@ fun MusicMapScreen(navController: NavController) {
         }
     }
 
-    val myUserId by SupabaseAuth.currentUserId.collectAsState()
+    val myKeys by P2PSocial.keys.collectAsState()
+    val myUserId = remember(myKeys) { P2PSocial.me }
 
     val peoplePoints = remember(presences, myUserId) {
         presences
-            // Fuera mi propia presencia: ya salgo como `ownPoint`, y el servidor
-            // ahora me devuelve (soy "amigo" de mí mismo en _can_see_activity).
+            // Fuera mi propia presencia: ya salgo como `ownPoint` (los relés también
+            // devuelven mi propio estado «escuchando»).
             .filter { it.userId != "self" && it.userId != myUserId }
             .map {
                 // La etiqueta lleva la canción REAL del amigo, no solo su nombre.
@@ -613,13 +590,9 @@ fun MusicMapScreen(navController: NavController) {
                             setShareLocation(false)
                             OmegaMathIntegration.shareLocation = false
                             ownLatLng = null
-                        } else if (hasLocationPermission(context)) {
-                            setShareLocation(true)
+                        } else if (MusicMapLocation.hasPermission(context)) {
+                            setShareLocation(true) // LaunchedEffect(shareLocation) pide la ubicación
                             OmegaMathIntegration.shareLocation = true
-                            ownLatLng = lastKnownLocation(context)?.also {
-                                OmegaMathIntegration.latitude = it.first
-                                OmegaMathIntegration.longitude = it.second
-                            }
                         } else {
                             locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                         }
@@ -840,33 +813,6 @@ private val NIGHT_MATRIX = floatArrayOf(
     0f, 0f, -1f, 0f, 255f,
     0f, 0f, 0f, 1f, 0f,
 )
-
-private fun hasLocationPermission(context: Context): Boolean =
-    ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
-        PackageManager.PERMISSION_GRANTED ||
-        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
-        PackageManager.PERMISSION_GRANTED
-
-@SuppressLint("MissingPermission")
-private fun lastKnownLocation(context: Context): Pair<Double, Double>? {
-    if (!hasLocationPermission(context)) return null
-    val lm = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return null
-    val providers = listOf(
-        LocationManager.GPS_PROVIDER,
-        LocationManager.NETWORK_PROVIDER,
-        LocationManager.PASSIVE_PROVIDER,
-    )
-    for (provider in providers) {
-        try {
-            if (lm.isProviderEnabled(provider)) {
-                lm.getLastKnownLocation(provider)?.let { return it.latitude to it.longitude }
-            }
-        } catch (_: SecurityException) {
-        } catch (_: Exception) {
-        }
-    }
-    return null
-}
 
 private suspend fun loadCoverBitmap(context: Context, url: String): Bitmap? = try {
     val request = ImageRequest.Builder(context)

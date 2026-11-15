@@ -8,6 +8,11 @@
 
 package com.dezzy.music.viewmodels
 
+import java.time.temporal.ChronoUnit
+import java.time.YearMonth
+import com.dezzy.music.ui.screens.StatsListening
+import com.dezzy.music.ui.screens.StatsBucket
+import com.dezzy.music.db.entities.EventPlayTime
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dezzy.music.innertube.YouTube
@@ -155,6 +160,29 @@ constructor(
                     }
             }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
+    /** Tiempo escuchado del periodo y su reparto en barras (tarjeta héroe de Estadísticas). */
+    val listening =
+        combine(
+            selectedOption,
+            indexChips,
+        ) { first, second -> Pair(first, second) }
+            .flatMapLatest { (selection, t) ->
+                val from = statToPeriod(selection, t)
+                val to =
+                    if (selection == OptionStats.CONTINUOUS || t == 0) {
+                        LocalDateTime.now().toInstant(ZoneOffset.UTC).toEpochMilli()
+                    } else {
+                        statToPeriod(selection, t - 1)
+                    }
+                database
+                    .eventPlayTimes(from, to)
+                    .map { events -> bucketListening(events, from, to) }
+                    .catch { e ->
+                        reportException(e)
+                        emit(StatsListening())
+                    }
+            }.stateIn(viewModelScope, SharingStarted.Lazily, StatsListening())
+
     val firstEvent =
         database
             .firstEvent()
@@ -212,4 +240,67 @@ constructor(
             }
         }
     }
+}
+
+private val StatsDayInitials = listOf("L", "M", "X", "J", "V", "S", "D")
+private val StatsMonthInitials = listOf("E", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")
+
+/**
+ * Reparte el tiempo escuchado en barras según la duración del periodo:
+ * hasta 8 días → por día; hasta 35 → por semana (S1…S5); más → por mes (máx. 12).
+ * Los timestamps se guardan como hora local codificada en UTC (ver Converters).
+ */
+private fun bucketListening(
+    events: List<EventPlayTime>,
+    from: Long,
+    to: Long,
+): StatsListening {
+    fun List<EventPlayTime>.time() = sumOf { it.playTime.coerceAtLeast(0L) }
+
+    val total = events.time()
+    if (events.isEmpty()) return StatsListening(totalMs = total)
+
+    val end = LocalDateTime.ofEpochSecond((to - 1).coerceAtLeast(0L) / 1000, 0, ZoneOffset.UTC).toLocalDate()
+    val start = if (from > 0) LocalDateTime.ofEpochSecond(from / 1000, 0, ZoneOffset.UTC).toLocalDate() else null
+    val spanDays = start?.let { ChronoUnit.DAYS.between(it, end) + 1 } ?: Long.MAX_VALUE
+
+    val buckets = when {
+        spanDays <= 8 -> {
+            val byDay = events.groupBy { it.timestamp.toLocalDate() }
+            (0L until minOf(spanDays, 7L))
+                .map { end.minusDays(it) }
+                .reversed()
+                .map { day -> StatsBucket(StatsDayInitials[day.dayOfWeek.value - 1], byDay[day].orEmpty().time()) }
+        }
+
+        spanDays <= 35 -> {
+            val first = start ?: end
+            val count = ((spanDays + 6) / 7).toInt().coerceIn(1, 5)
+            (0 until count).map { i ->
+                val weekStart = first.plusDays(7L * i)
+                val weekEnd = weekStart.plusDays(7)
+                val inWeek = events.filter {
+                    val day = it.timestamp.toLocalDate()
+                    !day.isBefore(weekStart) && day.isBefore(weekEnd)
+                }
+                StatsBucket("S${i + 1}", inWeek.time())
+            }
+        }
+
+        else -> {
+            val endMonth = YearMonth.from(end)
+            val startMonth = start?.let { YearMonth.from(it) }
+            val months =
+                if (startMonth != null && ChronoUnit.MONTHS.between(startMonth, endMonth) < 12) {
+                    generateSequence(startMonth) { it.plusMonths(1) }
+                        .takeWhile { !it.isAfter(endMonth) }
+                        .toList()
+                } else {
+                    (11L downTo 0L).map { endMonth.minusMonths(it) }
+                }
+            val byMonth = events.groupBy { YearMonth.from(it.timestamp) }
+            months.map { month -> StatsBucket(StatsMonthInitials[month.monthValue - 1], byMonth[month].orEmpty().time()) }
+        }
+    }
+    return StatsListening(totalMs = total, buckets = buckets)
 }

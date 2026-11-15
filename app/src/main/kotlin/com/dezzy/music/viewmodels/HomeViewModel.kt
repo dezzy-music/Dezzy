@@ -24,6 +24,7 @@ import com.dezzy.music.innertube.utils.parseCookieString
 import com.dezzy.music.constants.HideExplicitKey
 import com.dezzy.music.constants.HideVideoKey
 import com.dezzy.music.constants.InnerTubeCookieKey
+import com.dezzy.music.security.SessionCrypto
 import com.dezzy.music.constants.QuickPicks
 import com.dezzy.music.constants.QuickPicksKey
 import com.dezzy.music.constants.SpeedDialSongIdsKey
@@ -42,6 +43,8 @@ import com.dezzy.music.utils.SyncUtils
 import com.dezzy.music.utils.reportException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.dezzy.music.spotify.SpotifyFeatures
+import com.dezzy.music.spotify.SpotifyTrack
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -71,6 +74,11 @@ class HomeViewModel @Inject constructor(
     val similarRecommendations = MutableStateFlow<List<SimilarRecommendation>?>(null)
     val accountPlaylists = MutableStateFlow<List<PlaylistItem>?>(null)
     val homePage = MutableStateFlow<HomePage?>(null)
+
+    // Ajustes > Spotify > Usar para la pantalla de inicio / Exclusivo de inicio.
+    val spotifyTopTracks = MutableStateFlow<List<SpotifyTrack>>(emptyList())
+    val spotifyRecentLikes = MutableStateFlow<List<SpotifyTrack>>(emptyList())
+    val spotifyHomeOnly = MutableStateFlow(false)
     val explorePage = MutableStateFlow<ExplorePage?>(null)
     val selectedChip = MutableStateFlow<HomePage.Chip?>(null)
     private val previousHomePage = MutableStateFlow<HomePage?>(null)
@@ -265,6 +273,20 @@ class HomeViewModel @Inject constructor(
         speedDialSongs.value = speedDialIds.mapNotNull { songsById[it] }
     }
 
+    private suspend fun loadSpotifyHome() {
+        if (!SpotifyFeatures.homeEnabled(context)) {
+            spotifyHomeOnly.value = false
+            spotifyTopTracks.value = emptyList()
+            spotifyRecentLikes.value = emptyList()
+            return
+        }
+        spotifyHomeOnly.value = SpotifyFeatures.homeOnly(context)
+        supervisorScope {
+            launch { spotifyTopTracks.value = SpotifyFeatures.topTracks(context, database) }
+            launch { spotifyRecentLikes.value = SpotifyFeatures.recentLikes() }
+        }
+    }
+
     private suspend fun load() {
         if (isLoading.value) return
         isLoading.value = true
@@ -277,6 +299,7 @@ class HomeViewModel @Inject constructor(
 
                 launch { getQuickPicks() }
                 launch { loadSpeedDialSongs() }
+                launch { loadSpotifyHome() }
                 launch { forgottenFavorites.value = database.forgottenFavorites().first().shuffled().take(20) }
                 
                 launch {
@@ -466,7 +489,7 @@ class HomeViewModel @Inject constructor(
             
             isProcessingAccountData = true
             try {
-                val cookie = context.dataStore.get(InnerTubeCookieKey, "")
+                val cookie = SessionCrypto.decrypt(context.dataStore.get(InnerTubeCookieKey, ""))
                 if (cookie.isNotEmpty()) {
                     YouTube.cookie = cookie
                     
@@ -529,13 +552,14 @@ class HomeViewModel @Inject constructor(
                     isProcessingAccountData = true
                     
                     try {
-                        val isLoggedIn = cookie?.let { "SAPISID" in parseCookieString(it) } ?: false
+                        val decryptedCookie = cookie?.let { SessionCrypto.decrypt(it) }
+                        val isLoggedIn = decryptedCookie?.let { "SAPISID" in parseCookieString(it) } ?: false
                         val loginTransition = isLoggedIn && !wasLoggedIn
                         wasLoggedIn = isLoggedIn
                         
-                        if (isLoggedIn && cookie != null && cookie.isNotEmpty()) {
+                        if (isLoggedIn && decryptedCookie != null && decryptedCookie.isNotEmpty()) {
                             try {
-                                YouTube.cookie = cookie
+                                YouTube.cookie = decryptedCookie
                             } catch (e: Exception) {
                                 timber.log.Timber.e(e, "Failed to set YouTube cookie")
                                 return@collect

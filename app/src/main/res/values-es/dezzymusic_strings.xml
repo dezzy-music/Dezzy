@@ -308,4 +308,5 @@
     <string name="video_keep_mode_desc">Seguir en modo video al cambiar de canción</string>
     <string name="cast_video">Castear video</string>
     <string name="cast_video_desc">Enviar el video musical (no solo el audio) al castear</string>
+    <string name="social_tab">Social</string>
 </resources>

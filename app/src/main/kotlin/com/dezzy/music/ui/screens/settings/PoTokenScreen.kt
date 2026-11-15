@@ -79,7 +79,6 @@ import com.dezzy.music.constants.InnerTubeCookieKey
 import com.dezzy.music.constants.PoTokenGvsKey
 import com.dezzy.music.constants.PoTokenPlayerKey
 import com.dezzy.music.constants.PoTokenSourceUrlKey
-import com.dezzy.music.constants.UseVisitorDataKey
 import com.dezzy.music.constants.VisitorDataKey
 import com.dezzy.music.constants.WebClientPoTokenEnabledKey
 import com.dezzy.music.ui.component.IconButton
@@ -111,10 +110,6 @@ fun PoTokenScreen(
 
     var (webClientPoTokenEnabled, onWebClientPoTokenEnabledChange) = rememberPreference(
         WebClientPoTokenEnabledKey,
-        defaultValue = false
-    )
-    var (useVisitorData, onUseVisitorDataChange) = rememberPreference(
-        UseVisitorDataKey,
         defaultValue = false
     )
     var (sourceUrl, onSourceUrlChange) = rememberPreference(
@@ -191,10 +186,8 @@ fun PoTokenScreen(
                 // Generating a PoToken is useless unless it is actually applied to
                 // playback requests. Without these flags the token stays gated off
                 // (PlaybackAuthState.resolvePlayerPoToken/resolveGvsPoToken return null),
-                // so YouTube keeps rejecting streams with bot detection. The token is
-                // minted against visitorData, so playback must use it too.
+                // so YouTube keeps rejecting streams with bot detection.
                 if (!webClientPoTokenEnabled) onWebClientPoTokenEnabledChange(true)
-                if (!useVisitorData) onUseVisitorDataChange(true)
                 Toast.makeText(context, R.string.tokens_generated, Toast.LENGTH_SHORT).show()
             }
             is PoTokenState.Error -> {
@@ -371,24 +364,6 @@ fun PoTokenScreen(
 
                 PreferenceGroupTitle(
                     title = stringResource(R.string.token_settings)
-                )
-
-                SwitchPreference(
-                    title = { Text(stringResource(R.string.use_visitor_data)) },
-                    description = stringResource(R.string.use_visitor_data_desc),
-                    icon = { Icon(painterResource(R.drawable.person), null) },
-                    checked = useVisitorData,
-                    onCheckedChange = { enabled ->
-                        if (enabled && hasCookie) {
-                            Toast.makeText(
-                                context,
-                                R.string.cookies_must_be_disabled,
-                                Toast.LENGTH_LONG
-                            ).show()
-                        } else {
-                            onUseVisitorDataChange(enabled)
-                        }
-                    },
                 )
 
                 Spacer(Modifier.height(12.dp))

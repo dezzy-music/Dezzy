@@ -99,6 +99,7 @@ import com.dezzy.music.MainActivity
 import com.dezzy.music.R
 import com.dezzy.music.constants.AudioNormalizationKey
 import com.dezzy.music.constants.AudioOffload
+import com.dezzy.music.constants.HighResEngineEnabledKey
 import com.dezzy.music.constants.AudioCrossfadeDurationKey
 import com.dezzy.music.constants.AudioQualityKey
 import com.dezzy.music.constants.AutoLoadMoreKey
@@ -106,6 +107,7 @@ import com.dezzy.music.constants.AutoDownloadOnLikeKey
 import com.dezzy.music.constants.AutoSkipNextOnErrorKey
 import com.dezzy.music.constants.AutoStartOnBluetoothKey
 import com.dezzy.music.constants.InnerTubeCookieKey
+import com.dezzy.music.security.SessionCrypto
 import com.dezzy.music.constants.DiscordTokenKey
 import com.dezzy.music.constants.EqualizerBandLevelsMbKey
 import com.dezzy.music.constants.EqualizerBassBoostEnabledKey
@@ -447,78 +449,29 @@ class MusicService :
             }.getOrDefault(com.dezzy.music.constants.VideoQuality.P720).maxHeight
             val currentTitle = player.mediaMetadata.title?.toString()
             val currentArtist = player.mediaMetadata.artist?.toString()
-            val result = withContext(Dispatchers.IO) {
-                val poToken = com.dezzy.music.innertube.YouTube.poTokenPlayer
-                    ?: com.dezzy.music.innertube.YouTube.poTokenMinter?.invoke(mediaId)
-                    ?: com.dezzy.music.innertube.YouTube.poTokenGvs
-                    ?: com.dezzy.music.innertube.YouTube.poToken
-                val visitorData = com.dezzy.music.innertube.YouTube.visitorData
-
-                // 1. Ultra-fast native Rust video resolver (direct unthrottled streams)
-                val nativeResolved = com.dezzy.music.utils.NativeVideoResolver.resolveVideo(
-                    videoId = mediaId,
-                    maxHeight = maxHeight,
-                    poToken = poToken,
-                    visitorData = visitorData,
-                )
-                if (nativeResolved != null && nativeResolved.success && nativeResolved.videoUrl != null) {
-                    android.util.Log.i("MusicService", "Resolved video instantaneously via native Rust: isMuxed=${nativeResolved.isMuxed}, height=${nativeResolved.height}")
-                    return@withContext Result.success(com.dezzy.music.utils.NativeVideoResolver.toVideoPlaybackData(nativeResolved))
-                }
-
-                val query = if (!currentTitle.isNullOrBlank()) "$currentTitle $currentArtist".trim() else null
-                val searchVidId = if (!query.isNullOrBlank()) {
-                    runCatching {
-                        val searchRes = com.dezzy.music.innertube.YouTube.search(
-                            query = query,
-                            filter = com.dezzy.music.innertube.YouTube.SearchFilter.FILTER_VIDEO
-                        ).getOrNull()
-                        searchRes?.items?.firstOrNull()?.id
-                    }.getOrNull()
-                } else null
-
-                if (!searchVidId.isNullOrBlank() && searchVidId != mediaId) {
-                    val searchPoToken = com.dezzy.music.innertube.YouTube.poTokenPlayer
-                        ?: com.dezzy.music.innertube.YouTube.poTokenMinter?.invoke(searchVidId)
-                        ?: poToken
-                    val nativeSearchResolved = com.dezzy.music.utils.NativeVideoResolver.resolveVideo(
-                        videoId = searchVidId,
-                        maxHeight = maxHeight,
-                        poToken = searchPoToken,
-                        visitorData = visitorData,
-                    )
-                    if (nativeSearchResolved != null && nativeSearchResolved.success && nativeSearchResolved.videoUrl != null) {
-                        android.util.Log.i("MusicService", "Resolved video search ($searchVidId) instantaneously via native Rust")
-                        return@withContext Result.success(com.dezzy.music.utils.NativeVideoResolver.toVideoPlaybackData(nativeSearchResolved))
-                    }
-                }
-
-                val isValidUrl: suspend (String) -> Boolean = { url ->
-                    android.util.Log.w("MusicService", "isValidUrl bypassed for $url")
-                    true
-                }
-                val direct = YTPlayerUtils.videoPlaybackDataForPlayback(mediaId, maxHeight = maxHeight, isValidUrl = isValidUrl)
-                if (direct.isSuccess) {
-                    direct
-                } else if (!searchVidId.isNullOrBlank()) {
-                    YTPlayerUtils.videoPlaybackDataForPlayback(searchVidId, maxHeight = maxHeight, isValidUrl = isValidUrl)
-                } else {
-                    direct
-                }
-            }
+            val durationSec = player.duration.takeIf { it > 0 }?.let { (it / 1000L).toInt() }
+            // Resolvedor propio (VISIONOS + HLS): resuelve en el dispositivo, con caché,
+            // deduplicación y emparejamiento canción→videoclip persistente.
+            val result = com.dezzy.music.video.MusicVideoResolver.resolveForSong(
+                context = this@MusicService,
+                mediaId = mediaId,
+                title = currentTitle,
+                artist = currentArtist,
+                durationSec = durationSec,
+                maxHeight = maxHeight,
+            )
             videoModeLoading.value = false
-            result.onSuccess { data ->
+            result.onSuccess { video ->
                 // The song changed while we were resolving — don't attach a stale video.
                 if (player.currentMediaItem?.mediaId != mediaId) return@onSuccess
                 val finalPositionMs = player.currentPosition
                 val finalWasPlaying = player.playWhenReady
-                val vidUrl = data.streamUrl ?: data.adaptiveVideoUrl ?: return@onSuccess
-                startVideoPlayer(vidUrl, data.adaptiveAudioUrl, finalPositionMs, finalWasPlaying)
                 videoModeMediaId = mediaId
                 videoModeActive.value = true
+                startResolvedVideo(video, finalPositionMs, finalWasPlaying, maxHeight)
             }.onFailure { e ->
-                videoModeError.value = "No hay video musical disponible para esta canción."
-                reportException(e)
+                videoModeError.value = com.dezzy.music.video.MusicVideoResolver.userMessageFor(e)
+                if (e !is com.dezzy.music.video.MusicVideoResolver.VideoError) reportException(e)
             }
         }
     }
@@ -609,36 +562,105 @@ class MusicService :
         }
     }
 
-    private fun startVideoPlayer(videoUrl: String, audioUrl: String?, positionMs: Long, autoPlay: Boolean) {
+    /** Reproduce un videoclip resuelto: HLS primero y, si falla, los streams progresivos. */
+    private fun startResolvedVideo(
+        video: com.dezzy.music.video.MusicVideoResolver.ResolvedVideo,
+        positionMs: Long,
+        autoPlay: Boolean,
+        maxHeight: Int,
+        skipHls: Boolean = false,
+    ) {
+        val useHls = !skipHls && video.hlsUrl != null
+        val progressiveUrl = video.videoUrl ?: video.muxedUrl
+        val url = (if (useHls) video.hlsUrl else progressiveUrl) ?: run {
+            videoModeError.value = "No se puede reproducir este videoclip."
+            disableVideoMode()
+            return
+        }
+        val audioUrl = if (!useHls && url == video.videoUrl) video.audioUrl else null
+        val retryProgressive: (Long, Boolean) -> Unit = { resumeAt, resumePlay ->
+            if (videoModeActive.value) {
+                startResolvedVideo(video, resumeAt, resumePlay, maxHeight, skipHls = true)
+            }
+        }
+        startVideoPlayer(
+            videoUrl = url,
+            audioUrl = audioUrl,
+            positionMs = positionMs,
+            autoPlay = autoPlay,
+            isHls = useHls,
+            maxHeight = maxHeight,
+            resolvedVideoId = video.videoId,
+            onFatalError = retryProgressive.takeIf { useHls && progressiveUrl != null },
+        )
+    }
+
+    private fun startVideoPlayer(
+        videoUrl: String,
+        audioUrl: String?,
+        positionMs: Long,
+        autoPlay: Boolean,
+        isHls: Boolean = false,
+        maxHeight: Int = Int.MAX_VALUE,
+        resolvedVideoId: String? = null,
+        onFatalError: ((Long, Boolean) -> Unit)? = null,
+    ) {
         stopVideoPlayerInternal()
         player.pause()
-        
-        val dataSourceFactory = createCacheDataSource()
-        
-        videoPlayer = ExoPlayer.Builder(this)
-            .setMediaSourceFactory(androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSourceFactory))
-            .build().apply {
-            addListener(object : Player.Listener {
-                override fun onPlayerError(error: PlaybackException) {
-                    videoModeError.value = "Error al reproducir el video: ${error.errorCodeName}"
-                }
-            })
-            
-            if (audioUrl != null) {
-                val factory = androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSourceFactory)
-                val videoSource = factory.createMediaSource(MediaItem.fromUri(videoUrl))
-                
-                val audioSource = factory.createMediaSource(MediaItem.fromUri(audioUrl))
-                
-                setMediaSource(androidx.media3.exoplayer.source.MergingMediaSource(true, videoSource, audioSource))
-            } else {
-                setMediaItem(MediaItem.fromUri(videoUrl))
-            }
-            
-            prepare()
-            seekTo(positionMs)
-            playWhenReady = autoPlay
+
+        // Caché propia del modo video (filesDir/video_cache): nunca toca las cachés de audio.
+        val dataSourceFactory: DataSource.Factory = if (videoUrl.startsWith("http")) {
+            com.dezzy.music.video.MusicVideoCache.dataSourceFactory(this, videoDatabaseProvider)
+        } else {
+            DefaultDataSource.Factory(this)
         }
+        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
+        val trackSelector = androidx.media3.exoplayer.trackselection.DefaultTrackSelector(this).apply {
+            setParameters(buildUponParameters().setMaxVideoSize(Int.MAX_VALUE, maxHeight))
+        }
+
+        videoPlayer = ExoPlayer.Builder(this)
+            .setMediaSourceFactory(mediaSourceFactory)
+            .setTrackSelector(trackSelector)
+            .build().apply {
+                addListener(object : Player.Listener {
+                    override fun onPlayerError(error: PlaybackException) {
+                        resolvedVideoId?.let { com.dezzy.music.video.MusicVideoResolver.invalidate(it) }
+                        if (onFatalError != null) {
+                            val resumeAt = currentPosition
+                            val resumePlay = playWhenReady
+                            // Diferido: no se libera un reproductor dentro de su propio callback.
+                            scope.launch { onFatalError(resumeAt, resumePlay) }
+                            return
+                        }
+                        videoModeError.value = "No se pudo reproducir el videoclip (${error.errorCodeName})."
+                    }
+                })
+
+                val videoItem = if (isHls) {
+                    MediaItem.Builder()
+                        .setUri(videoUrl)
+                        .setMimeType(androidx.media3.common.MimeTypes.APPLICATION_M3U8)
+                        .build()
+                } else {
+                    MediaItem.fromUri(videoUrl)
+                }
+                if (audioUrl != null) {
+                    setMediaSource(
+                        androidx.media3.exoplayer.source.MergingMediaSource(
+                            true,
+                            mediaSourceFactory.createMediaSource(videoItem),
+                            mediaSourceFactory.createMediaSource(MediaItem.fromUri(audioUrl)),
+                        ),
+                    )
+                } else {
+                    setMediaItem(videoItem)
+                }
+
+                prepare()
+                seekTo(positionMs)
+                playWhenReady = autoPlay
+            }
         videoPlayerInstance.value = videoPlayer
     }
 
@@ -691,6 +713,9 @@ class MusicService :
     @Inject
     @DownloadCache
     lateinit var downloadCache: Cache
+
+    @Inject
+    lateinit var videoDatabaseProvider: androidx.media3.database.DatabaseProvider
 
     lateinit var player: ExoPlayer
     /** Thread-safe snapshot of player.repeatMode for use from loader/IO threads. */
@@ -791,23 +816,19 @@ class MusicService :
                     ),
                 )
             }.getOrDefault(com.dezzy.music.constants.VideoQuality.P720).maxHeight
-            YTPlayerUtils.videoPlaybackDataForPlayback(mediaId, maxHeight = maxHeight, isValidUrl = { url ->
-                try {
-                    val request = okhttp3.Request.Builder().url(url).get().header("Range", "bytes=0-0").build()
-                    val response = mediaOkHttpClient.newCall(request).execute()
-                    response.use { it.isSuccessful }
-                } catch (e: Exception) {
-                    false
-                }
-            })
+            com.dezzy.music.video.MusicVideoResolver
+                .resolveForSong(
+                    context = this,
+                    mediaId = mediaId,
+                    title = null,
+                    artist = null,
+                    durationSec = null,
+                    maxHeight = maxHeight,
+                )
                 .getOrNull()
-                ?.let { video ->
-                    video.streamUrl?.let { url ->
-                        return com.dezzy.music.playback.cast.CastSessionController.ResolvedStream(
-                            url,
-                            "video/mp4",
-                        )
-                    }
+                ?.castStream()
+                ?.let { (url, mimeType) ->
+                    return com.dezzy.music.playback.cast.CastSessionController.ResolvedStream(url, mimeType)
                 }
         }
 
@@ -2290,6 +2311,10 @@ class MusicService :
     ) {
         val joined = togetherSessionState.value as? com.dezzy.music.together.TogetherSessionState.Joined
         if (!isTogetherApplyingRemote() && joined?.role is com.dezzy.music.together.TogetherRole.Guest) {
+            if (joined.roomState.settings.djModeEnabled) {
+                showTogetherNotice("Modo DJ activo: solo el anfitrión decide qué se reproduce", key = "GUEST_DJ_MODE_BLOCKED")
+                return
+            }
             if (!joined.roomState.settings.allowGuestsToControlPlayback) {
                 showTogetherNotice(getString(R.string.not_allowed), key = "GUEST_PLAYQUEUE_DISABLED")
                 return
@@ -2447,17 +2472,28 @@ class MusicService :
     }
 
     private fun applyCurrentFirstShuffleOrder() {
-        val count = player.mediaItemCount
-        if (count <= 1) return
-        val currentIndex = player.currentMediaItemIndex.coerceIn(0, count - 1)
-        val shuffledIndices = IntArray(count) { it }
-        shuffledIndices.shuffle()
-        val currentPos = shuffledIndices.indexOf(currentIndex)
-        if (currentPos >= 0) {
-            shuffledIndices[currentPos] = shuffledIndices[0]
+        try {
+            val timeline = player.currentTimeline
+            val count = timeline.windowCount
+            if (count <= 1) return
+            val currentIndex = player.currentMediaItemIndex.coerceIn(0, count - 1)
+            val shuffledIndices = IntArray(count) { it }
+            shuffledIndices.shuffle()
+            val currentPos = shuffledIndices.indexOf(currentIndex)
+            if (currentPos >= 0) {
+                shuffledIndices[currentPos] = shuffledIndices[0]
+            }
+            shuffledIndices[0] = currentIndex
+            player.setShuffleOrder(DefaultShuffleOrder(shuffledIndices, System.currentTimeMillis()))
+        } catch (e: Exception) {
+            Timber.e(e, "Safe fallback for shuffle order")
+            try {
+                val safeCount = player.mediaItemCount
+                if (safeCount > 0) {
+                    player.setShuffleOrder(DefaultShuffleOrder(safeCount))
+                }
+            } catch (_: Exception) {}
         }
-        shuffledIndices[0] = currentIndex
-        player.setShuffleOrder(DefaultShuffleOrder(shuffledIndices, System.currentTimeMillis()))
     }
 
     fun startRadioSeamlessly() {
@@ -2926,7 +2962,7 @@ class MusicService :
             client.createRoom(
                 displayName.trim().ifBlank { getString(R.string.app_name) },
                 isPublic = settings.isPublic,
-                theme = settings.theme.name
+                theme = settings.customTheme?.ifBlank { null } ?: settings.theme.name
             )
             
             togetherClientEventsJob?.cancel()
@@ -3192,6 +3228,11 @@ class MusicService :
             }
             return
         }
+
+        // Ya estás en esa sala (como anfitrión o invitado): no te vuelvas a unir. Unirse otra vez
+        // por el mismo socket borraba la sesión de anfitrión y la sala se quedaba sin host.
+        val currentRoom = com.dezzy.music.together.currentTogetherRoom(togetherSessionState.value)
+        if (currentRoom != null && currentRoom.code.equals(trimmedCode, ignoreCase = true)) return
 
         scope.launch(SilentHandler) {
             togetherSessionState.value = com.dezzy.music.together.TogetherSessionState.JoiningOnline(trimmedCode)
@@ -3598,6 +3639,11 @@ class MusicService :
         val client = com.dezzy.music.listentogether.ListenTogetherClient.getInstance() ?: return
         val state = togetherSessionState.value as? com.dezzy.music.together.TogetherSessionState.Joined ?: return
         if (state.role !is com.dezzy.music.together.TogetherRole.Guest) return
+        if (state.roomState.settings.djModeEnabled) {
+            Timber.tag("Together").i("control blocked: DJ mode active")
+            showTogetherNotice("Modo DJ activo: solo el anfitrión decide qué se reproduce", key = "GUEST_DJ_MODE_LOCAL")
+            return
+        }
         if (!state.roomState.settings.allowGuestsToControlPlayback) {
             Timber.tag("Together").i("control blocked locally")
             showTogetherNotice(getString(R.string.not_allowed), key = "GUEST_CONTROL_DISABLED_LOCAL")
@@ -4091,6 +4137,9 @@ class MusicService :
                     when (payload.action) {
                         com.dezzy.music.listentogether.PlaybackActions.PLAY -> {
                             togetherTargetHostIsPlaying = true
+                            cancelIdleStop()
+                            promoteToStartedService()
+                            ensureStartedAsForeground()
                             payload.position?.let { pos ->
                                 if (kotlin.math.abs(player.currentPosition - pos) > 1500) player.seekTo(pos)
                             }
@@ -4122,21 +4171,57 @@ class MusicService :
                             val currentId = player.currentMetadata?.id
                             togetherTargetHostIsPlaying = true
                             togetherPendingInitialSync = true
-                            if (currentId == ti.id) {
-                                payload.position?.let { pos ->
-                                    if (kotlin.math.abs(player.currentPosition - pos) > 1000) player.seekTo(pos)
+                            cancelIdleStop()
+                            promoteToStartedService()
+                            ensureStartedAsForeground()
+
+                            val mediaItem = ti.toMediaMetadata().toMediaItem()
+                            val pos = payload.position ?: 0L
+
+                            if (currentId == ti.id && player.mediaItemCount > 0) {
+                                if (kotlin.math.abs(player.currentPosition - pos) > 1000) {
+                                    player.seekTo(pos)
                                 }
+                                if (player.playbackState == Player.STATE_IDLE) {
+                                    player.prepare()
+                                }
+                                togetherLastRemoteAppliedPlayWhenReady = true
+                                player.playWhenReady = true
                                 return@withContext
                             }
+
                             suppressAutoPlayback = false
+                            currentQueue = com.dezzy.music.playback.queues.ListQueue(
+                                title = getString(R.string.music_together),
+                                items = listOf(mediaItem),
+                                startIndex = 0,
+                                position = pos
+                            )
+                            queueTitle = null
                             player.setMediaItems(
-                                listOf(ti.toMediaMetadata().toMediaItem()),
+                                listOf(mediaItem),
                                 0,
-                                payload.position ?: 0L,
+                                pos,
                             )
                             player.prepare()
                             togetherLastRemoteAppliedPlayWhenReady = true
                             player.playWhenReady = true
+                        }
+
+                        com.dezzy.music.listentogether.PlaybackActions.SET_REPEAT_MODE -> {
+                            payload.repeatMode?.let { rm ->
+                                val safeMode = when (rm) {
+                                    Player.REPEAT_MODE_OFF, Player.REPEAT_MODE_ONE, Player.REPEAT_MODE_ALL -> rm
+                                    else -> Player.REPEAT_MODE_OFF
+                                }
+                                if (player.repeatMode != safeMode) player.repeatMode = safeMode
+                            }
+                        }
+
+                        com.dezzy.music.listentogether.PlaybackActions.SET_SHUFFLE -> {
+                            payload.shuffleEnabled?.let { sh ->
+                                if (player.shuffleModeEnabled != sh) player.shuffleModeEnabled = sh
+                            }
                         }
 
                         com.dezzy.music.listentogether.PlaybackActions.QUEUE_ADD -> {
@@ -4749,11 +4834,13 @@ class MusicService :
             (System.currentTimeMillis() - togetherTargetHostTimestampMs).coerceAtLeast(0L)
         } else 0L
         val targetPos = togetherTargetHostPositionMs + elapsed
-        val delta = kotlin.math.abs(player.currentPosition - targetPos)
-        if (delta > 400L || togetherPendingInitialSync) {
+        val duration = player.duration
+        val clampedTargetPos = if (duration > 0) targetPos.coerceAtMost(duration) else targetPos
+        val delta = kotlin.math.abs(player.currentPosition - clampedTargetPos)
+        if (delta > 2000L || togetherPendingInitialSync) {
             togetherPendingInitialSync = false
             togetherApplyingRemote = true
-            player.seekTo(targetPos)
+            player.seekTo(clampedTargetPos)
             togetherApplyingRemote = false
         }
         if (player.playWhenReady != togetherTargetHostIsPlaying) {
@@ -5783,17 +5870,23 @@ class MusicService :
         }
     }
 
-    private fun createRenderersFactory() =
-        object : DefaultRenderersFactory(this) {
+    private fun createRenderersFactory(): DefaultRenderersFactory {
+        // Motor de audio Hi-Res (Ajustes > Reproductor): decodifica, procesa y
+        // envía el audio en PCM float de 32 bits (conserva FLAC de 24 bits y el
+        // ecualizador no recorta). Se lee al crear el reproductor.
+        val hiResEngine = dataStore.get(HighResEngineEnabledKey, false)
+        return object : DefaultRenderersFactory(this) {
             override fun buildAudioSink(
                 context: Context,
                 enableFloatOutput: Boolean,
                 enableAudioTrackPlaybackParams: Boolean,
             ) = DefaultAudioSink
                 .Builder(this@MusicService)
+                .setEnableFloatOutput(enableFloatOutput)
                 .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
                 .setAudioProcessorChain(
-                    DefaultAudioSink.DefaultAudioProcessorChain(
+                    if (enableFloatOutput) com.dezzy.music.audio.HiResAudioProcessorChain()
+                    else DefaultAudioSink.DefaultAudioProcessorChain(
                         arrayOf<androidx.media3.common.audio.AudioProcessor>(
                             com.dezzy.music.audio.DezzyBiquadAudioProcessor(),
                         ),
@@ -5807,7 +5900,8 @@ class MusicService :
                         SonicAudioProcessor(),
                     ),
                 ).build()
-        }
+        }.setEnableAudioFloatOutput(hiResEngine)
+    }
 
     // Salvaguarda de carátulas: URLs ya tratadas en esta sesión, para que una
     // carátula irrecuperable (p. ej. video borrado) no degenere en un bucle de
@@ -5950,7 +6044,7 @@ class MusicService :
 
     private suspend fun isRemoteHistorySyncAllowed(): Boolean {
         if (!dataStore.getAsync(YtmSyncKey, true)) return false
-        val cookie = dataStore.getAsync(InnerTubeCookieKey, "")
+        val cookie = SessionCrypto.decrypt(dataStore.getAsync(InnerTubeCookieKey, ""))
         return cookie.isNotBlank() && cookie.contains("SAPISID")
     }
 
@@ -6412,6 +6506,24 @@ class MusicService :
      */
     private fun publishSocialPresence() {
         val shareLocation = dataStore.get(MusicMapShareLocationKey, false)
+        if (shareLocation) com.dezzy.music.musicmap.MusicMapLocation.ensureRestored(this)
+        val mapLat = OmegaMathIntegration.latitude
+        val mapLng = OmegaMathIntegration.longitude
+        // Red social P2P: estado «escuchando ahora» (se borra al pausar). Si se comparte la
+        // ubicación, lleva también la celda de ~5 km del Mapa musical.
+        com.dezzy.music.p2p.P2PPresence.onNowPlaying(
+            currentMediaMetadata.value?.takeIf { player.isPlaying }?.let { m ->
+                com.dezzy.music.p2p.P2PSong(
+                    videoId = m.id,
+                    title = m.title,
+                    artist = m.artists.joinToString(", ") { it.name },
+                    thumbnail = m.thumbnailUrl,
+                    durationSec = m.duration.coerceAtLeast(0),
+                )
+            },
+            location = if (shareLocation && mapLat != null && mapLng != null) mapLat to mapLng else null,
+        )
+        // Supabase (cuentas antiguas): ya no recibe la ubicación; el mapa vive en P2P.
         PresencePublisher.publish(
             context = this,
             scope = scope,
@@ -6419,8 +6531,8 @@ class MusicService :
             isPlaying = player.isPlaying,
             positionMs = player.currentPosition,
             durationMs = player.duration.coerceAtLeast(0L),
-            lat = if (shareLocation) OmegaMathIntegration.latitude else null,
-            lng = if (shareLocation) OmegaMathIntegration.longitude else null,
+            lat = null,
+            lng = null,
         )
     }
 

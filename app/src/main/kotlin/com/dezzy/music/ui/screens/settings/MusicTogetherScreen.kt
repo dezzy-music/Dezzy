@@ -6,6 +6,10 @@
 
 package com.dezzy.music.ui.screens.settings
 
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.heading
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.foundation.BorderStroke
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Build
@@ -157,6 +161,7 @@ fun MusicTogetherScreen(
     var isPublicRoom by rememberSaveable { mutableStateOf(false) }
     var djModeEnabled by rememberSaveable { mutableStateOf(false) }
     var selectedTheme by rememberSaveable { mutableStateOf(TogetherRoomTheme.MIXED) }
+    var customThemeText by rememberSaveable { mutableStateOf("") }
 
     val sessionStateFlow = remember(playerConnection) {
         playerConnection?.service?.togetherSessionState ?: MutableStateFlow(TogetherSessionState.Idle)
@@ -424,6 +429,8 @@ fun MusicTogetherScreen(
                 djModeEnabled = djModeEnabled,
                 selectedTheme = selectedTheme,
                 onSelectedThemeChange = { selectedTheme = it },
+                customTheme = customThemeText,
+                onCustomThemeChange = { customThemeText = it },
                 onShowNameDialog = { showNameDialog = true },
                 onShowPortDialog = { showPortDialog = true },
                 onShowServerUrlDialog = { showServerUrlDialog = true },
@@ -449,6 +456,7 @@ fun MusicTogetherScreen(
                                 isPublic = isPublicRoom,
                                 djModeEnabled = djModeEnabled,
                                 theme = selectedTheme,
+                                customTheme = customThemeText.trim().ifBlank { null },
                             ),
                         )
                     }
@@ -459,37 +467,7 @@ fun MusicTogetherScreen(
             )
         }
 
-        // Join section
-        JoinSectionCard(
-            joinInput = joinInput,
-            onJoinInputChange = { joinInput = it },
-            canJoin = canJoin,
-            disableJoinUi = disableJoinUi,
-            isJoined = isJoinedAsAcceptedGuest,
-            isWaitingApproval = isWaitingApproval,
-            isJoining = isJoining,
-            onShowJoinDialog = { showJoinDialog = true },
-            onPasteFromClipboard = {
-                val text = clipboard.getText()?.text?.trim() ?: ""
-                if (text.isNotBlank()) {
-                    joinInput = text
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    // Auto-join if valid
-                    if (TogetherLink.decode(text) != null) {
-                        setLastJoinLink(text)
-                        playerConnection?.service?.joinTogether(text, displayName)
-                    }
-                }
-            },
-            onJoin = {
-                val trimmed = joinInput.trim()
-                setLastJoinLink(trimmed)
-                playerConnection?.service?.joinTogether(trimmed, displayName)
-            },
-            modifier = Modifier
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 16.dp),
-        )
+        // Join section moved to bottom navigation bar (PublicRoomsScreen supports both public & private rooms)
 
         // Explore public rooms — entry point to the public rooms browser.
         FilledTonalButton(
@@ -534,6 +512,8 @@ private fun HostSectionCard(
     djModeEnabled: Boolean,
     selectedTheme: TogetherRoomTheme,
     onSelectedThemeChange: (TogetherRoomTheme) -> Unit,
+    customTheme: String = "",
+    onCustomThemeChange: (String) -> Unit = {},
     onShowNameDialog: () -> Unit,
     onShowPortDialog: () -> Unit,
     onShowServerUrlDialog: () -> Unit,
@@ -600,30 +580,6 @@ private fun HostSectionCard(
                     )
                 }
 
-                // LAN badge
-                Surface(
-                    shape = RoundedCornerShape(50.dp),
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            painterResource(R.drawable.wifi),
-                            contentDescription = null,
-                            modifier = Modifier.size(13.dp),
-                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                        )
-                        Text(
-                            "LAN",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        )
-                    }
-                }
             }
 
             SettingsItemRow(
@@ -632,21 +588,7 @@ private fun HostSectionCard(
                 subtitle = displayName,
                 onClick = onShowNameDialog,
             )
-            Divider()
-            SettingsItemRow(
-                icon = R.drawable.link,
-                title = stringResource(R.string.together_port),
-                subtitle = port.toString(),
-                onClick = onShowPortDialog,
-            )
-            Divider()
-            SettingsItemRow(
-                icon = R.drawable.sync,
-                title = "Server URL",
-                subtitle = serverUrl,
-                onClick = onShowServerUrlDialog
-            )
-            Divider()
+            TogetherSectionLabel("Permisos")
             ToggleRow(
                 icon = R.drawable.playlist_add,
                 title = stringResource(R.string.together_allow_guests_add),
@@ -715,6 +657,26 @@ private fun HostSectionCard(
                             )
                         }
                     }
+                    Spacer(Modifier.height(8.dp))
+                    androidx.compose.material3.OutlinedTextField(
+                        value = customTheme,
+                        onValueChange = onCustomThemeChange,
+                        placeholder = { Text("O escribe un género personalizado...", style = MaterialTheme.typography.bodySmall) },
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                        ),
+                        trailingIcon = {
+                            if (customTheme.isNotBlank()) {
+                                androidx.compose.material3.IconButton(onClick = { onCustomThemeChange("") }) {
+                                    Icon(painterResource(R.drawable.close), contentDescription = null, modifier = Modifier.size(16.dp))
+                                }
+                            }
+                        }
+                    )
                 }
             }
             Divider()
@@ -724,6 +686,36 @@ private fun HostSectionCard(
                 checked = djModeEnabled,
                 onCheckedChange = onDjModeEnabledChange,
             )
+
+            var showAdvanced by rememberSaveable { mutableStateOf(false) }
+            TogetherSectionLabel("Avanzado")
+            SettingsItemRow(
+                icon = R.drawable.tune,
+                title = "Opciones avanzadas",
+                subtitle = "Puerto, servidor y red local (LAN)",
+                onClick = { showAdvanced = !showAdvanced },
+            )
+            AnimatedVisibility(
+                visible = showAdvanced,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                Column {
+                    SettingsItemRow(
+                        icon = R.drawable.link,
+                        title = stringResource(R.string.together_port),
+                        subtitle = port.toString(),
+                        onClick = onShowPortDialog,
+                    )
+                    Divider()
+                    SettingsItemRow(
+                        icon = R.drawable.sync,
+                        title = "Server URL",
+                        subtitle = serverUrl,
+                        onClick = onShowServerUrlDialog,
+                    )
+                }
+            }
 
             Spacer(Modifier.height(8.dp))
 
@@ -1066,19 +1058,15 @@ private fun StatusCard(
         else     -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 
-    Card(
+    Column(
         modifier = modifier
             .fillMaxWidth()
             .animateContentSize(spring(stiffness = Spring.StiffnessMediumLow)),
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
                 .background(
                     Brush.horizontalGradient(
                         if (isActive && !isError)
@@ -1098,7 +1086,7 @@ private fun StatusCard(
                             )
                     )
                 )
-                .padding(18.dp),
+                .padding(horizontal = 16.dp, vertical = 14.dp),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 // Status row
@@ -1163,49 +1151,22 @@ private fun StatusCard(
                         )
                     }
                 }
-                if (isActive) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        FilledTonalButton(
-                            onClick = onOpenChat,
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(painterResource(R.drawable.lyrics), null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text("Chat", fontWeight = FontWeight.SemiBold)
-                        }
-                        FilledTonalButton(
-                            onClick = onLeave,
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(painterResource(R.drawable.leave), null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text(stringResource(R.string.leave), fontWeight = FontWeight.SemiBold)
-                        }
-                    }
-                }
-
                 // Inline content
                 when (state) {
                     is TogetherSessionState.Hosting -> {
-                        LanSessionLinkCard(
-                            link = state.joinLink,
-                            localAddressHint = state.localAddressHint,
-                            port = state.port,
+                        TogetherRoomCodeCard(
+                            code = state.joinLink,
+                            isLink = true,
+                            addressHint = state.localAddressHint?.let { "$it:${state.port}" },
                             onCopy  = { onCopyLink(state.joinLink) },
                             onShare = { onShareLink(state.joinLink) },
                         )
                     }
                     is TogetherSessionState.HostingOnline -> {
-                        LanSessionLinkCard(
-                            link = state.code,
-                            localAddressHint = null,
-                            port = 0,
+                        TogetherRoomCodeCard(
+                            code = state.code,
+                            isLink = false,
+                            addressHint = null,
                             onCopy  = { onCopyLink(state.code) },
                             onShare = { onShareLink(state.code) },
                         )
@@ -1234,6 +1195,43 @@ private fun StatusCard(
                         }
                     }
                     else -> Unit
+                }
+
+                if (isActive) {
+                    val isHostState = state is TogetherSessionState.Hosting ||
+                            state is TogetherSessionState.HostingOnline ||
+                            (state as? TogetherSessionState.Joined)?.role is TogetherRole.Host
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        FilledTonalButton(
+                            onClick = onOpenChat,
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Icon(painterResource(R.drawable.lyrics), null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Chat", fontWeight = FontWeight.SemiBold)
+                        }
+                        OutlinedButton(
+                            onClick = onLeave,
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error,
+                            ),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.6f)),
+                        ) {
+                            Icon(painterResource(R.drawable.leave), null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                if (isHostState) "Terminar sala" else stringResource(R.string.leave),
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -1382,139 +1380,36 @@ private fun OnlineParticipantsCard(
     onBan: (participantId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(
+    Column(
         modifier = modifier
             .fillMaxWidth()
             .animateContentSize(spring(stiffness = Spring.StiffnessMediumLow)),
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
-        Column(modifier = Modifier.padding(vertical = 8.dp)) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 18.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(
-                            Brush.linearGradient(
-                                listOf(
-                                    MaterialTheme.colorScheme.tertiary.copy(alpha = 0.18f),
-                                    MaterialTheme.colorScheme.tertiary.copy(alpha = 0.08f),
-                                )
-                            )
-                        ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        painterResource(R.drawable.list),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.tertiary,
-                        modifier = Modifier.size(22.dp),
-                    )
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        stringResource(R.string.together_participants),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        stringResource(R.string.together_connected_count, participants.size),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-
-            participants.forEachIndexed { index, participant ->
-                key(participant.id) {
-                    if (index != 0) {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(start = 76.dp, end = 18.dp),
-                            thickness = 0.5.dp,
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-                        )
-                    }
-                    val accent = if (participant.isHost)
-                        MaterialTheme.colorScheme.primary
-                    else
-                        MaterialTheme.colorScheme.secondary
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 18.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(accent.copy(alpha = 0.14f)),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                painterResource(
-                                    if (participant.isHost) R.drawable.fire else R.drawable.person
-                                ),
-                                contentDescription = null,
-                                tint = accent,
-                                modifier = Modifier.size(22.dp),
-                            )
-                        }
-                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Text(
-                                participant.name,
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            Text(
-                                text = when {
-                                    participant.isHost -> stringResource(R.string.together_role_host)
-                                    participant.isPending && hostApprovalEnabled ->
-                                        stringResource(R.string.together_pending_approval)
-                                    else -> stringResource(R.string.together_role_guest)
-                                },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                        if (!participant.isHost) {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                if (participant.isPending && hostApprovalEnabled) {
-                                    AtIconButton(onClick = { onApprove(participant.id, true) }, onLongClick = {}) {
-                                        Icon(painterResource(R.drawable.check), null)
-                                    }
-                                    AtIconButton(onClick = { onApprove(participant.id, false) }, onLongClick = {}) {
-                                        Icon(painterResource(R.drawable.close), null)
-                                    }
-                                }
-                                AtIconButton(onClick = { onKick(participant.id) }, onLongClick = {}) {
-                                    Icon(painterResource(R.drawable.kick), null)
-                                }
-                                AtIconButton(onClick = { onBan(participant.id) }, onLongClick = {}) {
-                                    Icon(painterResource(R.drawable.block), null)
-                                }
-                            }
-                        }
-                    }
-                }
+        Text(
+            text = "${stringResource(R.string.together_participants)} (${participants.size})",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier
+                .padding(bottom = 4.dp)
+                .semantics { heading() },
+        )
+        participants.forEach { participant ->
+            key(participant.id) {
+                val pending = participant.isPending && hostApprovalEnabled
+                TogetherParticipantRow(
+                    name = participant.name,
+                    roleLabel = when {
+                        participant.isHost -> stringResource(R.string.together_role_host)
+                        pending -> stringResource(R.string.together_pending_approval)
+                        else -> stringResource(R.string.together_role_guest)
+                    },
+                    isHost = participant.isHost,
+                    isPending = pending,
+                    onApprove = { onApprove(participant.id, true) },
+                    onReject = { onApprove(participant.id, false) },
+                    onKick = { onKick(participant.id) },
+                    onBan = { onBan(participant.id) },
+                )
             }
         }
     }

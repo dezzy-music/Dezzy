@@ -23,13 +23,17 @@ import com.dezzy.music.innertube.pages.SearchSummaryPage
 import com.dezzy.music.constants.HideExplicitKey
 import com.dezzy.music.constants.HideVideoKey
 import com.dezzy.music.models.ItemsPage
+import com.dezzy.music.spotify.SpotifyFeatures
+import com.dezzy.music.spotify.SpotifyTrack
 import com.dezzy.music.utils.dataStore
 import com.dezzy.music.utils.get
 import com.dezzy.music.utils.reportException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -43,8 +47,17 @@ constructor(
     val filter = MutableStateFlow<YouTube.SearchFilter?>(null)
     var summaryPage by mutableStateOf<SearchSummaryPage?>(null)
     val viewStateMap = mutableStateMapOf<String, ItemsPage?>()
+    /** Resultados de Spotify (Ajustes > Spotify > Usar para búsquedas). */
+    var spotifyTracks by mutableStateOf<List<SpotifyTrack>>(emptyList())
+        private set
 
     init {
+        viewModelScope.launch(Dispatchers.IO) {
+            if (SpotifyFeatures.searchEnabled(context)) {
+                val tracks = SpotifyFeatures.searchTracks(query, limit = 5)
+                withContext(Dispatchers.Main) { spotifyTracks = tracks }
+            }
+        }
         viewModelScope.launch {
             filter.collect { filter ->
                 if (filter == null) {

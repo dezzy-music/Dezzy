@@ -230,8 +230,11 @@ class ParallelRangeDataSource(
         const val TAG = "ParallelRangeDataSource"
 
         // Shared, bounded across every simultaneous download so total concurrent chunk requests
-        // stays sane regardless of how many songs download at once (maxParallelDownloads x
-        // chunkCount could otherwise fan out to dozens of connections).
-        val chunkExecutor: ExecutorService = Executors.newFixedThreadPool(12)
+        // stays sane regardless of how many songs download at once. Sized to cover the
+        // default 3 parallel downloads x 6 chunks (18) plus the range-probe requests,
+        // and to match the OkHttp maxRequestsPerHost so the pool — not OkHttp — is the
+        // only throttle. At the 6-download setting (36 chunks) some chunks queue, which
+        // is intentional to avoid hammering googlevideo.
+        val chunkExecutor: ExecutorService = Executors.newFixedThreadPool(24)
     }
 }

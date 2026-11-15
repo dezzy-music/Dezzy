@@ -420,7 +420,6 @@ fun LocalPlaylistScreen(
         com.dezzy.music.ui.screens.playlist.AddSongsToLikedScreen(
             playlistId = playlist?.id,
             onDismiss = { showAddSongsScreen = false },
-            onSearchClick = { navController.navigate(com.dezzy.music.ui.screens.Screens.Search.route) }
         )
     }
 
@@ -664,6 +663,18 @@ fun LocalPlaylistScreen(
                             icon = R.drawable.music_note,
                             text = stringResource(R.string.playlist_is_empty),
                         )
+                    }
+                    if (editable) {
+                        item(key = "empty_add") {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                            ) {
+                                AddSongsButton(onClick = { showAddSongsScreen = true }, filled = true)
+                            }
+                        }
                     }
                 } else {
                     if (!isSearching) {
@@ -1104,9 +1115,16 @@ fun LocalPlaylistScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(horizontal = 20.dp, vertical = 20.dp),
-                                    horizontalArrangement = Arrangement.Center,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    // Añadir canciones (fase 9): antes era una fila al principio de la lista.
+                                    if (editable) {
+                                        AddSongsButton(
+                                            onClick = { showAddSongsScreen = true },
+                                            modifier = Modifier.weight(1f),
+                                        )
+                                    }
                                     // Start Mix Button
                                     Button(
                                         onClick = {
@@ -1171,40 +1189,6 @@ fun LocalPlaylistScreen(
                                 }
                             }
                         }
-                    }
-                }
-            }
-
-                        // Botón Agregar a la playlist
-            if (!selection && !isSearching) {
-                item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { showAddSongsScreen = true }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(56.dp)
-                                .background(Color.White.copy(alpha=0.15f), RoundedCornerShape(4.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.add),
-                                contentDescription = "Add",
-                                tint = Color.White,
-                                modifier = Modifier.size(32.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            text = "Agregar a esta playlist",
-                            color = Color.White,
-                            fontSize = 17.sp,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
-                        )
                     }
                 }
             }

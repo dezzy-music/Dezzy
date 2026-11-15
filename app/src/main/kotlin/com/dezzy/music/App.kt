@@ -23,6 +23,7 @@ import coil3.disk.directory
 import coil3.request.CachePolicy
 import coil3.request.allowHardware
 import coil3.request.crossfade
+import com.dezzy.music.security.SessionCrypto
 import com.dezzy.music.constants.*
 import com.dezzy.music.extensions.*
 import com.dezzy.music.ui.screens.settings.ThemePalettes
@@ -94,6 +95,8 @@ class App : Application(), SingletonImageLoader.Factory {
             return
         }
         PreferenceStore.start(this)
+        // Red social P2P: carga la identidad local y conecta con los relés si hay cuenta.
+        com.dezzy.music.p2p.P2PSocial.init(this)
         com.dezzy.music.audio.DezzyEqManager.initAndLoad(this)
         // Logcat logging only in debug builds — in release every Timber call still paid
         // string formatting + a logcat write. GlobalLogTree stays: it feeds the in-app log viewer.
@@ -290,7 +293,7 @@ class App : Application(), SingletonImageLoader.Factory {
                 .distinctUntilChanged()
                 .collect { cookie ->
                     try {
-                        YouTube.cookie = cookie
+                        YouTube.cookie = cookie?.let { SessionCrypto.decrypt(it) }
                     } catch (e: Exception) {
                         Timber.e("Could not parse cookie. Clearing existing cookie. %s", e.message)
                         forgetAccount(this@App)

@@ -24,6 +24,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.flow.first
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,6 +62,7 @@ import com.dezzy.music.viewmodels.ChartsViewModel
 @Composable
 fun ChartsScreen(
     navController: NavController,
+    scrollToVideos: Boolean = false,
     viewModel: ChartsViewModel = hiltViewModel(),
 ) {
     val menuState = LocalMenuState.current
@@ -72,6 +75,16 @@ fun ChartsScreen(
     val isLoading by viewModel.isLoading.collectAsState()
 
     val lazyListState = rememberLazyListState()
+
+    // Acceso «Videos» de la pestaña Buscar: «Top music videos» son los dos últimos ítems.
+    var scrolledToVideos by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(chartsPage, isLoading) {
+        if (!scrollToVideos || scrolledToVideos || isLoading) return@LaunchedEffect
+        if (chartsPage?.sections?.any { it.title == "Top music videos" } != true) return@LaunchedEffect
+        val total = snapshotFlow { lazyListState.layoutInfo.totalItemsCount }.first { it >= 2 }
+        lazyListState.animateScrollToItem(total - 2)
+        scrolledToVideos = true
+    }
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {

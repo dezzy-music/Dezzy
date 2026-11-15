@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dezzy · Fase 9 · Añadir a esta playlist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<style>
+:root{
+  --primary:#9C3F48; --on-primary:#FFFFFF;
+  --primary-container:#FFDADB; --on-primary-container:#40000E;
+  --secondary:#775657; --secondary-container:#FFDADA; --on-secondary-container:#2C1516;
+  --tertiary-container:#F8DEB0; --on-tertiary-container:#271900;
+  --surface:#FFF8F7; --on-surface:#22191A; --on-surface-variant:#534344;
+  --outline:#857373; --outline-variant:#D8C1C2;
+  --sc-lowest:#FFFFFF; --sc-low:#FEF1F1; --sc:#F8EBEB; --sc-high:#F3E5E5; --sc-highest:#EDE0E0;
+  --inverse:#382E2E; --on-inverse:#FFEDEC; --inverse-primary:#FFB3B5;
+  --page:#F4EFEF; --ink:#22191A; --muted:#5E5051;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--page);color:var(--ink);font-family:Roboto,system-ui,sans-serif;line-height:1.45}
+.ms{font-family:'Material Symbols Outlined';font-weight:400;font-style:normal;font-size:24px;line-height:1;display:inline-block;
+  letter-spacing:normal;text-transform:none;white-space:nowrap;direction:ltr;-webkit-font-smoothing:antialiased;
+  font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;user-select:none}
+.ms.f{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+.s16{font-size:16px!important}.s18{font-size:18px!important}.s20{font-size:20px!important}.s28{font-size:28px!important}.s32{font-size:32px!important}.s40{font-size:40px!important}
+
+.wrap{max-width:1240px;margin:0 auto;padding:40px 16px 80px}
+header.top h1{font-family:'Roboto Flex',Roboto;font-size:36px;font-weight:700;letter-spacing:-.5px}
+header.top p.lead{font-size:16px;color:var(--muted);max-width:860px;margin-top:8px}
+.today{margin-top:20px;background:#fff;border:1px solid var(--outline-variant);border-radius:20px;padding:18px 20px;font-size:14px;max-width:980px}
+.today h4{font-size:15px;margin-bottom:6px}
+.today ul{padding-left:18px}.today li{margin:3px 0}
+section.sketch{margin-top:56px;padding-top:28px;border-top:3px solid var(--primary)}
+.sk-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.sk-tag{font:700 13px Roboto;letter-spacing:1px;background:var(--primary);color:#fff;border-radius:8px;padding:4px 10px}
+.sk-head h3{font-family:'Roboto Flex',Roboto;font-size:28px;font-weight:700}
+.sk-head p{flex-basis:100%;color:var(--muted);font-size:15px;max-width:880px}
+.sk-body{display:flex;gap:28px;flex-wrap:wrap;margin-top:24px;align-items:flex-start}
+.phones{display:flex;gap:28px;flex-wrap:wrap}
+.cap{font-size:13px;color:var(--muted);text-align:center;margin-top:12px;max-width:360px}
+.notes{flex:1 1 300px;min-width:280px;background:#fff;border:1px solid var(--outline-variant);border-radius:20px;padding:20px;font-size:14px}
+.notes h4{font-size:15px;margin:14px 0 6px}.notes h4:first-child{margin-top:0}
+.notes ul{padding-left:18px}.notes li{margin:3px 0}
+.notes code,.today code{font-size:12.5px;background:var(--sc);border-radius:4px;padding:1px 4px}
+.pro{color:#2E6B3A}.con{color:#9C3F48}
+
+/* Teléfono: 1px = 1dp */
+.phone{width:360px;height:780px;border-radius:32px;background:var(--surface);overflow:hidden;position:relative;
+  box-shadow:0 0 0 10px #1d1b1b,0 18px 40px rgba(0,0,0,.25);display:flex;flex-direction:column;color:var(--on-surface)}
+.statusbar{height:28px;flex:none;background:color-mix(in srgb,var(--primary) 92%,transparent);color:#fff;display:flex;align-items:center;
+  justify-content:space-between;padding:0 16px;font-size:13px;font-weight:500;z-index:5}
+.statusbar .ic{display:flex;gap:4px}
+.gesture{height:20px;flex:none;background:color-mix(in srgb,var(--primary) 92%,transparent);display:flex;align-items:center;justify-content:center;z-index:5}
+.gesture i{width:108px;height:4px;border-radius:2px;background:rgba(255,255,255,.9)}
+.content{flex:1;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.scrim{position:absolute;inset:0;background:rgba(34,25,26,.38);z-index:2}
+
+.art{border-radius:8px;flex:none;position:relative;overflow:hidden}
+.a1{background:linear-gradient(135deg,#7E2F3A,#E0828A)}.a2{background:linear-gradient(135deg,#2E5E63,#8CC1BC)}
+.a3{background:linear-gradient(135deg,#5B4A7A,#B9A6D9)}.a4{background:linear-gradient(135deg,#6E5A1F,#E1C27A)}
+.a5{background:linear-gradient(135deg,#334A66,#96B2D6)}.a6{background:linear-gradient(135deg,#4F6331,#B6CC8C)}
+.a7{background:linear-gradient(135deg,#7A3E22,#E6A17E)}.a8{background:linear-gradient(135deg,#3C3A3B,#A39D9E)}
+.art .ms{position:absolute;inset:0;display:grid;place-items:center;color:rgba(255,255,255,.8)}
+.mosaic{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;border-radius:12px;overflow:hidden;flex:none}
+.mosaic i{display:block}
+
+.icon-btn{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;color:var(--on-surface-variant);flex:none;position:relative}
+.btn{height:40px;border-radius:20px;padding:0 20px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:500;flex:none;white-space:nowrap}
+.btn.filled{background:var(--primary);color:var(--on-primary)}
+.btn.tonal{background:var(--secondary-container);color:var(--on-secondary-container)}
+.btn.outlined{border:1px solid var(--outline);color:var(--primary)}
+.btn.text{color:var(--primary);padding:0 12px}
+.btn .ms{font-size:18px}
+.round{width:56px;height:56px;border-radius:50%;background:var(--primary);color:#fff;display:grid;place-items:center;flex:none}
+.chips{display:flex;gap:8px;padding:4px 16px 8px;overflow:hidden;flex:none}
+.chip{height:32px;border-radius:8px;border:1px solid var(--outline-variant);padding:0 12px;display:flex;align-items:center;gap:6px;
+  font-size:14px;font-weight:500;color:var(--on-surface-variant);white-space:nowrap;flex:none}
+.chip.sel{background:var(--secondary-container);border-color:transparent;color:var(--on-secondary-container)}
+.chip .ms{font-size:18px}
+.tab{display:flex;align-items:center;gap:4px;padding:8px 4px;min-height:64px;flex:none}
+.tab .t{flex:1;min-width:0;padding-left:4px}
+.tab h1{font-size:22px;font-weight:400;line-height:28px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tab .sub{font-size:13px;color:var(--on-surface-variant)}
+.search{height:48px;border-radius:24px;background:var(--sc-high);display:flex;align-items:center;gap:10px;padding:0 6px 0 16px;
+  font-size:16px;color:var(--on-surface-variant);flex:none}
+.search .ph{flex:1}
+.search.focus{background:var(--sc-lowest);box-shadow:inset 0 0 0 2px var(--primary);color:var(--on-surface)}
+.caret{display:inline-block;width:2px;height:20px;background:var(--primary);vertical-align:-4px;margin-left:1px}
+
+.row{display:flex;align-items:center;gap:12px;padding:6px 4px 6px 16px;min-height:64px}
+.row .art{width:48px;height:48px}
+.row .tx{flex:1;min-width:0}
+.row .tt{font-size:16px;line-height:22px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .ss{font-size:14px;color:var(--on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:4px}
+.e{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:3px;background:var(--sc-highest);color:var(--on-surface-variant);font-size:10px;font-weight:700;flex:none}
+.why{font-size:12px;color:var(--primary);font-weight:500}
+.add{width:48px;height:48px;display:grid;place-items:center;flex:none}
+.add span.c{width:32px;height:32px;border-radius:50%;border:2px solid var(--outline);display:grid;place-items:center;color:var(--on-surface-variant)}
+.add span.c .ms{font-size:20px}
+.add.on span.c{background:var(--primary);border-color:var(--primary);color:#fff}
+.chk{width:24px;height:24px;border-radius:6px;border:2px solid var(--outline);flex:none;display:grid;place-items:center;margin-right:12px}
+.chk.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.chk .ms{font-size:18px}
+.sec{display:flex;align-items:center;padding:14px 4px 4px 16px;flex:none}
+.sec h5{flex:1;font-size:16px;font-weight:500}
+.sec .sub{font-size:13px;color:var(--on-surface-variant);font-weight:400}
+.divider{height:1px;background:var(--outline-variant);opacity:.6;flex:none}
+.handle{width:32px;height:4px;border-radius:2px;background:var(--outline);opacity:.5;margin:10px auto 6px}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--sc-low);border-radius:28px 28px 0 0;z-index:3;display:flex;flex-direction:column;overflow:hidden}
+.snack{position:absolute;left:12px;right:12px;bottom:12px;background:var(--inverse);color:var(--on-inverse);border-radius:8px;min-height:48px;
+  display:flex;align-items:center;padding:0 8px 0 16px;font-size:14px;z-index:4;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.snack .t{flex:1}
+.snack b{color:var(--inverse-primary);font-weight:500;padding:0 8px}
+.mini{height:64px;flex:none;background:var(--sc-high);display:flex;align-items:center;gap:12px;padding:0 8px 0 12px;border-top:1px solid var(--outline-variant)}
+.mini .art{width:44px;height:44px}
+.mini .tx{flex:1;min-width:0;font-size:14px}
+.mini .tx b{font-weight:500;display:block}
+.mini .tx span{color:var(--on-surface-variant);font-size:13px}
+.navbar{height:72px;flex:none;background:var(--sc);display:flex;justify-content:space-around;align-items:center;font-size:12px;font-weight:500;color:var(--on-surface-variant)}
+.navbar div{display:flex;flex-direction:column;align-items:center;gap:4px}
+.navbar .pillc{width:56px;height:32px;border-radius:16px;display:grid;place-items:center}
+.navbar .on .pillc{background:var(--secondary-container);color:var(--on-secondary-container)}
+.navbar .on{color:var(--on-surface)}
+.ph-head{display:flex;gap:16px;padding:8px 16px 4px;align-items:flex-end;flex:none}
+.ph-head h2{font-size:24px;font-weight:700;line-height:30px}
+.ph-head .meta{font-size:14px;color:var(--on-surface-variant)}
+.actions{display:flex;align-items:center;gap:4px;padding:8px 12px 8px 8px;flex:none}
+.hl{box-shadow:0 0 0 3px #F6A04D;border-radius:inherit}
+.callout{position:absolute;background:#F6A04D;color:#2b1a00;font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px;z-index:6;letter-spacing:.3px}
+.tabs{display:flex;border-bottom:1px solid var(--outline-variant);flex:none;padding:0 4px}
+.tabs div{padding:12px 12px 10px;font-size:14px;font-weight:500;color:var(--on-surface-variant);position:relative;white-space:nowrap}
+.tabs div.on{color:var(--primary)}
+.tabs div.on::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:3px;border-radius:3px 3px 0 0;background:var(--primary)}
+.cardrow{display:flex;gap:12px;padding:4px 16px 8px;overflow:hidden;flex:none}
+.scard{width:132px;flex:none}
+.scard .art{width:132px;height:132px;border-radius:12px}
+.scard .t{font-size:14px;font-weight:500;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scard .s{font-size:12px;color:var(--on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plus-on-art{position:absolute;right:6px;bottom:6px;width:32px;height:32px;border-radius:50%;background:#fff;color:var(--primary);display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.plus-on-art.on{background:var(--primary);color:#fff}
+.tray{flex:none;background:var(--sc-highest);display:flex;align-items:center;gap:10px;padding:10px 12px 10px 16px;border-radius:24px 24px 0 0;box-shadow:0 -4px 14px rgba(0,0,0,.08)}
+.stack{display:flex}
+.stack .art{width:36px;height:36px;border-radius:8px;border:2px solid var(--sc-highest);margin-left:-12px}
+.stack .art:first-child{margin-left:0}
+.tray .tx{flex:1;font-size:14px;min-width:0}
+.tray .tx b{display:block;font-size:15px}
+.tray .tx span{color:var(--on-surface-variant);font-size:13px}
+.empty-card{margin:12px 16px;background:var(--sc-low);border:1px dashed var(--outline);border-radius:20px;padding:20px;text-align:center}
+.empty-card h6{font-size:18px;font-weight:500;margin:8px 0 4px}
+.empty-card p{font-size:14px;color:var(--on-surface-variant)}
+.inline-panel{margin:8px 12px 0;background:var(--sc-low);border-radius:24px;padding:4px 0 8px;flex:none}
+.pulse{background:color-mix(in srgb,var(--primary-container) 70%,transparent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>Fase 9 · «Agregar a esta playlist»</h1>
+  <p class="lead">El botón que aparece al final de cada playlist (y en Me gusta y Canciones) y la pantalla que abre para buscar y añadir canciones. Tres propuestas apiladas, tema claro, Material 3. Cada una enseña el botón de entrada dentro de la playlist y la pantalla de añadir.</p>
+  <div class="today">
+    <h4>Cómo funciona hoy (lo que se conserva)</h4>
+    <ul>
+      <li>Botón «Agregar a esta playlist» como fila con un cuadro + gris, en <code>LocalPlaylistScreen</code>, <code>AutoPlaylistScreen</code> (Me gusta) y <code>LibrarySongsScreen</code>.</li>
+      <li>Abre <code>AddSongsToLikedScreen</code>: pantalla completa con colores fijos oscuros (<code>#121212</code>, no sigue el tema), buscador con debounce de 400 ms y «Sugerencias para ti» (relacionadas de 3 canciones de la playlist).</li>
+      <li>Tocar la canción o el + la añade y se marca con palomita; tocar la palomita la quita. Tocar NO pone adelanto (se mantiene en las tres propuestas).</li>
+      <li><b>Fallo que se arreglará en cualquier propuesta:</b> si la playlist está sincronizada con YouTube Music, la canción sólo se añade en el teléfono, no se sube.</li>
+    </ul>
+  </div>
+</header>
+
+<!-- ═════════════════════════════ A ═════════════════════════════ -->
+<section class="sketch">
+  <div class="sk-head">
+    <span class="sk-tag">BOCETO A</span>
+    <h3>Hoja con orígenes</h3>
+    <p>El botón pasa a la fila de acciones, arriba, junto a Reproducir. Abre una hoja grande con pestañas de origen: Sugeridas, Me gusta, Recientes, Biblioteca. La cabecera de la hoja cuenta en directo cuántas añadiste y cada añadido trae «Deshacer».</p>
+  </div>
+  <div class="sk-body">
+    <div class="phones">
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div>
+          <div class="content">
+            <div class="tab"><div class="icon-btn"><span class="ms">arrow_back</span></div><div class="t"></div><div class="icon-btn"><span class="ms">search</span></div><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+            <div class="ph-head">
+              <div class="mosaic" style="width:132px;height:132px"><i class="a1"></i><i class="a2"></i><i class="a3"></i><i class="a4"></i></div>
+              <div><h2>Para entrenar</h2><div class="meta">Tú · 24 canciones<br>1 h 22 min</div></div>
+            </div>
+            <div class="actions">
+              <div class="icon-btn"><span class="ms">download</span></div>
+              <div class="icon-btn"><span class="ms">edit</span></div>
+              <div style="flex:1"></div>
+              <div class="btn tonal hl" style="position:relative"><span class="ms">add</span>Añadir</div>
+              <div class="icon-btn"><span class="ms">shuffle</span></div>
+              <div class="round"><span class="ms f s28">play_arrow</span></div>
+            </div>
+            <div class="callout" style="left:150px;top:262px">NUEVO SITIO</div>
+            <div class="row"><div class="art a5"></div><div class="tx"><div class="tt">Luz de neón</div><div class="ss">Vera Sol</div></div><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+            <div class="row"><div class="art a6"></div><div class="tx"><div class="tt">Kilómetro cero</div><div class="ss"><span class="e">E</span>Los Faros</div></div><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+            <div class="row"><div class="art a7"></div><div class="tx"><div class="tt">Marea alta</div><div class="ss">Inés Duna</div></div><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+            <div class="row"><div class="art a8"></div><div class="tx"><div class="tt">Sin frenos</div><div class="ss">Nómada Club</div></div><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+            <div class="row"><div class="art a2"></div><div class="tx"><div class="tt">Ruido blanco</div><div class="ss">Aurelio</div></div><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+            <div style="flex:1"></div>
+            <div class="mini"><div class="art a3"></div><div class="tx"><b>Ciudad dormida</b><span>Mar de fondo</span></div><div class="icon-btn"><span class="ms f">pause</span></div></div>
+          </div>
+          <div class="navbar"><div><span class="pillc"><span class="ms">home</span></span>Inicio</div><div><span class="pillc"><span class="ms">search</span></span>Buscar</div><div class="on"><span class="pillc"><span class="ms f">library_music</span></span>Biblioteca</div></div>
+          <div class="gesture"><i></i></div>
+        </div>
+        <p class="cap">Playlist: «Añadir» es un botón tonal en la fila de acciones (siempre a mano, no hay que bajar al final). La fila del final desaparece.</p>
+      </div>
+
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div>
+          <div class="content">
+            <div style="height:60px;background:var(--surface)"></div>
+            <div class="scrim"></div>
+            <div class="sheet" style="top:24px">
+              <div class="handle"></div>
+              <div style="display:flex;align-items:center;gap:12px;padding:4px 8px 8px 20px">
+                <div class="mosaic" style="width:44px;height:44px;border-radius:8px"><i class="a1"></i><i class="a2"></i><i class="a3"></i><i class="a4"></i></div>
+                <div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--on-surface-variant)">Añadir a</div><div style="font-size:18px;font-weight:500">Para entrenar</div></div>
+                <div class="btn filled" style="height:36px;padding:0 16px">Listo · 2</div>
+              </div>
+              <div style="padding:0 16px 8px"><div class="search"><span class="ms">search</span><span class="ph">Buscar canciones</span><div class="icon-btn" style="width:40px;height:40px"><span class="ms">mic</span></div></div></div>
+              <div class="tabs"><div class="on">Sugeridas</div><div>Me gusta</div><div>Recientes</div><div>Biblioteca</div></div>
+              <div class="sec"><h5>Para esta playlist <span class="sub">· por tus 3 últimas</span></h5><div class="icon-btn"><span class="ms">refresh</span></div></div>
+              <div class="row"><div class="art a4"></div><div class="tx"><div class="tt">Fuego lento</div><div class="ss">Coral Norte · 3:28</div></div><div class="add on"><span class="c"><span class="ms">check</span></span></div></div>
+              <div class="row"><div class="art a5"></div><div class="tx"><div class="tt">Segundo aire</div><div class="ss"><span class="e">E</span>Los Faros · 2:57</div></div><div class="add"><span class="c"><span class="ms">add</span></span></div></div>
+              <div class="row"><div class="art a6"></div><div class="tx"><div class="tt">Cuesta arriba</div><div class="ss">Vera Sol · 3:41</div></div><div class="add on"><span class="c"><span class="ms">check</span></span></div></div>
+              <div class="row"><div class="art a7"></div><div class="tx"><div class="tt">Pulso</div><div class="ss">Kuma · 4:02</div></div><div class="add"><span class="c"><span class="ms">add</span></span></div></div>
+              <div class="row"><div class="art a8"></div><div class="tx"><div class="tt">Última vuelta</div><div class="ss">Nómada Club · 3:15</div></div><div class="add"><span class="c"><span class="ms">add</span></span></div></div>
+              <div class="row"><div class="art a1"></div><div class="tx"><div class="tt">Brillo</div><div class="ss">Inés Duna · 2:49</div></div><div class="add"><span class="c"><span class="ms">add</span></span></div></div>
+              <div class="snack"><span class="t">«Cuesta arriba» añadida</span><b>DESHACER</b></div>
+            </div>
+          </div>
+          <div class="gesture"><i></i></div>
+        </div>
+        <p class="cap">Hoja «Añadir a». Pestañas de origen: Me gusta, Recientes y Biblioteca salen de la base de datos (funcionan sin conexión); Sugeridas y la búsqueda, de YouTube Music.</p>
+      </div>
+
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div>
+          <div class="content">
+            <div style="height:60px;background:var(--surface)"></div>
+            <div class="scrim"></div>
+            <div class="sheet" style="top:24px">
+              <div class="handle"></div>
+              <div style="display:flex;align-items:center;gap:12px;padding:4px 8px 8px 20px">
+                <div class="mosaic" style="width:44px;height:44px;border-radius:8px"><i class="a1"></i><i class="a2"></i><i class="a3"></i><i class="a4"></i></div>
+                <div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--on-surface-variant)">Añadir a</div><div style="font-size:18px;font-weight:500">Para entrenar</div></div>
+                <div class="btn filled" style="height:36px;padding:0 16px">Listo · 2</div>
+              </div>
+              <div style="padding:0 16px 8px"><div class="search focus"><span class="ms">search</span><span class="ph">vera sol<span class="caret"></span></span><div class="icon-btn" style="width:40px;height:40px"><span class="ms">close</span></div></div></div>
+              <div class="chips"><div class="chip sel"><span class="ms">check</span>Canciones</div><div class="chip">En mi biblioteca</div><div class="chip">Videos</div></div>
+              <div class="sec"><h5>Resultados</h5></div>
+              <div class="row"><div class="art a6"></div><div class="tx"><div class="tt">Cuesta arriba</div><div class="ss">Vera Sol · Horizonte</div></div><div class="add on"><span class="c"><span class="ms">check</span></span></div></div>
+              <div class="row"><div class="art a5"></div><div class="tx"><div class="tt">Luz de neón</div><div class="ss">Vera Sol · Ya está en la playlist</div></div><div class="add on" style="opacity:.55"><span class="c"><span class="ms">check</span></span></div></div>
+              <div class="row"><div class="art a3"></div><div class="tx"><div class="tt">Lo que queda</div><div class="ss">Vera Sol · Horizonte</div></div><div class="add"><span class="c"><span class="ms">add</span></span></div></div>
+              <div class="row"><div class="art a2"></div><div class="tx"><div class="tt">Puerto viejo</div><div class="ss">Vera Sol, Aurelio</div></div><div class="add"><span class="c"><span class="ms">add</span></span></div></div>
+              <div class="row"><div class="art a4"></div><div class="tx"><div class="tt">Horizonte</div><div class="ss">Vera Sol</div></div><div class="add"><span class="c"><span class="ms">add</span></span></div></div>
+              <div class="row"><div class="art a7"></div><div class="tx"><div class="tt">Cuerda floja</div><div class="ss"><span class="e">E</span>Vera Sol</div></div><div class="add"><span class="c"><span class="ms">add</span></span></div></div>
+            </div>
+          </div>
+          <div class="gesture"><i></i></div>
+        </div>
+        <p class="cap">Buscando: las pestañas dejan paso a chips (Canciones / En mi biblioteca / Videos). Lo que ya estaba en la playlist sale con la palomita atenuada y el texto «Ya está en la playlist».</p>
+      </div>
+    </div>
+    <div class="notes">
+      <h4>Qué cambia</h4>
+      <ul>
+        <li>Botón «Añadir» tonal en la fila de acciones de la playlist; también en Me gusta y Canciones.</li>
+        <li>Hoja grande (<code>ModalBottomSheet</code>) en vez de pantalla completa: se ve que sigues dentro de tu playlist.</li>
+        <li>Pestañas de origen. Me gusta / Recientes / Biblioteca usan consultas que ya existen; en Me gusta no sale la pestaña Me gusta.</li>
+        <li>Cabecera con la playlist y «Listo · N» que cuenta en directo.</li>
+        <li>Snackbar «Deshacer» en cada añadido (tocar la palomita sigue quitándola).</li>
+        <li>«Actualizar» en Sugeridas: pide otra tanda de relacionadas.</li>
+      </ul>
+      <h4>Valoración</h4>
+      <ul>
+        <li class="pro">+ Lo más completo: sirve también sin conexión.</li>
+        <li class="pro">+ El botón deja de estar escondido al final de la lista.</li>
+        <li class="con">− Más trabajo (4 orígenes) y la hoja tapa la playlist.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════════════════════ B ═════════════════════════════ -->
+<section class="sketch">
+  <div class="sk-head">
+    <span class="sk-tag">BOCETO B</span>
+    <h3>Descubrir y elegir varias</h3>
+    <p>Un botón flotante «Añadir» en la playlist abre una pantalla de descubrimiento: carruseles «Porque tienes…» con portadas grandes y una bandeja abajo donde se juntan las elegidas. Nada se guarda hasta pulsar «Añadir N», así puedes cambiar de idea antes.</p>
+  </div>
+  <div class="sk-body">
+    <div class="phones">
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div>
+          <div class="content">
+            <div class="tab"><div class="icon-btn"><span class="ms">arrow_back</span></div><div class="t"></div><div class="icon-btn"><span class="ms">search</span></div><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+            <div class="ph-head">
+              <div class="mosaic" style="width:132px;height:132px"><i class="a1"></i><i class="a2"></i><i class="a3"></i><i class="a4"></i></div>
+              <div><h2>Para entrenar</h2><div class="meta">Tú · 24 canciones<br>1 h 22 min</div></div>
+            </div>
+            <div class="actions">
+              <div class="icon-btn"><span class="ms">download</span></div>
+              <div class="icon-btn"><span class="ms">edit</span></div>
+              <div style="flex:1"></div>
+              <div class="icon-btn"><span class="ms">shuffle</span></div>
+              <div class="round"><span class="ms f s28">play_arrow</span></div>
+            </div>
+            <div class="row"><div class="art a5"></div><div class="tx"><div class="tt">Luz de neón</div><div class="ss">Vera Sol</div></div><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+            <div class="row"><div class="art a6"></div><div class="tx"><div class="tt">Kilómetro cero</div><div class="ss"><span class="e">E</span>Los Faros</div></div><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+            <div class="row"><div class="art a7"></div><div class="tx"><div class="tt">Marea alta</div><div class="ss">Inés Duna</div></div><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+            <div class="row"><div class="art a8"></div><div class="tx"><div class="tt">Sin frenos</div><div class="ss">Nómada Club</div></div><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+            <div class="row"><div class="art a2"></div><div class="tx"><div class="tt">Ruido blanco</div><div class="ss">Aurelio</div></div><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+            <div style="flex:1"></div>
+            <div class="hl" style="position:absolute;right:16px;bottom:80px;height:56px;border-radius:16px;background:var(--primary-container);color:var(--on-primary-container);display:flex;align-items:center;gap:10px;padding:0 20px 0 16px;font-size:15px;font-weight:500;box-shadow:0 4px 10px rgba(0,0,0,.18)"><span class="ms">playlist_add</span>Añadir canciones</div>
+            <div class="mini"><div class="art a3"></div><div class="tx"><b>Ciudad dormida</b><span>Mar de fondo</span></div><div class="icon-btn"><span class="ms f">pause</span></div></div>
+          </div>
+          <div class="navbar"><div><span class="pillc"><span class="ms">home</span></span>Inicio</div><div><span class="pillc"><span class="ms">search</span></span>Buscar</div><div class="on"><span class="pillc"><span class="ms f">library_music</span></span>Biblioteca</div></div>
+          <div class="gesture"><i></i></div>
+        </div>
+        <p class="cap">Playlist: botón flotante extendido «Añadir canciones» sobre el mini reproductor; al bajar se encoge a sólo el icono.</p>
+      </div>
+
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div>
+          <div class="content">
+            <div class="tab"><div class="icon-btn"><span class="ms">close</span></div><div class="t"><h1>Añadir a Para entrenar</h1></div></div>
+            <div style="padding:0 16px 8px;flex:none"><div class="search"><span class="ms">search</span><span class="ph">Buscar canciones</span></div></div>
+            <div class="sec"><h5>Porque tienes «Luz de neón»</h5><div class="icon-btn"><span class="ms">chevron_right</span></div></div>
+            <div class="cardrow">
+              <div class="scard"><div class="art a4"><span class="plus-on-art on"><span class="ms s20">check</span></span></div><div class="t">Fuego lento</div><div class="s">Coral Norte</div></div>
+              <div class="scard"><div class="art a6"><span class="plus-on-art"><span class="ms s20">add</span></span></div><div class="t">Cuesta arriba</div><div class="s">Vera Sol</div></div>
+              <div class="scard"><div class="art a2"><span class="plus-on-art"><span class="ms s20">add</span></span></div><div class="t">Puerto</div><div class="s">Aurelio</div></div>
+            </div>
+            <div class="sec"><h5>Porque tienes «Marea alta»</h5><div class="icon-btn"><span class="ms">chevron_right</span></div></div>
+            <div class="cardrow">
+              <div class="scard"><div class="art a7"><span class="plus-on-art on"><span class="ms s20">check</span></span></div><div class="t">Pulso</div><div class="s">Kuma</div></div>
+              <div class="scard"><div class="art a3"><span class="plus-on-art on"><span class="ms s20">check</span></span></div><div class="t">Lo que queda</div><div class="s">Inés Duna</div></div>
+              <div class="scard"><div class="art a8"><span class="plus-on-art"><span class="ms s20">add</span></span></div><div class="t">Brillo</div><div class="s">Nómada Club</div></div>
+            </div>
+            <div class="sec"><h5>De tus Me gusta</h5><div class="icon-btn"><span class="ms">chevron_right</span></div></div>
+            <div class="row" style="min-height:56px"><div class="art a1"></div><div class="tx"><div class="tt">Segundo aire</div><div class="ss">Los Faros</div></div><div class="add"><span class="c"><span class="ms">add</span></span></div></div>
+            <div style="flex:1"></div>
+            <div class="tray">
+              <div class="stack"><div class="art a4"></div><div class="art a7"></div><div class="art a3"></div></div>
+              <div class="tx"><b>3 elegidas</b><span>Toca para revisar</span></div>
+              <div class="btn filled"><span class="ms">add</span>Añadir 3</div>
+            </div>
+          </div>
+          <div class="gesture"><i></i></div>
+        </div>
+        <p class="cap">Descubrir: un carrusel por cada canción semilla de la playlist (lo que hoy ya se calcula, pero agrupado y explicado) + «De tus Me gusta». Bandeja fija con las elegidas.</p>
+      </div>
+
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div>
+          <div class="content">
+            <div class="tab"><div class="icon-btn"><span class="ms">close</span></div><div class="t"><h1>Añadir a Para entrenar</h1></div></div>
+            <div style="padding:0 16px 8px;flex:none"><div class="search"><span class="ms">search</span><span class="ph">Buscar canciones</span></div></div>
+            <div class="scrim"></div>
+            <div class="sheet" style="top:250px">
+              <div class="handle"></div>
+              <div style="display:flex;align-items:center;padding:4px 8px 6px 20px"><div style="flex:1;font-size:20px;font-weight:500">3 elegidas</div><div class="btn text">Quitar todas</div></div>
+              <div class="row" style="padding-left:20px"><div class="art a4"></div><div class="tx"><div class="tt">Fuego lento</div><div class="ss">Coral Norte</div></div><div class="icon-btn"><span class="ms">close</span></div></div>
+              <div class="row" style="padding-left:20px"><div class="art a7"></div><div class="tx"><div class="tt">Pulso</div><div class="ss">Kuma</div></div><div class="icon-btn"><span class="ms">close</span></div></div>
+              <div class="row" style="padding-left:20px"><div class="art a3"></div><div class="tx"><div class="tt">Lo que queda</div><div class="ss">Inés Duna · ya está en «Gym 2025»</div></div><div class="icon-btn"><span class="ms">close</span></div></div>
+              <div style="padding:10px 20px 4px;display:flex;align-items:center;gap:10px;font-size:14px;color:var(--on-surface-variant)"><span class="chk on"><span class="ms">check</span></span>Añadir al principio de la playlist</div>
+              <div style="flex:1"></div>
+              <div style="display:flex;gap:8px;padding:12px 16px 16px;justify-content:flex-end"><div class="btn text">Seguir buscando</div><div class="btn filled"><span class="ms">add</span>Añadir 3</div></div>
+            </div>
+          </div>
+          <div class="gesture"><i></i></div>
+        </div>
+        <p class="cap">Al tocar la bandeja: revisas las elegidas, quitas alguna y eliges si van al principio o al final. Luego se añaden todas de una vez.</p>
+      </div>
+    </div>
+    <div class="notes">
+      <h4>Qué cambia</h4>
+      <ul>
+        <li>Botón flotante extendido en la playlist (se encoge al bajar).</li>
+        <li>Pantalla completa de descubrimiento: carruseles por canción semilla, con portada grande y + encima.</li>
+        <li>Selección en bandeja; se guarda todo junto al pulsar «Añadir N» (un solo cambio en la base de datos y una sola subida a YouTube Music).</li>
+        <li>Opción «al principio / al final».</li>
+        <li>Buscar abre los resultados en lista, con el mismo + y la misma bandeja.</li>
+      </ul>
+      <h4>Valoración</h4>
+      <ul>
+        <li class="pro">+ La más visual y la que más invita a descubrir.</li>
+        <li class="pro">+ Fácil echarse atrás antes de guardar.</li>
+        <li class="con">− Un paso más (hay que confirmar); si cierras sin pulsar «Añadir», no se guarda (se pregunta antes de salir).</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════════════════════ C ═════════════════════════════ -->
+<section class="sketch">
+  <div class="sk-head">
+    <span class="sk-tag">BOCETO C</span>
+    <h3>Dentro de la propia playlist</h3>
+    <p>Sin pantalla aparte para lo básico: al final de la playlist hay una sección «Recomendadas para esta playlist» con + en cada fila; lo que añades sube a la lista con una animación. La búsqueda queda como una píldora que abre una hoja. Si la playlist está vacía, la sección ocupa el sitio con una tarjeta.</p>
+  </div>
+  <div class="sk-body">
+    <div class="phones">
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div>
+          <div class="content">
+            <div class="tab"><div class="icon-btn"><span class="ms">arrow_back</span></div><div class="t"><h1>Para entrenar</h1></div><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+            <div class="row"><div class="art a7"></div><div class="tx"><div class="tt">Marea alta</div><div class="ss">Inés Duna</div></div><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+            <div class="row"><div class="art a8"></div><div class="tx"><div class="tt">Sin frenos</div><div class="ss">Nómada Club</div></div><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+            <div class="row pulse"><div class="art a4"></div><div class="tx"><div class="tt">Fuego lento</div><div class="ss">Coral Norte · <span class="why">recién añadida</span></div></div><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+            <div class="inline-panel hl" style="border-radius:24px">
+              <div class="sec" style="padding-top:10px"><h5>Recomendadas<br><span class="sub">Según lo que hay en esta playlist</span></h5><div class="icon-btn"><span class="ms">refresh</span></div></div>
+              <div style="padding:4px 16px 6px"><div class="search" style="height:44px;background:var(--sc-lowest)"><span class="ms">search</span><span class="ph">Buscar para añadir</span></div></div>
+              <div class="row"><div class="art a5"></div><div class="tx"><div class="tt">Segundo aire</div><div class="ss"><span class="e">E</span>Los Faros</div></div><div class="add"><span class="c"><span class="ms">add</span></span></div></div>
+              <div class="row"><div class="art a6"></div><div class="tx"><div class="tt">Cuesta arriba</div><div class="ss">Vera Sol</div></div><div class="add"><span class="c"><span class="ms">add</span></span></div></div>
+              <div class="row"><div class="art a2"></div><div class="tx"><div class="tt">Puerto viejo</div><div class="ss">Aurelio</div></div><div class="add"><span class="c"><span class="ms">add</span></span></div></div>
+              <div class="row"><div class="art a3"></div><div class="tx"><div class="tt">Lo que queda</div><div class="ss">Inés Duna</div></div><div class="add"><span class="c"><span class="ms">add</span></span></div></div>
+              <div style="display:flex;justify-content:center;padding:4px 0 0"><div class="btn text">Ver más</div></div>
+            </div>
+            <div style="flex:1"></div>
+            <div class="mini"><div class="art a3"></div><div class="tx"><b>Ciudad dormida</b><span>Mar de fondo</span></div><div class="icon-btn"><span class="ms f">pause</span></div></div>
+          </div>
+          <div class="navbar"><div><span class="pillc"><span class="ms">home</span></span>Inicio</div><div><span class="pillc"><span class="ms">search</span></span>Buscar</div><div class="on"><span class="pillc"><span class="ms f">library_music</span></span>Biblioteca</div></div>
+          <div class="gesture"><i></i></div>
+        </div>
+        <p class="cap">Al final de la playlist: la sección sustituye a la fila «Agregar a esta playlist». Al tocar +, la canción sube a la lista (resaltada un momento) y en su sitio entra otra recomendación.</p>
+      </div>
+
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div>
+          <div class="content">
+            <div class="tab"><div class="icon-btn"><span class="ms">arrow_back</span></div><div class="t"></div><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+            <div class="ph-head">
+              <div style="width:132px;height:132px;border-radius:12px;background:var(--sc-highest);display:grid;place-items:center;color:var(--on-surface-variant);flex:none"><span class="ms s40">queue_music</span></div>
+              <div><h2>Domingo</h2><div class="meta">Tú · 0 canciones</div></div>
+            </div>
+            <div class="empty-card">
+              <span class="ms s32" style="color:var(--primary)">playlist_add</span>
+              <h6>Empieza tu playlist</h6>
+              <p>Busca canciones o elige de tus Me gusta.</p>
+              <div style="display:flex;gap:8px;justify-content:center;margin-top:14px"><div class="btn filled"><span class="ms">search</span>Buscar</div><div class="btn outlined"><span class="ms">favorite</span>Me gusta</div></div>
+            </div>
+            <div class="sec"><h5>Para empezar<br><span class="sub">Según lo que más escuchas</span></h5><div class="icon-btn"><span class="ms">refresh</span></div></div>
+            <div class="row"><div class="art a1"></div><div class="tx"><div class="tt">Ciudad dormida</div><div class="ss">Mar de fondo</div></div><div class="add"><span class="c"><span class="ms">add</span></span></div></div>
+            <div class="row"><div class="art a5"></div><div class="tx"><div class="tt">Luz de neón</div><div class="ss">Vera Sol</div></div><div class="add"><span class="c"><span class="ms">add</span></span></div></div>
+            <div class="row"><div class="art a6"></div><div class="tx"><div class="tt">Kilómetro cero</div><div class="ss"><span class="e">E</span>Los Faros</div></div><div class="add"><span class="c"><span class="ms">add</span></span></div></div>
+            <div style="flex:1"></div>
+          </div>
+          <div class="navbar"><div><span class="pillc"><span class="ms">home</span></span>Inicio</div><div><span class="pillc"><span class="ms">search</span></span>Buscar</div><div class="on"><span class="pillc"><span class="ms f">library_music</span></span>Biblioteca</div></div>
+          <div class="gesture"><i></i></div>
+        </div>
+        <p class="cap">Playlist vacía: tarjeta con Buscar / Me gusta y debajo recomendaciones a partir de lo que más escuchas (hoy, sin canciones, sale «hits music»).</p>
+      </div>
+
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div>
+          <div class="content">
+            <div class="tab"><div class="icon-btn"><span class="ms">arrow_back</span></div><div class="t"><h1>Para entrenar</h1></div><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+            <div class="scrim"></div>
+            <div class="sheet" style="top:60px">
+              <div class="handle"></div>
+              <div style="padding:4px 16px 8px"><div class="search focus"><span class="ms">arrow_back</span><span class="ph">segundo<span class="caret"></span></span><div class="icon-btn" style="width:40px;height:40px"><span class="ms">close</span></div></div></div>
+              <div class="chips"><div class="chip sel">Todo</div><div class="chip">Me gusta</div><div class="chip">Biblioteca</div></div>
+              <div class="row"><div class="art a5"></div><div class="tx"><div class="tt">Segundo aire</div><div class="ss"><span class="e">E</span>Los Faros · <span class="why">en tus Me gusta</span></div></div><div class="add on"><span class="c"><span class="ms">check</span></span></div></div>
+              <div class="row"><div class="art a2"></div><div class="tx"><div class="tt">Segundo piso</div><div class="ss">Aurelio</div></div><div class="add"><span class="c"><span class="ms">add</span></span></div></div>
+              <div class="row"><div class="art a8"></div><div class="tx"><div class="tt">Segundos</div><div class="ss">Nómada Club</div></div><div class="add"><span class="c"><span class="ms">add</span></span></div></div>
+              <div class="row"><div class="art a4"></div><div class="tx"><div class="tt">El segundo sol</div><div class="ss">Coral Norte</div></div><div class="add"><span class="c"><span class="ms">add</span></span></div></div>
+              <div class="row"><div class="art a6"></div><div class="tx"><div class="tt">Segunda vez</div><div class="ss">Vera Sol</div></div><div class="add"><span class="c"><span class="ms">add</span></span></div></div>
+              <div class="snack"><span class="t">Añadida a «Para entrenar»</span><b>DESHACER</b></div>
+            </div>
+          </div>
+          <div class="gesture"><i></i></div>
+        </div>
+        <p class="cap">La píldora «Buscar para añadir» abre una hoja con la búsqueda; mezcla resultados de tu biblioteca (marcados) y de YouTube Music, con chips para filtrar.</p>
+      </div>
+    </div>
+    <div class="notes">
+      <h4>Qué cambia</h4>
+      <ul>
+        <li>Recomendaciones en línea al final de la playlist (como Spotify), con «Actualizar» y «Ver más».</li>
+        <li>Añadir es un toque: la canción sube a la lista y entra otra sugerencia.</li>
+        <li>Búsqueda en hoja con chips Todo / Me gusta / Biblioteca.</li>
+        <li>Estado vacío propio para playlists nuevas.</li>
+        <li>La pantalla actual desaparece; las sugerencias se calculan al abrir la playlist (con caché, para no pedirlas cada vez).</li>
+      </ul>
+      <h4>Valoración</h4>
+      <ul>
+        <li class="pro">+ La más rápida: no sales de la playlist.</li>
+        <li class="pro">+ La playlist vacía deja de ser una pantalla muerta.</li>
+        <li class="con">− Las recomendaciones piden red al abrir cada playlist; en Me gusta (muy larga) la sección queda muy abajo, ahí se dejaría un botón arriba.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+</div>
+</body>
+</html>

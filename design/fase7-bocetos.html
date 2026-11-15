@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dezzy · Fase 7 · Bocetos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<style>
+/* ── Tokens Material 3 (esquema claro generado desde el color de marca #ED5564) ── */
+:root{
+  --primary:#9C3F48; --on-primary:#FFFFFF;
+  --primary-container:#FFDADB; --on-primary-container:#40000E;
+  --secondary:#775657; --on-secondary:#FFFFFF;
+  --secondary-container:#FFDADA; --on-secondary-container:#2C1516;
+  --tertiary:#755A2F; --tertiary-container:#FFDDAF; --on-tertiary-container:#281800;
+  --surface:#FFF8F7; --on-surface:#22191A; --on-surface-variant:#534344;
+  --outline:#857373; --outline-variant:#D8C1C2;
+  --sc-lowest:#FFFFFF; --sc-low:#FEF1F1; --sc:#F8EBEB; --sc-high:#F3E5E5; --sc-highest:#EDE0E0;
+  --brand:#ED5564;
+  --page:#F4EFEF; --ink:#22191A; --muted:#5E5051;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--page);color:var(--ink);font-family:Roboto,system-ui,sans-serif;line-height:1.45}
+.ms{font-family:'Material Symbols Outlined';font-weight:400;font-style:normal;font-size:24px;line-height:1;
+  display:inline-block;letter-spacing:normal;text-transform:none;white-space:nowrap;direction:ltr;
+  -webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;user-select:none}
+.ms.f{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+.ms.s18{font-size:18px}.ms.s20{font-size:20px}.ms.s16{font-size:16px}.ms.s28{font-size:28px}
+
+/* ── Página ── */
+.wrap{max-width:1180px;margin:0 auto;padding:40px 16px 80px}
+header.top h1{font-family:'Roboto Flex',Roboto;font-size:36px;font-weight:700;letter-spacing:-.5px}
+header.top p.lead{font-size:16px;color:var(--muted);max-width:760px;margin-top:8px}
+.phases{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin:24px 0 8px}
+.phase{background:#fff;border:1px solid var(--outline-variant);border-radius:16px;padding:12px 14px;font-size:14px}
+.phase b{display:block;font-size:13px;color:var(--primary);letter-spacing:.3px;text-transform:uppercase}
+.phase.now{border:2px solid var(--primary);background:var(--primary-container)}
+.phase span{color:var(--muted);font-size:13px}
+.legend{font-size:14px;color:var(--muted);margin-top:12px}
+section.sketch{margin-top:56px;padding-top:32px;border-top:1px solid var(--outline-variant)}
+.sk-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.sk-tag{font:700 13px Roboto;letter-spacing:1px;background:var(--primary);color:#fff;border-radius:8px;padding:4px 10px}
+.sk-head h2{font-family:'Roboto Flex',Roboto;font-size:28px;font-weight:700}
+.sk-head p{flex-basis:100%;color:var(--muted);font-size:15px;max-width:820px}
+.sk-body{display:flex;gap:28px;flex-wrap:wrap;margin-top:24px;align-items:flex-start}
+.phones{display:flex;gap:24px;flex-wrap:wrap}
+.cap{font-size:13px;color:var(--muted);text-align:center;margin-top:10px}
+.notes{flex:1 1 300px;min-width:280px;background:#fff;border:1px solid var(--outline-variant);border-radius:20px;padding:20px;font-size:14px}
+.notes h3{font-size:15px;margin:14px 0 6px}.notes h3:first-child{margin-top:0}
+.notes ul{padding-left:18px}.notes li{margin:3px 0}
+.notes code{font-size:12.5px;background:var(--sc);border-radius:4px;padding:1px 4px}
+.dials{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.dial{background:var(--sc);border-radius:8px;padding:4px 8px;font-size:12.5px}
+
+/* ── Teléfono (1px = 1dp) ── */
+.phone{width:360px;height:780px;border-radius:32px;background:var(--surface);overflow:hidden;position:relative;
+  box-shadow:0 0 0 10px #1d1b1b,0 18px 40px rgba(0,0,0,.25);display:flex;flex-direction:column;color:var(--on-surface)}
+.statusbar{height:28px;flex:none;background:color-mix(in srgb,var(--primary) 92%,transparent);color:#fff;
+  display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-size:13px;font-weight:500;z-index:3}
+.statusbar .ic{display:flex;gap:4px}
+.gesture{height:20px;flex:none;background:color-mix(in srgb,var(--primary) 92%,transparent);display:flex;align-items:center;justify-content:center;z-index:3}
+.gesture i{width:108px;height:4px;border-radius:2px;background:rgba(255,255,255,.9)}
+.content{flex:1;overflow:hidden;position:relative}
+.scroll{position:absolute;inset:0;overflow:hidden;padding-bottom:160px}
+
+/* Barra superior */
+.tab{display:flex;align-items:center;gap:4px;padding:8px 4px 8px 16px;min-height:64px}
+.tab .t{flex:1;min-width:0}
+.tab h1{font-size:28px;font-weight:400;line-height:34px;letter-spacing:0}
+.tab .sub{font-size:14px;color:var(--on-surface-variant)}
+.icon-btn{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;color:var(--on-surface-variant);flex:none}
+.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#B65A63,#E9A6A0);color:#fff;
+  display:grid;place-items:center;font:500 14px Roboto}
+
+/* Chips */
+.chips{display:flex;gap:8px;padding:4px 16px 8px;overflow:hidden}
+.chip{height:32px;border-radius:8px;border:1px solid var(--outline-variant);padding:0 12px;display:flex;align-items:center;gap:6px;
+  font-size:14px;font-weight:500;color:var(--on-surface-variant);white-space:nowrap;flex:none}
+.chip.sel{background:var(--secondary-container);border-color:transparent;color:var(--on-secondary-container)}
+.chip.assist{color:var(--on-surface)}
+.chip .ms{font-size:18px}
+
+/* Pestañas */
+.tabs{display:flex;border-bottom:1px solid var(--outline-variant)}
+.tabs div{flex:1;text-align:center;font-size:14px;font-weight:500;color:var(--on-surface-variant);padding:14px 0 12px;position:relative}
+.tabs div.on{color:var(--primary)}
+.tabs div.on::after{content:"";position:absolute;left:22%;right:22%;bottom:-1px;height:3px;border-radius:3px 3px 0 0;background:var(--primary)}
+
+/* Encabezados de sección */
+.sec{display:flex;align-items:center;justify-content:space-between;padding:20px 8px 8px 16px}
+.sec h2{font-size:22px;font-weight:400;line-height:28px}
+.sec .tb{font-size:14px;font-weight:500;color:var(--primary);padding:10px 12px;border-radius:20px}
+.sec .ov{font-size:12px;color:var(--on-surface-variant);display:block;margin-top:-2px}
+
+/* Portadas (placeholders tonales) */
+.art{border-radius:8px;flex:none;position:relative;overflow:hidden}
+.a1{background:linear-gradient(135deg,#7E2F3A,#E0828A)}
+.a2{background:linear-gradient(135deg,#2E5E63,#8CC1BC)}
+.a3{background:linear-gradient(135deg,#5B4A7A,#B9A6D9)}
+.a4{background:linear-gradient(135deg,#6E5A1F,#E1C27A)}
+.a5{background:linear-gradient(135deg,#334A66,#96B2D6)}
+.a6{background:linear-gradient(135deg,#4F6331,#B6CC8C)}
+.a7{background:linear-gradient(135deg,#7A3E22,#E6A17E)}
+.a8{background:linear-gradient(135deg,#3C3A3B,#A39D9E)}
+.art .ms{position:absolute;inset:0;display:grid;place-items:center;color:rgba(255,255,255,.75)}
+
+/* Accesos rápidos (SpotifyGreetingGrid) */
+.shortcuts{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:4px 16px}
+.sc{display:flex;align-items:center;gap:10px;height:56px;border-radius:12px;background:var(--sc-high);overflow:hidden;padding-right:8px}
+.sc .art{width:56px;height:56px;border-radius:0}
+.sc b{font-size:14px;font-weight:500;line-height:18px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* Tarjetas */
+.card{margin:8px 16px;border-radius:16px;background:var(--sc-low);padding:16px}
+.card.tonal{background:var(--primary-container);color:var(--on-primary-container)}
+.card.elev{background:var(--sc-lowest);box-shadow:0 1px 3px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.08)}
+.overline{font-size:12px;font-weight:500;letter-spacing:.5px;text-transform:uppercase;color:var(--on-surface-variant)}
+.btn{height:40px;border-radius:20px;padding:0 20px;display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:500;flex:none}
+.btn.filled{background:var(--primary);color:var(--on-primary)}
+.btn.tonal{background:var(--secondary-container);color:var(--on-secondary-container)}
+.btn.text{color:var(--primary);padding:0 12px}
+.btn .ms{font-size:18px}
+.progress{height:4px;border-radius:2px;background:var(--sc-highest);overflow:hidden}
+.progress i{display:block;height:100%;background:var(--primary);border-radius:2px}
+
+/* Filas de canción */
+.row{display:flex;align-items:center;gap:12px;padding:8px 4px 8px 16px;min-height:64px}
+.row .art{width:48px;height:48px}
+.row .tx{flex:1;min-width:0}
+.row .t1{font-size:16px;line-height:22px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .t2{font-size:14px;color:var(--on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .t1.playing{color:var(--primary);font-weight:500}
+
+/* Carruseles */
+.carousel{display:flex;gap:12px;padding:4px 16px;overflow:hidden}
+.tile{width:140px;flex:none}
+.tile .art{width:140px;height:140px;border-radius:12px}
+.tile b{display:block;font-size:14px;font-weight:500;margin-top:8px;line-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile span{display:block;font-size:13px;color:var(--on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile.round .art{border-radius:50%}
+
+/* Herramientas Dezzy */
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:4px 16px}
+.tool{border-radius:16px;background:var(--sc);padding:14px;min-height:96px;display:flex;flex-direction:column;gap:8px}
+.tool .ms{color:var(--primary)}
+.tool b{font-size:14px;font-weight:500;line-height:18px}
+.tool span{font-size:12px;color:var(--on-surface-variant);line-height:16px}
+.qa{display:flex;gap:4px;padding:4px 8px;overflow:hidden}
+.qa .q{width:76px;flex:none;display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px 0}
+.qa .q i{width:56px;height:56px;border-radius:16px;background:var(--secondary-container);color:var(--on-secondary-container);display:grid;place-items:center;font-style:normal}
+.qa .q.p i{background:var(--primary);color:#fff}
+.qa .q span{font-size:12px;text-align:center;line-height:15px;color:var(--on-surface)}
+
+/* SearchBar */
+.searchbar{margin:4px 16px 8px;height:56px;border-radius:28px;background:var(--sc-high);display:flex;align-items:center;gap:4px;padding:0 4px 0 16px;color:var(--on-surface-variant);font-size:16px}
+.searchbar .grow{flex:1;margin-left:12px}
+
+/* Mini reproductor + barra de navegación */
+.bottom{position:absolute;left:0;right:0;bottom:0;z-index:2}
+.mini{margin:0 8px 8px;height:64px;border-radius:16px;background:var(--sc-highest);display:flex;align-items:center;gap:12px;padding:0 4px 0 8px;position:relative;overflow:hidden;
+  box-shadow:0 2px 6px rgba(0,0,0,.10)}
+.mini .art{width:48px;height:48px}
+.mini .tx{flex:1;min-width:0}
+.mini .t1{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini .t2{font-size:13px;color:var(--on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini .bar{position:absolute;left:12px;right:12px;bottom:0;height:3px;border-radius:2px;background:var(--outline-variant)}
+.mini .bar i{display:block;width:38%;height:100%;background:var(--primary);border-radius:2px}
+.navbar{height:80px;background:var(--sc);display:flex;padding-top:12px}
+.navbar .it{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;font-weight:500;color:var(--on-surface-variant)}
+.navbar .pill{width:64px;height:32px;border-radius:16px;display:grid;place-items:center}
+.navbar .it.on{color:var(--on-surface)}
+.navbar .it.on .pill{background:var(--secondary-container);color:var(--on-secondary-container)}
+.badge-dot{position:relative}
+.badge-dot::after{content:"";position:absolute;top:4px;right:16px;width:8px;height:8px;border-radius:50%;background:#B3261E}
+
+/* Hoja inferior (boceto A, pantalla 2) */
+.scrim-modal{position:absolute;inset:0;background:rgba(34,25,26,.32);z-index:4}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--sc-low);border-radius:28px 28px 0 0;z-index:5;padding:8px 0 20px}
+.sheet .handle{width:32px;height:4px;border-radius:2px;background:var(--on-surface-variant);opacity:.4;margin:14px auto 16px}
+.sheet h3{font-size:22px;font-weight:400;padding:0 24px 8px}
+.list-item{display:flex;align-items:center;gap:16px;padding:10px 24px;min-height:56px}
+.list-item .ms{color:var(--on-surface-variant)}
+.list-item .tx{flex:1}
+.list-item b{display:block;font-size:16px;font-weight:400}
+.list-item span{font-size:14px;color:var(--on-surface-variant)}
+
+/* Hero reanudar */
+.hero{margin:8px 16px;border-radius:24px;overflow:hidden;position:relative;height:184px;background:linear-gradient(160deg,#5B2830 0%,#9C3F48 55%,#E07C84 100%);color:#fff}
+.hero .in{position:absolute;inset:0;padding:16px;display:flex;flex-direction:column;justify-content:flex-end;background:linear-gradient(180deg,rgba(0,0,0,0) 20%,rgba(0,0,0,.45))}
+.hero .ov{font-size:12px;font-weight:500;letter-spacing:.6px;text-transform:uppercase;opacity:.9}
+.hero h3{font-size:22px;font-weight:500;line-height:28px}
+.hero p{font-size:14px;opacity:.92}
+.hero .play{position:absolute;right:16px;bottom:16px;width:56px;height:56px;border-radius:16px;background:var(--primary-container);color:var(--on-primary-container);display:grid;place-items:center}
+.stat-row{display:flex;gap:8px;padding:4px 16px 4px;flex-wrap:wrap}
+.divider{height:1px;background:var(--outline-variant);margin:8px 16px}
+.profile{display:flex;align-items:center;gap:16px;padding:8px 16px 4px}
+.profile .avatar{width:64px;height:64px;font-size:24px}
+.profile b{font-size:22px;font-weight:400;display:block}
+.profile span{font-size:14px;color:var(--on-surface-variant)}
+.statgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:8px 16px}
+.stat{background:var(--sc);border-radius:16px;padding:12px}
+.stat b{display:block;font-size:24px;font-weight:500;color:var(--primary);line-height:30px}
+.stat span{font-size:12px;color:var(--on-surface-variant)}
+@media (max-width:420px){.phone{transform:scale(.9);transform-origin:top left;margin-bottom:-78px;margin-right:-36px}}
+/* ── Ajustes y cuentas (fase 7) ── */
+.tb-row{display:flex;align-items:center;height:64px;padding:0 4px}
+.tb-row .grow{flex:1;font-size:22px;padding-left:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bigt{font-size:32px;font-weight:400;line-height:40px;padding:4px 20px 12px}
+.srch{display:flex;align-items:center;gap:12px;margin:0 16px 12px;height:52px;border-radius:26px;background:var(--sc-high);padding:0 16px;font-size:15px;color:var(--on-surface-variant)}
+.lbl{font-size:14px;font-weight:500;color:var(--primary);padding:16px 24px 6px}
+/* grupos tipo Pixel */
+.grp{margin:0 16px 8px;border-radius:24px;background:var(--sc-lowest);overflow:hidden}
+.grp.tn{background:var(--sc)}
+.si{display:flex;align-items:center;gap:16px;padding:10px 16px;min-height:64px;position:relative}
+.si+.si::before{content:"";position:absolute;left:72px;right:16px;top:0;height:1px;background:var(--outline-variant);opacity:.6}
+.si .ic{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--primary-container);color:var(--on-primary-container)}
+.si .ic.b{background:#D6E3FF;color:#173A6B}.si .ic.g{background:#CDEBC6;color:#1F4D1B}.si .ic.y{background:#F6E1A6;color:#4E3B00}
+.si .ic.v{background:#E6DBFF;color:#3A2A6B}.si .ic.n{background:var(--sc-highest);color:var(--on-surface-variant)}
+.si .tx{flex:1;min-width:0}
+.si b{display:block;font-size:16px;font-weight:400;line-height:22px}
+.si span.s{display:block;font-size:13px;color:var(--on-surface-variant);line-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.si .ms.ch{color:var(--on-surface-variant)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--brand);flex:none}
+/* cuenta */
+.acc{margin:0 16px 12px;border-radius:24px;background:var(--primary-container);color:var(--on-primary-container);padding:16px;display:flex;align-items:center;gap:14px}
+.acc .av{width:56px;height:56px;border-radius:50%;flex:none;background:linear-gradient(135deg,#9C3F48,#FFB3B9);display:grid;place-items:center;color:#fff;font-size:24px;font-weight:500}
+.acc .tx{flex:1;min-width:0}.acc b{display:block;font-size:18px;font-weight:500}
+.acc span{font-size:13px;opacity:.85}
+.svc{display:flex;align-items:center;gap:14px;padding:10px 16px;min-height:64px;position:relative}
+.svc+.svc::before{content:"";position:absolute;left:72px;right:16px;top:0;height:1px;background:var(--outline-variant);opacity:.6}
+.svc .lg{width:40px;height:40px;border-radius:12px;flex:none;display:grid;place-items:center;color:#fff;font-weight:700;font-size:15px}
+.svc .tx{flex:1;min-width:0}.svc b{display:block;font-size:16px;font-weight:400}
+.svc span.s{font-size:13px;color:var(--on-surface-variant)}
+.st{height:28px;border-radius:14px;padding:0 10px;font-size:12px;font-weight:500;display:flex;align-items:center;gap:4px;flex:none}
+.st.ok{background:#CDEBC6;color:#1F4D1B}.st.off{border:1px solid var(--outline);color:var(--primary)}
+.lg.yt{background:#E0362C}.lg.sp{background:#1DB954}.lg.dc{background:#5865F2}.lg.lf{background:#C3000D}.lg.lb{background:#EB743B}.lg.dz{background:linear-gradient(135deg,#9C3F48,#ED5564)}
+/* interruptores y valores */
+.trow{display:flex;align-items:center;gap:16px;padding:10px 16px;min-height:64px;position:relative}
+.trow+.trow::before,.si+.trow::before,.trow+.si::before{content:"";position:absolute;left:16px;right:16px;top:0;height:1px;background:var(--outline-variant);opacity:.6}
+.trow .tx{flex:1;font-size:16px;line-height:22px}
+.trow .tx span{display:block;font-size:13px;color:var(--on-surface-variant);line-height:18px}
+.sw{width:52px;height:32px;border-radius:16px;background:var(--primary);position:relative;flex:none}
+.sw::after{content:"";position:absolute;right:4px;top:4px;width:24px;height:24px;border-radius:50%;background:#fff}
+.sw.off{background:var(--sc-highest);box-shadow:inset 0 0 0 2px var(--outline)}
+.sw.off::after{left:8px;right:auto;top:8px;width:16px;height:16px;background:var(--outline)}
+.seg{display:flex;margin:4px 16px 12px;border:1px solid var(--outline);border-radius:20px;overflow:hidden;height:40px}
+.seg span{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;font-size:14px;font-weight:500;border-left:1px solid var(--outline)}
+.seg span:first-child{border-left:0}
+.seg span.on{background:var(--secondary-container);color:var(--on-secondary-container)}
+.seg .ms{font-size:18px}
+.segl{font-size:16px;padding:12px 16px 4px}
+.segl span{display:block;font-size:13px;color:var(--on-surface-variant)}
+/* B: mosaicos */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px 8px}
+.tl{border-radius:20px;background:var(--sc);padding:14px;min-height:104px;display:flex;flex-direction:column;justify-content:space-between}
+.tl .ms{color:var(--primary)}
+.tl b{display:block;font-size:15px;font-weight:500;line-height:20px}
+.tl span.s{font-size:12px;color:var(--on-surface-variant);line-height:16px}
+.tl.p{background:var(--primary-container);color:var(--on-primary-container)}.tl.p .ms{color:inherit}.tl.p span.s{color:inherit;opacity:.85}
+.stat3{display:flex;gap:8px;padding:0 16px 12px}
+.stat3 div{flex:1;border-radius:16px;background:var(--sc-low);padding:10px;font-size:12px;color:var(--on-surface-variant)}
+.stat3 b{display:block;font-size:16px;font-weight:500;color:var(--on-surface)}
+.logos{display:flex;gap:12px;padding:0 16px 8px}
+.logos div{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;width:56px;position:relative}
+.logos .lg{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;color:#fff;font-weight:700}
+.logos i{position:absolute;right:4px;top:-2px;width:14px;height:14px;border-radius:50%;background:#2E7D32;border:2px solid var(--surface)}
+.logos i.no{background:var(--outline)}
+/* hoja */
+.scrim-modal{position:absolute;inset:0;background:rgba(34,25,26,.32);z-index:4}
+.sheet .handle{margin:14px auto 12px}
+/* C: atajos y vista previa */
+.qt{display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 12px}
+.qt span{height:40px;border-radius:12px;padding:0 14px;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;background:var(--sc-high)}
+.qt span.on{background:var(--primary);color:var(--on-primary)}
+.qt .ms{font-size:20px}
+.hint{margin:0 16px 12px;border-radius:20px;background:var(--tertiary-container);color:var(--on-tertiary-container);padding:14px;display:flex;gap:12px;align-items:flex-start}
+.hint b{display:block;font-size:15px;font-weight:500}.hint span{font-size:13px;opacity:.9}
+.hint .acts{display:flex;gap:8px;margin-top:8px}
+.hint .btn{height:36px;padding:0 14px}
+.prev{margin:4px 16px 12px;border-radius:24px;background:var(--sc);padding:16px;display:flex;gap:16px;align-items:center}
+.mph{width:96px;height:176px;border-radius:16px;background:var(--surface);box-shadow:0 0 0 2px var(--outline-variant);padding:8px;display:flex;flex-direction:column;gap:6px;flex:none}
+.mph i{display:block;border-radius:6px;background:var(--sc-high)}
+.mph i.a{height:56px;background:linear-gradient(135deg,#9C3F48,#ED5564)}
+.mph i.p{height:8px;width:60%;background:var(--on-surface-variant);opacity:.5}
+.mph i.c{height:24px;border-radius:12px;background:var(--primary)}
+.sws{display:flex;flex-wrap:wrap;gap:10px}
+.sws span{width:40px;height:40px;border-radius:50%;position:relative}
+.sws span.on::after{content:"check";font-family:'Material Symbols Outlined';position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:20px}
+.sws span.on{box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--on-surface)}
+.badge-n{height:20px;min-width:20px;border-radius:10px;padding:0 6px;background:var(--brand);color:#fff;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <h1>Dezzy · Rediseño de interfaz</h1>
+  <p class="lead">Fase 7 de 7: <b>Ajustes y cuentas</b>. Tres bocetos en tema claro, Material 3 y Material Symbols, escala 1 px = 1 dp. Cubre la pantalla principal de Ajustes, la cuenta y los servicios conectados, y el patrón de las subpantallas.</p>
+  <div class="phases">
+    <div class="phase"><b>Fase 1 · hecha</b>Base visual, navegación e Inicio<br><span>Boceto A aplicado (sin compilar)</span></div>
+    <div class="phase"><b>Fase 2 · hecha</b>Reproductor<br><span>Boceto A como estilo «Clásico» (sin compilar)</span></div>
+    <div class="phase"><b>Fase 3 · hecha</b>Búsqueda y Explorar<br><span>Boceto A aplicado (sin compilar)</span></div>
+    <div class="phase"><b>Fase 4 · hecha</b>Biblioteca y detalle<br><span>Biblioteca B, álbum y artista A (sin compilar)</span></div>
+    <div class="phase"><b>Fase 5 · hecha</b>Social y Escuchar juntos<br><span>Boceto A aplicado (sin compilar)</span></div>
+    <div class="phase"><b>Fase 6 · hecha</b>Experiencias Dezzy<br><span>Hub B, DJ C, Estadísticas A (sin compilar)</span></div>
+    <div class="phase now"><b>Fase 7 · ahora</b>Ajustes y cuentas<br><span>Ajustes, cuentas, integraciones, subpantallas</span></div>
+  </div>
+  <p class="legend">Hoy Ajustes apila una cabecera con el nombre de la app, banners de permisos y actualización, 4 accesos rápidos, 5 integraciones y 5 grupos más, con varias entradas repetidas (Apariencia, Reproductor, Privacidad aparecen dos veces). La cuenta se abre en una ventana flotante desde el avatar, y Spotify, Discord, Last.fm y Lossless están repartidos entre esa ventana, «Integración» y los grupos. Portadas y fotos son marcadores de color.</p>
+</header>
+<section class="sketch"><div class="sk-head"><span class="sk-tag">Boceto A</span><h2>Ajustes al estilo Android</h2><p>La pantalla principal se vuelve una lista corta en grupos redondeados, como los Ajustes del teléfono: cada entrada dice su valor actual («Calidad alta», «Caché 1,2 GB»). La ventana flotante de cuenta pasa a ser una pantalla «Cuentas y servicios» con el estado de cada conexión.</p></div><div class="sk-body"><div class="phones"><div><div class="phone"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div><div class="content"><div class="scroll" style="padding-bottom:24px"><div class="tb-row"><span class="icon-btn"><span class="ms">arrow_back</span></span><span class="grow"></span><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="bigt">Ajustes</div><div class="srch"><span class="ms">search</span>Buscar en Ajustes</div><div class="acc"><span class="av">D</span><div class="tx"><b>Dezzy</b><span>Cuenta de YouTube Music conectada</span></div><span class="ms">chevron_right</span></div><div class="grp"><div class="si"><span class="ic "><span class="ms">palette</span></span><div class="tx"><b>Apariencia</b><span class="s">Tema del sistema, color dinámico</span></div><span class="ms ch">chevron_right</span></div><div class="si"><span class="ic b"><span class="ms">play_circle</span></span><div class="tx"><b>Reproductor y audio</b><span class="s">Calidad alta, normalizar volumen</span></div><span class="ms ch">chevron_right</span></div><div class="si"><span class="ic v"><span class="ms">lyrics</span></span><div class="tx"><b>Letras e IA</b><span class="s">Traducción automática activada</span></div><span class="ms ch">chevron_right</span></div><div class="si"><span class="ic g"><span class="ms">language</span></span><div class="tx"><b>Contenido</b><span class="s">Español, México</span></div><span class="ms ch">chevron_right</span></div></div><div class="grp"><div class="si"><span class="ic y"><span class="ms">hub</span></span><div class="tx"><b>Cuentas y servicios</b><span class="s">Spotify, Discord, Last.fm</span></div><span class="ms ch">chevron_right</span></div><div class="si"><span class="ic g"><span class="ms">download</span></span><div class="tx"><b>Descargas y almacenamiento</b><span class="s">Caché 1,2 GB, lossless</span></div><span class="ms ch">chevron_right</span></div><div class="si"><span class="ic n"><span class="ms">lock</span></span><div class="tx"><b>Privacidad</b><span class="s">Historial activado</span></div><span class="ms ch">chevron_right</span></div></div><div class="grp"><div class="si"><span class="ic n"><span class="ms">system_update</span></span><div class="tx"><b>Actualizaciones</b><span class="s">Versión 3.0.8 disponible</span></div><span class="dot"></span><span class="ms ch">chevron_right</span></div><div class="si"><span class="ic n"><span class="ms">info</span></span><div class="tx"><b>Acerca de Dezzy</b><span class="s">Versión 3.0.7</span></div><span class="ms ch">chevron_right</span></div></div></div></div><div class="gesture"><i></i></div></div><div class="cap">Ajustes</div></div><div><div class="phone"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div><div class="content"><div class="scroll" style="padding-bottom:24px"><div class="tb-row"><span class="icon-btn"><span class="ms">arrow_back</span></span><span class="grow">Cuentas y servicios</span></div><div class="lbl">Tu cuenta</div><div class="grp"><div class="svc"><span class="lg yt">▶</span><div class="tx"><b>YouTube Music</b><span class="s">dezzy@… · sincroniza tu biblioteca</span></div><span class="st ok"><span class="ms s16">check</span>Conectado</span></div><div class="trow"><div class="tx">Usar la cuenta para explorar<span>Más contenido personalizado</span></div><span class="sw"></span></div><div class="trow"><div class="tx">Sincronizar biblioteca<span>Me gusta, playlists y suscripciones</span></div><span class="sw"></span></div><div class="si"><span class="ic n"><span class="ms">playlist_add</span></span><div class="tx"><b>Playlists a sincronizar</b><span class="s">12 de 18 elegidas</span></div><span class="ms ch">chevron_right</span></div></div><div class="lbl">Servicios conectados</div><div class="grp"><div class="svc"><span class="lg sp">S</span><div class="tx"><b>Spotify</b><span class="s">Importar playlists y canvas</span></div><span class="st ok"><span class="ms s16">check</span>Conectado</span></div><div class="svc"><span class="lg dc">D</span><div class="tx"><b>Discord</b><span class="s">Mostrar lo que escuchas</span></div><span class="st off">Conectar</span></div><div class="svc"><span class="lg lf">L</span><div class="tx"><b>Last.fm</b><span class="s">Registrar reproducciones</span></div><span class="st ok"><span class="ms s16">check</span>Conectado</span></div><div class="svc"><span class="lg lb">B</span><div class="tx"><b>ListenBrainz</b><span class="s">Registrar reproducciones</span></div><span class="st off">Conectar</span></div></div><div class="lbl">Avanzado</div><div class="grp"><div class="si"><span class="ic n"><span class="ms">key</span></span><div class="tx"><b>Inicio de sesión avanzado</b><span class="s">Token y datos de sesión</span></div><span class="ms ch">chevron_right</span></div><div class="si"><span class="ic n"><span class="ms">logout</span></span><div class="tx"><b>Cerrar sesión de YouTube</b><span class="s"></span></div></div></div></div></div><div class="gesture"><i></i></div></div><div class="cap">Cuentas y servicios (sustituye a la ventana flotante)</div></div><div><div class="phone"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div><div class="content"><div class="scroll" style="padding-bottom:24px"><div class="tb-row"><span class="icon-btn"><span class="ms">arrow_back</span></span><span class="grow">Reproductor y audio</span><span class="icon-btn"><span class="ms">search</span></span></div><div class="lbl">Calidad</div><div class="grp"><div class="si"><span class="ic n"><span class="ms">high_quality</span></span><div class="tx"><b>Calidad de audio</b><span class="s">Alta</span></div></div><div class="trow"><div class="tx">Motor Hi-Res de 32 bits<span>Más fidelidad, más batería</span></div><span class="sw off"></span></div><div class="si"><span class="ic n"><span class="ms">signal_cellular_alt</span></span><div class="tx"><b>Con datos móviles</b><span class="s">Calidad normal</span></div></div></div><div class="lbl">Sonido</div><div class="grp"><div class="trow"><div class="tx">Normalizar volumen<span>Mismo nivel entre canciones</span></div><span class="sw"></span></div><div class="trow"><div class="tx">Saltar silencios</div><span class="sw off"></span></div><div class="si"><span class="ic n"><span class="ms">equalizer</span></span><div class="tx"><b>Ecualizador</b><span class="s">Personalizado</span></div><span class="ms ch">chevron_right</span></div></div><div class="lbl">Comportamiento</div><div class="grp"><div class="trow"><div class="tx">Pausar al silenciar el dispositivo</div><span class="sw"></span></div><div class="trow"><div class="tx">Reproducir al conectar Bluetooth</div><span class="sw off"></span></div></div></div></div><div class="gesture"><i></i></div></div><div class="cap">Una subpantalla (mismo patrón en todas)</div></div></div><div class="notes"><h3>Qué cambia</h3><ul><li>Título grande «Ajustes», buscador siempre visible y tarjeta de cuenta arriba.</li><li>De 5 bloques (accesos rápidos, integraciones, 5 grupos) a 3 grupos con 9 entradas; cada una muestra su valor actual.</li><li>Spotify, Discord, Last.fm, ListenBrainz y YouTube Music juntos en «Cuentas y servicios» con chip Conectado / Conectar.</li><li>Subpantallas con el mismo patrón: encabezados de grupo, interruptores a la derecha y descripción corta.</li><li>El aviso de actualización es un punto en «Actualizaciones» en lugar de un banner.</li></ul><h3>A tener en cuenta</h3><ul><li>El avatar de Inicio abrirá «Cuentas y servicios» a pantalla completa.</li><li>Las pantallas de detalle de cada integración (Discord, Spotify, Lossless…) se mantienen; sólo se unifica su barra superior.</li></ul><div class="dials"><span class="dial">Pantallas nuevas: 1</span><span class="dial">Cambio visual: medio</span></div></div></div></section><section class="sketch"><div class="sk-head"><span class="sk-tag">Boceto B</span><h2>Panel visual</h2><p>Ajustes abre con un resumen: cuenta, tres cifras de estado y cuatro mosaicos grandes para lo que más se toca. Los servicios conectados se ven de un vistazo como iconos con un punto verde. La cuenta se abre como hoja inferior desde el avatar, y las opciones con pocas alternativas se eligen en línea, sin diálogos.</p></div><div class="sk-body"><div class="phones"><div><div class="phone"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div><div class="content"><div class="scroll" style="padding-bottom:24px"><div class="tb-row"><span class="icon-btn"><span class="ms">arrow_back</span></span><span class="grow">Ajustes</span><span class="icon-btn"><span class="ms">search</span></span></div><div class="acc"><span class="av">D</span><div class="tx"><b>Dezzy</b><span>Cuenta de YouTube Music conectada</span></div><span class="ms">chevron_right</span></div><div class="stat3"><div><b>Alta</b>Calidad</div><div><b>1,2 GB</b>Caché</div><div><b>Hace 3 d</b>Copia</div></div><div class="tiles"><div class="tl p"><span class="ms">palette</span><div><b>Apariencia</b><span class="s">Temas, colores, fondo</span></div></div><div class="tl"><span class="ms">play_circle</span><div><b>Reproductor</b><span class="s">Calidad y sonido</span></div></div><div class="tl"><span class="ms">download</span><div><b>Almacenamiento</b><span class="s">Caché y descargas</span></div></div><div class="tl"><span class="ms">lock</span><div><b>Privacidad</b><span class="s">Historial y datos</span></div></div></div><div class="lbl" style="padding-left:16px">Conectado</div><div class="logos"><div><span class="lg yt">▶</span><i></i>YouTube</div><div><span class="lg sp">S</span><i></i>Spotify</div><div><span class="lg dc">D</span><i class="no"></i>Discord</div><div><span class="lg lf">L</span><i></i>Last.fm</div><div><span class="lg dz">♪</span><i class="no"></i>Juntos</div></div><div class="lbl" style="padding-left:16px">Más</div><div class="grp"><div class="si"><span class="ic v"><span class="ms">lyrics</span></span><div class="tx"><b>Letras e IA</b><span class="s">Traducción automática</span></div><span class="ms ch">chevron_right</span></div><div class="si"><span class="ic g"><span class="ms">language</span></span><div class="tx"><b>Contenido</b><span class="s">Idioma y país</span></div><span class="ms ch">chevron_right</span></div><div class="si"><span class="ic n"><span class="ms">settings_backup_restore</span></span><div class="tx"><b>Copia de seguridad</b><span class="s">Última: hace 3 días</span></div><span class="ms ch">chevron_right</span></div><div class="si"><span class="ic n"><span class="ms">info</span></span><div class="tx"><b>Acerca de y actualizaciones</b><span class="s">Hay una versión nueva</span></div><span class="dot"></span><span class="ms ch">chevron_right</span></div></div></div></div><div class="gesture"><i></i></div></div><div class="cap">Ajustes como panel</div></div><div><div class="phone"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div><div class="content"><div class="scroll" style="padding-bottom:24px"><div class="tb-row"><span class="grow" style="font-size:28px;padding-left:16px">Buenas noches</span><span class="icon-btn"><span class="ms">notifications</span></span></div></div><div class="scrim-modal"></div><div class="sheet" style="padding-bottom:12px"><div class="handle"></div><div style="text-align:center;padding:0 24px 12px"><span class="av" style="width:72px;height:72px;border-radius:50%;margin:0 auto 8px;display:grid;place-items:center;background:linear-gradient(135deg,#9C3F48,#FFB3B9);color:#fff;font-size:30px">D</span><b style="font-size:20px;font-weight:500;display:block">Dezzy</b><span style="font-size:13px;color:var(--on-surface-variant)">dezzy@… · YouTube Music</span><div style="display:flex;gap:8px;justify-content:center;margin-top:12px"><span class="btn tonal">Gestionar cuenta</span><span class="btn text">Cerrar sesión</span></div></div><div class="grp tn"><div class="trow"><div class="tx">Usar la cuenta para explorar</div><span class="sw"></span></div><div class="trow"><div class="tx">Sincronizar biblioteca</div><span class="sw"></span></div></div><div class="grp tn"><div class="si"><span class="ic y"><span class="ms">hub</span></span><div class="tx"><b>Servicios conectados</b><span class="s">Spotify, Last.fm</span></div><span class="ms ch">chevron_right</span></div><div class="si"><span class="ic n"><span class="ms">settings</span></span><div class="tx"><b>Ajustes</b><span class="s"></span></div><span class="dot"></span><span class="ms ch">chevron_right</span></div></div></div></div><div class="gesture"><i></i></div></div><div class="cap">Cuenta como hoja (desde el avatar de Inicio)</div></div><div><div class="phone"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div><div class="content"><div class="scroll" style="padding-bottom:24px"><div class="tb-row"><span class="icon-btn"><span class="ms">arrow_back</span></span><span class="grow">Reproductor y audio</span></div><div class="segl">Calidad de audio<span>Con wifi</span></div><div class="seg"><span>Baja</span><span>Normal</span><span class="on"><span class="ms">check</span>Alta</span></div><div class="segl">Con datos móviles<span>Ahorra datos fuera de casa</span></div><div class="seg"><span>Baja</span><span class="on"><span class="ms">check</span>Normal</span><span>Alta</span></div><div class="lbl" style="padding-left:16px">Sonido</div><div class="grp"><div class="trow"><div class="tx">Normalizar volumen<span>Mismo nivel entre canciones</span></div><span class="sw"></span></div><div class="trow"><div class="tx">Saltar silencios</div><span class="sw off"></span></div><div class="trow"><div class="tx">Motor Hi-Res de 32 bits<span>Más fidelidad, más batería</span></div><span class="sw off"></span></div></div><div class="lbl" style="padding-left:16px">Comportamiento</div><div class="grp"><div class="trow"><div class="tx">Pausar al silenciar el dispositivo</div><span class="sw"></span></div><div class="trow"><div class="tx">Reproducir al conectar Bluetooth</div><span class="sw off"></span></div></div></div></div><div class="gesture"><i></i></div></div><div class="cap">Subpantalla con opciones en línea</div></div></div><div class="notes"><h3>Qué cambia</h3><ul><li>Fila de estado: calidad de audio, caché usada y última copia de seguridad.</li><li>Cuatro mosaicos (Apariencia, Reproductor, Almacenamiento, Privacidad) sustituyen a los accesos rápidos actuales.</li><li>Integraciones como fila de iconos con indicador conectado / sin conectar; tocar uno abre su pantalla.</li><li>La ventana flotante de cuenta pasa a hoja inferior M3 con los interruptores de cuenta y el acceso a Ajustes.</li><li>Calidad de audio con botones segmentados Baja / Normal / Alta en vez de un diálogo.</li></ul><h3>A tener en cuenta</h3><ul><li>La fila de estado necesita leer el tamaño de la caché y la fecha de la última copia (ya existen en Almacenamiento y Copia de seguridad).</li><li>Los botones segmentados sólo se usan donde hay 2–4 opciones; el resto sigue con diálogo.</li></ul><div class="dials"><span class="dial">Pantallas nuevas: 0 (una hoja)</span><span class="dial">Cambio visual: alto</span></div></div></div></section><section class="sketch"><div class="sk-head"><span class="sk-tag">Boceto C</span><h2>Atajos y vista previa</h2><p>Mantiene una lista sencilla pero suma atajos: los interruptores que más se cambian están arriba como botones, y los avisos (permisos, actualización) aparecen como una tarjeta que se puede descartar. Apariencia enseña una vista previa en vivo del tema mientras eliges colores.</p></div><div class="sk-body"><div class="phones"><div><div class="phone"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div><div class="content"><div class="scroll" style="padding-bottom:24px"><div class="tb-row"><span class="icon-btn"><span class="ms">arrow_back</span></span><span class="grow">Ajustes</span><span class="icon-btn"><span class="ms">search</span></span></div><div class="hint"><span class="ms">notifications_active</span><div><b>Permite las notificaciones</b><span>Para ver los controles de reproducción y las descargas.</span><div class="acts"><span class="btn filled">Permitir</span><span class="btn text">Ahora no</span></div></div></div><div class="lbl" style="padding-left:16px">Atajos</div><div class="qt"><span class="on"><span class="ms">dark_mode</span>Tema oscuro</span><span class="on"><span class="ms">colors</span>Color dinámico</span><span><span class="ms">graphic_eq</span>Normalizar</span><span><span class="ms">history_toggle_off</span>Pausar historial</span></div><div class="grp"><div class="si"><span class="ic "><span class="ms">palette</span></span><div class="tx"><b>Apariencia</b><span class="s">Temas, colores y fondo</span></div><span class="ms ch">chevron_right</span></div><div class="si"><span class="ic b"><span class="ms">play_circle</span></span><div class="tx"><b>Reproductor y audio</b><span class="s">Calidad, sonido, ecualizador</span></div><span class="ms ch">chevron_right</span></div><div class="si"><span class="ic v"><span class="ms">lyrics</span></span><div class="tx"><b>Letras e IA</b><span class="s">Traducción y letras sincronizadas</span></div><span class="ms ch">chevron_right</span></div><div class="si"><span class="ic y"><span class="ms">hub</span></span><div class="tx"><b>Cuentas y servicios</b><span class="s">3 conectados</span></div><span class="ms ch">chevron_right</span></div><div class="si"><span class="ic g"><span class="ms">download</span></span><div class="tx"><b>Almacenamiento y copias</b><span class="s">Caché, descargas, respaldo</span></div><span class="ms ch">chevron_right</span></div><div class="si"><span class="ic n"><span class="ms">tune</span></span><div class="tx"><b>Sistema</b><span class="s">Privacidad, enlaces, experimentos</span></div><span class="ms ch">chevron_right</span></div><div class="si"><span class="ic n"><span class="ms">info</span></span><div class="tx"><b>Acerca de</b><span class="s">Versión 3.0.7</span></div><span class="dot"></span><span class="ms ch">chevron_right</span></div></div></div></div><div class="gesture"><i></i></div></div><div class="cap">Ajustes con atajos</div></div><div><div class="phone"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div><div class="content"><div class="scroll" style="padding-bottom:24px"><div class="tb-row"><span class="icon-btn"><span class="ms">arrow_back</span></span><span class="grow">Apariencia</span></div><div class="prev"><div class="mph"><i class="a"></i><i class="p"></i><i class="p" style="width:40%"></i><i class="c"></i><i style="flex:1"></i></div><div style="flex:1"><div style="font-size:13px;color:var(--on-surface-variant);margin-bottom:8px">Color</div><div class="sws"><span class="on" style="background:#ED5564"></span><span style="background:#4A6FA5"></span><span style="background:#4F7F3A"></span><span style="background:#8A5CC2"></span><span style="background:#C08A1E"></span><span style="background:conic-gradient(#ED5564,#C08A1E,#4F7F3A,#4A6FA5,#8A5CC2,#ED5564)"></span></div></div></div><div class="segl">Tema<span></span></div><div class="seg"><span>Claro</span><span>Oscuro</span><span class="on"><span class="ms">check</span>Sistema</span></div><div class="grp"><div class="trow"><div class="tx">Color dinámico<span>Usa los colores de tu fondo de pantalla</span></div><span class="sw"></span></div><div class="trow"><div class="tx">Negro puro en tema oscuro</div><span class="sw off"></span></div><div class="si"><span class="ic n"><span class="ms">wallpaper</span></span><div class="tx"><b>Fondo personalizado</b><span class="s">Ninguno</span></div><span class="ms ch">chevron_right</span></div><div class="si"><span class="ic n"><span class="ms">brush</span></span><div class="tx"><b>Crear tema</b><span class="s">Diseña tu propia paleta</span></div><span class="ms ch">chevron_right</span></div><div class="si"><span class="ic n"><span class="ms">music_note</span></span><div class="tx"><b>Estilo del reproductor</b><span class="s">Clásico</span></div><span class="ms ch">chevron_right</span></div></div></div></div><div class="gesture"><i></i></div></div><div class="cap">Apariencia con vista previa</div></div><div><div class="phone"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div><div class="content"><div class="scroll" style="padding-bottom:24px"><div class="tb-row"><span class="icon-btn"><span class="ms">arrow_back</span></span><span class="grow">Cuentas y servicios</span></div><div class="acc"><span class="av">D</span><div class="tx"><b>Dezzy</b><span>Cuenta de YouTube Music conectada</span></div><span class="ms">chevron_right</span></div><div class="lbl">Escucha</div><div class="grp"><div class="svc"><span class="lg sp">S</span><div class="tx"><b>Spotify</b><span class="s">Importar playlists y canvas</span></div><span class="st ok"><span class="ms s16">check</span>Conectado</span></div><div class="svc"><span class="lg lf">L</span><div class="tx"><b>Last.fm</b><span class="s">Registrar reproducciones</span></div><span class="st ok"><span class="ms s16">check</span>Conectado</span></div><div class="svc"><span class="lg lb">B</span><div class="tx"><b>ListenBrainz</b><span class="s">Registrar reproducciones</span></div><span class="st off">Conectar</span></div></div><div class="lbl">Compartir</div><div class="grp"><div class="svc"><span class="lg dc">D</span><div class="tx"><b>Discord</b><span class="s">Mostrar lo que escuchas</span></div><span class="st off">Conectar</span></div><div class="svc"><span class="lg dz">♪</span><div class="tx"><b>Escuchar juntos</b><span class="s">Servidor y permisos de salas</span></div><span class="st ok"><span class="ms s16">check</span>Conectado</span></div></div><div class="lbl">Descargas</div><div class="grp"><div class="si"><span class="ic y"><span class="ms">high_quality</span></span><div class="tx"><b>Lossless</b><span class="s">FLAC / Hi-Res</span></div><span class="ms ch">chevron_right</span></div></div></div></div><div class="gesture"><i></i></div></div><div class="cap">Cuentas y servicios</div></div></div><div class="notes"><h3>Qué cambia</h3><ul><li>Atajos de un toque: tema oscuro, color dinámico, normalizar volumen y pausar historial.</li><li>Avisos de permisos y actualización como tarjeta con «Permitir» / «Ahora no».</li><li>Siete categorías en una sola lista; Privacidad, enlaces y experimentos se agrupan en «Sistema».</li><li>Apariencia con mini teléfono de vista previa, muestras de color y tema Claro / Oscuro / Sistema en línea.</li><li>Cuentas y servicios agrupados por uso: Escucha, Compartir, Descargas.</li></ul><h3>A tener en cuenta</h3><ul><li>La vista previa refleja el color elegido, no la pantalla real completa.</li><li>La ventana flotante de cuenta se sustituye por esta pantalla (igual que en A).</li></ul><div class="dials"><span class="dial">Pantallas nuevas: 1</span><span class="dial">Cambio visual: medio</span></div></div></div></section><section class="sketch"><div class="sk-head"><h2 style="font-size:22px">Para los tres</h2></div>
+<div class="sk-body"><div class="notes" style="max-width:none">
+<ul>
+<li>No se borra ninguna opción: todas las preferencias actuales siguen existiendo y la búsqueda de Ajustes las sigue encontrando (incluidas las internas).</li>
+<li>Se quitan los duplicados: cada ajuste vive en un solo sitio.</li>
+<li>Inicio de sesión de Google/YouTube, Spotify y Discord siguen usando sus pantallas actuales; sólo cambia cómo se llega a ellas.</li>
+<li>Textos de 13 sp o más en descripciones, áreas táctiles de 48 dp, filas con interruptor agrupadas para TalkBack.</li>
+<li>Tema oscuro generado automáticamente al aprobar.</li>
+</ul>
+<h3>Elige</h3><p>Dime «Boceto A», «B» o «C», o una mezcla (por ejemplo «Ajustes de A con la Apariencia de C»).</p>
+</div></div></section>
+</div>
+</body>
+</html>

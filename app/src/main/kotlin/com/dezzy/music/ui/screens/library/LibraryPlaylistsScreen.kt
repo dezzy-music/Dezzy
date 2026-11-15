@@ -7,6 +7,9 @@
 
 package com.dezzy.music.ui.screens.library
 
+import com.dezzy.music.ui.component.LibraryPlaylistGridItem
+import com.dezzy.music.constants.PlaylistViewTypeKey
+import com.dezzy.music.constants.LibraryViewType
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -109,6 +112,8 @@ fun LibraryPlaylistsScreen(
         PlaylistSortDescendingKey,
         true,
     )
+    // Fase 4 (boceto B): cuadrícula por defecto; reordenar sólo en lista.
+    var viewType by rememberEnumPreference(PlaylistViewTypeKey, LibraryViewType.GRID)
     val (selectedTagsFilter) = rememberPreference(PlaylistTagsFilterKey, "")
     val selectedTagIds = remember(selectedTagsFilter) {
         selectedTagsFilter.split(",").filter { it.isNotBlank() }.toSet()
@@ -212,10 +217,11 @@ fun LibraryPlaylistsScreen(
     }
 
     val lazyListState = rememberLazyListState()
-    val canEnterReorderMode = sortType == PlaylistSortType.CUSTOM && selectedTagIds.isEmpty()
+    val canEnterReorderMode =
+        sortType == PlaylistSortType.CUSTOM && selectedTagIds.isEmpty() && viewType == LibraryViewType.LIST
     var reorderEnabled by rememberSaveable { mutableStateOf(false) }
     val canReorderPlaylists = canEnterReorderMode && reorderEnabled
-    val playlistSectionLeadingItems = 3 + if (shortcuts.isNotEmpty()) 1 else 0
+    val playlistSectionLeadingItems = 2
     val mutableVisiblePlaylists = remember { mutableStateListOf<Playlist>() }
     var dragInfo by remember { mutableStateOf<Pair<Int, Int>?>(null) }
     val reorderableState = rememberReorderableLazyListState(
@@ -311,11 +317,11 @@ fun LibraryPlaylistsScreen(
             }
 
             item(key = "controls") {
-                PlaylistControlCard(
-                    summary = summary,
-                    canEnterReorderMode = canEnterReorderMode,
-                    reorderEnabled = reorderEnabled,
-                    onToggleReorder = { reorderEnabled = !reorderEnabled },
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 4.dp),
                 ) {
                     SortHeader(
                         sortType = sortType,
@@ -333,25 +339,32 @@ fun LibraryPlaylistsScreen(
                         },
                         modifier = Modifier.weight(1f),
                     )
-                }
-            }
-
-            if (shortcuts.isNotEmpty()) {
-                item(key = "shortcuts") {
-                    PlaylistShortcutGrid(
-                        entries = shortcuts,
-                        onClick = navController::navigate,
-                        modifier = Modifier.padding(horizontal = 16.dp),
+                    Text(
+                        text = summary,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
                     )
+                    if (canEnterReorderMode) {
+                        IconButton(onClick = { reorderEnabled = !reorderEnabled }) {
+                            Icon(
+                                painter = painterResource(if (reorderEnabled) R.drawable.lock_open else R.drawable.lock),
+                                contentDescription = null,
+                            )
+                        }
+                    }
+                    IconButton(onClick = { viewType = viewType.toggle() }) {
+                        Icon(
+                            painter = painterResource(
+                                when (viewType) {
+                                    LibraryViewType.LIST -> R.drawable.list
+                                    LibraryViewType.GRID -> R.drawable.grid_view
+                                },
+                            ),
+                            contentDescription = null,
+                        )
+                    }
                 }
-            }
-
-            item(key = "playlist_section_header") {
-                PlaylistSectionHeaderCard(
-                    title = stringResource(R.string.playlists),
-                    supportingText = summary,
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                )
             }
 
             if (canReorderPlaylists) {
@@ -374,6 +387,32 @@ fun LibraryPlaylistsScreen(
                                 .padding(horizontal = 16.dp)
                                 .animateItem(),
                         )
+                    }
+                }
+            } else if (viewType == LibraryViewType.GRID) {
+                items(
+                    items = visiblePlaylists.chunked(2),
+                    key = { row -> "grid_row_" + row.joinToString("_") { it.id } },
+                ) { rowPlaylists ->
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .animateItem(),
+                    ) {
+                        rowPlaylists.forEach { playlist ->
+                            LibraryPlaylistGridItem(
+                                navController = navController,
+                                menuState = menuState,
+                                coroutineScope = coroutineScope,
+                                playlist = playlist,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        if (rowPlaylists.size == 1) {
+                            Spacer(Modifier.weight(1f))
+                        }
                     }
                 }
             } else {

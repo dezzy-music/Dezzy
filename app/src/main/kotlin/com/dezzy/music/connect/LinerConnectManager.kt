@@ -145,6 +145,77 @@ class LinerConnectManager @Inject constructor(
     private var activeWebSocket: WebSocket? = null
     private var discoveryJob: Job? = null
 
+    /**
+     * Descubrimiento multi-dispositivo estilo Spotify Connect: manda el probe
+     * por broadcast y recoge TODAS las respuestas durante ~4 s (no solo la
+     * primera), para que la hoja de dispositivos liste cada PC/laptop
+     * disponible en la red y el usuario elija dónde escuchar. NO conecta
+     * automáticamente: el usuario toca el dispositivo que quiere.
+     * Llamar al abrir la hoja de dispositivos y al pulsar "Buscar".
+     */
+    fun discoverDevices() {
+        if (_connectionState.value == ConnectState.DISCOVERING) return
+        val wasConnected = _connectionState.value == ConnectState.CONNECTED
+        if (!wasConnected) _connectionState.value = ConnectState.DISCOVERING
+        discoveryJob?.cancel()
+        discoveryJob = coroutineScope.launch {
+            val found = linkedMapOf<String, DiscoveredDevice>()
+            // Conservar los ya conocidos (p. ej. el dispositivo conectado).
+            _discoveredDevices.value.forEach { found[it.ip] = it }
+            try {
+                val socket = DatagramSocket().apply {
+                    broadcast = true
+                    soTimeout = 1000
+                }
+                val probeMsg = "DISCOVER_LINER".toByteArray()
+                val broadcastAddrs = listOf(
+                    InetAddress.getByName("255.255.255.255"),
+                    InetAddress.getByName("192.168.1.255"),
+                    InetAddress.getByName("192.168.0.255"),
+                    InetAddress.getByName("127.0.0.1")
+                )
+                for (addr in broadcastAddrs) {
+                    try {
+                        socket.send(DatagramPacket(probeMsg, probeMsg.size, addr, 4885))
+                    } catch (_: Exception) {}
+                }
+                val deadline = System.currentTimeMillis() + 4000L
+                val buf = ByteArray(1024)
+                while (System.currentTimeMillis() < deadline) {
+                    try {
+                        val respPacket = DatagramPacket(buf, buf.size)
+                        socket.receive(respPacket)
+                        val responseStr = String(respPacket.data, 0, respPacket.length)
+                        val json = JSONObject(responseStr)
+                        if (json.optString("service") == "dezzy-connect") {
+                            val port = json.optInt("port", 4884)
+                            val ip = respPacket.address.hostAddress ?: continue
+                            val rawName = json.optString("name").trim()
+                            val exactName = if (rawName.isNotBlank() && !rawName.equals("Liner Desktop", ignoreCase = true)) {
+                                rawName
+                            } else {
+                                runCatching { respPacket.address.hostName }.getOrNull()
+                                    ?.takeIf { it.isNotBlank() && it != ip } ?: rawName.takeIf { it.isNotBlank() } ?: lastDeviceName
+                            }
+                            val isThisConnected = wasConnected && _connectedDeviceName.value == exactName
+                            found[ip] = DiscoveredDevice(name = exactName, ip = ip, port = port, isConnected = isThisConnected)
+                            _discoveredDevices.value = found.values.toList()
+                        }
+                    } catch (_: java.net.SocketTimeoutException) {
+                        // Sin respuesta en este intervalo: seguir esperando hasta el deadline.
+                    } catch (_: Exception) {
+                        break
+                    }
+                }
+                socket.close()
+            } catch (_: Exception) {
+                Timber.d("[LinerConnect] Discovery finished with error")
+            } finally {
+                if (!wasConnected) _connectionState.value = ConnectState.DISCONNECTED
+            }
+        }
+    }
+
     fun startDiscoveryAndConnect() {
         if (_connectionState.value == ConnectState.CONNECTED || _connectionState.value == ConnectState.DISCOVERING) {
             return

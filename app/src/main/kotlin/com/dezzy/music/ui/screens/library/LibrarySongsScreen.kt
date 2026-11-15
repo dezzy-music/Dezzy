@@ -7,6 +7,7 @@
 
 
 package com.dezzy.music.ui.screens.library
+import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.Alignment
 
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -94,7 +95,7 @@ import com.dezzy.music.viewmodels.LibrarySongsViewModel
 @Composable
 fun LibrarySongsScreen(
     navController: NavController,
-    onDeselect: () -> Unit,
+    headerContent: @Composable () -> Unit,
     viewModel: LibrarySongsViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
@@ -108,8 +109,8 @@ fun LibrarySongsScreen(
 
     if (showAddSongsScreen) {
         com.dezzy.music.ui.screens.playlist.AddSongsToLikedScreen(
+            playlistId = "LIKED",
             onDismiss = { showAddSongsScreen = false },
-            onSearchClick = { navController.navigate(com.dezzy.music.ui.screens.Screens.Search.route) }
         )
     }
 
@@ -174,21 +175,9 @@ fun LibrarySongsScreen(
                 key = "filter",
                 contentType = CONTENT_TYPE_HEADER,
             ) {
+                Column {
+                headerContent()
                 Row {
-                    Spacer(Modifier.width(12.dp))
-                    FilterChip(
-                        label = { Text(stringResource(R.string.songs)) },
-                        selected = true,
-                        colors = FilterChipDefaults.filterChipColors(containerColor = MaterialTheme.colorScheme.surface),
-                        onClick = onDeselect,
-                        shape = RoundedCornerShape(16.dp),
-                        leadingIcon = {
-                            Icon(
-                                painter = painterResource(R.drawable.close),
-                                contentDescription = ""
-                            )
-                        },
-                    )
                     ChipsRow(
                         chips =
                         listOf(
@@ -202,6 +191,7 @@ fun LibrarySongsScreen(
                         },
                         modifier = Modifier.weight(1f),
                     )
+                }
                 }
             }
 
@@ -296,34 +286,14 @@ fun LibrarySongsScreen(
 
             
             if (filter == SongFilter.LIKED && !selection) {
-                item {
-                    Row(
+                // Añadir canciones (fase 9): botón tonal en vez de la fila «Agregar a esta playlist».
+                item(key = "add_songs") {
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { showAddSongsScreen = true }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(56.dp)
-                                .background(Color.White.copy(alpha=0.15f), RoundedCornerShape(4.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.add),
-                                contentDescription = "Add",
-                                tint = Color.White,
-                                modifier = Modifier.size(32.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            text = "Agregar a esta playlist",
-                            color = Color.White,
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        com.dezzy.music.ui.screens.playlist.AddSongsButton(onClick = { showAddSongsScreen = true })
                     }
                 }
             }

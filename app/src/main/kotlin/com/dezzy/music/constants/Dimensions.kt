@@ -24,6 +24,8 @@ val FloatingToolbarHeight = 72.dp
 val SlimFloatingToolbarHeight = 64.dp
 val FloatingToolbarHorizontalPadding = 16.dp
 val FloatingToolbarBottomPadding = 12.dp
+// Barra de navegación M3 acoplada al borde (Boceto A, fase 1)
+val DockedNavigationBarHeight = 80.dp
 val NavigationBarHeight = FloatingToolbarHeight
 val SlimNavBarHeight = SlimFloatingToolbarHeight
 val MiniPlayerHeight = 64.dp

@@ -20,7 +20,6 @@ import com.dezzy.music.canvas.AppleMusicCanvasProvider
 import com.dezzy.music.canvas.SpotifyCanvasProvider
 import com.dezzy.music.spotify.Spotify
 import com.dezzy.music.spotify.SpotifyTokenManager
-import com.dezzy.music.utils.YTPlayerUtils
 import java.util.concurrent.ConcurrentHashMap
 
 /** Session cache of "song|artist" → Spotify track id (or "" for a known miss). */
@@ -162,17 +161,15 @@ internal suspend fun fetchCanvasArtworkForPlayback(
     if (!allowFallback) return null
 
     // ── Intento 4: Fallback de Video Oficial de YouTube para canciones con carátula estática ──
-    val ytVideoUrl = runCatching {
-        val query = "$songTitleRaw $artistNameRaw".trim()
-        val searchResult = com.dezzy.music.innertube.YouTube.search(
-            query = query,
-            filter = com.dezzy.music.innertube.YouTube.SearchFilter.FILTER_VIDEO
-        ).getOrNull()
-        val videoId = searchResult?.items?.firstOrNull()?.id
-        if (!videoId.isNullOrBlank()) {
-            YTPlayerUtils.videoPlaybackDataForPlayback(videoId).getOrNull()?.let { it.streamUrl ?: it.adaptiveVideoUrl }
-        } else null
-    }.getOrNull()
+    val ytVideoUrl = com.dezzy.music.video.MusicVideoResolver
+        .resolveByMetadata(
+            title = songTitleRaw,
+            artist = artistNameRaw,
+            durationSec = durationSeconds,
+            maxHeight = 720,
+        )
+        .getOrNull()
+        ?.silentVideoUrl()
 
     if (!ytVideoUrl.isNullOrBlank()) {
         val expectedSource = if (spotifyCanvasEnabled) CanvasArtwork.SOURCE_SPOTIFY else CanvasArtwork.SOURCE_APPLE

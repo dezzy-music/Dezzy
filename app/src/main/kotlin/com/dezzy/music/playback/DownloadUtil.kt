@@ -80,8 +80,11 @@ constructor(
                 okhttp3.Dispatcher().apply {
                     // OkHttp defaults to 5 concurrent requests per host, which would silently
                     // serialize most of ParallelRangeDataSource's chunk requests to googlevideo.
-                    maxRequestsPerHost = 12
-                    maxRequests = 24
+                    // Sized to the chunk pool (24): default 3 parallel downloads x 6 chunks
+                    // = 18 concurrent range requests, plus probe requests. Raising
+                    // maxRequestsPerHost is what actually lets the parallel chunks run.
+                    maxRequestsPerHost = 24
+                    maxRequests = 48
                 },
             )
             .addInterceptor { chain ->
@@ -237,11 +240,15 @@ constructor(
             databaseProvider,
             downloadCache,
             dataSourceFactory,
-            // Thread pool size = 5 for faster concurrent resolution
-            Executors.newFixedThreadPool(5)
+            // Thread pool size = 8: each download first resolves its stream URL
+            // (runBlocking, up to 15s on a slow YouTube lookup) and only then
+            // downloads. With 5 threads, a few slow resolutions could starve the
+            // actual downloads; 8 leaves headroom for resolution + downloading.
+            Executors.newFixedThreadPool(8)
         ).apply {
-            // 3 parallel downloads by default — good balance between speed and stability
-            maxParallelDownloads = context.dataStore.get(com.dezzy.music.constants.MaxParallelDownloadsKey, 3)
+            // 4 parallel downloads by default — good balance between speed and stability.
+            // (User can still pick 1, 2, 3 or 6 in Settings > Storage.)
+            maxParallelDownloads = context.dataStore.get(com.dezzy.music.constants.MaxParallelDownloadsKey, 4)
             // 3 retries — enough for transient failures without waiting too long
             minRetryCount = 3
             addListener(

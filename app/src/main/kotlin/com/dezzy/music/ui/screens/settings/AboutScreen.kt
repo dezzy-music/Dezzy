@@ -51,18 +51,15 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeTopAppBar
-import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
-import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -139,7 +136,7 @@ private data class SocialLink(
 
 // ── Main screen ────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(
     navController: NavController,
@@ -711,7 +708,7 @@ private fun ContributorCardExpressive(
             horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Surface(
-                shape = MaterialShapes.Ghostish.toShape(),
+                shape = androidx.compose.foundation.shape.CircleShape,
                 color = MaterialTheme.colorScheme.secondaryContainer,
                 modifier = Modifier.size(52.dp),
                 shadowElevation = if (isHovered) 4.dp else 2.dp,
@@ -722,7 +719,7 @@ private fun ContributorCardExpressive(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxSize()
-                        .clip(MaterialShapes.Ghostish.toShape()),
+                        .clip(androidx.compose.foundation.shape.CircleShape),
                 )
             }
 
@@ -849,7 +846,7 @@ private fun ContributorShimmerExpressive() {
         ) {
             // Avatar shimmer con forma Ghostish
             Surface(
-                shape = MaterialShapes.Ghostish.toShape(),
+                shape = androidx.compose.foundation.shape.CircleShape,
                 color = MaterialTheme.colorScheme.secondaryContainer,
                 modifier = Modifier.size(52.dp),
             ) {
@@ -857,7 +854,7 @@ private fun ContributorShimmerExpressive() {
                     modifier = Modifier
                         .fillMaxSize()
                         .background(shimmer)
-                        .clip(MaterialShapes.Ghostish.toShape()),
+                        .clip(androidx.compose.foundation.shape.CircleShape),
                 )
             }
 

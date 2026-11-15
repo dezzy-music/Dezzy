@@ -20,6 +20,10 @@ import android.os.IBinder
 import android.view.View
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
+import com.dezzy.music.ui.component.SystemBarScrims
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.SystemBarStyle
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -65,7 +69,6 @@ import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
@@ -177,6 +180,7 @@ import com.dezzy.music.constants.DefaultOpenTabKey
 import com.dezzy.music.constants.DisableScreenshotKey
 import com.dezzy.music.constants.DynamicThemeKey
 import com.dezzy.music.constants.FloatingToolbarBottomPadding
+import com.dezzy.music.constants.DockedNavigationBarHeight
 import com.dezzy.music.constants.FloatingToolbarHeight
 import com.dezzy.music.constants.FloatingToolbarHorizontalPadding
 import com.dezzy.music.constants.HasPressedStarKey
@@ -226,6 +230,9 @@ import com.dezzy.music.ui.component.COLLAPSED_ANCHOR
 import com.dezzy.music.ui.component.DISMISSED_ANCHOR
 import com.dezzy.music.ui.component.EXPANDED_ANCHOR
 import com.dezzy.music.ui.component.FloatingNavigationToolbar
+import com.dezzy.music.ui.component.DezzyNavigationBar
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
 import com.dezzy.music.ui.component.IconButton
 import com.dezzy.music.ui.component.LocalBottomSheetPageState
 import com.dezzy.music.ui.component.LocalMenuState
@@ -279,7 +286,7 @@ import kotlin.time.Duration.Companion.days
 
 @Suppress("DEPRECATION", "ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var database: MusicDatabase
 
@@ -415,11 +422,20 @@ class MainActivity : ComponentActivity() {
 
 
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-    @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.decorView.layoutDirection = View.LAYOUT_DIRECTION_LTR
-        WindowCompat.setDecorFitsSystemWindows(window, false)
+        // Edge-to-edge en todas las versiones: barras transparentes; el color de
+        // marca lo pone SystemBarScrims (velo en Android 10+, barras sólidas en 8–9).
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.auto(
+                android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT
+            ),
+            navigationBarStyle = SystemBarStyle.auto(
+                android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT
+            ),
+        )
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             val initialLocale = PreferenceStore.get(AppLanguageKey)
@@ -444,6 +460,12 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+
+        // Sincroniza los "Me gusta" de Spotify cada 6 h como máximo
+        // (Ajustes > Spotify > Sincronizar Me gusta).
+        lifecycleScope.launch(Dispatchers.IO) {
+            runCatching { com.dezzy.music.spotify.SpotifyFeatures.maybeAutoSyncLikes(this@MainActivity, database) }
         }
 
         lifecycleScope.launch(Dispatchers.IO) {
@@ -534,6 +556,8 @@ class MainActivity : ComponentActivity() {
 
             val bottomSheetPageState = remember { BottomSheetPageState() }
             val (liquidGlassNavBar) = rememberPreference(LiquidGlassNavBarKey, defaultValue = false)
+            // Fuente del desenfoque de la barra Liquid Glass: el contenido de las pantallas.
+            val navHazeState = remember { HazeState() }
             val menuState = remember { MenuState() }
             val uriHandler = LocalUriHandler.current
             val releaseNotesState = remember { mutableStateOf<String?>(null) }
@@ -732,6 +756,15 @@ class MainActivity : ComponentActivity() {
                 seedPalette = if (!enableDynamicTheme) customThemeSeedPalette else null,
                 useSystemFont = useSystemFont,
             ) {
+                // El fondo de la ventana sigue al tema de la app (modo oscuro propio,
+                // negro puro, color dinámico) para que no asome un fondo distinto
+                // mientras Compose dibuja en equipos lentos.
+                val windowBackground = MaterialTheme.colorScheme.background
+                LaunchedEffect(windowBackground) {
+                    window.setBackgroundDrawable(
+                        android.graphics.drawable.ColorDrawable(windowBackground.toArgb())
+                    )
+                }
                 // Screens where wallpaper is allowed to show (home, library, settings only)
                 val isWallpaperScreen = remember(currentRoute) {
                     currentRoute == "home" ||
@@ -876,16 +909,20 @@ class MainActivity : ComponentActivity() {
                     val shouldShowHomeShuffleButton =
                         currentRoute == Screens.Home.route
 
-                    fun getBottomNavPadding(): Dp {
-                        return if (shouldShowNavigationBar && !useRail) {
-                            if (slimNav) SlimFloatingToolbarHeight else FloatingToolbarHeight
-                        } else {
-                            0.dp
-                        }
+                    // Boceto A (fase 1): NavigationBar M3 acoplada al borde. La barra
+                    // flotante se conserva sólo con el estilo "liquid glass".
+                    val dockedNav = !liquidGlassNavBar
+                    val navVisibleHeight = when {
+                        dockedNav -> DockedNavigationBarHeight
+                        slimNav -> SlimFloatingToolbarHeight
+                        else -> FloatingToolbarHeight
                     }
 
-                    val floatingBarsBottomPadding = FloatingToolbarBottomPadding
-                    val navVisibleHeight = if (slimNav) SlimFloatingToolbarHeight else FloatingToolbarHeight
+                    fun getBottomNavPadding(): Dp {
+                        return if (shouldShowNavigationBar && !useRail) navVisibleHeight else 0.dp
+                    }
+
+                    val floatingBarsBottomPadding = if (dockedNav) 0.dp else FloatingToolbarBottomPadding
 
                     val bottomNavigationBarHeight by animateDpAsState(
                         targetValue = if (shouldShowNavigationBar && !useRail) navVisibleHeight else 0.dp,
@@ -1373,7 +1410,7 @@ class MainActivity : ComponentActivity() {
                                                             contentDescription = stringResource(R.string.new_release_albums)
                                                         )
                                                     }
-                                                    IconButton(onClick = { showAccountDialog = true }) {
+                                                    IconButton(onClick = { navController.navigate("settings/accounts") }) {
                                                         BadgedBox(badge = {
                                                             if (!Updater.isSameVersion(latestVersionName, BuildConfig.VERSION_NAME)) {
                                                                 Badge()
@@ -1532,14 +1569,25 @@ class MainActivity : ComponentActivity() {
                                                 )
                                             }
                                         ) {
-                                            Crossfade(
-                                                targetState = effectiveSearchSource,
-                                                label = "",
+                                            Column(
                                                 modifier =
                                                     Modifier
                                                         .fillMaxSize()
                                                         .padding(bottom = if (!playerBottomSheetState.isDismissed && currentRoute != "music_map" && currentRoute != "dj_dezzy") MiniPlayerHeight else 0.dp)
                                                         .navigationBarsPadding(),
+                                            ) {
+                                            // Fase 3: la fuente se elige con chips visibles.
+                                            com.dezzy.music.ui.screens.search.SearchSourceChips(
+                                                current = effectiveSearchSource,
+                                                losslessEnabled = losslessEnabled,
+                                                onSelect = { searchSource = it },
+                                            )
+                                            Crossfade(
+                                                targetState = effectiveSearchSource,
+                                                label = "",
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .weight(1f),
                                             ) { searchSource ->
                                                 when (searchSource) {
                                                     SearchSource.LOSSLESS ->
@@ -1582,6 +1630,7 @@ class MainActivity : ComponentActivity() {
                                                             pureBlack = pureBlack
                                                         )
                                                 }
+                                            }
                                             }
                                         }
                                     }
@@ -1633,6 +1682,42 @@ class MainActivity : ComponentActivity() {
                                                         }
                                                     },
                                         ) {
+                                            if (dockedNav) {
+                                                DezzyNavigationBar(
+                                                    items = navigationItems,
+                                                    pureBlack = pureBlack,
+                                                    bottomInset = bottomInset,
+                                                    modifier = Modifier
+                                                        .align(Alignment.BottomCenter)
+                                                        .fillMaxWidth()
+                                                        .height(navSlideDistance),
+                                                    isSelected = { screen ->
+                                                        navBackStackEntry?.destination?.hierarchy?.any { it.route == screen.route } ==
+                                                                true
+                                                    },
+                                                    onItemClick = { screen, isSelected ->
+                                                        if (screen.route == Screens.Search.route) {
+                                                            onActiveChange(true)
+                                                        } else if (isSelected) {
+                                                            navController.currentBackStackEntry?.savedStateHandle?.set(
+                                                                "scrollToTop",
+                                                                true
+                                                            )
+                                                            coroutineScope.launch {
+                                                                searchBarScrollBehavior.state.resetHeightOffset()
+                                                            }
+                                                        } else {
+                                                            navController.navigate(screen.route) {
+                                                                popUpTo(navController.graph.startDestinationId) {
+                                                                    saveState = true
+                                                                }
+                                                                launchSingleTop = true
+                                                                restoreState = true
+                                                            }
+                                                        }
+                                                    },
+                                                )
+                                            } else
                                             FloatingNavigationToolbar(
                                                 items = navigationItems,
                                                 pureBlack = pureBlack,
@@ -1710,6 +1795,8 @@ class MainActivity : ComponentActivity() {
                                                     { navController.navigate(MusicRecognitionRoute) }
                                                 } else null,
                                                 musicRecognitionContentDescription = if (shouldShowHomeShuffleButton) stringResource(R.string.music_recognition) else "",
+                                                liquidGlass = liquidGlassNavBar,
+                                                hazeState = if (liquidGlassNavBar) navHazeState else null,
                                                 isSelected = { screen ->
                                                     navBackStackEntry?.destination?.hierarchy?.any { it.route == screen.route } ==
                                                             true
@@ -1802,7 +1889,9 @@ class MainActivity : ComponentActivity() {
                                             fadeOut(tween(200)) + slideOutHorizontally { it / 2 }
                                         }
                                     },
-                                    modifier = Modifier.nestedScroll(
+                                    modifier = Modifier
+                                        .then(if (liquidGlassNavBar) Modifier.hazeSource(navHazeState) else Modifier)
+                                        .nestedScroll(
                                         if (navigationItems.fastAny { it.route == navBackStackEntry?.destination?.route } ||
                                             navBackStackEntry?.destination?.route?.startsWith("search/") == true
                                         ) {
@@ -1820,6 +1909,14 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         }
+
+                        // Color de marca bajo las barras del sistema (edge-to-edge).
+                        // Se oculta con el reproductor expandido, que tiene su propio fondo.
+                        SystemBarScrims(
+                            color = MaterialTheme.colorScheme.primary,
+                            visible = !playerBottomSheetState.isExpanded,
+                            isDarkTheme = useDarkTheme,
+                        )
 
                         BottomSheetMenu(
                             state = LocalMenuState.current,
@@ -1906,6 +2003,14 @@ class MainActivity : ComponentActivity() {
         val uri = intent.data ?: intent.extras?.getString(Intent.EXTRA_TEXT)?.toUri() ?: return
         val coroutineScope = lifecycleScope
 
+        // Red social P2P: enlace de perfil (dezzy://invite?npub=… o https://dezzy.space/?npub=…).
+        runCatching { uri.getQueryParameter("npub") }.getOrNull()
+            ?.let { com.dezzy.music.p2p.P2PSocial.parsePublicKey(it) }
+            ?.let { pubkey ->
+                navController.navigate("social/profile/$pubkey")
+                return
+            }
+
         // Social referral: an invite link (dezzy://invite?ref=… or https://dezzy.space/?ref=…)
         // carries the inviter's id. Store it; once signed in, auto-link them as friends.
         uri.getQueryParameter("ref")?.takeIf { it.isNotBlank() }?.let { inviterId ->
@@ -1921,7 +2026,9 @@ class MainActivity : ComponentActivity() {
 
         val authority = uri.authority?.lowercase()
         if ((uri.scheme.equals("Dezzy", ignoreCase = true) || uri.scheme.equals("dezzy", ignoreCase = true)) && authority == "together") {
-            pendingTogetherJoinLink = uri.toString()
+            // El servicio espera el código de sala, no el enlace completo.
+            pendingTogetherJoinLink = runCatching { uri.getQueryParameter("code") }.getOrNull()
+                ?.takeIf { it.isNotBlank() } ?: uri.toString()
             startMusicServiceSafely()
             joinPendingTogetherIfReady()
             return
@@ -2010,23 +2117,15 @@ class MainActivity : ComponentActivity() {
             .onFailure { reportException(it) }
     }
 
-    @SuppressLint("ObsoleteSdkInt")
+    /**
+     * Sin el velo gris que Android añade por contraste: el color de las barras y
+     * de sus iconos lo gestiona [com.dezzy.music.ui.component.SystemBarScrims].
+     */
+    @Suppress("UNUSED_PARAMETER")
     private fun setSystemBarAppearance(isDark: Boolean) {
-        WindowCompat.getInsetsController(window, window.decorView.rootView).apply {
-            isAppearanceLightStatusBars = !isDark
-            isAppearanceLightNavigationBars = !isDark
-        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             window.isNavigationBarContrastEnforced = false
             window.isStatusBarContrastEnforced = false
-        }
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            window.statusBarColor =
-                (if (isDark) Color.Transparent else Color.Black.copy(alpha = 0.2f)).toArgb()
-        }
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            window.navigationBarColor =
-                (if (isDark) Color.Transparent else Color.Black.copy(alpha = 0.2f)).toArgb()
         }
     }
 

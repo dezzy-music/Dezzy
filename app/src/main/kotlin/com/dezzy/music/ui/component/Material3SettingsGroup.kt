@@ -8,6 +8,9 @@
 
 package com.dezzy.music.ui.component
 
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.heading
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -39,10 +42,12 @@ fun Material3SettingsGroup(
         title?.let {
             Text(
                 text = it,
-                style = MaterialTheme.typography.labelLarge,
+                style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp, top = 8.dp)
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier
+                    .padding(start = 12.dp, bottom = 8.dp, top = 16.dp)
+                    .semantics { heading() }
             )
         }
         
@@ -53,7 +58,7 @@ fun Material3SettingsGroup(
                 .animateContentSize(),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
@@ -94,7 +99,7 @@ private fun Material3SettingsItemRow(
                 Box(
                     modifier = Modifier
                         .size(40.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(CircleShape)
                         .background(
                             MaterialTheme.colorScheme.primary.copy(
                                 alpha = if (item.isHighlighted) 0.15f else 0.1f

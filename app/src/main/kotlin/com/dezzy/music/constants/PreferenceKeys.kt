@@ -58,8 +58,6 @@ val SwipeToSongKey = booleanPreferencesKey("SwipeToSong")
 
 val PlayerDesignStyleKey = stringPreferencesKey("playerDesignStyle")
 
-val UseNewLibraryDesignKey = booleanPreferencesKey("useNewLibraryDesign")
-
 val UseNewMiniPlayerDesignKey = booleanPreferencesKey("useNewMiniPlayerDesign")
 
 val DynamicMiniPlayerColorKey = booleanPreferencesKey("dynamicMiniPlayerColor")
@@ -590,8 +588,6 @@ val ArtistFilterKey = stringPreferencesKey("artistFilter")
 
 val AlbumFilterKey = stringPreferencesKey("albumFilter")
 
-val AudioCrossfadeGaplessKey = booleanPreferencesKey("audio_crossfade_gapless")
-
 
 
 // Dezzy Style (tornamesa de vinilo): tema de color, estilo del vinilo y velocidad de giro
@@ -966,7 +962,25 @@ enum class PlayerDesignStyle {
 
     LIVE_MESH,
 
+    AURORA,
+
 }
+
+
+enum class AuroraMode {
+
+    /** Los colores de la aurora salen de la carátula de cada canción. */
+    DYNAMIC,
+
+    /** El usuario elige los 3 colores de la aurora. */
+    CUSTOM,
+
+}
+
+val AuroraModeKey = stringPreferencesKey("auroraMode")
+val AuroraColor1Key = intPreferencesKey("auroraColor1")
+val AuroraColor2Key = intPreferencesKey("auroraColor2")
+val AuroraColor3Key = intPreferencesKey("auroraColor3")
 
 
 
@@ -1065,8 +1079,6 @@ val ShowCommentButtonKey = booleanPreferencesKey("show_comment_button")
 val HideStatusBarOnFullscreenKey = booleanPreferencesKey("hideStatusBarOnFullscreen")
 
 val RotatingThumbnailKey = booleanPreferencesKey("rotatingThumbnail")
-
-val CanvasThumbnailAnimationKey = booleanPreferencesKey("canvasThumbnailAnimation")
 
 val AppleMusicLyricsBlurKey = booleanPreferencesKey("appleMusicLyricsBlur")
 
@@ -1205,8 +1217,6 @@ val WebClientPoTokenEnabledKey = booleanPreferencesKey("webClientPoTokenEnabled"
 val PoTokenGvsKey = stringPreferencesKey("poTokenGvs")
 
 val PoTokenPlayerKey = stringPreferencesKey("poTokenPlayer")
-
-val UseVisitorDataKey = booleanPreferencesKey("useVisitorData")
 
 val PoTokenSourceUrlKey = stringPreferencesKey("poTokenSourceUrl")
 
@@ -1400,12 +1410,6 @@ val LastNotifiedVersionKey = stringPreferencesKey("lastNotifiedVersion")
 
 
 
-val GitHubContributorsEtagKey = stringPreferencesKey("github_contributors_etag")
-
-val GitHubContributorsJsonKey = stringPreferencesKey("github_contributors_json")
-
-val GitHubContributorsLastCheckedAtKey = longPreferencesKey("github_contributors_last_checked_at")
-
 
 
 val GitHubReleasesEtagKey = stringPreferencesKey("github_releases_etag")
@@ -1570,8 +1574,6 @@ val AodClockFormatKey = booleanPreferencesKey("aod_clock_24h")
 
 
 
-val LyricsLineBlurKey = booleanPreferencesKey("lyricsLineBlur")
-
 
 
 val LyricsSyncOffsetKey = intPreferencesKey("lyrics_sync_offset")
@@ -1580,17 +1582,11 @@ val LyricsSyncOffsetKey = intPreferencesKey("lyrics_sync_offset")
 
 // Video Wallpaper
 
-val VideoWallpaperEnabledKey = booleanPreferencesKey("videoWallpaperEnabled")
-
 val VideoWallpaperUriKey = stringPreferencesKey("videoWallpaperUri")
-
-val SplashVideoEnabledKey = booleanPreferencesKey("splashVideoEnabled")
 
 
 
 // Download lyrics
-
-val EmbedLyricsOnDownloadKey = booleanPreferencesKey("embedLyricsOnDownload")
 
 
 
@@ -1632,6 +1628,9 @@ val UseSpotifyHomeKey = booleanPreferencesKey("useSpotifyHome")
 
 val SpotifyHomeOnlyKey = booleanPreferencesKey("spotifyHomeOnly")
 
+// Última sincronización automática de "Me gusta" de Spotify (epoch ms).
+val SpotifyLastLikeSyncKey = longPreferencesKey("spotifyLastLikeSync")
+
 // When enabled, the Spotify preload also downloads each resolved song for offline playback.
 
 val SpotifyPreloadDownloadKey = booleanPreferencesKey("spotifyPreloadDownload")
@@ -1659,14 +1658,6 @@ val EnableBubbleKey = booleanPreferencesKey("enableBubble")
 
 
 // Sleep timer & crossfade
-
-val CrossfadeEnabledKey = booleanPreferencesKey("crossfadeEnabled")
-
-val CrossfadeDurationKey = floatPreferencesKey("crossfadeDuration")
-
-val CrossfadeGaplessKey = booleanPreferencesKey("crossfadeGapless")
-
-val SleepTimerFadeOutKey = booleanPreferencesKey("sleepTimerFadeOut")
 
 
 
@@ -1710,17 +1701,9 @@ val TranslateModeKey = stringPreferencesKey("translateMode")
 
 val ListenTogetherServerUrlKey = stringPreferencesKey("listenTogetherServerUrl")
 
-val ListenTogetherUsernameKey = stringPreferencesKey("listenTogetherUsername")
-
-val EnableListenTogetherKey = booleanPreferencesKey("enableListenTogether")
-
 val ListenTogetherAutoApprovalKey = booleanPreferencesKey("listenTogetherAutoApproval")
 
-val ListenTogetherSyncVolumeKey = booleanPreferencesKey("listenTogetherSyncVolume")
-
 val ListenTogetherBlockedUsersKey = stringPreferencesKey("listenTogetherBlockedUsers")
-
-val ListenTogetherInTopBarKey = booleanPreferencesKey("listenTogetherInTopBar")
 
 val ListenTogetherSessionTokenKey = stringPreferencesKey("listenTogetherSessionToken")
 

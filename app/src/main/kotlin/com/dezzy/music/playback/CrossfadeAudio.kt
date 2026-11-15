@@ -456,7 +456,12 @@ internal class CrossfadeAudio(
                 handoffSeekIssued = true
                 handoffTargetPositionMs = overlapPositionMs
                 val currentIndex = player.currentMediaItemIndex
-                if (currentIndex != C.INDEX_UNSET) {
+                // Re-check: a manual skip (next/prev) may have aborted the handoff
+                // between the check above and this seek. If it was aborted, the
+                // manual seek already moved the player — do NOT fire this stale
+                // resync seek or it jumps back to the song before the skip
+                // (the "next repeats the previous song" bug).
+                if (handoffActive && currentIndex != C.INDEX_UNSET) {
                     player.seekTo(currentIndex, handoffTargetPositionMs)
                     handoffLastSyncSeekElapsedMs = nowElapsedMs
                 }

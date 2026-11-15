@@ -7,6 +7,7 @@ import com.dezzy.music.constants.SpotifyAccessTokenKey
 import com.dezzy.music.constants.SpotifySpDcKey
 import com.dezzy.music.constants.SpotifySpKeyKey
 import com.dezzy.music.constants.SpotifyTokenExpiryKey
+import com.dezzy.music.security.SessionCrypto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,7 +43,7 @@ object SpotifyTokenManager {
         val settings = dataStore.data.first()
         val accessToken = settings[SpotifyAccessTokenKey] ?: ""
         val expiry = settings[SpotifyTokenExpiryKey] ?: 0L
-        val spDc = settings[SpotifySpDcKey] ?: ""
+        val spDc = SessionCrypto.decrypt(settings[SpotifySpDcKey] ?: "")
 
         if (accessToken.isNotEmpty() && System.currentTimeMillis() < expiry) {
             Spotify.accessToken = accessToken
@@ -66,8 +67,8 @@ object SpotifyTokenManager {
                 return@withLock true
             }
 
-            val freshSpDc = freshSettings[SpotifySpDcKey] ?: ""
-            val freshSpKey = freshSettings[SpotifySpKeyKey] ?: ""
+            val freshSpDc = SessionCrypto.decrypt(freshSettings[SpotifySpDcKey] ?: "")
+            val freshSpKey = SessionCrypto.decrypt(freshSettings[SpotifySpKeyKey] ?: "")
             if (freshSpDc.isEmpty()) {
                 Timber.w("SpotifyTokenManager: no sp_dc cookie available under lock")
                 return@withLock false

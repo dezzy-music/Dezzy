@@ -43,6 +43,13 @@ import com.dezzy.music.ui.utils.backToMain
 import com.dezzy.music.utils.rememberPreference
 import com.dezzy.music.utils.reportException
 import com.dezzy.music.innertube.YouTube
+import com.dezzy.music.innertube.utils.parseCookieString
+import com.dezzy.music.security.SessionCrypto
+import androidx.compose.runtime.remember
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import timber.log.Timber
+import java.util.concurrent.atomic.AtomicBoolean
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.launch
@@ -73,6 +80,7 @@ fun LoginScreen(
     var accountEmail by rememberPreference(AccountEmailKey, "")
     var accountChannelHandle by rememberPreference(AccountChannelHandleKey, "")
 
+    val sessionExtracted = remember { AtomicBoolean(false) }
     var webView: WebView? = null
 
     AndroidView(
@@ -93,15 +101,38 @@ fun LoginScreen(
                         }
 
                         val mergedCookie = mergeYouTubeCookies(cookieManager)
-                        if (!mergedCookie.isNullOrBlank()) {
-                            innerTubeCookie = mergedCookie
-                            coroutineScope.launch {
-                                YouTube.accountInfo().onSuccess {
-                                    accountName = it.name
-                                    accountEmail = it.email.orEmpty()
-                                    accountChannelHandle = it.channelHandle.orEmpty()
-                                }.onFailure {
-                                    reportException(it)
+                        if (!mergedCookie.isNullOrBlank() && "SAPISID" in parseCookieString(mergedCookie)) {
+                            if (sessionExtracted.compareAndSet(false, true)) {
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    var inMemoryCookie: String? = mergedCookie
+                                    try {
+                                        YouTube.cookie = inMemoryCookie
+                                        YouTube.accountInfo().onSuccess { info ->
+                                            accountName = info.name
+                                            accountEmail = info.email.orEmpty()
+                                            accountChannelHandle = info.channelHandle.orEmpty()
+                                        }.onFailure {
+                                            reportException(it)
+                                        }
+
+                                        val encrypted = SessionCrypto.encrypt(inMemoryCookie!!)
+                                        innerTubeCookie = encrypted
+
+                                        SessionCrypto.getSecurePreferences(context).edit()
+                                            .putString(InnerTubeCookieKey.name, inMemoryCookie)
+                                            .apply()
+
+                                        inMemoryCookie = null
+
+                                        withContext(Dispatchers.Main) {
+                                            cookieManager.removeAllCookies(null)
+                                            cookieManager.flush()
+                                            navController.navigateUp()
+                                        }
+                                    } catch (e: Exception) {
+                                        Timber.e(e, "LoginScreen: In-memory session processing failed")
+                                        sessionExtracted.set(false)
+                                    }
                                 }
                             }
                         }

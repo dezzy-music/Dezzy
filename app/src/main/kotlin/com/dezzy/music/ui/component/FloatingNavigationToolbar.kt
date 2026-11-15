@@ -4,8 +4,6 @@
  * Licensed Under GPL-3.0 | see git history for contributors
  */
 
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
-
 package com.dezzy.music.ui.component
 
 import androidx.compose.animation.AnimatedVisibility
@@ -45,10 +43,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FloatingToolbarDefaults
-import androidx.compose.material3.FloatingToolbarScrollBehavior
-import androidx.compose.material3.HorizontalFloatingToolbar
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
@@ -63,6 +59,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeEffect
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
@@ -92,14 +98,12 @@ fun FloatingNavigationToolbar(
     shuffleContentDescription: String = "",
     onMusicRecognitionClick: (() -> Unit)? = null,
     musicRecognitionContentDescription: String = "",
-    scrollBehavior: FloatingToolbarScrollBehavior? = null,
     isSelected: (Screens) -> Boolean,
     onItemClick: (Screens, Boolean) -> Unit,
+    liquidGlass: Boolean = false,
+    hazeState: HazeState? = null,
 ) {
     val toolbarContainerColor = floatingToolbarContainerColor(pureBlack = pureBlack)
-    val toolbarColors = FloatingToolbarDefaults.standardFloatingToolbarColors(
-        toolbarContainerColor = toolbarContainerColor,
-    )
     val hasOverflowAction = onShuffleClick != null && shuffleIconRes != null
     val hasFabAction = onFabClick != null && fabIconRes != null
 
@@ -109,10 +113,9 @@ fun FloatingNavigationToolbar(
     ) {
         val showSelectedLabels = maxWidth >= 360.dp
 
-        if (hasOverflowAction) {
-            HorizontalFloatingToolbar(
-                expanded = true,
-                floatingActionButton = {
+        val trailing: (@Composable () -> Unit)? = when {
+            hasOverflowAction -> {
+                {
                     FloatingToolbarOverflowAction(
                         pureBlack = pureBlack,
                         onShuffleClick = onShuffleClick,
@@ -121,60 +124,82 @@ fun FloatingNavigationToolbar(
                         onMusicRecognitionClick = onMusicRecognitionClick,
                         musicRecognitionContentDescription = musicRecognitionContentDescription,
                     )
-                },
-                modifier = Modifier.widthIn(max = 480.dp),
-                colors = toolbarColors,
-                scrollBehavior = scrollBehavior,
-                animationSpec = FloatingToolbarDefaults.animationSpec(),
-            ) {
-                ToolbarItemsContainer(
-                    items = items,
-                    pureBlack = pureBlack,
-                    showSelectedLabels = showSelectedLabels,
-                    isSelected = isSelected,
-                    onItemClick = onItemClick
-                )
+                }
             }
-        } else if (hasFabAction) {
-            HorizontalFloatingToolbar(
-                expanded = true,
-                floatingActionButton = {
+            hasFabAction -> {
+                {
                     FloatingToolbarFabAction(
                         pureBlack = pureBlack,
                         onClick = onFabClick,
                         iconRes = fabIconRes,
                         contentDescription = fabContentDescription,
                     )
-                },
-                modifier = Modifier.widthIn(max = 480.dp),
-                colors = toolbarColors,
-                scrollBehavior = scrollBehavior,
-                animationSpec = FloatingToolbarDefaults.animationSpec(),
-            ) {
-                ToolbarItemsContainer(
-                    items = items,
-                    pureBlack = pureBlack,
-                    showSelectedLabels = showSelectedLabels,
-                    isSelected = isSelected,
-                    onItemClick = onItemClick
-                )
+                }
             }
+            else -> null
+        }
+        val toolbarMaxWidth = if (trailing != null) 480.dp else 420.dp
+        val toolbarItems: @Composable () -> Unit = {
+            ToolbarItemsContainer(
+                items = items,
+                pureBlack = pureBlack,
+                showSelectedLabels = showSelectedLabels,
+                isSelected = isSelected,
+                onItemClick = onItemClick
+            )
+        }
+
+        if (liquidGlass) {
+            // Liquid Glass: píldora de cristal (desenfoque real del contenido de
+            // fondo con Haze) y la acción secundaria como botón flotante aparte.
+            LiquidGlassToolbar(
+                hazeState = hazeState,
+                pureBlack = pureBlack,
+                maxWidth = toolbarMaxWidth,
+                trailing = trailing,
+                content = toolbarItems,
+            )
         } else {
-            HorizontalFloatingToolbar(
-                expanded = true,
-                modifier = Modifier.widthIn(max = 420.dp),
-                colors = toolbarColors,
-                scrollBehavior = scrollBehavior,
+            StandardFloatingToolbar(
+                containerColor = toolbarContainerColor,
+                maxWidth = toolbarMaxWidth,
+                trailing = trailing,
+                content = toolbarItems,
+            )
+        }
+    }
+}
+
+/**
+ * Barra flotante con componentes estándar de Material 3 (Surface + FAB),
+ * sin la HorizontalFloatingToolbar de Material 3 Expressive.
+ */
+@Composable
+private fun StandardFloatingToolbar(
+    containerColor: Color,
+    maxWidth: Dp,
+    trailing: (@Composable () -> Unit)?,
+    content: @Composable () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier.widthIn(max = maxWidth),
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = containerColor,
+            shadowElevation = 6.dp,
+            modifier = Modifier.weight(1f, fill = false),
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
             ) {
-                ToolbarItemsContainer(
-                    items = items,
-                    pureBlack = pureBlack,
-                    showSelectedLabels = showSelectedLabels,
-                    isSelected = isSelected,
-                    onItemClick = onItemClick
-                )
+                content()
             }
         }
+        trailing?.invoke()
     }
 }
 
@@ -258,10 +283,12 @@ private fun FloatingToolbarOverflowAction(
     var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
 
     Box {
-        FloatingToolbarDefaults.VibrantFloatingActionButton(
+        FloatingActionButton(
             onClick = { fabMenuExpanded = !fabMenuExpanded },
+            shape = CircleShape,
             containerColor = Color.Black,
             contentColor = Color.White,
+            elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp),
         ) {
             Icon(
                 painter = painterResource(R.drawable.more_horiz),
@@ -358,10 +385,12 @@ private fun FloatingToolbarFabAction(
 ) {
     if (onClick == null || iconRes == null) return
 
-    FloatingToolbarDefaults.VibrantFloatingActionButton(
+    FloatingActionButton(
         onClick = onClick,
+        shape = CircleShape,
         containerColor = floatingToolbarFabContainerColor(pureBlack = pureBlack),
         contentColor = floatingToolbarFabContentColor(pureBlack = pureBlack),
+        elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp),
     ) {
         Icon(
             painter = painterResource(iconRes),
@@ -494,6 +523,90 @@ private fun FloatingNavigationToolbarItem(
             }
         }
     }
+}
+
+@Composable
+private fun LiquidGlassToolbar(
+    hazeState: HazeState?,
+    pureBlack: Boolean,
+    maxWidth: Dp,
+    trailing: (@Composable () -> Unit)?,
+    content: @Composable () -> Unit,
+) {
+    val baseColor = floatingToolbarContainerColor(pureBlack = pureBlack)
+    val isDark = pureBlack || MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val shape = CircleShape
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier.widthIn(max = maxWidth),
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .weight(1f, fill = false)
+                .liquidGlassSurface(hazeState, baseColor, isDark, shape)
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+        ) {
+            content()
+        }
+        trailing?.invoke()
+    }
+}
+
+/**
+ * Superficie de cristal: desenfoque del fondo (Haze, API 31+; en versiones
+ * anteriores Haze cae a un tinte translúcido), un tinte suave del tema, un
+ * brillo superior y un borde con reflejo de luz.
+ */
+private fun Modifier.liquidGlassSurface(
+    hazeState: HazeState?,
+    baseColor: Color,
+    isDark: Boolean,
+    shape: Shape,
+): Modifier {
+    val tintAlpha = if (isDark) 0.38f else 0.48f
+    val glass = if (hazeState != null) {
+        Modifier.hazeEffect(
+            state = hazeState,
+            style = HazeStyle(
+                backgroundColor = baseColor,
+                tint = HazeTint(baseColor.copy(alpha = tintAlpha)),
+                blurRadius = 24.dp,
+                noiseFactor = 0.06f,
+                fallbackTint = HazeTint(baseColor.copy(alpha = 0.9f)),
+            ),
+        )
+    } else {
+        Modifier.background(baseColor.copy(alpha = 0.85f))
+    }
+    val rim = Brush.verticalGradient(
+        listOf(
+            Color.White.copy(alpha = if (isDark) 0.32f else 0.75f),
+            Color.White.copy(alpha = if (isDark) 0.06f else 0.2f),
+            Color.White.copy(alpha = if (isDark) 0.14f else 0.4f),
+        )
+    )
+    return this
+        .clip(shape)
+        .then(glass)
+        .drawBehind {
+            // Brillo especular en la mitad superior del cristal.
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color.White.copy(alpha = if (isDark) 0.10f else 0.22f),
+                        Color.Transparent,
+                    ),
+                    startY = 0f,
+                    endY = size.height * 0.55f,
+                ),
+                topLeft = Offset.Zero,
+                size = size,
+            )
+        }
+        .border(width = 1.dp, brush = rim, shape = shape)
 }
 
 @Composable

@@ -1,0 +1,725 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dezzy · Fase 8 · Bocetos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<style>
+/* ── Tokens Material 3 (esquema claro generado desde el color de marca #ED5564) ── */
+:root{
+  --primary:#9C3F48; --on-primary:#FFFFFF;
+  --primary-container:#FFDADB; --on-primary-container:#40000E;
+  --secondary:#775657; --secondary-container:#FFDADA; --on-secondary-container:#2C1516;
+  --surface:#FFF8F7; --on-surface:#22191A; --on-surface-variant:#534344;
+  --outline:#857373; --outline-variant:#D8C1C2;
+  --sc-lowest:#FFFFFF; --sc-low:#FEF1F1; --sc:#F8EBEB; --sc-high:#F3E5E5; --sc-highest:#EDE0E0;
+  --page:#F4EFEF; --ink:#22191A; --muted:#5E5051;
+  /* Modo video (siempre oscuro, como hoy) */
+  --v-bg:#0F0B0C; --v-on:#FFFFFF; --v-muted:rgba(255,255,255,.66); --v-chip:rgba(255,255,255,.12);
+  --v-line:rgba(255,255,255,.16); --v-accent:#FFB3B5;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--page);color:var(--ink);font-family:Roboto,system-ui,sans-serif;line-height:1.45}
+.ms{font-family:'Material Symbols Outlined';font-weight:400;font-style:normal;font-size:24px;line-height:1;
+  display:inline-block;letter-spacing:normal;text-transform:none;white-space:nowrap;direction:ltr;
+  -webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;user-select:none}
+.ms.f{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+.ms.s16{font-size:16px}.ms.s18{font-size:18px}.ms.s20{font-size:20px}.ms.s28{font-size:28px}.ms.s32{font-size:32px}.ms.s36{font-size:36px}
+
+/* ── Página ── */
+.wrap{max-width:1240px;margin:0 auto;padding:40px 16px 80px}
+header.top h1{font-family:'Roboto Flex',Roboto;font-size:36px;font-weight:700;letter-spacing:-.5px}
+header.top p.lead{font-size:16px;color:var(--muted);max-width:820px;margin-top:8px}
+.phases{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin:24px 0 8px}
+.phase{background:#fff;border:1px solid var(--outline-variant);border-radius:16px;padding:12px 14px;font-size:14px;text-decoration:none;color:inherit}
+.phase b{display:block;font-size:13px;color:var(--primary);letter-spacing:.3px;text-transform:uppercase}
+.phase span{color:var(--muted);font-size:13px}
+.legend{font-size:14px;color:var(--muted);margin-top:12px}
+h2.part{font-family:'Roboto Flex',Roboto;font-size:30px;font-weight:700;margin-top:72px;padding-top:28px;border-top:3px solid var(--primary)}
+h2.part small{display:block;font:400 15px Roboto;color:var(--muted);margin-top:4px;max-width:820px}
+section.sketch{margin-top:40px;padding-top:28px;border-top:1px solid var(--outline-variant)}
+.sk-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.sk-tag{font:700 13px Roboto;letter-spacing:1px;background:var(--primary);color:#fff;border-radius:8px;padding:4px 10px}
+.sk-head h3{font-family:'Roboto Flex',Roboto;font-size:26px;font-weight:700}
+.sk-head p{flex-basis:100%;color:var(--muted);font-size:15px;max-width:860px}
+.sk-body{display:flex;gap:28px;flex-wrap:wrap;margin-top:24px;align-items:flex-start}
+.phones{display:flex;gap:28px;flex-wrap:wrap}
+.cap{font-size:13px;color:var(--muted);text-align:center;margin-top:12px;max-width:360px}
+.notes{flex:1 1 300px;min-width:280px;background:#fff;border:1px solid var(--outline-variant);border-radius:20px;padding:20px;font-size:14px}
+.notes h4{font-size:15px;margin:14px 0 6px}.notes h4:first-child{margin-top:0}
+.notes ul{padding-left:18px}.notes li{margin:3px 0}
+.notes code{font-size:12.5px;background:var(--sc);border-radius:4px;padding:1px 4px}
+.tag-new{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.4px;background:var(--primary-container);color:var(--on-primary-container);border-radius:6px;padding:1px 6px;margin-left:4px}
+
+/* ── Teléfono (1px = 1dp) ── */
+.phone{width:360px;height:780px;border-radius:32px;background:var(--surface);overflow:hidden;position:relative;
+  box-shadow:0 0 0 10px #1d1b1b,0 18px 40px rgba(0,0,0,.25);display:flex;flex-direction:column;color:var(--on-surface)}
+.phone.land{width:640px;height:296px}
+.statusbar{height:28px;flex:none;background:color-mix(in srgb,var(--primary) 92%,transparent);color:#fff;
+  display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-size:13px;font-weight:500;z-index:3}
+.statusbar .ic{display:flex;gap:4px}
+.gesture{height:20px;flex:none;background:color-mix(in srgb,var(--primary) 92%,transparent);display:flex;align-items:center;justify-content:center;z-index:3}
+.gesture i{width:108px;height:4px;border-radius:2px;background:rgba(255,255,255,.9)}
+.content{flex:1;overflow:hidden;position:relative}
+.dark{background:var(--v-bg);color:var(--v-on)}
+.dark .statusbar,.dark .gesture{background:rgba(0,0,0,.55)}
+.statusbar.clear{background:transparent;position:absolute;left:0;right:0;top:0}
+
+/* Placeholders */
+.art{border-radius:8px;flex:none;position:relative;overflow:hidden}
+.a1{background:linear-gradient(135deg,#7E2F3A,#E0828A)}
+.a2{background:linear-gradient(135deg,#2E5E63,#8CC1BC)}
+.a3{background:linear-gradient(135deg,#5B4A7A,#B9A6D9)}
+.a4{background:linear-gradient(135deg,#6E5A1F,#E1C27A)}
+.a5{background:linear-gradient(135deg,#334A66,#96B2D6)}
+.a6{background:linear-gradient(135deg,#4F6331,#B6CC8C)}
+.a7{background:linear-gradient(135deg,#7A3E22,#E6A17E)}
+.a8{background:linear-gradient(135deg,#3C3A3B,#A39D9E)}
+.art .ms{position:absolute;inset:0;display:grid;place-items:center;color:rgba(255,255,255,.75)}
+.vid{position:relative;overflow:hidden;flex:none;background:linear-gradient(120deg,#1B0F2E 0%,#6B1630 45%,#E2465A 75%,#F6A04D 100%)}
+.vid::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 30% 60%,rgba(255,255,255,.18),transparent 45%)}
+.thumb{position:relative;overflow:hidden;flex:none;border-radius:10px}
+.dur{position:absolute;right:6px;bottom:6px;background:rgba(0,0,0,.78);color:#fff;font-size:11px;font-weight:500;border-radius:4px;padding:1px 5px;z-index:1}
+.off{position:absolute;left:6px;top:6px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;font-weight:700;letter-spacing:.4px;border-radius:4px;padding:1px 5px;z-index:1}
+
+/* Botones / chips */
+.icon-btn{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;color:var(--on-surface-variant);flex:none;position:relative}
+.dark .icon-btn{color:#fff}
+.badge{position:absolute;top:8px;right:6px;min-width:16px;height:16px;border-radius:8px;background:var(--primary);color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center;padding:0 4px}
+.btn{height:40px;border-radius:20px;padding:0 20px;display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:500;flex:none}
+.btn.filled{background:var(--primary);color:var(--on-primary)}
+.btn.tonal{background:var(--secondary-container);color:var(--on-secondary-container)}
+.btn.outlined{border:1px solid var(--outline);color:var(--primary)}
+.btn.text{color:var(--primary);padding:0 12px}
+.btn.white{background:#fff;color:#111}
+.btn .ms{font-size:18px}
+.chips{display:flex;gap:8px;padding:4px 16px 8px;overflow:hidden}
+.chip{height:32px;border-radius:8px;border:1px solid var(--outline-variant);padding:0 12px;display:flex;align-items:center;gap:6px;
+  font-size:14px;font-weight:500;color:var(--on-surface-variant);white-space:nowrap;flex:none}
+.chip.sel{background:var(--secondary-container);border-color:transparent;color:var(--on-secondary-container)}
+.chip .ms{font-size:18px}
+.dark .chip{border-color:var(--v-line);color:#fff}
+.dark .chip.sel{background:#fff;color:#111;border-color:#fff}
+.vchip{height:36px;border-radius:18px;background:var(--v-chip);color:#fff;display:inline-flex;align-items:center;gap:6px;padding:0 14px;font-size:14px;font-weight:500;flex:none;white-space:nowrap}
+.vchip .ms{font-size:20px}
+.vchip.on{background:#fff;color:#111}
+.pill{display:flex;background:rgba(255,255,255,.14);border-radius:20px;padding:4px}
+.pill span{height:32px;border-radius:16px;padding:0 16px;display:flex;align-items:center;gap:6px;font-size:14px;font-weight:500;color:#fff}
+.pill span.on{background:#fff;color:#111}
+.pill .ms{font-size:18px}
+
+/* Barra superior */
+.tab{display:flex;align-items:center;gap:4px;padding:8px 4px 8px 4px;min-height:64px}
+.tab .t{flex:1;min-width:0;padding-left:4px}
+.tab h1{font-size:22px;font-weight:400;line-height:28px}
+.tab .sub{font-size:13px;color:var(--on-surface-variant)}
+.vtop{display:flex;align-items:center;justify-content:space-between;padding:4px 4px;height:56px;flex:none}
+
+/* Reproducción */
+.slider{position:relative;height:20px;margin:0 20px}
+.slider i{position:absolute;left:0;right:0;top:8px;height:4px;border-radius:2px;background:rgba(255,255,255,.28)}
+.slider b{position:absolute;left:0;top:8px;height:4px;border-radius:2px;background:#fff}
+.slider em{position:absolute;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;margin-left:-8px}
+.times{display:flex;justify-content:space-between;margin:0 22px;font-size:12px;color:var(--v-muted)}
+.transport{display:flex;align-items:center;justify-content:space-between;padding:4px 20px}
+.play{width:68px;height:68px;border-radius:50%;background:#fff;color:#111;display:grid;place-items:center}
+.vt{font-size:22px;font-weight:700;line-height:28px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.va{font-size:15px;color:var(--v-muted)}
+.hscroll{display:flex;gap:8px;overflow:hidden;padding:0 16px}
+.vtabs{display:flex;border-top:1px solid var(--v-line);margin-top:auto}
+.vtabs div{flex:1;text-align:center;font-size:14px;font-weight:500;color:var(--v-muted);padding:16px 0 14px;position:relative}
+.vtabs div.on{color:#fff}
+.vtabs div.on::after{content:"";position:absolute;left:24%;right:24%;top:-1px;height:3px;border-radius:0 0 3px 3px;background:#fff}
+
+/* Filas */
+.row{display:flex;align-items:center;gap:12px;padding:8px 4px 8px 16px;min-height:64px}
+.row .art{width:48px;height:48px}
+.row .tx{flex:1;min-width:0}
+.t1{font-size:16px;line-height:22px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t2{font-size:14px;color:var(--on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dark .t2{color:var(--v-muted)}
+.clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal}
+.meta{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:12px;color:var(--on-surface-variant)}
+.fmt{font-size:10px;font-weight:700;letter-spacing:.4px;border-radius:4px;padding:1px 5px;background:var(--primary-container);color:var(--on-primary-container)}
+.fmt.hr{background:#E6DEFF;color:#21005D}
+.fmt.e{background:var(--sc-highest);color:var(--on-surface-variant)}
+.sec{display:flex;align-items:center;justify-content:space-between;padding:16px 8px 6px 16px}
+.sec h5{font-size:14px;font-weight:500;color:var(--primary);letter-spacing:.1px}
+.dark .sec h5{color:var(--v-accent)}
+.sec .tb{font-size:14px;font-weight:500;color:var(--primary);padding:8px 12px}
+.searchbar{margin:4px 16px 8px;height:56px;border-radius:28px;background:var(--sc-high);display:flex;align-items:center;gap:4px;padding:0 4px 0 16px;color:var(--on-surface-variant);font-size:16px}
+.searchbar .grow{flex:1;margin-left:12px;color:var(--on-surface)}
+.searchbar .ph{color:var(--on-surface-variant)}
+.field{margin:4px 16px 8px;height:48px;border-radius:24px;background:var(--sc-high);display:flex;align-items:center;gap:10px;padding:0 16px;color:var(--on-surface-variant);font-size:15px}
+.ring{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;flex:none;margin-right:8px;
+  background:conic-gradient(var(--primary) calc(var(--p)*1%),var(--sc-highest) 0);position:relative}
+.ring::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--surface)}
+.ring .ms{position:relative;z-index:1;font-size:18px;color:var(--primary)}
+.check{width:24px;height:24px;border-radius:6px;border:2px solid var(--on-surface-variant);flex:none;margin-right:12px;display:grid;place-items:center}
+.check.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.check.on .ms{font-size:18px}
+.radio{width:20px;height:20px;border-radius:50%;border:2px solid var(--on-surface-variant);flex:none;display:grid;place-items:center}
+.radio.on{border-color:var(--primary)}
+.radio.on::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--primary)}
+.switch{width:52px;height:32px;border-radius:16px;background:var(--primary);position:relative;flex:none}
+.switch::after{content:"";position:absolute;right:4px;top:4px;width:24px;height:24px;border-radius:50%;background:#fff}
+.dark .switch{background:var(--v-accent)}
+.dark .switch::after{background:#5F1120}
+.handle{width:32px;height:4px;border-radius:2px;background:var(--outline);margin:12px auto 6px;opacity:.6}
+.dark .handle{background:#fff;opacity:.4}
+
+/* Hojas */
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.36);z-index:4}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:5;background:var(--sc-low);border-radius:28px 28px 0 0;display:flex;flex-direction:column}
+.dark .sheet{background:#1E1718}
+.snack{position:absolute;left:12px;right:12px;bottom:92px;z-index:6;background:#372E2F;color:#FCEDED;border-radius:8px;min-height:48px;display:flex;align-items:center;padding:0 8px 0 16px;font-size:14px;box-shadow:0 4px 10px rgba(0,0,0,.2)}
+.snack .act{margin-left:auto;color:#FFB3B5;font-weight:500;padding:10px 8px}
+
+/* Mini reproductor */
+.bottom{position:absolute;left:0;right:0;bottom:0;z-index:2}
+.mini{margin:0 8px 8px;height:64px;border-radius:16px;background:var(--sc-highest);display:flex;align-items:center;gap:12px;padding:0 4px 0 8px;position:relative;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.10)}
+.mini .art{width:48px;height:48px}
+.mini .tx{flex:1;min-width:0}
+.mini .t1{font-size:14px;font-weight:500}
+.mini .t2{font-size:13px}
+.mini .bar{position:absolute;left:12px;right:12px;bottom:0;height:3px;border-radius:2px;background:var(--outline-variant)}
+.mini .bar i{display:block;width:38%;height:100%;background:var(--primary);border-radius:2px}
+.dlstrip{margin:0 8px 8px;border-radius:16px;background:var(--primary-container);color:var(--on-primary-container);display:flex;align-items:center;gap:12px;padding:10px 12px 10px 14px}
+.dlstrip .tx{flex:1;min-width:0}
+.dlstrip b{display:block;font-size:14px;font-weight:500}
+.dlstrip span{font-size:12px}
+.lin{height:4px;border-radius:2px;background:rgba(156,63,72,.2);overflow:hidden;margin-top:6px}
+.lin i{display:block;height:100%;background:var(--primary)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:4px 16px}
+.gtile{position:relative}
+.gtile .art{width:100%;aspect-ratio:1;border-radius:16px}
+.gtile b{display:block;font-size:14px;font-weight:500;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gtile span{font-size:12px;color:var(--on-surface-variant)}
+.gtile.sel .art{outline:3px solid var(--primary);outline-offset:-3px}
+.gtile .ck{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;display:grid;place-items:center;z-index:1}
+.gtile .ck.off{background:rgba(255,255,255,.85);color:transparent;border:2px solid rgba(0,0,0,.25)}
+.gtile .here{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.62);color:#fff;font-size:11px;font-weight:500;border-radius:6px;padding:2px 6px;z-index:1}
+.newtile{width:100%;aspect-ratio:1;border-radius:16px;border:2px dashed var(--outline);display:grid;place-items:center;color:var(--primary)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>Fase 8 · Videos, lossless y playlists</h1>
+  <p class="lead">Cuatro piezas, cada una con dos bocetos (A y B). Puedes elegir uno por pieza y mezclar. El modo video sigue siendo oscuro, como hoy; el resto usa el tema claro de la app (el oscuro sale solo después). Los textos están en español y todo usa datos que la app ya tiene o puede pedir a YouTube y Deezer.</p>
+  <div class="phases">
+    <a class="phase" href="#video"><b>1 · Modo video</b><span>Lo que se ve al tocar «Video» en Canción / Video</span></a>
+    <a class="phase" href="#reco"><b>2 · Recomendados</b><span>Botón nuevo: solo videos basados en la canción</span></a>
+    <a class="phase" href="#lossless"><b>3 · Búsqueda lossless</b><span>Buscar y descargar en FLAC / Hi-Res</span></a>
+    <a class="phase" href="#playlist"><b>4 · Guardar en playlist</b><span>Sustituye al diálogo «Add to playlist»</span></a>
+  </div>
+  <p class="legend">Ejemplo en todos los teléfonos: «Blinding Lights», The Weeknd. Los degradados son marcadores de portadas y miniaturas.</p>
+</header>
+
+<!-- ═════════════════════════════ 1 · MODO VIDEO ═════════════════════════════ -->
+<h2 class="part" id="video">1 · Modo video<small>Hoy: video arriba, mucho espacio vacío en medio, acciones sueltas y «Videos similares» escondido en el menú ⋮. Los dos bocetos conservan el selector Canción / Video, cast, la cola y los controles propios (anterior/siguiente actúan sobre la cola real).</small></h2>
+
+<section class="sketch">
+  <div class="sk-head"><span class="sk-tag">BOCETO A</span><h3>Pestañas abajo, como YouTube Music</h3>
+  <p>El video arriba, la información y los controles en el centro y tres pestañas fijas abajo: <b>A continuación</b>, <b>Recomendados</b> y <b>Comentarios</b>. Así los recomendados están a un toque y no dentro de un menú. Botón de pantalla completa sobre el video.</p></div>
+  <div class="sk-body">
+    <div class="phones">
+      <div>
+        <div class="phone dark">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">wifi</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content" style="display:flex;flex-direction:column">
+            <div class="vtop">
+              <span class="icon-btn"><span class="ms">expand_more</span></span>
+              <div class="pill"><span><span class="ms">music_note</span>Canción</span><span class="on"><span class="ms f">smart_display</span>Video</span></div>
+              <span style="display:flex"><span class="icon-btn"><span class="ms">cast</span></span><span class="icon-btn"><span class="ms">more_vert</span></span></span>
+            </div>
+            <div class="vid" style="width:360px;height:203px">
+              <span class="ms" style="position:absolute;right:10px;bottom:10px;color:#fff;z-index:1">fullscreen</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:18px 8px 0 20px">
+              <div style="flex:1;min-width:0"><div class="vt">Blinding Lights</div><div class="va">The Weeknd · Video oficial</div></div>
+              <span class="icon-btn"><span class="ms f" style="color:var(--v-accent)">favorite</span></span>
+            </div>
+            <div class="hscroll" style="margin-top:12px">
+              <span class="vchip"><span class="ms">playlist_add</span>Guardar</span>
+              <span class="vchip"><span class="ms">download</span>Descargar</span>
+              <span class="vchip"><span class="ms">share</span>Compartir</span>
+              <span class="vchip"><span class="ms">aspect_ratio</span>Ajustar</span>
+            </div>
+            <div style="margin-top:22px" class="slider"><i></i><b style="width:42%"></b><em style="left:42%"></em></div>
+            <div class="times"><span>1:24</span><span>3:20</span></div>
+            <div class="transport" style="margin-top:6px">
+              <span class="icon-btn"><span class="ms">shuffle</span></span>
+              <span class="icon-btn"><span class="ms f s36">skip_previous</span></span>
+              <span class="play"><span class="ms f s36">pause</span></span>
+              <span class="icon-btn"><span class="ms f s36">skip_next</span></span>
+              <span class="icon-btn"><span class="ms">repeat</span></span>
+            </div>
+            <div class="vtabs"><div>A continuación</div><div>Recomendados</div><div>Comentarios</div></div>
+          </div>
+          <div class="gesture"><i></i></div>
+        </div>
+        <p class="cap">Vertical. El corazón es el «me gusta» (hoy son dos chips de pulgar).</p>
+      </div>
+      <div>
+        <div class="phone land dark" style="flex-direction:row">
+          <div class="vid" style="flex:1;height:100%">
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,.42);z-index:1;display:flex;flex-direction:column;justify-content:space-between;padding:12px 16px">
+              <div style="display:flex;align-items:center;gap:8px"><span class="ms">expand_more</span><div style="flex:1"><div style="font-weight:700">Blinding Lights</div><div style="font-size:13px;color:var(--v-muted)">The Weeknd</div></div><span class="ms">smart_display</span><span class="ms">cast</span><span class="ms">more_vert</span></div>
+              <div style="display:flex;justify-content:center;align-items:center;gap:56px"><span class="ms f s36">skip_previous</span><span class="ms f" style="font-size:56px">pause_circle</span><span class="ms f s36">skip_next</span></div>
+              <div><div class="slider" style="margin:0"><i></i><b style="width:42%"></b><em style="left:42%"></em></div><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--v-muted);margin-top:2px"><span>1:24 / 3:20</span><span class="ms s20" style="color:#fff">fullscreen_exit</span></div></div>
+            </div>
+          </div>
+        </div>
+        <p class="cap" style="max-width:640px">Pantalla completa (horizontal) <span class="tag-new">NUEVO</span>: controles encima del video, se esconden a los 3 s; un toque los vuelve a mostrar.</p>
+      </div>
+    </div>
+    <div class="notes">
+      <h4>Qué cambia</h4>
+      <ul>
+        <li>Se quita el hueco negro: la información sube justo debajo del video.</li>
+        <li>«Videos similares» sale del menú ⋮ y pasa a la pestaña <b>Recomendados</b> (pieza 2).</li>
+        <li>«Comentarios» pasa a pestaña; «Descargar» sale del ⋮ como chip.</li>
+        <li>Chip <b>Ajustar</b>: cambia Ajustar / Recortar / Rellenar (ya existe <code>VideoResizeModeKey</code>).</li>
+        <li>Pantalla completa horizontal <span class="tag-new">NUEVO</span>.</li>
+      </ul>
+      <h4>Se queda igual</h4>
+      <ul><li>Selector Canción / Video, cast, aleatorio y repetir, cola, reactivar video al pasar de canción.</li></ul>
+      <h4>Código</h4>
+      <ul><li>Solo <code>VideoModeScreen</code> en <code>VideoModePlayer.kt</code>. Las pestañas abren hojas M3.</li></ul>
+    </div>
+  </div>
+</section>
+
+<section class="sketch">
+  <div class="sk-head"><span class="sk-tag">BOCETO B</span><h3>Inmersivo con luz ambiental</h3>
+  <p>El video llega hasta arriba, detrás de la barra de estado, con un resplandor del color del video detrás. Los controles van <b>encima del video</b> (como YouTube) y debajo queda una página que se desplaza: título, acciones, un carrusel de recomendados y la cola.</p></div>
+  <div class="sk-body">
+    <div class="phones">
+      <div>
+        <div class="phone dark" style="background:radial-gradient(120% 60% at 50% 18%,rgba(226,70,90,.45),transparent 70%),var(--v-bg)">
+          <div class="content" style="display:flex;flex-direction:column">
+            <div class="vid" style="width:360px;height:231px">
+              <div style="position:absolute;inset:0;background:rgba(0,0,0,.38);z-index:1">
+                <div class="statusbar clear"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">wifi</span><span class="ms s16">battery_full</span></span></div>
+                <div style="position:absolute;top:28px;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:0 4px">
+                  <span class="icon-btn"><span class="ms">expand_more</span></span>
+                  <span style="display:flex"><span class="icon-btn"><span class="ms">cast</span></span><span class="icon-btn"><span class="ms">more_vert</span></span></span>
+                </div>
+                <div style="position:absolute;top:104px;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:44px">
+                  <span class="ms f s32">skip_previous</span><span class="ms f" style="font-size:52px">pause_circle</span><span class="ms f s32">skip_next</span>
+                </div>
+                <div style="position:absolute;left:12px;right:12px;bottom:6px">
+                  <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--v-muted)"><span>1:24 / 3:20</span><span class="ms s20" style="color:#fff">fullscreen</span></div>
+                  <div class="slider" style="margin:0"><i></i><b style="width:42%;background:var(--v-accent)"></b><em style="left:42%;background:var(--v-accent)"></em></div>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:center;margin-top:14px">
+              <div class="pill"><span><span class="ms">music_note</span>Canción</span><span class="on"><span class="ms f">smart_display</span>Video</span></div>
+            </div>
+            <div style="padding:14px 20px 0"><div class="vt">Blinding Lights</div><div class="va">The Weeknd · Video oficial</div></div>
+            <div class="hscroll" style="margin-top:12px">
+              <span class="vchip"><span class="ms f" style="color:var(--v-accent)">favorite</span>Me gusta</span>
+              <span class="vchip"><span class="ms">playlist_add</span>Guardar</span>
+              <span class="vchip"><span class="ms">chat_bubble</span>Comentarios</span>
+              <span class="vchip"><span class="ms">download</span></span>
+            </div>
+            <div class="sec" style="padding-top:18px"><h5>Recomendados</h5><span class="tb" style="color:var(--v-accent)">Ver todos</span></div>
+            <div class="hscroll">
+              <div style="width:200px;flex:none"><div class="thumb a5" style="width:200px;height:112px"><span class="dur">4:01</span></div><div style="font-size:14px;margin-top:6px" class="clamp2">Save Your Tears (Official Video)</div><div class="t2" style="font-size:12px">The Weeknd</div></div>
+              <div style="width:200px;flex:none"><div class="thumb a3" style="width:200px;height:112px"><span class="dur">3:23</span></div><div style="font-size:14px;margin-top:6px" class="clamp2">Levitating</div><div class="t2" style="font-size:12px">Dua Lipa</div></div>
+            </div>
+            <div style="margin-top:auto;border-top:1px solid var(--v-line);display:flex;align-items:center;gap:12px;padding:12px 16px">
+              <span class="ms">queue_music</span><div style="flex:1;font-size:14px"><b style="font-weight:500">A continuación</b><div style="font-size:12px;color:var(--v-muted)">Mix: The Weeknd · 24 canciones</div></div><span class="ms">expand_less</span>
+            </div>
+          </div>
+          <div class="gesture" style="background:transparent"><i></i></div>
+        </div>
+        <p class="cap">Los controles sobre el video se esconden tras 3 s. El resplandor toma el color dominante de la miniatura.</p>
+      </div>
+    </div>
+    <div class="notes">
+      <h4>Qué cambia</h4>
+      <ul>
+        <li>Más grande el video; transporte y barra de progreso pasan encima del video.</li>
+        <li>Recomendados visibles sin tocar nada (carrusel); «Ver todos» abre la pieza 2.</li>
+        <li>Luz ambiental: color dominante de la miniatura con <code>Palette</code> (la app ya lo usa en el reproductor).</li>
+        <li>Pantalla completa horizontal igual que en A.</li>
+      </ul>
+      <h4>A tener en cuenta</h4>
+      <ul>
+        <li>Aleatorio y repetir se mueven al menú ⋮ (no caben sobre el video).</li>
+        <li>Pide más trabajo: los controles superpuestos necesitan un temporizador y gestos de toque/doble toque (±10 s).</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════════════════════ 2 · RECOMENDADOS ═════════════════════════════ -->
+<h2 class="part" id="reco">2 · Recomendados: solo videos<small>Botón nuevo «Recomendados» en el modo video. Fuente: los relacionados de YouTube para el video que suena (<code>YouTube.next</code>, lo mismo que hoy usa «Videos similares»), pero filtrando a <b>solo videos</b> con el tipo que YouTube marca en cada pista (videoclip oficial u otro video; se descartan las pistas de solo audio). «Del artista» usa la sección de videos de la página del artista.</small></h2>
+
+<section class="sketch">
+  <div class="sk-head"><span class="sk-tag">BOCETO A</span><h3>Hoja encima, el video sigue sonando</h3>
+  <p>Al tocar <b>Recomendados</b> sube una hoja que deja el video visible arriba. Filtros arriba, lista de miniaturas 16:9 con duración y una marca «OFICIAL». Interruptor para seguir en modo video al pasar de canción.</p></div>
+  <div class="sk-body">
+    <div class="phones">
+      <div>
+        <div class="phone dark">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">wifi</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content">
+            <div class="vtop"><span class="icon-btn"><span class="ms">expand_more</span></span><div class="pill"><span><span class="ms">music_note</span>Canción</span><span class="on"><span class="ms f">smart_display</span>Video</span></div><span class="icon-btn"><span class="ms">cast</span></span></div>
+            <div class="vid" style="width:360px;height:203px"></div>
+            <div class="sheet" style="top:262px">
+              <div class="handle"></div>
+              <div style="display:flex;align-items:center;padding:4px 8px 4px 20px">
+                <div style="flex:1"><div style="font-size:20px;font-weight:500">Recomendados</div><div style="font-size:13px;color:var(--v-muted)">Según «Blinding Lights»</div></div>
+                <span class="icon-btn"><span class="ms">close</span></span>
+              </div>
+              <div class="chips" style="padding-top:6px"><span class="chip sel"><span class="ms">check</span>Todos</span><span class="chip">Oficiales</span><span class="chip">Del artista</span></div>
+              <div style="display:flex;align-items:center;gap:12px;padding:6px 16px 10px">
+                <span class="ms" style="color:var(--v-muted)">autoplay</span><div style="flex:1;font-size:14px">Seguir en modo video<div style="font-size:12px;color:var(--v-muted)">La siguiente canción también se ve en video</div></div><span class="switch"></span>
+              </div>
+              <div style="display:flex;gap:12px;padding:8px 4px 8px 16px"><div class="thumb a5" style="width:128px;height:72px"><span class="off">OFICIAL</span><span class="dur">4:01</span></div><div style="flex:1;min-width:0"><div class="clamp2" style="font-size:15px;line-height:20px">Save Your Tears (Official Video)</div><div class="t2" style="font-size:13px">The Weeknd</div></div><span class="icon-btn" style="width:40px"><span class="ms">more_vert</span></span></div>
+              <div style="display:flex;gap:12px;padding:8px 4px 8px 16px"><div class="thumb a3" style="width:128px;height:72px"><span class="off">OFICIAL</span><span class="dur">3:23</span></div><div style="flex:1;min-width:0"><div class="clamp2" style="font-size:15px;line-height:20px">Levitating</div><div class="t2" style="font-size:13px">Dua Lipa</div></div><span class="icon-btn" style="width:40px"><span class="ms">more_vert</span></span></div>
+              <div style="display:flex;gap:12px;padding:8px 4px 8px 16px"><div class="thumb a7" style="width:128px;height:72px"><span class="dur">3:56</span></div><div style="flex:1;min-width:0"><div class="clamp2" style="font-size:15px;line-height:20px">Blinding Lights (Live at the Super Bowl)</div><div class="t2" style="font-size:13px">The Weeknd</div></div><span class="icon-btn" style="width:40px"><span class="ms">more_vert</span></span></div>
+              <div style="display:flex;gap:12px;padding:8px 4px 8px 16px"><div class="thumb a2" style="width:128px;height:72px"><span class="off">OFICIAL</span><span class="dur">3:02</span></div><div style="flex:1;min-width:0"><div class="clamp2" style="font-size:15px;line-height:20px">Take On Me</div><div class="t2" style="font-size:13px">a-ha</div></div><span class="icon-btn" style="width:40px"><span class="ms">more_vert</span></span></div>
+            </div>
+          </div>
+          <div class="gesture" style="background:#1E1718;z-index:6"><i></i></div>
+        </div>
+        <p class="cap">Tocar un video lo reproduce en modo video. ⋮: Reproducir siguiente · Añadir a la cola · Guardar en playlist.</p>
+      </div>
+    </div>
+    <div class="notes">
+      <h4>Comportamiento</h4>
+      <ul>
+        <li>Tocar un video: empieza una radio desde ese video y queda en modo video (lo que hoy hace <code>playRelatedVideo</code>).</li>
+        <li><b>Oficiales</b>: solo videoclips oficiales. <b>Del artista</b>: videos del mismo artista.</li>
+        <li><b>Seguir en modo video</b> <span class="tag-new">NUEVO</span>: si está activo, al terminar la canción la siguiente se abre en video sin volver al audio.</li>
+        <li>Estados: cargando (esqueletos), sin videos («No encontramos videos para esta canción»), sin conexión con «Reintentar».</li>
+      </ul>
+      <h4>Código</h4>
+      <ul><li>Sustituye <code>RelatedVideosSheet</code>. Sin pantallas nuevas.</li></ul>
+    </div>
+  </div>
+</section>
+
+<section class="sketch">
+  <div class="sk-head"><span class="sk-tag">BOCETO B</span><h3>«Solo videos»: una pantalla propia</h3>
+  <p>Un espacio solo para videos: el reproductor queda fijo arriba y debajo hay un muro de videos grandes, como YouTube. Al bajar, el video se encoge a una ventanita en la esquina para seguir viéndolo.</p></div>
+  <div class="sk-body">
+    <div class="phones">
+      <div>
+        <div class="phone dark">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">wifi</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content" style="display:flex;flex-direction:column">
+            <div class="vtop"><span class="icon-btn"><span class="ms">arrow_back</span></span><div style="flex:1;font-size:20px;padding-left:4px">Solo videos</div><span class="icon-btn"><span class="ms">cast</span></span><span class="icon-btn"><span class="ms">queue_music</span></span></div>
+            <div class="vid" style="width:360px;height:203px"><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.25);z-index:1"><i style="display:block;width:42%;height:100%;background:var(--v-accent)"></i></div></div>
+            <div style="padding:12px 20px 0;display:flex;align-items:center;gap:8px"><div style="flex:1;min-width:0"><div style="font-size:18px;font-weight:700">Blinding Lights</div><div class="va" style="font-size:14px">The Weeknd</div></div><span class="ms f s36">pause_circle</span><span class="ms f s28">skip_next</span></div>
+            <div class="chips" style="padding-top:12px"><span class="chip sel">Para esta canción</span><span class="chip">Oficiales</span><span class="chip">The Weeknd</span></div>
+            <div style="padding:6px 16px 0">
+              <div class="thumb a5" style="width:328px;height:184px;border-radius:14px"><span class="off">OFICIAL</span><span class="dur">4:01</span></div>
+              <div style="display:flex;gap:12px;padding:10px 0 0"><div class="art a5" style="width:36px;height:36px;border-radius:50%"></div><div style="flex:1;min-width:0"><div class="clamp2" style="font-size:15px;line-height:20px">Save Your Tears (Official Video)</div><div class="t2" style="font-size:13px">The Weeknd · 4:01</div></div><span class="ms" style="color:var(--v-muted)">more_vert</span></div>
+              <div class="thumb a3" style="width:328px;height:184px;border-radius:14px;margin-top:16px"><span class="off">OFICIAL</span><span class="dur">3:23</span></div>
+            </div>
+          </div>
+          <div class="gesture"><i></i></div>
+        </div>
+        <p class="cap">Arriba: el video que suena con sus controles básicos.</p>
+      </div>
+      <div>
+        <div class="phone dark">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">wifi</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content">
+            <div class="vtop"><span class="icon-btn"><span class="ms">arrow_back</span></span><div style="flex:1;font-size:20px;padding-left:4px">Solo videos</div><span class="icon-btn"><span class="ms">cast</span></span><span class="icon-btn"><span class="ms">queue_music</span></span></div>
+            <div class="chips"><span class="chip sel">Para esta canción</span><span class="chip">Oficiales</span><span class="chip">The Weeknd</span></div>
+            <div style="padding:6px 16px 0">
+              <div class="thumb a7" style="width:328px;height:184px;border-radius:14px"><span class="dur">3:56</span></div>
+              <div style="display:flex;gap:12px;padding:10px 0 0"><div class="art a7" style="width:36px;height:36px;border-radius:50%"></div><div style="flex:1;min-width:0"><div class="clamp2" style="font-size:15px;line-height:20px">Blinding Lights (Live at the Super Bowl)</div><div class="t2" style="font-size:13px">The Weeknd · 3:56</div></div><span class="ms" style="color:var(--v-muted)">more_vert</span></div>
+              <div class="thumb a2" style="width:328px;height:184px;border-radius:14px;margin-top:16px"><span class="off">OFICIAL</span><span class="dur">3:02</span></div>
+              <div style="display:flex;gap:12px;padding:10px 0 0"><div class="art a2" style="width:36px;height:36px;border-radius:50%"></div><div style="flex:1;min-width:0"><div class="clamp2" style="font-size:15px;line-height:20px">Take On Me (Official Video)</div><div class="t2" style="font-size:13px">a-ha · 3:02</div></div><span class="ms" style="color:var(--v-muted)">more_vert</span></div>
+              <div class="thumb a4" style="width:328px;height:184px;border-radius:14px;margin-top:16px"><span class="dur">3:45</span></div>
+            </div>
+            <div class="vid" style="position:absolute;right:12px;bottom:16px;width:176px;height:99px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.5);z-index:3">
+              <span class="ms f" style="position:absolute;left:8px;bottom:6px;z-index:1">pause</span><span class="ms s20" style="position:absolute;right:6px;top:6px;z-index:1">close</span>
+            </div>
+          </div>
+          <div class="gesture"><i></i></div>
+        </div>
+        <p class="cap">Al desplazar, el video se vuelve una ventanita flotante (se puede tocar para ampliar o cerrar).</p>
+      </div>
+    </div>
+    <div class="notes">
+      <h4>Comportamiento</h4>
+      <ul>
+        <li>Se entra desde el botón <b>Recomendados</b> del modo video (y desde «Ver todos» si eliges el modo video B).</li>
+        <li>Al llegar al final carga más (YouTube da más relacionados con la continuación).</li>
+        <li>Tocar un video lo pone arriba y la lista se recalcula según él: puedes ir «saltando» de video en video.</li>
+        <li>La flecha atrás vuelve al modo video normal.</li>
+      </ul>
+      <h4>Código</h4>
+      <ul><li>Pantalla nueva <code>VideoFeedScreen</code> con ruta propia; reutiliza el mismo reproductor de video, no abre otro. La ventanita flotante es la parte más costosa.</li></ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════════════════════ 3 · LOSSLESS ═════════════════════════════ -->
+<h2 class="part" id="lossless">3 · Búsqueda lossless<small>Hoy: un campo de texto con contorno, filas simples y un diálogo con chips de proveedor y calidad. Los dos bocetos mantienen la búsqueda en Deezer, la escucha en FLAC al tocar la fila, los 5 proveedores con sus calidades reales y la cola de descargas.</small></h2>
+
+<section class="sketch">
+  <div class="sk-head"><span class="sk-tag">BOCETO A</span><h3>Lista clara + hoja de descarga</h3>
+  <p>Barra de búsqueda tipo píldora, chip con la calidad por defecto y filas con formato, duración y el estado de la descarga en un anillo. Al descargar sube una hoja con proveedor y calidad.</p></div>
+  <div class="sk-body">
+    <div class="phones">
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">wifi</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content">
+            <div class="tab"><span class="icon-btn"><span class="ms">arrow_back</span></span><div class="t"><h1>Lossless</h1></div><span class="icon-btn"><span class="ms">downloading</span><span class="badge">2</span></span><span class="icon-btn"><span class="ms">tune</span></span></div>
+            <div class="searchbar"><span class="ms">search</span><span class="grow">the weeknd</span><span class="icon-btn"><span class="ms">close</span></span></div>
+            <div class="chips"><span class="chip sel"><span class="ms">high_quality</span>Deezer · FLAC<span class="ms">arrow_drop_down</span></span><span class="chip">Canciones</span><span class="chip">Álbumes</span></div>
+            <div class="row"><div class="art a1"></div><div class="tx"><div class="t1">Blinding Lights</div><div class="t2">The Weeknd · After Hours</div><div class="meta"><span class="fmt">FLAC</span><span>3:20</span></div></div><span class="icon-btn"><span class="ms">download</span></span></div>
+            <div class="row"><div class="art a5"></div><div class="tx"><div class="t1">Save Your Tears</div><div class="t2">The Weeknd · After Hours</div><div class="meta"><span class="fmt">FLAC</span><span>Descargando · 45 %</span></div></div><span class="ring" style="--p:45"><span class="ms">stop</span></span></div>
+            <div class="row"><div class="art a3"></div><div class="tx"><div class="t1">Starboy</div><div class="t2">The Weeknd, Daft Punk · Starboy</div><div class="meta"><span class="fmt">FLAC</span><span class="fmt e">E</span><span style="color:var(--primary);font-weight:500">Descargado</span></div></div><span class="icon-btn"><span class="ms f" style="color:var(--primary)">check_circle</span></span></div>
+            <div class="row"><div class="art a7"></div><div class="tx"><div class="t1">The Hills</div><div class="t2">The Weeknd · Beauty Behind the Madness</div><div class="meta"><span class="fmt">FLAC</span><span class="fmt e">E</span><span>4:02</span></div></div><span class="icon-btn"><span class="ms">download</span></span></div>
+            <div class="row"><div class="art a2"></div><div class="tx"><div class="t1">Die For You</div><div class="t2">The Weeknd · Starboy</div><div class="meta"><span class="fmt">FLAC</span><span style="color:#B3261E">No se pudo · Toca para reintentar</span></div></div><span class="icon-btn"><span class="ms" style="color:#B3261E">refresh</span></span></div>
+            <div class="bottom"><div class="mini"><div class="art a1"></div><div class="tx"><div class="t1">Blinding Lights</div><div class="t2">FLAC · The Weeknd</div></div><span class="icon-btn"><span class="ms f">pause</span></span><div class="bar"><i></i></div></div></div>
+          </div>
+          <div class="gesture"><i></i></div>
+        </div>
+        <p class="cap">Tocar la fila escucha en FLAC; el botón descarga. El chip abre la hoja con la calidad por defecto.</p>
+      </div>
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">wifi</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content">
+            <div class="tab"><span class="icon-btn"><span class="ms">arrow_back</span></span><div class="t"><h1>Lossless</h1></div><span class="icon-btn"><span class="ms">downloading</span></span><span class="icon-btn"><span class="ms">tune</span></span></div>
+            <div class="searchbar"><span class="ms">search</span><span class="grow">the weeknd</span></div>
+            <div class="scrim"></div>
+            <div class="sheet">
+              <div class="handle"></div>
+              <div style="display:flex;gap:14px;align-items:center;padding:8px 20px 12px"><div class="art a1" style="width:56px;height:56px"></div><div style="flex:1;min-width:0"><div style="font-size:18px;font-weight:500">Blinding Lights</div><div class="t2">The Weeknd · After Hours</div></div></div>
+              <div class="sec" style="padding-top:4px"><h5>Fuente</h5></div>
+              <div style="display:flex;align-items:center;gap:14px;padding:10px 20px;background:var(--secondary-container);margin:0 12px;border-radius:16px"><span class="radio on"></span><div style="flex:1"><div style="font-size:15px;font-weight:500">Deezer</div><div style="font-size:12px;color:var(--on-surface-variant)">FLAC 16-bit · MP3 320</div></div><span class="fmt">FLAC</span></div>
+              <div style="display:flex;align-items:center;gap:14px;padding:10px 32px"><span class="radio"></span><div style="flex:1"><div style="font-size:15px">Qobuz</div><div style="font-size:12px;color:var(--on-surface-variant)">Hasta Hi-Res 24-bit</div></div><span class="fmt hr">HI-RES</span></div>
+              <div style="display:flex;align-items:center;gap:14px;padding:10px 32px"><span class="radio"></span><div style="flex:1"><div style="font-size:15px">Tidal</div><div style="font-size:12px;color:var(--on-surface-variant)">HiRes FLAC · Lossless · High</div></div><span class="fmt hr">HI-RES</span></div>
+              <div style="display:flex;align-items:center;gap:14px;padding:6px 32px 2px;color:var(--on-surface-variant);font-size:14px"><span class="ms s20">expand_more</span>Amazon Music, SoundCloud</div>
+              <div class="sec"><h5>Calidad</h5></div>
+              <div class="chips"><span class="chip sel"><span class="ms">check</span>FLAC</span><span class="chip">MP3 320</span></div>
+              <div style="display:flex;gap:10px;align-items:center;padding:6px 20px 0;font-size:13px;color:var(--on-surface-variant)"><span class="ms s18">folder</span>Se guarda en Música/Dezzy con carátula y etiquetas</div>
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 20px 4px;font-size:13px"><span class="check on" style="margin:0;width:20px;height:20px"><span class="ms" style="font-size:16px">check</span></span>Recordar como predeterminada</div>
+              <div style="display:flex;justify-content:flex-end;gap:8px;padding:12px 16px 16px"><span class="btn text">Cancelar</span><span class="btn filled"><span class="ms">download</span>Descargar FLAC</span></div>
+            </div>
+          </div>
+          <div class="gesture" style="background:var(--sc-low);z-index:6"><i style="background:var(--outline)"></i></div>
+        </div>
+        <p class="cap">Hoja de descarga: proveedores como lista (más fácil que 5 chips), etiqueta de calidad máxima a la derecha.</p>
+      </div>
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">wifi</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content">
+            <div class="tab"><span class="icon-btn"><span class="ms">arrow_back</span></span><div class="t"><h1>Lossless</h1></div><span class="icon-btn"><span class="ms">downloading</span></span><span class="icon-btn"><span class="ms">tune</span></span></div>
+            <div class="searchbar"><span class="ms">search</span><span class="grow ph">Busca una canción o artista</span></div>
+            <div class="card" style="margin:8px 16px;border-radius:16px;background:var(--primary-container);color:var(--on-primary-container);padding:14px 16px;display:flex;gap:12px;align-items:flex-start"><span class="ms">link_off</span><div style="flex:1;font-size:14px"><b style="font-weight:500">Falta el servidor de descargas</b><div style="font-size:13px;margin-top:2px">Puedes buscar y escuchar, pero para descargar hay que configurarlo.</div><div style="margin-top:8px"><span class="btn tonal" style="height:36px;background:#fff">Configurar</span></div></div></div>
+            <div class="sec"><h5>Búsquedas recientes</h5><span class="tb">Borrar</span></div>
+            <div class="chips" style="flex-wrap:wrap"><span class="chip"><span class="ms">history</span>the weeknd</span><span class="chip"><span class="ms">history</span>bad bunny</span><span class="chip"><span class="ms">history</span>daft punk</span></div>
+            <div class="sec"><h5>Últimas descargas</h5><span class="tb">Ver todas</span></div>
+            <div class="row"><div class="art a3"></div><div class="tx"><div class="t1">Starboy</div><div class="t2">The Weeknd, Daft Punk</div><div class="meta"><span class="fmt">FLAC</span><span>Deezer · hoy</span></div></div><span class="icon-btn"><span class="ms">play_arrow</span></span></div>
+            <div class="row"><div class="art a6"></div><div class="tx"><div class="t1">Get Lucky</div><div class="t2">Daft Punk</div><div class="meta"><span class="fmt hr">HI-RES</span><span>Qobuz · ayer</span></div></div><span class="icon-btn"><span class="ms">play_arrow</span></span></div>
+          </div>
+          <div class="gesture"><i></i></div>
+        </div>
+        <p class="cap">Antes de buscar: recientes, últimas descargas y el aviso del servidor como tarjeta (hoy es una franja).</p>
+      </div>
+    </div>
+    <div class="notes">
+      <h4>Qué cambia</h4>
+      <ul>
+        <li>Barra de búsqueda M3 (píldora) en vez del campo con contorno; busca al escribir (con pausa de 400 ms), no solo con la lupa.</li>
+        <li>Cada fila dice formato, «E» de explícita y el estado: en cola, % con anillo (tocar para detener), descargado o error con reintentar.</li>
+        <li>Diálogo de chips → hoja con proveedores en lista y «Recordar como predeterminada» <span class="tag-new">NUEVO</span>.</li>
+        <li>Chip <b>Álbumes</b> <span class="tag-new">NUEVO</span>: busca álbumes en Deezer y deja descargar el álbum entero (encola cada pista).</li>
+        <li>Pantalla inicial con recientes y últimas descargas <span class="tag-new">NUEVO</span>.</li>
+      </ul>
+      <h4>Código</h4>
+      <ul><li><code>LosslessScreen.kt</code> (fila, diálogo → hoja); recientes en preferencias; álbumes = nueva llamada a la API pública de Deezer.</li></ul>
+    </div>
+  </div>
+</section>
+
+<section class="sketch">
+  <div class="sk-head"><span class="sk-tag">BOCETO B</span><h3>Mejor resultado + descarga rápida</h3>
+  <p>El primer resultado sale grande con «Escuchar en FLAC» y «Descargar». Las demás filas descargan con <b>un toque</b> usando la calidad elegida por defecto; mantener pulsado (o la flecha) despliega la fila para elegir otra calidad. Una franja fija muestra las descargas en curso.</p></div>
+  <div class="sk-body">
+    <div class="phones">
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">wifi</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content">
+            <div class="tab"><span class="icon-btn"><span class="ms">arrow_back</span></span><div class="t"><h1>Lossless</h1><div class="sub">Predeterminada: Deezer · FLAC</div></div><span class="icon-btn"><span class="ms">tune</span></span></div>
+            <div class="searchbar"><span class="ms">search</span><span class="grow">blinding lights</span><span class="icon-btn"><span class="ms">close</span></span></div>
+            <div class="card" style="margin:8px 16px;border-radius:24px;background:var(--sc-high);padding:16px">
+              <div class="overline" style="font-size:12px;font-weight:500;letter-spacing:.5px;text-transform:uppercase;color:var(--on-surface-variant)">Mejor resultado</div>
+              <div style="display:flex;gap:14px;margin-top:10px"><div class="art a1" style="width:88px;height:88px;border-radius:12px"></div><div style="flex:1;min-width:0"><div style="font-size:20px;font-weight:500;line-height:26px">Blinding Lights</div><div class="t2">The Weeknd</div><div class="t2" style="font-size:13px">After Hours · 3:20</div><div class="meta"><span class="fmt">FLAC</span><span class="fmt hr">HI-RES en Qobuz</span></div></div></div>
+              <div style="display:flex;gap:8px;margin-top:14px"><span class="btn filled"><span class="ms f">play_arrow</span>Escuchar</span><span class="btn tonal"><span class="ms">download</span>Descargar</span></div>
+            </div>
+            <div class="sec"><h5>Más resultados</h5></div>
+            <div class="row"><div class="art a8"></div><div class="tx"><div class="t1">Blinding Lights (Remix)</div><div class="t2">The Weeknd, ROSALÍA</div></div><span class="icon-btn"><span class="ms">download</span></span></div>
+            <div style="margin:0 12px;border-radius:16px;background:var(--sc-low);padding-bottom:8px">
+              <div class="row" style="padding-left:4px"><div class="art a4"></div><div class="tx"><div class="t1">Blinding Lights (Chromatics Remix)</div><div class="t2">The Weeknd, Chromatics</div></div><span class="icon-btn"><span class="ms">expand_less</span></span></div>
+              <div class="chips" style="flex-wrap:wrap;padding:0 4px"><span class="chip sel">Deezer · FLAC</span><span class="chip">Qobuz · Hi-Res 24</span><span class="chip">Tidal · Lossless</span><span class="chip">MP3 320</span></div>
+            </div>
+            <div class="bottom">
+              <div class="dlstrip"><span class="ms">downloading</span><div class="tx"><b>Descargando 2 · 45 %</b><span>Save Your Tears, The Hills</span><div class="lin"><i style="width:45%"></i></div></div><span class="ms">chevron_right</span></div>
+              <div class="mini"><div class="art a1"></div><div class="tx"><div class="t1">Blinding Lights</div><div class="t2">FLAC · The Weeknd</div></div><span class="icon-btn"><span class="ms f">pause</span></span><div class="bar"><i></i></div></div>
+            </div>
+          </div>
+          <div class="gesture"><i></i></div>
+        </div>
+        <p class="cap">Fila desplegada: elegir otra fuente o calidad solo para esa canción.</p>
+      </div>
+    </div>
+    <div class="notes">
+      <h4>Qué cambia</h4>
+      <ul>
+        <li>Descarga de un toque con la calidad predeterminada (se cambia en ⚙ o en el subtítulo).</li>
+        <li>Mejor resultado destacado; «HI-RES en Qobuz» aparece si ese proveedor tiene más calidad.</li>
+        <li>Franja de descargas fija sobre el mini reproductor; toca para ir a la cola.</li>
+        <li>Sin diálogo: todo en la propia lista.</li>
+      </ul>
+      <h4>A tener en cuenta</h4>
+      <ul><li>Saber si hay Hi-Res en Qobuz exige preguntar al servidor por cada resultado; se puede mostrar solo en el mejor resultado para no hacer 20 peticiones.</li></ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════════════════════ 4 · PLAYLIST ═════════════════════════════ -->
+<h2 class="part" id="playlist">4 · Guardar en playlist<small>Hoy: diálogo centrado en inglés («Add to playlist», «No playlists yet»), playlists ordenadas por fecha de creación, sin búsqueda, sin saber en cuáles ya está la canción, y el aviso de duplicados aparece después en otro diálogo. Los dos bocetos arreglan el orden: <b>primero las que usaste hace poco</b>, luego el resto por nombre, y marcan dónde ya está la canción.</small></h2>
+
+<section class="sketch">
+  <div class="sk-head"><span class="sk-tag">BOCETO A</span><h3>Hoja «Guardar en…» de un toque</h3>
+  <p>Hoja inferior con búsqueda, «Nueva playlist», <b>Recientes</b> y <b>Todas</b>. Tocar una fila guarda al momento (o quita, si ya estaba) y aparece «Deshacer». Sin botón de confirmar ni diálogo de duplicados.</p></div>
+  <div class="sk-body">
+    <div class="phones">
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">wifi</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content">
+            <div class="vid" style="width:360px;height:100%;filter:saturate(.6)"></div>
+            <div class="scrim"></div>
+            <div class="sheet" style="top:70px">
+              <div class="handle"></div>
+              <div style="display:flex;gap:12px;align-items:center;padding:6px 8px 10px 20px"><div class="art a1" style="width:48px;height:48px"></div><div style="flex:1;min-width:0"><div style="font-size:20px;font-weight:500">Guardar en playlist</div><div class="t2" style="font-size:13px">Blinding Lights · The Weeknd</div></div><span class="icon-btn"><span class="ms">close</span></span></div>
+              <div class="field"><span class="ms">search</span>Buscar playlist</div>
+              <div class="row" style="min-height:60px"><div class="art" style="width:48px;height:48px;background:var(--primary-container);color:var(--on-primary-container);display:grid;place-items:center;border-radius:12px"><span class="ms" style="position:static">add</span></div><div class="tx"><div class="t1" style="font-weight:500">Nueva playlist</div></div></div>
+              <div class="sec" style="padding-top:8px"><h5>Recientes</h5></div>
+              <div class="row" style="min-height:60px"><div class="art a6"></div><div class="tx"><div class="t1">Gym</div><div class="t2" style="font-size:13px">42 canciones</div></div><span class="check"></span></div>
+              <div class="row" style="min-height:60px;background:color-mix(in srgb,var(--primary-container) 45%,transparent)"><div class="art a3"></div><div class="tx"><div class="t1">Noche 80s</div><div class="t2" style="font-size:13px;color:var(--primary);font-weight:500">Ya está aquí</div></div><span class="check on"><span class="ms">check</span></span></div>
+              <div class="sec" style="padding-top:8px"><h5>Todas</h5><span class="tb" style="display:flex;align-items:center;gap:4px"><span class="ms s18">sort_by_alpha</span>A–Z</span></div>
+              <div class="row" style="min-height:60px"><div class="art a2"></div><div class="tx"><div class="t1">Chill</div><div class="t2" style="font-size:13px;display:flex;align-items:center;gap:4px"><span class="ms s16">cloud_done</span>YouTube Music · 118 canciones</div></div><span class="check"></span></div>
+              <div class="row" style="min-height:60px"><div class="art a4"></div><div class="tx"><div class="t1">Favoritas 2024</div><div class="t2" style="font-size:13px">67 canciones</div></div><span class="check"></span></div>
+              <div class="row" style="min-height:60px"><div class="art a5"></div><div class="tx"><div class="t1">Para manejar</div><div class="t2" style="font-size:13px">30 canciones</div></div><span class="check"></span></div>
+            </div>
+          </div>
+          <div class="gesture" style="background:var(--sc-low);z-index:6"><i style="background:var(--outline)"></i></div>
+        </div>
+        <p class="cap">La nube indica que la playlist se sincroniza con YouTube Music.</p>
+      </div>
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">wifi</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content">
+            <div class="vid" style="width:360px;height:100%;filter:saturate(.6)"></div>
+            <div class="scrim"></div>
+            <div class="sheet" style="top:70px">
+              <div class="handle"></div>
+              <div style="display:flex;gap:12px;align-items:center;padding:6px 8px 10px 20px"><div class="art a1" style="width:48px;height:48px"></div><div style="flex:1;min-width:0"><div style="font-size:20px;font-weight:500">Guardar en playlist</div><div class="t2" style="font-size:13px">Blinding Lights · The Weeknd</div></div><span class="icon-btn"><span class="ms">close</span></span></div>
+              <div class="field" style="color:var(--on-surface)"><span class="ms">search</span>fav<span style="width:2px;height:20px;background:var(--primary);margin-left:-8px"></span></div>
+              <div class="row" style="min-height:60px"><div class="art" style="width:48px;height:48px;background:var(--primary-container);color:var(--on-primary-container);display:grid;place-items:center;border-radius:12px"><span class="ms" style="position:static">add</span></div><div class="tx"><div class="t1" style="font-weight:500">Crear «fav»</div></div></div>
+              <div class="row" style="min-height:60px;background:color-mix(in srgb,var(--primary-container) 45%,transparent)"><div class="art a4"></div><div class="tx"><div class="t1"><b style="font-weight:700">Fav</b>oritas 2024</div><div class="t2" style="font-size:13px;color:var(--primary);font-weight:500">Añadida</div></div><span class="check on"><span class="ms">check</span></span></div>
+              <div class="row" style="min-height:60px"><div class="art a8"></div><div class="tx"><div class="t1">Mis <b style="font-weight:700">fav</b> de siempre</div><div class="t2" style="font-size:13px">12 canciones</div></div><span class="check"></span></div>
+            </div>
+            <div class="snack" style="bottom:16px;z-index:7">Añadida a «Favoritas 2024»<span class="act">Deshacer</span></div>
+          </div>
+          <div class="gesture" style="background:var(--sc-low);z-index:6"><i style="background:var(--outline)"></i></div>
+        </div>
+        <p class="cap">Buscando: si no hay coincidencia exacta ofrece crearla con ese nombre. Tras guardar, aviso con «Deshacer».</p>
+      </div>
+    </div>
+    <div class="notes">
+      <h4>Orden («el algoritmo»)</h4>
+      <ul>
+        <li><b>Recientes</b>: las 3 últimas playlists a las que añadiste algo (<code>lastUpdateTime</code>, ya existe).</li>
+        <li><b>Todas</b>: por nombre A–Z (tocar «A–Z» cambia a «Más recientes» o «Más canciones»).</li>
+        <li>Solo playlists editables o de YouTube Music, como hoy.</li>
+      </ul>
+      <h4>Comportamiento</h4>
+      <ul>
+        <li>Al abrir se marcan las playlists donde ya está la canción (<code>playlistDuplicates</code>).</li>
+        <li>Tocar = añadir al momento; tocar una marcada = quitarla (con «Deshacer»). Ya no hay diálogo de duplicados.</li>
+        <li>Para varias canciones a la vez (selección múltiple) dice «3 de 5 ya estaban; se añaden 2».</li>
+        <li>Todo en español.</li>
+      </ul>
+      <h4>Código</h4>
+      <ul><li>Reescribir <code>AddToPlaylistDialog</code> como hoja con la misma firma, así sirve en los 10 sitios que lo usan sin tocarlos.</li></ul>
+    </div>
+  </div>
+</section>
+
+<section class="sketch">
+  <div class="sk-head"><span class="sk-tag">BOCETO B</span><h3>Cuadrícula de portadas, varias a la vez</h3>
+  <p>Hoja grande con las playlists en cuadrícula de dos columnas, como la Biblioteca. Se marcan varias y se guarda con un botón. Las que ya tienen la canción llevan la etiqueta «Ya está».</p></div>
+  <div class="sk-body">
+    <div class="phones">
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">wifi</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content">
+            <div class="scrim" style="background:rgba(0,0,0,.5)"></div>
+            <div class="sheet" style="top:24px">
+              <div class="handle"></div>
+              <div style="display:flex;align-items:center;padding:4px 8px 6px 20px"><div style="flex:1"><div style="font-size:20px;font-weight:500">Guardar en…</div><div class="t2" style="font-size:13px">Blinding Lights · The Weeknd</div></div><span class="icon-btn"><span class="ms">search</span></span></div>
+              <div class="chips"><span class="chip sel">Recientes</span><span class="chip">A–Z</span><span class="chip"><span class="ms">cloud</span>YouTube Music</span></div>
+              <div class="grid2" style="padding-top:8px">
+                <div class="gtile"><div class="newtile"><div style="text-align:center"><span class="ms s32">add</span><div style="font-size:14px;font-weight:500;margin-top:4px">Nueva</div></div></div><b>&nbsp;</b></div>
+                <div class="gtile sel"><span class="ck"><span class="ms s18">check</span></span><div class="art a6"></div><b>Gym</b><span>42 canciones</span></div>
+                <div class="gtile"><span class="here">Ya está</span><span class="ck off"></span><div class="art a3"></div><b>Noche 80s</b><span>56 canciones</span></div>
+                <div class="gtile sel"><span class="ck"><span class="ms s18">check</span></span><div class="art a2"></div><b>Chill</b><span>118 canciones</span></div>
+                <div class="gtile"><span class="ck off"></span><div class="art a4"></div><b>Favoritas 2024</b><span>67 canciones</span></div>
+                <div class="gtile"><span class="ck off"></span><div class="art a5"></div><b>Para manejar</b><span>30 canciones</span></div>
+              </div>
+              <div style="position:absolute;left:0;right:0;bottom:0;background:var(--sc-low);border-top:1px solid var(--outline-variant);display:flex;align-items:center;padding:12px 16px 12px 20px;gap:8px">
+                <div style="flex:1;font-size:14px;font-weight:500">2 seleccionadas</div><span class="btn text">Cancelar</span><span class="btn filled"><span class="ms">check</span>Guardar</span>
+              </div>
+            </div>
+          </div>
+          <div class="gesture" style="background:var(--sc-low);z-index:6"><i style="background:var(--outline)"></i></div>
+        </div>
+        <p class="cap">«Ya está» en la portada; tocarla igualmente pregunta si quieres añadirla otra vez.</p>
+      </div>
+    </div>
+    <div class="notes">
+      <h4>Qué cambia</h4>
+      <ul>
+        <li>Portadas grandes (más fácil reconocer la playlist que por el nombre).</li>
+        <li>Filtros: Recientes (por defecto), A–Z, solo YouTube Music.</li>
+        <li>Selección múltiple con barra fija «N seleccionadas · Guardar», como hoy pero clara.</li>
+        <li>Duplicados avisados antes (etiqueta), no después.</li>
+      </ul>
+      <h4>A tener en cuenta</h4>
+      <ul><li>Con muchas playlists hay que desplazarse más que en la lista de A. Más lento para el caso común (guardar en una sola).</li></ul>
+    </div>
+  </div>
+</section>
+
+<p class="legend" style="margin-top:56px">Dime qué boceto eliges en cada pieza (por ejemplo: «1A, 2B, 3A, 4A») o qué quieres mezclar.</p>
+</div>
+</body>
+</html>

@@ -35,6 +35,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.material3.Text
+import com.dezzy.music.playback.queues.YouTubeQueue
+import com.dezzy.music.models.toMediaMetadata
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -59,12 +64,15 @@ import com.dezzy.music.LocalPlayerAwareWindowInsets
 import com.dezzy.music.LocalPlayerConnection
 import com.dezzy.music.R
 import com.dezzy.music.constants.InnerTubeCookieKey
+import com.dezzy.music.security.SessionCrypto
 import com.dezzy.music.constants.DisableBlurKey
 import com.dezzy.music.constants.ShowHomeCategoryChipsKey
 import com.dezzy.music.ui.component.ChipsRow
 import com.dezzy.music.ui.component.LocalBottomSheetPageState
 import com.dezzy.music.ui.component.LocalMenuState
 import com.dezzy.music.ui.component.NavigationTitle
+import com.dezzy.music.ui.component.SpotifyTrackShelf
+import com.dezzy.music.ui.component.rememberSpotifyTrackPlayer
 import com.dezzy.music.ui.utils.SnapLayoutInfoProvider
 import com.dezzy.music.utils.rememberPreference
 import com.dezzy.music.viewmodels.HomeViewModel
@@ -95,10 +103,17 @@ fun HomeScreen(
     val pinnedPlaylist1 by viewModel.pinnedPlaylist1.collectAsState()
     val pinnedPlaylist2 by viewModel.pinnedPlaylist2.collectAsState()
     var showPinnedPlaylistSelector by remember { androidx.compose.runtime.mutableStateOf<Int?>(null) }
-    var showAccountDialog by remember { androidx.compose.runtime.mutableStateOf(false) }
+    // Boceto A: chips de filtro, hoja "Más de Dezzy" y última canción de "Sorpréndeme"
+    var homeFilter by rememberSaveable { mutableStateOf(HomeFilter.ForYou) }
+    var showMoreSheet by remember { mutableStateOf(false) }
+    var surprisePick by remember { mutableStateOf<com.dezzy.music.db.entities.Song?>(null) }
     val forgottenFavorites by viewModel.forgottenFavorites.collectAsState()
     val keepListening by viewModel.keepListening.collectAsState()
     val homePage by viewModel.homePage.collectAsState()
+    val spotifyTopTracks by viewModel.spotifyTopTracks.collectAsState()
+    val spotifyRecentLikes by viewModel.spotifyRecentLikes.collectAsState()
+    val spotifyHomeOnly by viewModel.spotifyHomeOnly.collectAsState()
+    val spotifyPlayer = rememberSpotifyTrackPlayer()
     val allItemsMetadata by viewModel.allItemsMetadata.collectAsState()
 
     val selectedChip by viewModel.selectedChip.collectAsState()
@@ -120,9 +135,25 @@ fun HomeScreen(
     val (disableBlur) = rememberPreference(DisableBlurKey, false)
     val (showHomeCategoryChips) = rememberPreference(ShowHomeCategoryChipsKey, true)
     val isLoggedIn = remember(innerTubeCookie) {
-        "SAPISID" in parseCookieString(innerTubeCookie)
+        "SAPISID" in parseCookieString(SessionCrypto.decrypt(innerTubeCookie))
     }
     val url = if (isLoggedIn) accountImageUrl else null
+
+    // Filtros disponibles: "Música" sólo si no está activo "Spotify exclusivo de
+    // inicio"; "Spotify" sólo si hay estanterías de Spotify que mostrar.
+    val hasSpotifyShelves = spotifyTopTracks.isNotEmpty() || spotifyRecentLikes.isNotEmpty()
+    val homeFilters = remember(hasSpotifyShelves, spotifyHomeOnly) {
+        HomeFilter.entries.filter { filter ->
+            when (filter) {
+                HomeFilter.Music -> !spotifyHomeOnly
+                HomeFilter.Spotify -> hasSpotifyShelves
+                else -> true
+            }
+        }
+    }
+    LaunchedEffect(homeFilters) {
+        if (homeFilter !in homeFilters) homeFilter = HomeFilter.ForYou
+    }
 
     val scope = rememberCoroutineScope()
     val lazylistState = rememberLazyListState()
@@ -141,7 +172,7 @@ fun HomeScreen(
         snapshotFlow { lazylistState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
             .collect { lastVisibleIndex ->
                 val len = lazylistState.layoutInfo.totalItemsCount
-                if (lastVisibleIndex != null && lastVisibleIndex >= len - 3) {
+                if (homeFilter == HomeFilter.Music && lastVisibleIndex != null && lastVisibleIndex >= len - 3) {
                     viewModel.loadMoreYouTubeItems(homePage?.continuation)
                 }
             }
@@ -341,196 +372,289 @@ fun HomeScreen(
                     bottom = bottomPadding
                 )
             ) {
-                item {
+                // ── Barra superior: saludo, racha, novedades y cuenta ──
+                item(key = "home_top_bar") {
+                    DezzyHomeTopBar(
+                        streakDays = listenStreakDays,
+                        todayMinutes = todayListenMinutes,
+                        accountImageUrl = url,
+                        onNotificationsClick = { navController.navigate("new_release") },
+                        onAccountClick = { navController.navigate("settings/accounts") },
+                    )
+                }
+
+                // ── Chips de filtro: reparten las secciones ──
+                item(key = "home_filters") {
+                    HomeFilterChips(
+                        filters = homeFilters,
+                        selected = homeFilter,
+                        onSelect = { homeFilter = it },
+                    )
+                }
+
+                item(key = "welcome_guide") {
                     com.dezzy.music.ui.component.WelcomeGuideCard()
                 }
 
-// ── Cajones estilo Spotify: 8 atajos rápidos ──
-                item {
-                    val context = LocalContext.current
-                    SpotifyGreetingGrid(
-                        quickPicks = quickPicks,
-                        pinnedPlaylist1 = pinnedPlaylist1,
-                        pinnedPlaylist2 = pinnedPlaylist2,
-                        onAddPlaylistClick = { slotIndex ->
-                            showPinnedPlaylistSelector = slotIndex
-                        },
-                        onRemovePlaylistClick = { slotIndex ->
-                            scope.launch {
-                                val key = if (slotIndex == 1) com.dezzy.music.constants.PinnedPlaylist1Key else com.dezzy.music.constants.PinnedPlaylist2Key
-                                context.dataStore.edit { it.remove(key) }
+                when (homeFilter) {
+                    HomeFilter.ForYou -> {
+                        // ── Accesos rápidos 2 × 3 ──
+                        item(key = "home_shortcuts") {
+                            val context = LocalContext.current
+                            SpotifyGreetingGrid(
+                                quickPicks = quickPicks,
+                                pinnedPlaylist1 = pinnedPlaylist1,
+                                pinnedPlaylist2 = pinnedPlaylist2,
+                                onAddPlaylistClick = { slotIndex ->
+                                    showPinnedPlaylistSelector = slotIndex
+                                },
+                                onRemovePlaylistClick = { slotIndex ->
+                                    scope.launch {
+                                        val key = if (slotIndex == 1) com.dezzy.music.constants.PinnedPlaylist1Key else com.dezzy.music.constants.PinnedPlaylist2Key
+                                        context.dataStore.edit { it.remove(key) }
+                                    }
+                                },
+                                playerConnection = playerConnection,
+                                navController = navController,
+                                accountImageUrl = url,
+                                onAccountClick = { navController.navigate("settings/accounts") }
+                            )
+                        }
+
+                        // ── Sigue donde ibas ──
+                        item(key = "home_resume") {
+                            DezzyHomeHero(
+                                accountName = accountName,
+                                streakDays = listenStreakDays,
+                                todayMinutes = todayListenMinutes,
+                                lastEvent = lastListenEvent,
+                                genreMixes = genreMixes,
+                                quickPicks = quickPicks,
+                                navController = navController,
+                            )
+                        }
+
+                        quickPicks?.takeIf { it.isNotEmpty() }?.let { picks ->
+                            item(key = "quick_picks_title") {
+                                HomeSectionHeader(
+                                    title = stringResource(R.string.quick_picks),
+                                    modifier = Modifier.animateItem()
+                                )
                             }
-                        },
-                        playerConnection = playerConnection,
-                        navController = navController,
-                        accountImageUrl = url,
-                        onAccountClick = { showAccountDialog = true }
-                    )
-                }
 
-// ── Dezzy hero: saludo, reanudar con canvas, atajos y mixes ──
-                item {
-                    DezzyHomeHero(
-                        accountName = accountName,
-                        streakDays = listenStreakDays,
-                        todayMinutes = todayListenMinutes,
-                        lastEvent = lastListenEvent,
-                        genreMixes = genreMixes,
-                        quickPicks = quickPicks,
-                        navController = navController,
-                    )
-                }
-                // ── Pistas más comentadas de la comunidad Dezzy ──
-                // Se dibuja sola: sin sesión o sin datos no ocupa nada.
-                item {
-                    com.dezzy.music.ui.screens.social.TopCommentedTracksSection()
-                }
+                            item(key = "quick_picks") {
+                                QuickPicksSection(
+                                    quickPicks = picks,
+                                    mediaMetadata = mediaMetadata,
+                                    isPlaying = isPlaying,
+                                    navController = navController,
+                                    playerConnection = playerConnection,
+                                    menuState = menuState,
+                                    haptic = haptic,
+                                    metadataMap = allItemsMetadata
+                                )
+                            }
+                        }
 
-                quickPicks?.takeIf { it.isNotEmpty() }?.let { picks ->
-                    item {
-                    NavigationTitle(
-                        title = stringResource(R.string.quick_picks),
-                        modifier = Modifier.animateItem()
-                    )
+                        // ── Herramientas Dezzy (2 × 2) + "Más" ──
+                        item(key = "dezzy_tools") {
+                            DezzyToolsSection(
+                                surpriseSubtitle = surprisePick?.let { "Te tocó: ${it.song.title}" }
+                                    ?: "Una canción al azar de tu música",
+                                onSurprise = {
+                                    quickPicks?.randomOrNull()?.let { pick ->
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        surprisePick = pick
+                                        playerConnection.playQueue(YouTubeQueue.radio(pick.toMediaMetadata()))
+                                    }
+                                },
+                                onStats = { navController.navigate("stats") },
+                                onMusicMap = { navController.navigate("music_map") },
+                                onYearInMusic = { navController.navigate("year_in_music") },
+                                onMore = { navController.navigate("experiences") },
+                            )
+                        }
+
+                        // ── Tus mixes ──
+                        if (genreMixes.isNotEmpty()) {
+                            item(key = "home_mixes") {
+                                DezzyMixesCarousel(genreMixes = genreMixes)
+                            }
+                        }
+
+                        speedDialSongs.takeIf { it.isNotEmpty() }?.let { songs ->
+                            item(key = "speed_dial_title") {
+                                HomeSectionHeader(
+                                    title = stringResource(R.string.speed_dial),
+                                    modifier = Modifier.animateItem()
+                                )
+                            }
+
+                            item(key = "speed_dial") {
+                                SpeedDialSection(
+                                    speedDialSongs = songs,
+                                    mediaMetadata = mediaMetadata,
+                                    isPlaying = isPlaying,
+                                    navController = navController,
+                                    playerConnection = playerConnection,
+                                    menuState = menuState,
+                                    haptic = haptic,
+                                    metadataMap = allItemsMetadata
+                                )
+                            }
+                        }
+
+                        keepListening?.takeIf { it.isNotEmpty() }?.let { items ->
+                            item(key = "keep_listening_title") {
+                                HomeSectionHeader(
+                                    title = stringResource(R.string.keep_listening),
+                                    modifier = Modifier.animateItem()
+                                )
+                            }
+
+                            item(key = "keep_listening") {
+                                KeepListeningSection(
+                                    keepListening = items,
+                                    mediaMetadata = mediaMetadata,
+                                    isPlaying = isPlaying,
+                                    navController = navController,
+                                    playerConnection = playerConnection,
+                                    menuState = menuState,
+                                    haptic = haptic,
+                                    scope = scope,
+                                    metadataMap = allItemsMetadata
+                                )
+                            }
+                        }
+
+                        AccountPlaylistsContainer(
+                            viewModel = viewModel,
+                            accountName = accountName,
+                            accountImageUrl = url,
+                            mediaMetadata = mediaMetadata,
+                            isPlaying = isPlaying,
+                            navController = navController,
+                            playerConnection = playerConnection,
+                            menuState = menuState,
+                            haptic = haptic,
+                            scope = scope
+                        )
+
+                        forgottenFavorites?.takeIf { it.isNotEmpty() }?.let { favorites ->
+                            item(key = "forgotten_favorites_title") {
+                                HomeSectionHeader(
+                                    title = stringResource(R.string.forgotten_favorites),
+                                    modifier = Modifier.animateItem()
+                                )
+                            }
+
+                            item(key = "forgotten_favorites") {
+                                ForgottenFavoritesSection(
+                                    forgottenFavorites = favorites,
+                                    mediaMetadata = mediaMetadata,
+                                    isPlaying = isPlaying,
+                                    horizontalLazyGridItemWidth = horizontalLazyGridItemWidth,
+                                    lazyGridState = forgottenFavoritesLazyGridState,
+                                    snapLayoutInfoProvider = forgottenFavoritesSnapLayoutInfoProvider,
+                                    navController = navController,
+                                    playerConnection = playerConnection,
+                                    menuState = menuState,
+                                    haptic = haptic,
+                                    metadataMap = allItemsMetadata
+                                )
+                            }
+                        }
+
+                        SimilarRecommendationsContainer(
+                            viewModel = viewModel,
+                            mediaMetadata = mediaMetadata,
+                            isPlaying = isPlaying,
+                            navController = navController,
+                            playerConnection = playerConnection,
+                            menuState = menuState,
+                            haptic = haptic,
+                            scope = scope
+                        )
+
+                        if (isLoading) {
+                            item(key = "home_loading") {
+                                HomeLoadingShimmer(modifier = Modifier.animateItem())
+                            }
+                        }
+                    }
+
+                    HomeFilter.Music -> {
+                        // Secciones de YouTube Music ("Spotify exclusivo de inicio" oculta este filtro).
+                        homePage?.sections?.takeUnless { spotifyHomeOnly }?.forEach { section ->
+                            item {
+                                HomePageSectionTitle(
+                                    section = section,
+                                    navController = navController,
+                                    modifier = Modifier.animateItem()
+                                )
+                            }
+
+                            item {
+                                HomePageSectionContent(
+                                    section = section,
+                                    mediaMetadata = mediaMetadata,
+                                    isPlaying = isPlaying,
+                                    navController = navController,
+                                    playerConnection = playerConnection,
+                                    menuState = menuState,
+                                    haptic = haptic,
+                                    scope = scope,
+                                    metadataMap = allItemsMetadata
+                                )
+                            }
+                        }
+
+                        if (isLoading || !spotifyHomeOnly && homePage?.continuation != null && homePage?.sections?.isNotEmpty() == true) {
+                            item(key = "home_loading") {
+                                HomeLoadingShimmer(modifier = Modifier.animateItem())
+                            }
+                        }
+                    }
+
+                    HomeFilter.Spotify -> {
+                        // ── Spotify (Ajustes > Spotify > Usar para la pantalla de inicio) ──
+                        if (spotifyTopTracks.isNotEmpty()) {
+                            item(key = "spotify_top_tracks") {
+                                SpotifyTrackShelf(
+                                    title = "Tus favoritas en Spotify",
+                                    tracks = spotifyTopTracks,
+                                    player = spotifyPlayer,
+                                    modifier = Modifier.animateItem(),
+                                )
+                            }
+                        }
+                        if (spotifyRecentLikes.isNotEmpty()) {
+                            item(key = "spotify_recent_likes") {
+                                SpotifyTrackShelf(
+                                    title = "Tus Me gusta recientes",
+                                    tracks = spotifyRecentLikes,
+                                    player = spotifyPlayer,
+                                    modifier = Modifier.animateItem(),
+                                )
+                            }
+                        }
+                    }
+
+                    HomeFilter.Community -> {
+                        item(key = "community_hint") {
+                            Text(
+                                text = "Las canciones más comentadas por la comunidad, según lo que tú escuchas.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                            )
+                        }
+                        // ── Pistas más comentadas (sin sesión o sin datos no ocupa nada) ──
+                        item(key = "top_commented") {
+                            com.dezzy.music.ui.screens.social.TopCommentedTracksSection()
+                        }
+                    }
                 }
-
-                item {
-                    QuickPicksSection(
-                        quickPicks = picks,
-                        mediaMetadata = mediaMetadata,
-                        isPlaying = isPlaying,
-                        navController = navController,
-                        playerConnection = playerConnection,
-                        menuState = menuState,
-                        haptic = haptic,
-                        metadataMap = allItemsMetadata
-                    )
-                }
-            }
-
-            speedDialSongs.takeIf { it.isNotEmpty() }?.let { songs ->
-                item {
-                    NavigationTitle(
-                        title = stringResource(R.string.speed_dial),
-                        modifier = Modifier.animateItem()
-                    )
-                }
-
-                item {
-                    SpeedDialSection(
-                        speedDialSongs = songs,
-                        mediaMetadata = mediaMetadata,
-                        isPlaying = isPlaying,
-                        navController = navController,
-                        playerConnection = playerConnection,
-                        menuState = menuState,
-                        haptic = haptic,
-                        metadataMap = allItemsMetadata
-                    )
-                }
-            }
-
-            keepListening?.takeIf { it.isNotEmpty() }?.let { items ->
-                item {
-                    NavigationTitle(
-                        title = stringResource(R.string.keep_listening),
-                        modifier = Modifier.animateItem()
-                    )
-                }
-
-                item {
-                    KeepListeningSection(
-                        keepListening = items,
-                        mediaMetadata = mediaMetadata,
-                        isPlaying = isPlaying,
-                        navController = navController,
-                        playerConnection = playerConnection,
-                        menuState = menuState,
-                        haptic = haptic,
-                        scope = scope,
-                        metadataMap = allItemsMetadata
-                    )
-                }
-            }
-
-            AccountPlaylistsContainer(
-                viewModel = viewModel,
-                accountName = accountName,
-                accountImageUrl = url,
-                mediaMetadata = mediaMetadata,
-                isPlaying = isPlaying,
-                navController = navController,
-                playerConnection = playerConnection,
-                menuState = menuState,
-                haptic = haptic,
-                scope = scope
-            )
-
-            forgottenFavorites?.takeIf { it.isNotEmpty() }?.let { favorites ->
-                item {
-                    NavigationTitle(
-                        title = stringResource(R.string.forgotten_favorites),
-                        modifier = Modifier.animateItem()
-                    )
-                }
-
-                item {
-                    ForgottenFavoritesSection(
-                        forgottenFavorites = favorites,
-                        mediaMetadata = mediaMetadata,
-                        isPlaying = isPlaying,
-                        horizontalLazyGridItemWidth = horizontalLazyGridItemWidth,
-                        lazyGridState = forgottenFavoritesLazyGridState,
-                        snapLayoutInfoProvider = forgottenFavoritesSnapLayoutInfoProvider,
-                        navController = navController,
-                        playerConnection = playerConnection,
-                        menuState = menuState,
-                        haptic = haptic,
-                        metadataMap = allItemsMetadata
-                    )
-                }
-            }
-
-            SimilarRecommendationsContainer(
-                viewModel = viewModel,
-                mediaMetadata = mediaMetadata,
-                isPlaying = isPlaying,
-                navController = navController,
-                playerConnection = playerConnection,
-                menuState = menuState,
-                haptic = haptic,
-                scope = scope
-            )
-
-            homePage?.sections?.forEach { section ->
-                item {
-                    HomePageSectionTitle(
-                        section = section,
-                        navController = navController,
-                        modifier = Modifier.animateItem()
-                    )
-                }
-
-                item {
-                    HomePageSectionContent(
-                        section = section,
-                        mediaMetadata = mediaMetadata,
-                        isPlaying = isPlaying,
-                        navController = navController,
-                        playerConnection = playerConnection,
-                        menuState = menuState,
-                        haptic = haptic,
-                        scope = scope,
-                        metadataMap = allItemsMetadata
-                    )
-                }
-            }
-
-            if (isLoading || homePage?.continuation != null && homePage?.sections?.isNotEmpty() == true) {
-                item {
-                    HomeLoadingShimmer(modifier = Modifier.animateItem())
-                }
-            }
             }
 
             Indicator(
@@ -568,13 +692,16 @@ fun HomeScreen(
             )
         }
 
-        if (showAccountDialog) {
-            com.dezzy.music.ui.component.AccountSettingsDialog(
+        // ── Hoja "Más de Dezzy" (botón "Más" de Herramientas Dezzy) ──
+        if (showMoreSheet) {
+            SpotifyMenuDrawerSheet(
                 navController = navController,
-                onDismiss = { showAccountDialog = false },
-                latestVersionName = com.dezzy.music.BuildConfig.VERSION_NAME
+                accountImageUrl = url,
+                onAccountClick = { navController.navigate("settings/accounts") },
+                onDismiss = { showMoreSheet = false }
             )
         }
+
     }
 }
 

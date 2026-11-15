@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -58,6 +59,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.dezzy.music.LocalPlayerAwareWindowInsets
 import com.dezzy.music.R
@@ -149,6 +151,8 @@ import com.dezzy.music.constants.HomeInactivityFadeKey
 import com.dezzy.music.constants.ShowArtistVideoKey
 import com.dezzy.music.constants.ShowArtistBackgroundVideoKey
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import coil3.compose.AsyncImage
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Box
@@ -594,7 +598,7 @@ fun AppearanceSettings(
             selectedValue = fontFamily,
             onValueSelected = onFontFamilyChange,
                 values = listOf(
-                    "POPPINS", "SF_PRO", "SERIF", "MONOSPACE", "SYSTEM",
+                    "POPPINS", "SF_PRO", "MATERIAL3", "SERIF", "MONOSPACE", "SYSTEM",
                     "INTER", "ROBOTO", "MONTSERRAT", "LORA", "PLAYFAIR_DISPLAY",
                     "NUNITO", "RUBIK", "KANIT", "COMFORTAA", "PACIFICO",
                     "LOBSTER", "DANCING_SCRIPT", "CAVEAT", "GREAT_VIBES", "CINZEL",
@@ -607,6 +611,7 @@ fun AppearanceSettings(
                         "SERIF" -> "Serif"
                         "MONOSPACE" -> "Monospace"
                         "SYSTEM" -> "Sistema"
+                        "MATERIAL3" -> "Material 3"
                         "INTER" -> "Inter"
                         "ROBOTO" -> "Roboto"
                         "MONTSERRAT" -> "Montserrat"
@@ -632,6 +637,68 @@ fun AppearanceSettings(
                 },
                 itemTextStyle = { com.dezzy.music.ui.theme.getTypography(it).bodyLarge }
             )
+
+        PreferenceGroupTitle(
+            title = stringResource(R.string.wallpaper_and_video)
+        )
+
+        SwitchPreference(
+            title = { Text(stringResource(R.string.enable_image_wallpaper)) },
+            icon = { Icon(painterResource(R.drawable.image), null) },
+            checked = enableWallpaperTheme,
+            onCheckedChange = { checked ->
+                onEnableWallpaperThemeChange(checked)
+                if (checked) {
+                    onEnableVideoWallpaperChange(false)
+                }
+            }
+        )
+
+        AnimatedVisibility(enableWallpaperTheme) {
+            WallpaperPreviewCard(
+                verticalUri = wallpaperUri,
+                landscapeUri = wallpaperLandscapeUri,
+                opacity = wallpaperOpacity,
+                onOpacityChange = onWallpaperOpacityChange,
+                onPickVertical = { verticalImageLauncher.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                onPickHorizontal = { landscapeImageLauncher.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                onClearVertical = { onWallpaperUriChange("") },
+                onClearHorizontal = { onWallpaperLandscapeUriChange("") },
+            )
+        }
+
+        SwitchPreference(
+            title = { Text(stringResource(R.string.enable_video_wallpaper)) },
+            icon = { Icon(painterResource(R.drawable.motion_photos_on), null) },
+            checked = enableVideoWallpaper,
+            onCheckedChange = { checked ->
+                onEnableVideoWallpaperChange(checked)
+                if (checked) {
+                    onEnableWallpaperThemeChange(false)
+                }
+            }
+        )
+
+        AnimatedVisibility(enableVideoWallpaper) {
+            VideoWallpaperPreviewCard(
+                verticalUri = videoWallpaperUri,
+                landscapeUri = videoWallpaperLandscapeUri,
+                opacity = videoWallpaperOpacity,
+                onOpacityChange = onVideoWallpaperOpacityChange,
+                onPickVertical = { verticalVideoLauncher.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.VideoOnly)) },
+                onPickHorizontal = { landscapeVideoLauncher.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.VideoOnly)) },
+                onClearVertical = { onVideoWallpaperUriChange("") },
+                onClearHorizontal = { onVideoWallpaperLandscapeUriChange("") },
+            )
+        }
+
+        SwitchPreference(
+            title = { Text(stringResource(R.string.inactivity_fade)) },
+            description = stringResource(R.string.inactivity_fade_desc),
+            icon = { Icon(painterResource(R.drawable.image), null) },
+            checked = homeInactivityFade,
+            onCheckedChange = onHomeInactivityFadeChange,
+        )
 
         PreferenceGroupTitle(
             title = stringResource(R.string.player),
@@ -685,6 +752,7 @@ fun AppearanceSettings(
                     PlayerDesignStyle.CAR -> "Car Mode"
                     PlayerDesignStyle.APPLE_MUSIC -> stringResource(R.string.player_background_apple_music)
                     PlayerDesignStyle.LIVE_MESH -> "Dezzy Style"
+                    PlayerDesignStyle.AURORA -> "Aurora"
                 }
             },
         )
@@ -699,6 +767,9 @@ fun AppearanceSettings(
             PlayerDesignStyle.CAR,
             PlayerDesignStyle.APPLE_MUSIC,
             PlayerDesignStyle.LIVE_MESH,
+            PlayerDesignStyle.AURORA,
+            // Clásico (rediseño fase 2) usa su propio degradado de la carátula.
+            PlayerDesignStyle.V1,
         )
         AnimatedVisibility(visible = playerDesignStyle !in standaloneBackgroundStyles) {
             Column {
@@ -1391,103 +1462,6 @@ fun AppearanceSettings(
             onCheckedChange = onShowArtistBackgroundVideoChange,
         )
 
-        PreferenceGroupTitle(
-            title = stringResource(R.string.wallpaper_and_video)
-        )
-
-        SwitchPreference(
-            title = { Text(stringResource(R.string.enable_image_wallpaper)) },
-            icon = { Icon(painterResource(R.drawable.image), null) },
-            checked = enableWallpaperTheme,
-            onCheckedChange = { checked ->
-                onEnableWallpaperThemeChange(checked)
-                if (checked) {
-                    onEnableVideoWallpaperChange(false)
-                }
-            }
-        )
-
-        AnimatedVisibility(enableWallpaperTheme) {
-            Column {
-                PreferenceEntry(
-                    title = { Text(stringResource(R.string.select_vertical_image)) },
-                    description = if (wallpaperUri.isEmpty()) stringResource(R.string.no_image_selected) else stringResource(R.string.vertical_image_set),
-                    icon = { Icon(painterResource(R.drawable.android_cell), null) },
-                    onClick = { verticalImageLauncher.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly)) }
-                )
-
-                PreferenceEntry(
-                    title = { Text(stringResource(R.string.select_horizontal_image)) },
-                    description = if (wallpaperLandscapeUri.isEmpty()) stringResource(R.string.no_image_selected) else stringResource(R.string.horizontal_image_set),
-                    icon = { Icon(painterResource(R.drawable.desktop_windows), null) },
-                    onClick = { landscapeImageLauncher.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly)) }
-                )
-
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                    Text(
-                        text = stringResource(R.string.image_opacity, (wallpaperOpacity * 100).roundToInt()),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Slider(
-                        value = wallpaperOpacity,
-                        onValueChange = onWallpaperOpacityChange,
-                        valueRange = 0f..1f,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
-        }
-
-        SwitchPreference(
-            title = { Text(stringResource(R.string.enable_video_wallpaper)) },
-            icon = { Icon(painterResource(R.drawable.motion_photos_on), null) },
-            checked = enableVideoWallpaper,
-            onCheckedChange = { checked ->
-                onEnableVideoWallpaperChange(checked)
-                if (checked) {
-                    onEnableWallpaperThemeChange(false)
-                }
-            }
-        )
-
-        AnimatedVisibility(enableVideoWallpaper) {
-            Column {
-                PreferenceEntry(
-                    title = { Text(stringResource(R.string.select_vertical_video)) },
-                    description = if (videoWallpaperUri.isEmpty()) stringResource(R.string.no_video_selected) else stringResource(R.string.vertical_video_set),
-                    icon = { Icon(painterResource(R.drawable.android_cell), null) },
-                    onClick = { verticalVideoLauncher.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.VideoOnly)) }
-                )
-
-                PreferenceEntry(
-                    title = { Text(stringResource(R.string.select_horizontal_video)) },
-                    description = if (videoWallpaperLandscapeUri.isEmpty()) stringResource(R.string.no_video_selected) else stringResource(R.string.horizontal_video_set),
-                    icon = { Icon(painterResource(R.drawable.desktop_windows), null) },
-                    onClick = { landscapeVideoLauncher.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.VideoOnly)) }
-                )
-
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                    Text(
-                        text = stringResource(R.string.video_opacity, (videoWallpaperOpacity * 100).roundToInt()),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Slider(
-                        value = videoWallpaperOpacity,
-                        onValueChange = onVideoWallpaperOpacityChange,
-                        valueRange = 0f..1f,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
-        }
-
-        SwitchPreference(
-            title = { Text(stringResource(R.string.inactivity_fade)) },
-            description = stringResource(R.string.inactivity_fade_desc),
-            icon = { Icon(painterResource(R.drawable.image), null) },
-            checked = homeInactivityFade,
-            onCheckedChange = onHomeInactivityFadeChange,
-        )
     }
 
     TopAppBar(
@@ -1660,4 +1634,526 @@ enum class LyricsPosition {
 enum class PlayerTextAlignment {
     SIDED,
     CENTER,
+}
+
+
+private enum class WallpaperSide {
+    VERTICAL,
+    HORIZONTAL,
+}
+
+/**
+ * Tarjeta de fondo de imagen con vista previa y botón doble.
+ *
+ * - Arriba: una vista previa en miniatura de cómo se ve el HOME con esa
+ *   imagen de fondo (saludo, atajos y mini reproductor encima, con la
+ *   opacidad aplicada).
+ * - Un SOLO botón doble [Vertical | Horizontal]: cada mitad elige la
+ *   orientación y abre el selector de imagen para esa orientación.
+ * - Abajo: opacidad y quitar la imagen de la orientación seleccionada.
+ */
+@Composable
+private fun WallpaperPreviewCard(
+    verticalUri: String,
+    landscapeUri: String,
+    opacity: Float,
+    onOpacityChange: (Float) -> Unit,
+    onPickVertical: () -> Unit,
+    onPickHorizontal: () -> Unit,
+    onClearVertical: () -> Unit,
+    onClearHorizontal: () -> Unit,
+) {
+    var selectedSide by rememberSaveable { mutableStateOf(WallpaperSide.VERTICAL) }
+    val previewUri = when (selectedSide) {
+        WallpaperSide.VERTICAL -> verticalUri.ifEmpty { landscapeUri }
+        WallpaperSide.HORIZONTAL -> landscapeUri.ifEmpty { verticalUri }
+    }
+    val isLandscape = selectedSide == WallpaperSide.HORIZONTAL
+    val verticalSet = verticalUri.isNotEmpty()
+    val horizontalSet = landscapeUri.isNotEmpty()
+    val selectedSet = if (isLandscape) horizontalSet else verticalSet
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        HomeWallpaperPreview(
+            imageUri = previewUri,
+            opacity = opacity,
+            isLandscape = isLandscape,
+        )
+
+        WallpaperDualButton(
+            verticalSelected = selectedSide == WallpaperSide.VERTICAL,
+            horizontalSelected = isLandscape,
+            verticalSet = verticalSet,
+            horizontalSet = horizontalSet,
+            onVerticalClick = {
+                selectedSide = WallpaperSide.VERTICAL
+                onPickVertical()
+            },
+            onHorizontalClick = {
+                selectedSide = WallpaperSide.HORIZONTAL
+                onPickHorizontal()
+            },
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = if (isLandscape) {
+                    if (horizontalSet) "Horizontal: imagen puesta" else "Horizontal: sin imagen"
+                } else {
+                    if (verticalSet) "Vertical: imagen puesta" else "Vertical: sin imagen"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            )
+            if (selectedSet) {
+                TextButton(onClick = {
+                    if (isLandscape) onClearHorizontal() else onClearVertical()
+                }) {
+                    Text("Quitar")
+                }
+            }
+        }
+
+        Column {
+            Text(
+                text = stringResource(R.string.image_opacity, (opacity * 100).roundToInt()),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Slider(
+                value = opacity,
+                onValueChange = onOpacityChange,
+                valueRange = 0f..1f,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+/**
+ * Tarjeta de fondo de video con vista previa y botón doble.
+ * Igual que la de imagen, pero la vista previa es un panel con el icono
+ * de video (el primer fotograma no siempre está disponible).
+ */
+@Composable
+private fun VideoWallpaperPreviewCard(
+    verticalUri: String,
+    landscapeUri: String,
+    opacity: Float,
+    onOpacityChange: (Float) -> Unit,
+    onPickVertical: () -> Unit,
+    onPickHorizontal: () -> Unit,
+    onClearVertical: () -> Unit,
+    onClearHorizontal: () -> Unit,
+) {
+    var selectedSide by rememberSaveable { mutableStateOf(WallpaperSide.VERTICAL) }
+    val isLandscape = selectedSide == WallpaperSide.HORIZONTAL
+    val verticalSet = verticalUri.isNotEmpty()
+    val horizontalSet = landscapeUri.isNotEmpty()
+    val selectedSet = if (isLandscape) horizontalSet else verticalSet
+    val selectedUri = if (isLandscape) landscapeUri else verticalUri
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(if (isLandscape) 180.dp else 220.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(Color(0xFF1A0B2E), Color(0xFF0D0D1A)),
+                    )
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    painter = painterResource(R.drawable.play),
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.85f),
+                    modifier = Modifier.size(44.dp),
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = if (selectedUri.isNotEmpty()) {
+                        if (isLandscape) "Video horizontal puesto" else "Video vertical puesto"
+                    } else {
+                        "Elige un video para tu fondo"
+                    },
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = if (isLandscape) "Horizontal" else "Vertical",
+                    color = Color.White.copy(alpha = 0.6f),
+                    fontSize = 12.sp,
+                )
+            }
+        }
+
+        WallpaperDualButton(
+            verticalSelected = selectedSide == WallpaperSide.VERTICAL,
+            horizontalSelected = isLandscape,
+            verticalSet = verticalSet,
+            horizontalSet = horizontalSet,
+            onVerticalClick = {
+                selectedSide = WallpaperSide.VERTICAL
+                onPickVertical()
+            },
+            onHorizontalClick = {
+                selectedSide = WallpaperSide.HORIZONTAL
+                onPickHorizontal()
+            },
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = if (isLandscape) {
+                    if (horizontalSet) "Horizontal: video puesto" else "Horizontal: sin video"
+                } else {
+                    if (verticalSet) "Vertical: video puesto" else "Vertical: sin video"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            )
+            if (selectedSet) {
+                TextButton(onClick = {
+                    if (isLandscape) onClearHorizontal() else onClearVertical()
+                }) {
+                    Text("Quitar")
+                }
+            }
+        }
+
+        Column {
+            Text(
+                text = stringResource(R.string.video_opacity, (opacity * 100).roundToInt()),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Slider(
+                value = opacity,
+                onValueChange = onOpacityChange,
+                valueRange = 0f..1f,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+/**
+ * Botón doble (segmentado) [Vertical | Horizontal] en un solo control.
+ * Cada mitad muestra si ya tiene imagen/video (palomita) y al tocarla
+ * abre el selector para esa orientación.
+ */
+@Composable
+private fun WallpaperDualButton(
+    verticalSelected: Boolean,
+    horizontalSelected: Boolean,
+    verticalSet: Boolean,
+    horizontalSet: Boolean,
+    onVerticalClick: () -> Unit,
+    onHorizontalClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+    ) {
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxSize()
+                .background(
+                    if (verticalSelected) MaterialTheme.colorScheme.primary
+                    else Color.Transparent
+                )
+                .clickable { onVerticalClick() },
+            contentAlignment = Alignment.Center,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    painter = painterResource(R.drawable.android_cell),
+                    contentDescription = null,
+                    tint = if (verticalSelected) Color.White
+                    else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = "Vertical",
+                    color = if (verticalSelected) Color.White
+                    else MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp,
+                )
+                if (verticalSet) {
+                    Spacer(Modifier.width(6.dp))
+                    Icon(
+                        painter = painterResource(R.drawable.check),
+                        contentDescription = "Puesta",
+                        tint = if (verticalSelected) Color.White
+                        else MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
+        }
+        Box(
+            modifier = Modifier
+                .width(1.dp)
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.outlineVariant),
+        )
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxSize()
+                .background(
+                    if (horizontalSelected) MaterialTheme.colorScheme.primary
+                    else Color.Transparent
+                )
+                .clickable { onHorizontalClick() },
+            contentAlignment = Alignment.Center,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    painter = painterResource(R.drawable.desktop_windows),
+                    contentDescription = null,
+                    tint = if (horizontalSelected) Color.White
+                    else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = "Horizontal",
+                    color = if (horizontalSelected) Color.White
+                    else MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp,
+                )
+                if (horizontalSet) {
+                    Spacer(Modifier.width(6.dp))
+                    Icon(
+                        painter = painterResource(R.drawable.check),
+                        contentDescription = "Puesta",
+                        tint = if (horizontalSelected) Color.White
+                        else MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Vista previa en miniatura de cómo se ve el HOME con el fondo de imagen:
+ * la imagen (con su opacidad) y encima un saludo, tres atajos y el mini
+ * reproductor, como en la pantalla principal real.
+ */
+@Composable
+private fun HomeWallpaperPreview(
+    imageUri: String,
+    opacity: Float,
+    isLandscape: Boolean,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(if (isLandscape) 180.dp else 260.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color.Black),
+    ) {
+        if (imageUri.isNotEmpty()) {
+            AsyncImage(
+                model = imageUri,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+                alpha = opacity,
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.55f),
+                            ),
+                        )
+                    ),
+            )
+        } else {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        painter = painterResource(R.drawable.image),
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.5f),
+                        modifier = Modifier.size(36.dp),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "Elige una imagen para ver tu home",
+                        color = Color.White.copy(alpha = 0.7f),
+                        fontSize = 13.sp,
+                    )
+                }
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(14.dp),
+        ) {
+            Text(
+                text = "Hola, Dezzy",
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = "Buenas tardes",
+                color = Color.White.copy(alpha = 0.7f),
+                fontSize = 12.sp,
+            )
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(Color(0xFF7C4DFF), Color(0xFFE91E63)),
+                            )
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.play),
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(Color(0xFF2979FF), Color(0xFF00E5FF)),
+                            )
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.favorite),
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(Color(0xFFFF9100), Color(0xFFFFEA00)),
+                            )
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.queue_music),
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+            Spacer(Modifier.weight(1f))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.Black.copy(alpha = 0.55f))
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(Color(0xFF7C4DFF), Color(0xFF2979FF)),
+                            )
+                        ),
+                )
+                Spacer(Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Paper Planes",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                    )
+                    Text(
+                        text = "M.I.A.",
+                        color = Color.White.copy(alpha = 0.7f),
+                        fontSize = 11.sp,
+                        maxLines = 1,
+                    )
+                }
+                Icon(
+                    painter = painterResource(R.drawable.play),
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
+
+        Text(
+            text = if (isLandscape) "Horizontal" else "Vertical",
+            color = Color.White,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(10.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color.Black.copy(alpha = 0.5f))
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+        )
+    }
 }

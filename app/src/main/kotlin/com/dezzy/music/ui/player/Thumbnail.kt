@@ -74,8 +74,6 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import coil3.compose.AsyncImage
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialShapes
-import androidx.compose.material3.toShape
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -738,7 +736,7 @@ fun Thumbnail(
                                         }
                                         .clip(
                                             if (rotatingThumbnail) {
-                                                MaterialShapes.Clover8Leaf.toShape()
+                                                androidx.compose.foundation.shape.CircleShape
                                             } else {
                                                 RoundedCornerShape(thumbnailCornerRadius.dp)
                                             }

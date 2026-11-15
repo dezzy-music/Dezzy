@@ -2,9 +2,9 @@
  * Dezzy Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  *
- * Hero de la home: saludo personalizado con racha y minutos del día,
- * tarjeta "Sigue donde ibas" con el canvas animado de la última canción,
- * accesos rápidos y mixes automáticos por género en cuadrícula bento.
+ * Hero de la home (Boceto A, fase 1): tarjeta "Sigue donde ibas" con la última
+ * escucha (y su canvas animado sobre la carátula) y carrusel "Tus mixes" con los
+ * mixes automáticos por género.
  */
 
 package com.dezzy.music.ui.screens
@@ -14,6 +14,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,21 +23,22 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -53,16 +55,17 @@ import com.dezzy.music.extensions.toMediaItem
 import com.dezzy.music.models.toMediaMetadata
 import com.dezzy.music.playback.queues.ListQueue
 import com.dezzy.music.playback.queues.YouTubeQueue
-import com.dezzy.music.ui.component.NavigationTitle
 import com.dezzy.music.ui.player.CanvasArtworkPlayer
 import com.dezzy.music.ui.player.playbackUrls
 import com.dezzy.music.ui.player.rememberPlaybackCanvas
 import com.dezzy.music.viewmodels.GenreMix
-import java.time.LocalDate
-import java.time.LocalTime
-import java.time.format.TextStyle
-import java.util.Locale
 
+/**
+ * "Sigue donde ibas": la última canción escuchada (si no es la que ya suena).
+ * Los parámetros de saludo y mixes se conservan por compatibilidad; el saludo
+ * vive ahora en [DezzyHomeTopBar] y los mixes en [DezzyMixesCarousel].
+ */
+@Suppress("UNUSED_PARAMETER")
 @Composable
 fun DezzyHomeHero(
     accountName: String,
@@ -76,69 +79,23 @@ fun DezzyHomeHero(
     val playerConnection = LocalPlayerConnection.current ?: return
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
 
-    Column(modifier = Modifier.fillMaxWidth()) {
-        // ── "Sigue donde ibas": última escucha con su canvas animado ──
-        val resumeSong = lastEvent?.song?.takeIf { it.id != mediaMetadata?.id }
-        if (resumeSong != null) {
-            ResumeCard(
-                song = resumeSong,
-                onClick = {
-                    playerConnection.playQueue(YouTubeQueue.radio(resumeSong.toMediaMetadata()))
-                },
-            )
-        }
-
-        // ── Mixes por género en bento ──
-        if (genreMixes.isNotEmpty()) {
-            NavigationTitle(title = "Mixes para ti")
-            val playMix: (GenreMix) -> Unit = { mix ->
-                playerConnection.playQueue(
-                    ListQueue(
-                        title = "Mix ${mix.name} · Dezzy",
-                        items = mix.songs.shuffled().map { it.toMediaItem() },
-                    ),
-                )
-            }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(196.dp)
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                BigMixCard(
-                    mix = genreMixes[0],
-                    modifier = Modifier
-                        .weight(1.25f)
-                        .fillMaxSize(),
-                    onClick = { playMix(genreMixes[0]) },
-                )
-                if (genreMixes.size > 1) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        genreMixes.drop(1).take(2).forEach { mix ->
-                            SmallMixCard(
-                                mix = mix,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxWidth(),
-                                onClick = { playMix(mix) },
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
+    val event = lastEvent ?: return
+    val resumeSong = event.song.takeIf { it.id != mediaMetadata?.id } ?: return
+    ResumeCard(
+        song = resumeSong,
+        listenedMs = event.event.playTime,
+        onClick = {
+            playerConnection.playQueue(YouTubeQueue.radio(resumeSong.toMediaMetadata()))
+        },
+    )
 }
 
-// ── Tarjeta de reanudar con canvas de fondo ──────────────────────────────────
+// ── Tarjeta de reanudar ─────────────────────────────────────────────────────
 
 @Composable
 private fun ResumeCard(
     song: Song,
+    listenedMs: Long,
     onClick: () -> Unit,
 ) {
     val canvas = rememberPlaybackCanvas(
@@ -149,151 +106,169 @@ private fun ResumeCard(
         durationMs = song.song.duration * 1000L,
     )
     val urls = canvas?.playbackUrls()
+    val durationMs = song.song.duration * 1000L
+    val progress = if (durationMs > 0) (listenedMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
 
-    Box(
+    ElevatedCard(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+        ),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
-            .height(150.dp)
-            .clip(RoundedCornerShape(22.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .clickable { onClick() },
+            .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
-        // Base: carátula a todo lo ancho; el canvas (si existe) se dibuja encima.
-        AsyncImage(
-            model = song.song.thumbnailUrl,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
-        )
-        if (urls != null && (urls.first != null || urls.second != null)) {
-            CanvasArtworkPlayer(
-                primaryUrl = urls.first,
-                fallbackUrl = urls.second,
-                isPlaying = true,
-                modifier = Modifier.fillMaxSize(),
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Sigue donde ibas",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
             )
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Black.copy(alpha = 0.10f),
-                            Color.Black.copy(alpha = 0.72f),
-                        ),
-                    ),
-                ),
-        )
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "SIGUE DONDE IBAS",
-                    color = Color.White.copy(alpha = 0.75f),
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 1.5.sp,
-                )
-                Text(
-                    text = song.song.title,
-                    color = Color.White,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = song.artists.joinToString { it.name },
-                    color = Color.White.copy(alpha = 0.8f),
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+            Spacer(Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Carátula con el canvas animado encima (si la canción tiene uno).
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                ) {
+                    AsyncImage(
+                        model = song.song.thumbnailUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    if (urls != null && (urls.first != null || urls.second != null)) {
+                        CanvasArtworkPlayer(
+                            primaryUrl = urls.first,
+                            fallbackUrl = urls.second,
+                            isPlaying = true,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                }
+                Spacer(Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = song.song.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = song.artists.joinToString { it.name },
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            if (progress > 0f) {
+                Spacer(Modifier.height(16.dp))
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                 )
             }
-            Spacer(modifier = Modifier.width(12.dp))
-            Surface(
-                shape = CircleShape,
-                color = Color.White,
-                modifier = Modifier.size(44.dp),
-            ) {
-                Box(contentAlignment = Alignment.Center) {
+            Spacer(Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = if (progress > 0f) {
+                        "Escuchaste ${formatClock(listenedMs)} de ${formatClock(durationMs)}"
+                    } else {
+                        "Tu última escucha"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                FilledTonalButton(onClick = onClick) {
                     Icon(
                         painter = painterResource(R.drawable.play),
-                        contentDescription = "Reanudar",
-                        tint = Color.Black,
-                        modifier = Modifier.size(22.dp),
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
                     )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Reanudar")
                 }
             }
         }
     }
 }
 
-// ── Accesos rápidos ──────────────────────────────────────────────────────────
+private fun formatClock(ms: Long): String {
+    val totalSeconds = (ms / 1000).coerceAtLeast(0)
+    return "%d:%02d".format(totalSeconds / 60, totalSeconds % 60)
+}
 
+// ── Carrusel "Tus mixes" ────────────────────────────────────────────────────
+
+/** Mixes automáticos por género en un carrusel horizontal de mosaicos 140 dp. */
 @Composable
-private fun QuickPill(
-    iconRes: Int,
-    label: String,
+fun DezzyMixesCarousel(
+    genreMixes: List<GenreMix>,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit,
 ) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(50),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-        modifier = modifier.height(40.dp),
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
+    val playerConnection = LocalPlayerConnection.current ?: return
+    if (genreMixes.isEmpty()) return
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        HomeSectionHeader(title = "Tus mixes")
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Icon(
-                painter = painterResource(iconRes),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(16.dp),
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-            )
+            items(genreMixes, key = { it.key }) { mix ->
+                MixTile(
+                    mix = mix,
+                    onClick = {
+                        playerConnection.playQueue(
+                            ListQueue(
+                                title = "Mix ${mix.name} · Dezzy",
+                                items = mix.songs.shuffled().map { it.toMediaItem() },
+                            ),
+                        )
+                    },
+                )
+            }
         }
     }
 }
 
-// ── Tarjetas bento de mixes por género ───────────────────────────────────────
-
 @Composable
-private fun BigMixCard(
+private fun MixTile(
     mix: GenreMix,
-    modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(22.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .clickable { onClick() },
+    Column(
+        modifier = Modifier
+            .width(140.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick),
     ) {
         // Collage 2×2 con las carátulas más escuchadas del género
         val covers = mix.songs.take(4).map { it.song.thumbnailUrl }
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .size(140.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+        ) {
             repeat(2) { row ->
                 Row(modifier = Modifier.weight(1f)) {
                     repeat(2) { col ->
                         AsyncImage(
-                            model = covers.getOrNull(row * 2 + col),
+                            model = covers.getOrNull(row * 2 + col) ?: covers.firstOrNull(),
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
@@ -304,83 +279,23 @@ private fun BigMixCard(
                 }
             }
         }
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.78f)),
-                        startY = 120f,
-                    ),
-                ),
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "Mix ${mix.name}",
+            style = MaterialTheme.typography.titleSmall,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(14.dp),
-        ) {
-            Text(
-                text = "Mix ${mix.name}",
-                color = Color.White,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = "${mix.songs.size} canciones · tu género top",
-                color = Color.White.copy(alpha = 0.8f),
-                style = MaterialTheme.typography.bodySmall,
-            )
-        }
-    }
-}
-
-@Composable
-private fun SmallMixCard(
-    mix: GenreMix,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(18.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .clickable { onClick() },
-    ) {
-        AsyncImage(
-            model = mix.songs.firstOrNull()?.song?.thumbnailUrl,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
+        Text(
+            text = "${mix.songs.size} canciones",
+            style = MaterialTheme.typography.bodySmall,
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
         )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f)),
-                    ),
-                ),
-        )
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(10.dp),
-        ) {
-            Text(
-                text = "Mix ${mix.name}",
-                color = Color.White,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = "${mix.songs.size} canciones",
-                color = Color.White.copy(alpha = 0.8f),
-                fontSize = 11.sp,
-            )
-        }
+        Spacer(Modifier.height(4.dp))
     }
 }

@@ -8,6 +8,10 @@
 
 package com.dezzy.music.ui.screens
 
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material3.TextButton
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -202,109 +206,69 @@ fun StatsScreen(
             emptyList()
         }
 
-    val (disableBlur) = rememberPreference(DisableBlurKey, false)
-    val color1 = MaterialTheme.colorScheme.primary
-    val color2 = MaterialTheme.colorScheme.secondary
-    val color3 = MaterialTheme.colorScheme.tertiary
-    val color4 = MaterialTheme.colorScheme.primaryContainer
-    val color5 = MaterialTheme.colorScheme.secondaryContainer
-    val surfaceColor = MaterialTheme.colorScheme.surface
+    val listening by viewModel.listening.collectAsState()
+    var showAllSongs by rememberSaveable { mutableStateOf(false) }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        if (!disableBlur) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxSize(0.7f)
-                    .align(Alignment.TopCenter)
-                    .zIndex(-1f)
-                    .drawWithCache {
-                        val width = this.size.width
-                        val height = this.size.height
+    val periodChips =
+        when (selectedOption) {
+            OptionStats.WEEKS -> weeklyDates
+            OptionStats.MONTHS -> monthlyDates
+            OptionStats.YEARS -> yearlyDates
+            OptionStats.CONTINUOUS -> {
+                listOf(
+                    StatPeriod.WEEK_1.ordinal to pluralStringResource(
+                        R.plurals.n_week,
+                        1,
+                        1
+                    ),
+                    StatPeriod.MONTH_1.ordinal to pluralStringResource(
+                        R.plurals.n_month,
+                        1,
+                        1
+                    ),
+                    StatPeriod.MONTH_3.ordinal to pluralStringResource(
+                        R.plurals.n_month,
+                        3,
+                        3
+                    ),
+                    StatPeriod.MONTH_6.ordinal to pluralStringResource(
+                        R.plurals.n_month,
+                        6,
+                        6
+                    ),
+                    StatPeriod.YEAR_1.ordinal to pluralStringResource(
+                        R.plurals.n_year,
+                        1,
+                        1
+                    ),
+                    StatPeriod.ALL.ordinal to stringResource(R.string.filter_all),
+                )
+            }
+        }
+    val periodLabel = periodChips.firstOrNull { it.first == indexChips }?.second?.lowercase().orEmpty()
 
-                        val brush1 = Brush.radialGradient(
-                            colors = listOf(
-                                color1.copy(alpha = 0.38f),
-                                color1.copy(alpha = 0.24f),
-                                color1.copy(alpha = 0.14f),
-                                color1.copy(alpha = 0.06f),
-                                Color.Transparent
-                            ),
-                            center = Offset(width * 0.15f, height * 0.1f),
-                            radius = width * 0.55f
-                        )
-
-                        val brush2 = Brush.radialGradient(
-                            colors = listOf(
-                                color2.copy(alpha = 0.34f),
-                                color2.copy(alpha = 0.2f),
-                                color2.copy(alpha = 0.11f),
-                                color2.copy(alpha = 0.05f),
-                                Color.Transparent
-                            ),
-                            center = Offset(width * 0.85f, height * 0.2f),
-                            radius = width * 0.65f
-                        )
-
-                        val brush3 = Brush.radialGradient(
-                            colors = listOf(
-                                color3.copy(alpha = 0.3f),
-                                color3.copy(alpha = 0.17f),
-                                color3.copy(alpha = 0.09f),
-                                color3.copy(alpha = 0.04f),
-                                Color.Transparent
-                            ),
-                            center = Offset(width * 0.3f, height * 0.45f),
-                            radius = width * 0.6f
-                        )
-
-                        val brush4 = Brush.radialGradient(
-                            colors = listOf(
-                                color4.copy(alpha = 0.26f),
-                                color4.copy(alpha = 0.14f),
-                                color4.copy(alpha = 0.08f),
-                                color4.copy(alpha = 0.03f),
-                                Color.Transparent
-                            ),
-                            center = Offset(width * 0.7f, height * 0.5f),
-                            radius = width * 0.7f
-                        )
-
-                        val brush5 = Brush.radialGradient(
-                            colors = listOf(
-                                color5.copy(alpha = 0.22f),
-                                color5.copy(alpha = 0.12f),
-                                color5.copy(alpha = 0.06f),
-                                color5.copy(alpha = 0.02f),
-                                Color.Transparent
-                            ),
-                            center = Offset(width * 0.5f, height * 0.75f),
-                            radius = width * 0.8f
-                        )
-
-                        val overlayBrush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.Transparent,
-                                surfaceColor.copy(alpha = 0.22f),
-                                surfaceColor.copy(alpha = 0.55f),
-                                surfaceColor
-                            ),
-                            startY = height * 0.4f,
-                            endY = height
-                        )
-
-                        onDrawBehind {
-                            drawRect(brush = brush1)
-                            drawRect(brush = brush2)
-                            drawRect(brush = brush3)
-                            drawRect(brush = brush4)
-                            drawRect(brush = brush5)
-                            drawRect(brush = overlayBrush)
-                        }
-                    }
+    val playStatsSong: (SongWithStats) -> Unit = { song ->
+        if (song.id == mediaMetadata?.id) {
+            playerConnection.player.togglePlayPause()
+        } else {
+            val matchedSong = mostPlayedSongs.firstOrNull { it.id == song.id }
+            val preloadItem = matchedSong?.toMediaMetadata() ?: MediaMetadata(
+                id = song.id,
+                title = song.title,
+                artists = emptyList(),
+                duration = (song.timeListened?.toInt() ?: -1),
+                thumbnailUrl = song.thumbnailUrl
+            )
+            playerConnection.playQueue(
+                YouTubeQueue(
+                    endpoint = WatchEndpoint(song.id),
+                    preloadItem = preloadItem,
+                ),
             )
         }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             state = lazyListState,
             contentPadding = LocalPlayerAwareWindowInsets.current
@@ -316,42 +280,7 @@ fun StatsScreen(
         ) {
             item {
                 ChoiceChipsRow(
-                    chips =
-                    when (selectedOption) {
-                        OptionStats.WEEKS -> weeklyDates
-                        OptionStats.MONTHS -> monthlyDates
-                        OptionStats.YEARS -> yearlyDates
-                        OptionStats.CONTINUOUS -> {
-                            listOf(
-                                StatPeriod.WEEK_1.ordinal to pluralStringResource(
-                                    R.plurals.n_week,
-                                    1,
-                                    1
-                                ),
-                                StatPeriod.MONTH_1.ordinal to pluralStringResource(
-                                    R.plurals.n_month,
-                                    1,
-                                    1
-                                ),
-                                StatPeriod.MONTH_3.ordinal to pluralStringResource(
-                                    R.plurals.n_month,
-                                    3,
-                                    3
-                                ),
-                                StatPeriod.MONTH_6.ordinal to pluralStringResource(
-                                    R.plurals.n_month,
-                                    6,
-                                    6
-                                ),
-                                StatPeriod.YEAR_1.ordinal to pluralStringResource(
-                                    R.plurals.n_year,
-                                    1,
-                                    1
-                                ),
-                                StatPeriod.ALL.ordinal to stringResource(R.string.filter_all),
-                            )
-                        }
-                    },
+                    chips = periodChips,
                     options =
                     listOf(
                         OptionStats.CONTINUOUS to stringResource(id = R.string.continuous),
@@ -369,43 +298,50 @@ fun StatsScreen(
                 )
             }
 
-            // HighLights Section
-            item {
-                StatsHighlightsSection(
-                    topArtist = mostPlayedArtists.firstOrNull(),
-                    topSong = mostPlayedSongsStats.firstOrNull(),
-                    topSongEntity = mostPlayedSongs.firstOrNull(),
-                    navController = navController,
+            item(key = "listening") {
+                StatsListeningCard(
+                    periodLabel = periodLabel,
+                    listening = listening,
+                    summary = "${mostPlayedSongsStats.size} canciones, ${mostPlayedArtists.size} artistas",
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .animateItem(),
                 )
             }
 
-            item(key = "artistPieChart") {
-                if (mostPlayedArtists.isNotEmpty()) {
-                    Spacer(modifier = Modifier.size(16.dp))
-                    ArtistPieChart(
-                        artists = mostPlayedArtists.take(5), // Top 5 artists for the chart
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                            .animateItem()
-                    )
-                    Spacer(modifier = Modifier.size(16.dp))
-                }
+            item(key = "favorites") {
+                val topSong = mostPlayedSongsStats.firstOrNull()
+                val topArtist = mostPlayedArtists.firstOrNull()
+                StatsFavoritesRow(
+                    songTitle = topSong?.title,
+                    songSubtitle = topSong?.let {
+                        pluralStringResource(R.plurals.n_time, it.songCountListened, it.songCountListened)
+                    },
+                    songThumbnail = topSong?.thumbnailUrl,
+                    onSongClick = { topSong?.let(playStatsSong) },
+                    artistName = topArtist?.artist?.name,
+                    artistSubtitle = topArtist?.let { makeTimeString(it.timeListened?.toLong()) },
+                    artistThumbnail = topArtist?.artist?.thumbnailUrl,
+                    onArtistClick = { topArtist?.let { navController.navigate("artist/${it.id}") } },
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .animateItem(),
+                )
             }
 
             item(key = "mostPlayedSongsHeader") {
                 NavigationTitle(
-                    title = "${mostPlayedSongsStats.size} ${stringResource(id = R.string.songs)}",
+                    title = "Canciones más escuchadas",
                     modifier = Modifier.animateItem(),
                 )
             }
 
             itemsIndexed(
-                items = mostPlayedSongsStats,
+                items = if (showAllSongs) mostPlayedSongsStats else mostPlayedSongsStats.take(10),
                 key = { _, song -> song.id },
             ) { index, song ->
                 ListItem(
-                    title = "${index + 1}. ${song.title}",
+                    title = song.title,
                     subtitle = joinByBullet(
                         pluralStringResource(
                             R.plurals.n_time,
@@ -415,37 +351,21 @@ fun StatsScreen(
                         makeTimeString(song.timeListened),
                     ),
                     thumbnailContent = {
-                        ItemThumbnail(
-                            thumbnailUrl = song.thumbnailUrl,
-                            isActive = song.id == mediaMetadata?.id,
-                            isPlaying = isPlaying,
-                            shape = RoundedCornerShape(8.dp), // Using a constant or the one from Items.kt
-                            modifier = Modifier.size(56.dp) // ListThumbnailSize
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            StatsRankNumber(rank = index + 1)
+                            ItemThumbnail(
+                                thumbnailUrl = song.thumbnailUrl,
+                                isActive = song.id == mediaMetadata?.id,
+                                isPlaying = isPlaying,
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.size(56.dp)
+                            )
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
                         .combinedClickable(
-                            onClick = {
-                                if (song.id == mediaMetadata?.id) {
-                                    playerConnection.player.togglePlayPause()
-                                } else {
-                                    val matchedSong = mostPlayedSongs.firstOrNull { it.id == song.id }
-                                    val preloadItem = matchedSong?.toMediaMetadata() ?: MediaMetadata(
-                                        id = song.id,
-                                        title = song.title,
-                                        artists = emptyList(),
-                                        duration = (song.timeListened?.toInt() ?: -1),
-                                        thumbnailUrl = song.thumbnailUrl
-                                    )
-                                    playerConnection.playQueue(
-                                        YouTubeQueue(
-                                            endpoint = WatchEndpoint(song.id),
-                                            preloadItem = preloadItem,
-                                        ),
-                                    )
-                                }
-                            },
+                            onClick = { playStatsSong(song) },
                             onLongClick = {
                                 val originalSong = mostPlayedSongs.getOrNull(index)
                                     ?.takeIf { it.id == song.id }
@@ -466,9 +386,22 @@ fun StatsScreen(
                 )
             }
 
+            if (mostPlayedSongsStats.size > 10) {
+                item(key = "songsToggle") {
+                    TextButton(
+                        onClick = { showAllSongs = !showAllSongs },
+                        modifier = Modifier
+                            .padding(horizontal = 8.dp)
+                            .animateItem(),
+                    ) {
+                        Text(if (showAllSongs) "Ver menos" else "Ver todo (${mostPlayedSongsStats.size})")
+                    }
+                }
+            }
+
             item(key = "mostPlayedArtists") {
                 NavigationTitle(
-                    title = "${mostPlayedArtists.size} ${stringResource(id = R.string.artists)}",
+                    title = "Artistas más escuchados",
                     modifier = Modifier.animateItem(),
                 )
             }
@@ -522,7 +455,7 @@ fun StatsScreen(
 
             item(key = "mostPlayedAlbums") {
                 NavigationTitle(
-                    title = "${mostPlayedAlbums.size} ${stringResource(id = R.string.albums)}",
+                    title = "Álbumes más escuchados",
                     modifier = Modifier.animateItem(),
                 )
 
@@ -612,15 +545,11 @@ fun StatsScreen(
                     onLongClick = { }
                 ) {
                     Icon(
-                        painterResource(R.drawable.calendar_today),
+                        painterResource(R.drawable.auto_awesome),
                         contentDescription = stringResource(R.string.year_in_music),
                     )
                 }
             },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.Transparent,
-                scrolledContainerColor = Color.Transparent
-            )
         )
     }
 }

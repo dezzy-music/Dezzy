@@ -27,6 +27,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.unit.Dp
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.animateDpAsState
@@ -161,6 +162,9 @@ fun DezzyPlayer(
     val (playerCustomBrightness) = rememberPreference(PlayerCustomBrightnessKey, 1f)
     val (disableBlur) = rememberPreference(DisableBlurKey, false)
     val (blurRadius) = rememberPreference(BlurRadiusKey, 36f)
+    // "Desactivar desenfoque" (Apariencia) quita los blur de fondo; BlurRadiusKey
+    // escala la intensidad respecto a su valor por defecto (36).
+    val blurScale = (blurRadius / 36f).coerceIn(0f, 3f)
     // Keyed by (id, canvasMode): switching the canvas source clears the shown artwork and
     // resets the in-flight flag (a cancelled fetch of the other source used to leave it
     // stuck at true, silently blocking the new fetch).
@@ -348,7 +352,7 @@ fun DezzyPlayer(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxSize()
-                        .blur(150.dp)
+                        .playerBlur(150.dp, disableBlur, blurScale)
                 )
 
                 // 2. Clean artwork/video in top 65% with vertical fade
@@ -484,7 +488,7 @@ fun DezzyPlayer(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .blur(100.dp)
+                            .playerBlur(100.dp, disableBlur, blurScale)
                             .graphicsLayer { rotationZ = anchorRotation }
                             .background(
                                 Brush.radialGradient(
@@ -497,7 +501,7 @@ fun DezzyPlayer(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .blur(120.dp)
+                            .playerBlur(120.dp, disableBlur, blurScale)
                             .graphicsLayer { 
                                 rotationZ = fastRotation
                                 alpha = 0.6f
@@ -513,7 +517,7 @@ fun DezzyPlayer(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .blur(120.dp)
+                            .playerBlur(120.dp, disableBlur, blurScale)
                             .graphicsLayer { 
                                 rotationZ = slowRotation
                                 alpha = 0.5f
@@ -593,7 +597,7 @@ fun DezzyPlayer(
                             colorFilter = colorFilter,
                             modifier = Modifier
                                 .fillMaxSize()
-                                .blur(baseBlur)
+                                .playerBlur(baseBlur, disableBlur, blurScale)
                                 .graphicsLayer { rotationZ = anchorRotation }
                         )
 
@@ -609,7 +613,7 @@ fun DezzyPlayer(
                             alignment = Alignment.TopStart,
                             modifier = Modifier
                                 .fillMaxSize()
-                                .blur(baseBlur + 20.dp)
+                                .playerBlur(baseBlur + 20.dp, disableBlur, blurScale)
                                 .graphicsLayer { 
                                     rotationZ = fastRotation
                                     alpha = 0.6f
@@ -628,7 +632,7 @@ fun DezzyPlayer(
                             alignment = Alignment.BottomEnd,
                             modifier = Modifier
                                 .fillMaxSize()
-                                .blur(baseBlur + 20.dp)
+                                .playerBlur(baseBlur + 20.dp, disableBlur, blurScale)
                                 .graphicsLayer { 
                                     rotationZ = slowRotation
                                     alpha = 0.5f
@@ -662,7 +666,7 @@ fun DezzyPlayer(
                     primaryUrl  = primaryCanvasUrl,
                     fallbackUrl = fallbackCanvasUrl,
                     isPlaying   = isPlaying,
-                    modifier    = Modifier.fillMaxSize().blur(80.dp),
+                    modifier    = Modifier.fillMaxSize().playerBlur(80.dp, disableBlur, blurScale),
                 )
             } else {
                 AnimatedContent(
@@ -678,7 +682,7 @@ fun DezzyPlayer(
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxSize()
-                            .blur(80.dp),
+                            .playerBlur(80.dp, disableBlur, blurScale),
                     )
                 }
             }
@@ -717,7 +721,7 @@ fun DezzyPlayer(
                         primaryUrl  = primaryCanvasUrl,
                         fallbackUrl = fallbackCanvasUrl,
                         isPlaying   = isPlaying,
-                        modifier    = Modifier.fillMaxSize().blur(70.dp),
+                        modifier    = Modifier.fillMaxSize().playerBlur(70.dp, disableBlur, blurScale),
                     )
                 } else {
                     AnimatedContent(
@@ -733,7 +737,7 @@ fun DezzyPlayer(
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
                                 .fillMaxSize()
-                                .blur(70.dp),
+                                .playerBlur(70.dp, disableBlur, blurScale),
                         )
                     }
                 }
@@ -1672,3 +1676,6 @@ fun DezzyPlayer(
     }
 }
 
+/** Blur de fondo que respeta "Desactivar desenfoque" y la escala de intensidad. */
+private fun Modifier.playerBlur(radius: Dp, disabled: Boolean, scale: Float): Modifier =
+    if (disabled || scale <= 0f) this else blur(radius * scale)

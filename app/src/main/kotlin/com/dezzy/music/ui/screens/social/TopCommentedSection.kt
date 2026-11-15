@@ -54,6 +54,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.dezzy.music.LocalDatabase
 import com.dezzy.music.LocalPlayerConnection
 import com.dezzy.music.R
 import com.dezzy.music.innertube.YouTube
@@ -68,6 +69,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
@@ -91,10 +93,24 @@ data class RealCommentedTrack(
 )
 
 /**
- * Fuente de datos de "pistas más comentadas" con datos REALES de InnerTube: toma
- * canciones en tendencia de YouTube Music (charts) y las enriquece con el conteo
- * de comentarios y el comentario destacado REALES de YouTube, ordenando por
- * número de comentarios — como hace la estantería de YouTube Music.
+ * Una canción del propio historial del usuario (lo que más escucha / sus
+ * favoritas), candidata a aparecer en "Pistas más comentadas".
+ */
+data class UserSongCandidate(
+    val videoId: String,
+    val title: String,
+    val artist: String?,
+    val thumbnail: String?,
+)
+
+/**
+ * Fuente de datos de "pistas más comentadas" con datos REALES de InnerTube.
+ *
+ * PERSONALIZADA: primero se enriquecen las canciones que EL USUARIO escucha
+ * (lo más reproducido + favoritas) con su conteo de comentarios real de
+ * YouTube y se ordenan por comentarios. Solo si no hay suficientes canciones
+ * suyas con comentarios se completa con la comunidad DezzySocial y las
+ * tendencias de YouTube. Así la sección refleja su música, no solo lo global.
  *
  * Se cachea en memoria durante la sesión (TTL) porque enriquecer cada pista
  * cuesta varias llamadas de red: no queremos repetirlas en cada scroll ni cada
@@ -107,21 +123,62 @@ object RealTopCommented {
     private const val CANDIDATES = 20
     private var cache: List<RealCommentedTrack> = emptyList()
     private var cachedAt = 0L
+    private var cachedUserIds: List<String> = emptyList()
     private val mutex = kotlinx.coroutines.sync.Mutex()
 
-    suspend fun load(limit: Int): List<RealCommentedTrack> = mutex.withLock {
+    suspend fun load(limit: Int, userSongs: List<UserSongCandidate> = emptyList()): List<RealCommentedTrack> = mutex.withLock {
         val now = System.currentTimeMillis()
-        if (cache.isNotEmpty() && now - cachedAt < TTL_MS) return cache.take(limit)
-        val result = fetch(limit)
+        val userIds = userSongs.map { it.videoId }
+        if (cache.isNotEmpty() && now - cachedAt < TTL_MS && cachedUserIds == userIds) return cache.take(limit)
+        val result = fetch(limit, userSongs)
         if (result.isNotEmpty()) {
             cache = result
             cachedAt = now
+            cachedUserIds = userIds
         }
         result.take(limit)
     }
 
-    private suspend fun fetch(limit: Int): List<RealCommentedTrack> =
+    private suspend fun fetch(limit: Int, userSongs: List<UserSongCandidate> = emptyList()): List<RealCommentedTrack> =
         withContext(Dispatchers.IO) {
+            // 0. PRIMERO: las canciones que el usuario escucha. Se enriquecen
+            // con su conteo de comentarios real de YouTube y se ordenan por
+            // comentarios. Son la base de la sección.
+            val userCommented = if (userSongs.isEmpty()) {
+                emptyList()
+            } else {
+                val gate = Semaphore(4)
+                val enriched = coroutineScope {
+                    userSongs.map { song ->
+                        async {
+                            val summary = gate.withPermit {
+                                runCatching {
+                                    YouTube.getVideoCommentSummary(song.videoId).getOrNull()
+                                }.getOrNull()
+                            }
+                            RealCommentedTrack(
+                                videoId = song.videoId,
+                                title = song.title,
+                                artist = song.artist,
+                                thumbnail = song.thumbnail,
+                                commentCount = summary?.commentCount,
+                                topComment = summary?.topCommentText,
+                                topAuthor = summary?.topCommentAuthor,
+                                topAvatar = summary?.topCommentAvatarUrl,
+                            )
+                        }
+                    }.awaitAll()
+                }
+                enriched
+                    .filter { it.commentCount != null || it.topComment != null }
+                    .sortedByDescending { it.commentCount ?: 0L }
+            }
+
+            // Si ya tenemos suficientes de su música, no hace falta lo global.
+            if (userCommented.size >= limit) {
+                return@withContext userCommented.take(limit)
+            }
+
             // 1. Intentar cargar primero las pistas más comentadas en la comunidad DezzySocial
             val dezzyTracks = runCatching {
                 DezzySocial.topCommented(limit)
@@ -180,8 +237,8 @@ object RealTopCommented {
                 .filter { it.commentCount != null || it.topComment != null }
                 .sortedByDescending { it.commentCount ?: 0L }
 
-            // Combinar comunidad + YouTube sin duplicados
-            val combined = (dezzyRealTracks + ytCommented).distinctBy { it.videoId }
+            // Combinar: PRIMERO su música, luego comunidad + YouTube sin duplicados.
+            val combined = (userCommented + dezzyRealTracks + ytCommented).distinctBy { it.videoId }
 
             if (combined.isNotEmpty()) {
                 combined.take(limit)
@@ -209,13 +266,30 @@ fun TopCommentedTracksSection(
 ) {
     val scope = rememberCoroutineScope()
     val playerConnection = LocalPlayerConnection.current
+    val database = LocalDatabase.current
 
     var tracks by remember { mutableStateOf<List<RealCommentedTrack>>(emptyList()) }
     var loaded by remember { mutableStateOf(false) }
     var openTrack by remember { mutableStateOf<RealCommentedTrack?>(null) }
 
     LaunchedEffect(Unit) {
-        tracks = RealTopCommented.load(limit)
+        // Lo que el usuario escucha: lo más reproducido + favoritas.
+        // Es la base de la sección; lo global solo completa si falta.
+        val userSongs = withContext(Dispatchers.IO) {
+            val mostPlayed = database.songsByPlayTimeAsc().first()
+                .reversed().take(12)
+            val liked = database.likedSongsByPlayTimeAsc().first()
+                .reversed().take(12)
+            (mostPlayed + liked).distinctBy { it.song.id }.take(20).map { song ->
+                UserSongCandidate(
+                    videoId = song.song.id,
+                    title = song.song.title,
+                    artist = song.artists.joinToString(", ") { it.name }.takeIf { it.isNotBlank() },
+                    thumbnail = song.song.thumbnailUrl,
+                )
+            }
+        }
+        tracks = RealTopCommented.load(limit, userSongs)
         loaded = true
     }
 
@@ -252,12 +326,18 @@ fun TopCommentedTracksSection(
 
 @Composable
 fun TopCommentedHeader(text: String = "Pistas más comentadas") {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold,
-        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp),
-    )
+    Column(modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp)) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            text = "De lo que tú escuchas",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
 
 /**

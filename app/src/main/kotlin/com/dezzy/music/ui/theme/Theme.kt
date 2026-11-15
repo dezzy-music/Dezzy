@@ -16,8 +16,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
@@ -53,7 +52,6 @@ data class ThemeSeedPalette(
     val neutral: Color,
 )
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun DezzyTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -119,16 +117,12 @@ fun DezzyTheme(
 
     val animatedColorScheme = animateColorScheme(colorScheme)
 
-    MaterialExpressiveTheme(
+    // Material 3 estándar (sin el tema Expressive): más ligero en equipos de
+    // gama baja. Los componentes siguen leyendo colores y tipografía de aquí.
+    MaterialTheme(
         colorScheme = animatedColorScheme,
         typography = typography,
-        content = {
-            androidx.compose.material3.MaterialTheme(
-                colorScheme = animatedColorScheme,
-                typography = typography,
-                content = content
-            )
-        }
+        content = content,
     )
 }
 

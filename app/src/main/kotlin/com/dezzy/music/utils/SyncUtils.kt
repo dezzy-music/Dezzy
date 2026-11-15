@@ -11,6 +11,7 @@ package com.dezzy.music.utils
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import com.dezzy.music.constants.InnerTubeCookieKey
+import com.dezzy.music.security.SessionCrypto
 import com.dezzy.music.constants.SelectedYtmPlaylistsKey
 import com.dezzy.music.constants.YtmSyncKey
 import com.dezzy.music.innertube.YouTube
@@ -148,7 +149,7 @@ class SyncUtils @Inject constructor(
         val cookie = context.dataStore.data
             .map { it[InnerTubeCookieKey] }
             .first()
-        return cookie?.let { "SAPISID" in parseCookieString(it) } ?: false
+        return cookie?.let { "SAPISID" in parseCookieString(SessionCrypto.decrypt(it)) } ?: false
     }
 
     private suspend fun isYtmSyncEnabled(): Boolean {

@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 
 /*
  * Dezzy Project Original (2026)
@@ -53,7 +53,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SliderDefaults
@@ -220,7 +219,8 @@ fun AlwaysOnDisplayScreen(navController: NavController) {
             if (window != null) {
                 val insetsController = WindowInsetsControllerCompat(window, view)
                 insetsController.show(WindowInsetsCompat.Type.systemBars())
-                WindowCompat.setDecorFitsSystemWindows(window, true)
+                // La app es edge-to-edge: no volver a ajustar la ventana a las barras.
+                WindowCompat.setDecorFitsSystemWindows(window, false)
             }
         }
     }

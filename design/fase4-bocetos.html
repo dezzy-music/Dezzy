@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dezzy · Fase 4 · Bocetos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<style>
+/* ── Tokens Material 3 (esquema claro generado desde el color de marca #ED5564) ── */
+:root{
+  --primary:#9C3F48; --on-primary:#FFFFFF;
+  --primary-container:#FFDADB; --on-primary-container:#40000E;
+  --secondary:#775657; --on-secondary:#FFFFFF;
+  --secondary-container:#FFDADA; --on-secondary-container:#2C1516;
+  --tertiary:#755A2F; --tertiary-container:#FFDDAF; --on-tertiary-container:#281800;
+  --surface:#FFF8F7; --on-surface:#22191A; --on-surface-variant:#534344;
+  --outline:#857373; --outline-variant:#D8C1C2;
+  --sc-lowest:#FFFFFF; --sc-low:#FEF1F1; --sc:#F8EBEB; --sc-high:#F3E5E5; --sc-highest:#EDE0E0;
+  --brand:#ED5564;
+  --page:#F4EFEF; --ink:#22191A; --muted:#5E5051;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--page);color:var(--ink);font-family:Roboto,system-ui,sans-serif;line-height:1.45}
+.ms{font-family:'Material Symbols Outlined';font-weight:400;font-style:normal;font-size:24px;line-height:1;
+  display:inline-block;letter-spacing:normal;text-transform:none;white-space:nowrap;direction:ltr;
+  -webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;user-select:none}
+.ms.f{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+.ms.s18{font-size:18px}.ms.s20{font-size:20px}.ms.s16{font-size:16px}.ms.s28{font-size:28px}
+
+/* ── Página ── */
+.wrap{max-width:1180px;margin:0 auto;padding:40px 16px 80px}
+header.top h1{font-family:'Roboto Flex',Roboto;font-size:36px;font-weight:700;letter-spacing:-.5px}
+header.top p.lead{font-size:16px;color:var(--muted);max-width:760px;margin-top:8px}
+.phases{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin:24px 0 8px}
+.phase{background:#fff;border:1px solid var(--outline-variant);border-radius:16px;padding:12px 14px;font-size:14px}
+.phase b{display:block;font-size:13px;color:var(--primary);letter-spacing:.3px;text-transform:uppercase}
+.phase.now{border:2px solid var(--primary);background:var(--primary-container)}
+.phase span{color:var(--muted);font-size:13px}
+.legend{font-size:14px;color:var(--muted);margin-top:12px}
+section.sketch{margin-top:56px;padding-top:32px;border-top:1px solid var(--outline-variant)}
+.sk-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.sk-tag{font:700 13px Roboto;letter-spacing:1px;background:var(--primary);color:#fff;border-radius:8px;padding:4px 10px}
+.sk-head h2{font-family:'Roboto Flex',Roboto;font-size:28px;font-weight:700}
+.sk-head p{flex-basis:100%;color:var(--muted);font-size:15px;max-width:820px}
+.sk-body{display:flex;gap:28px;flex-wrap:wrap;margin-top:24px;align-items:flex-start}
+.phones{display:flex;gap:24px;flex-wrap:wrap}
+.cap{font-size:13px;color:var(--muted);text-align:center;margin-top:10px}
+.notes{flex:1 1 300px;min-width:280px;background:#fff;border:1px solid var(--outline-variant);border-radius:20px;padding:20px;font-size:14px}
+.notes h3{font-size:15px;margin:14px 0 6px}.notes h3:first-child{margin-top:0}
+.notes ul{padding-left:18px}.notes li{margin:3px 0}
+.notes code{font-size:12.5px;background:var(--sc);border-radius:4px;padding:1px 4px}
+.dials{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.dial{background:var(--sc);border-radius:8px;padding:4px 8px;font-size:12.5px}
+
+/* ── Teléfono (1px = 1dp) ── */
+.phone{width:360px;height:780px;border-radius:32px;background:var(--surface);overflow:hidden;position:relative;
+  box-shadow:0 0 0 10px #1d1b1b,0 18px 40px rgba(0,0,0,.25);display:flex;flex-direction:column;color:var(--on-surface)}
+.statusbar{height:28px;flex:none;background:color-mix(in srgb,var(--primary) 92%,transparent);color:#fff;
+  display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-size:13px;font-weight:500;z-index:3}
+.statusbar .ic{display:flex;gap:4px}
+.gesture{height:20px;flex:none;background:color-mix(in srgb,var(--primary) 92%,transparent);display:flex;align-items:center;justify-content:center;z-index:3}
+.gesture i{width:108px;height:4px;border-radius:2px;background:rgba(255,255,255,.9)}
+.content{flex:1;overflow:hidden;position:relative}
+.scroll{position:absolute;inset:0;overflow:hidden;padding-bottom:160px}
+
+/* Barra superior */
+.tab{display:flex;align-items:center;gap:4px;padding:8px 4px 8px 16px;min-height:64px}
+.tab .t{flex:1;min-width:0}
+.tab h1{font-size:28px;font-weight:400;line-height:34px;letter-spacing:0}
+.tab .sub{font-size:14px;color:var(--on-surface-variant)}
+.icon-btn{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;color:var(--on-surface-variant);flex:none}
+.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#B65A63,#E9A6A0);color:#fff;
+  display:grid;place-items:center;font:500 14px Roboto}
+
+/* Chips */
+.chips{display:flex;gap:8px;padding:4px 16px 8px;overflow:hidden}
+.chip{height:32px;border-radius:8px;border:1px solid var(--outline-variant);padding:0 12px;display:flex;align-items:center;gap:6px;
+  font-size:14px;font-weight:500;color:var(--on-surface-variant);white-space:nowrap;flex:none}
+.chip.sel{background:var(--secondary-container);border-color:transparent;color:var(--on-secondary-container)}
+.chip.assist{color:var(--on-surface)}
+.chip .ms{font-size:18px}
+
+/* Pestañas */
+.tabs{display:flex;border-bottom:1px solid var(--outline-variant)}
+.tabs div{flex:1;text-align:center;font-size:14px;font-weight:500;color:var(--on-surface-variant);padding:14px 0 12px;position:relative}
+.tabs div.on{color:var(--primary)}
+.tabs div.on::after{content:"";position:absolute;left:22%;right:22%;bottom:-1px;height:3px;border-radius:3px 3px 0 0;background:var(--primary)}
+
+/* Encabezados de sección */
+.sec{display:flex;align-items:center;justify-content:space-between;padding:20px 8px 8px 16px}
+.sec h2{font-size:22px;font-weight:400;line-height:28px}
+.sec .tb{font-size:14px;font-weight:500;color:var(--primary);padding:10px 12px;border-radius:20px}
+.sec .ov{font-size:12px;color:var(--on-surface-variant);display:block;margin-top:-2px}
+
+/* Portadas (placeholders tonales) */
+.art{border-radius:8px;flex:none;position:relative;overflow:hidden}
+.a1{background:linear-gradient(135deg,#7E2F3A,#E0828A)}
+.a2{background:linear-gradient(135deg,#2E5E63,#8CC1BC)}
+.a3{background:linear-gradient(135deg,#5B4A7A,#B9A6D9)}
+.a4{background:linear-gradient(135deg,#6E5A1F,#E1C27A)}
+.a5{background:linear-gradient(135deg,#334A66,#96B2D6)}
+.a6{background:linear-gradient(135deg,#4F6331,#B6CC8C)}
+.a7{background:linear-gradient(135deg,#7A3E22,#E6A17E)}
+.a8{background:linear-gradient(135deg,#3C3A3B,#A39D9E)}
+.art .ms{position:absolute;inset:0;display:grid;place-items:center;color:rgba(255,255,255,.75)}
+
+/* Accesos rápidos (SpotifyGreetingGrid) */
+.shortcuts{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:4px 16px}
+.sc{display:flex;align-items:center;gap:10px;height:56px;border-radius:12px;background:var(--sc-high);overflow:hidden;padding-right:8px}
+.sc .art{width:56px;height:56px;border-radius:0}
+.sc b{font-size:14px;font-weight:500;line-height:18px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* Tarjetas */
+.card{margin:8px 16px;border-radius:16px;background:var(--sc-low);padding:16px}
+.card.tonal{background:var(--primary-container);color:var(--on-primary-container)}
+.card.elev{background:var(--sc-lowest);box-shadow:0 1px 3px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.08)}
+.overline{font-size:12px;font-weight:500;letter-spacing:.5px;text-transform:uppercase;color:var(--on-surface-variant)}
+.btn{height:40px;border-radius:20px;padding:0 20px;display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:500;flex:none}
+.btn.filled{background:var(--primary);color:var(--on-primary)}
+.btn.tonal{background:var(--secondary-container);color:var(--on-secondary-container)}
+.btn.text{color:var(--primary);padding:0 12px}
+.btn .ms{font-size:18px}
+.progress{height:4px;border-radius:2px;background:var(--sc-highest);overflow:hidden}
+.progress i{display:block;height:100%;background:var(--primary);border-radius:2px}
+
+/* Filas de canción */
+.row{display:flex;align-items:center;gap:12px;padding:8px 4px 8px 16px;min-height:64px}
+.row .art{width:48px;height:48px}
+.row .tx{flex:1;min-width:0}
+.row .t1{font-size:16px;line-height:22px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .t2{font-size:14px;color:var(--on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .t1.playing{color:var(--primary);font-weight:500}
+
+/* Carruseles */
+.carousel{display:flex;gap:12px;padding:4px 16px;overflow:hidden}
+.tile{width:140px;flex:none}
+.tile .art{width:140px;height:140px;border-radius:12px}
+.tile b{display:block;font-size:14px;font-weight:500;margin-top:8px;line-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile span{display:block;font-size:13px;color:var(--on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile.round .art{border-radius:50%}
+
+/* Herramientas Dezzy */
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:4px 16px}
+.tool{border-radius:16px;background:var(--sc);padding:14px;min-height:96px;display:flex;flex-direction:column;gap:8px}
+.tool .ms{color:var(--primary)}
+.tool b{font-size:14px;font-weight:500;line-height:18px}
+.tool span{font-size:12px;color:var(--on-surface-variant);line-height:16px}
+.qa{display:flex;gap:4px;padding:4px 8px;overflow:hidden}
+.qa .q{width:76px;flex:none;display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px 0}
+.qa .q i{width:56px;height:56px;border-radius:16px;background:var(--secondary-container);color:var(--on-secondary-container);display:grid;place-items:center;font-style:normal}
+.qa .q.p i{background:var(--primary);color:#fff}
+.qa .q span{font-size:12px;text-align:center;line-height:15px;color:var(--on-surface)}
+
+/* SearchBar */
+.searchbar{margin:4px 16px 8px;height:56px;border-radius:28px;background:var(--sc-high);display:flex;align-items:center;gap:4px;padding:0 4px 0 16px;color:var(--on-surface-variant);font-size:16px}
+.searchbar .grow{flex:1;margin-left:12px}
+
+/* Mini reproductor + barra de navegación */
+.bottom{position:absolute;left:0;right:0;bottom:0;z-index:2}
+.mini{margin:0 8px 8px;height:64px;border-radius:16px;background:var(--sc-highest);display:flex;align-items:center;gap:12px;padding:0 4px 0 8px;position:relative;overflow:hidden;
+  box-shadow:0 2px 6px rgba(0,0,0,.10)}
+.mini .art{width:48px;height:48px}
+.mini .tx{flex:1;min-width:0}
+.mini .t1{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini .t2{font-size:13px;color:var(--on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini .bar{position:absolute;left:12px;right:12px;bottom:0;height:3px;border-radius:2px;background:var(--outline-variant)}
+.mini .bar i{display:block;width:38%;height:100%;background:var(--primary);border-radius:2px}
+.navbar{height:80px;background:var(--sc);display:flex;padding-top:12px}
+.navbar .it{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;font-weight:500;color:var(--on-surface-variant)}
+.navbar .pill{width:64px;height:32px;border-radius:16px;display:grid;place-items:center}
+.navbar .it.on{color:var(--on-surface)}
+.navbar .it.on .pill{background:var(--secondary-container);color:var(--on-secondary-container)}
+.badge-dot{position:relative}
+.badge-dot::after{content:"";position:absolute;top:4px;right:16px;width:8px;height:8px;border-radius:50%;background:#B3261E}
+
+/* Hoja inferior (boceto A, pantalla 2) */
+.scrim-modal{position:absolute;inset:0;background:rgba(34,25,26,.32);z-index:4}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--sc-low);border-radius:28px 28px 0 0;z-index:5;padding:8px 0 20px}
+.sheet .handle{width:32px;height:4px;border-radius:2px;background:var(--on-surface-variant);opacity:.4;margin:14px auto 16px}
+.sheet h3{font-size:22px;font-weight:400;padding:0 24px 8px}
+.list-item{display:flex;align-items:center;gap:16px;padding:10px 24px;min-height:56px}
+.list-item .ms{color:var(--on-surface-variant)}
+.list-item .tx{flex:1}
+.list-item b{display:block;font-size:16px;font-weight:400}
+.list-item span{font-size:14px;color:var(--on-surface-variant)}
+
+/* Hero reanudar */
+.hero{margin:8px 16px;border-radius:24px;overflow:hidden;position:relative;height:184px;background:linear-gradient(160deg,#5B2830 0%,#9C3F48 55%,#E07C84 100%);color:#fff}
+.hero .in{position:absolute;inset:0;padding:16px;display:flex;flex-direction:column;justify-content:flex-end;background:linear-gradient(180deg,rgba(0,0,0,0) 20%,rgba(0,0,0,.45))}
+.hero .ov{font-size:12px;font-weight:500;letter-spacing:.6px;text-transform:uppercase;opacity:.9}
+.hero h3{font-size:22px;font-weight:500;line-height:28px}
+.hero p{font-size:14px;opacity:.92}
+.hero .play{position:absolute;right:16px;bottom:16px;width:56px;height:56px;border-radius:16px;background:var(--primary-container);color:var(--on-primary-container);display:grid;place-items:center}
+.stat-row{display:flex;gap:8px;padding:4px 16px 4px;flex-wrap:wrap}
+.divider{height:1px;background:var(--outline-variant);margin:8px 16px}
+.profile{display:flex;align-items:center;gap:16px;padding:8px 16px 4px}
+.profile .avatar{width:64px;height:64px;font-size:24px}
+.profile b{font-size:22px;font-weight:400;display:block}
+.profile span{font-size:14px;color:var(--on-surface-variant)}
+.statgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:8px 16px}
+.stat{background:var(--sc);border-radius:16px;padding:12px}
+.stat b{display:block;font-size:24px;font-weight:500;color:var(--primary);line-height:30px}
+.stat span{font-size:12px;color:var(--on-surface-variant)}
+@media (max-width:420px){.phone{transform:scale(.9);transform-origin:top left;margin-bottom:-78px;margin-right:-36px}}
+/* ── Biblioteca y detalle (fase 4) ── */
+.lib-sc{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:4px 16px 8px}
+.lsc{height:64px;border-radius:16px;background:var(--sc);display:flex;align-items:center;gap:12px;padding:0 12px;font-size:14px;font-weight:500}
+.lsc i{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-style:normal;flex:none}
+.lsc small{display:block;font-size:12px;font-weight:400;color:var(--on-surface-variant)}
+.i1{background:var(--primary-container);color:var(--on-primary-container)}
+.i2{background:#D7E8CD;color:#11200C}.i3{background:var(--tertiary-container);color:var(--on-tertiary-container)}
+.i4{background:#D6E3FF;color:#001B3E}
+.sortbar{display:flex;align-items:center;justify-content:space-between;padding:4px 4px 4px 16px;font-size:14px;color:var(--on-surface-variant)}
+.sortbar b{color:var(--on-surface);font-weight:500;display:flex;align-items:center;gap:4px}
+.row .art.r{border-radius:50%}
+.row .pin{color:var(--primary);font-size:16px;margin-right:2px;vertical-align:-3px}
+.tb-row{display:flex;align-items:center;height:64px;padding:0 4px}
+.tb-row .grow{flex:1;font-size:22px;padding-left:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cover-c{width:232px;height:232px;border-radius:16px;margin:8px auto 0;box-shadow:0 8px 20px rgba(0,0,0,.18)}
+.det{padding:16px 16px 0}
+.det h2{font-size:24px;font-weight:500;line-height:30px}
+.det .by{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;margin-top:6px}
+.det .by i{width:24px;height:24px;border-radius:50%;flex:none}
+.det .meta{font-size:13px;color:var(--on-surface-variant);margin-top:2px}
+.acts{display:flex;align-items:center;padding:4px 8px 4px 4px}
+.acts .grow{flex:1}
+.fab{width:56px;height:56px;border-radius:16px;background:var(--primary);color:#fff;display:grid;place-items:center;flex:none}
+.fab.round{border-radius:50%}
+.fab-ext{position:absolute;right:16px;bottom:168px;height:56px;border-radius:16px;background:var(--primary-container);color:var(--on-primary-container);display:flex;align-items:center;gap:10px;padding:0 20px 0 16px;font-size:14px;font-weight:500;box-shadow:0 3px 8px rgba(0,0,0,.18);z-index:2}
+.tn{width:24px;text-align:center;font-size:15px;color:var(--on-surface-variant);flex:none}
+.tn.on{color:var(--primary)}
+.hero-a{height:300px;position:relative;margin-top:-1px}
+.hero-a .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.35) 0,transparent 30%,transparent 50%,var(--surface) 100%)}
+.hero-a .top{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;padding:4px}
+.hero-a .top .icon-btn{color:#fff}
+.hero-a h2{position:absolute;left:16px;bottom:8px;font-size:40px;font-weight:600;line-height:44px;color:var(--on-surface)}
+.listen{font-size:14px;color:var(--on-surface-variant);padding:0 16px}
+.btns{display:flex;gap:8px;padding:12px 16px}
+.btns .btn{flex:1;justify-content:center}
+.btn.outl{border:1px solid var(--outline);color:var(--primary)}
+.blur-h{padding:8px 16px 16px;background:linear-gradient(180deg,#C9A75A 0,#E6CF97 45%,var(--surface) 100%)}
+.blur-h .tb-row{margin:0 -16px}
+.blur-h .cover-c{margin-top:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px 12px;padding:4px 16px}
+.gi .art{width:100%;aspect-ratio:1;border-radius:12px}
+.gi .art.r{border-radius:50%}
+.gi b{display:block;font-size:14px;font-weight:500;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gi span{display:block;font-size:12px;color:var(--on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pills{display:flex;gap:8px;padding:4px 16px 8px;overflow:hidden}
+.pill2{height:40px;border-radius:20px;background:var(--sc-high);display:flex;align-items:center;gap:8px;padding:0 16px 0 8px;font-size:14px;font-weight:500;flex:none}
+.pill2 i{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-style:normal}
+.mosaic{width:200px;height:200px;border-radius:16px;overflow:hidden;display:grid;grid-template-columns:1fr 1fr;margin:8px auto 0}
+.mosaic span{display:block}
+.ctr{text-align:center}
+.ctr .by{justify-content:center}
+.toolchips{display:flex;gap:8px;padding:8px 16px;overflow:hidden;justify-content:center}
+.side{display:flex;gap:16px;padding:8px 16px 12px;align-items:flex-end}
+.side .art{width:128px;height:128px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.side h2{font-size:22px;font-weight:500;line-height:28px}
+.side .meta{font-size:13px;color:var(--on-surface-variant)}
+.toolbar-x{margin:4px 16px 8px;height:56px;border-radius:28px;background:var(--sc-high);display:flex;align-items:center;justify-content:space-around;padding:0 4px}
+.toolbar-x .fab{width:48px;height:48px;border-radius:24px}
+.dayh{font-size:14px;font-weight:500;color:var(--primary);padding:16px 16px 4px;background:var(--surface)}
+.tabs.sm div{font-size:13px;padding:12px 0 10px}
+.dl-card{margin:8px 16px;border-radius:16px;background:var(--sc);padding:12px 16px;display:flex;align-items:center;gap:12px}
+.dl-card .grow{flex:1}
+.dl-card b{font-size:14px;font-weight:500}
+.dl-card span{display:block;font-size:12px;color:var(--on-surface-variant)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <h1>Dezzy · Rediseño de interfaz</h1>
+  <p class="lead">Fase 4 de 7: <b>Biblioteca y detalle</b>. Tres bocetos en tema claro, Material 3 y Material Symbols, escala 1 px = 1 dp. Cubre la pestaña Biblioteca y las pantallas de álbum, artista, playlist e historial; las descargas y la selección múltiple van en «Para los tres».</p>
+  <div class="phases">
+    <div class="phase"><b>Fase 1 · hecha</b>Base visual, navegación e Inicio<br><span>Boceto A aplicado (sin compilar)</span></div>
+    <div class="phase"><b>Fase 2 · hecha</b>Reproductor<br><span>Boceto A como estilo «Clásico» (sin compilar)</span></div>
+    <div class="phase"><b>Fase 3 · hecha</b>Búsqueda y Explorar<br><span>Boceto A aplicado (sin compilar)</span></div>
+    <div class="phase now"><b>Fase 4 · ahora</b>Biblioteca y detalle<br><span>Biblioteca, playlists, álbum, artista, historial, descargas</span></div>
+    <div class="phase"><b>Fase 5</b>Social y Escuchar juntos<br><span>Salas, chat, feed, perfiles, mensajes</span></div>
+    <div class="phase"><b>Fase 6</b>Experiencias Dezzy<br><span>DJ Dezzy, IA, estadísticas, Año en música, Mapa, Song DNA, Lossless, AOD</span></div>
+    <div class="phase"><b>Fase 7</b>Ajustes y cuentas<br><span>Ajustes, integraciones, inicios de sesión, temas</span></div>
+  </div>
+  <p class="legend">Hoy la Biblioteca tiene un fondo de cinco manchas de color, una tarjeta de controles, accesos de colores y tarjetas grandes de álbum y artista mezcladas; las cabeceras de álbum, artista y playlist son distintas entre sí. Portadas y fotos son marcadores de color.</p>
+</header>
+<section class="sketch"><div class="sk-head"><span class="sk-tag">BOCETO A</span><h2>Lista ordenada con detalle centrado</h2><p>La Biblioteca deja el fondo de manchas de color y pasa a una superficie limpia: título grande, chips de filtro, cuatro accesos fijos (Me gusta, Descargas, Mi top, En caché) y una sola lista mezclada con orden y cambio a cuadrícula. Álbum y playlist comparten una cabecera centrada con la portada y una fila de acciones; el artista abre con su foto grande.</p></div><div class="sk-body"><div class="phones"><div><div class="phone"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div><div class="content"><div class="scroll"><div class="tab"><div class="t"><h1>Biblioteca</h1></div><span class="icon-btn"><span class="ms">search</span></span><span class="icon-btn"><span class="ms">add</span></span></div><div class="chips"><span class="chip">Playlists</span><span class="chip">Canciones</span><span class="chip">Álbumes</span><span class="chip">Artistas</span><span class="chip">Géneros</span></div><div class="lib-sc"><div class="lsc"><i class="i1"><span class="ms f">favorite</span></i><div>Me gusta<small>248 canciones</small></div></div><div class="lsc"><i class="i2"><span class="ms">download_done</span></i><div>Descargas<small>96 canciones</small></div></div><div class="lsc"><i class="i3"><span class="ms">trending_up</span></i><div>Mi top 50<small>Este mes</small></div></div><div class="lsc"><i class="i4"><span class="ms">cached</span></i><div>En caché<small>1,2 GB</small></div></div></div><div class="sortbar"><b><span class="ms s18">swap_vert</span>Recientes</b><span style="display:flex"><span class="icon-btn"><span class="ms">grid_view</span></span></span></div><div class="row"><span class="art a1"></span><div class="tx"><div class="t1"><span class="ms f pin">push_pin</span>Para manejar</div><div class="t2">Playlist, 42 canciones</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="row"><span class="art a5"></span><div class="tx"><div class="t1">Bocanada</div><div class="t2">Álbum, Gustavo Cerati</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="row"><span class="art a8 r"></span><div class="tx"><div class="t1">Soda Stereo</div><div class="t2">Artista</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="row"><span class="art a3"></span><div class="tx"><div class="t1">Domingo tranquilo</div><div class="t2">Playlist, 18 canciones</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="row"><span class="art a6"></span><div class="tx"><div class="t1">Signos</div><div class="t2">Álbum, Soda Stereo</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div></div><div class="bottom"><div class="mini"><span class="art a4"></span><div class="tx"><div class="t1">De Música Ligera</div><div class="t2">Soda Stereo</div></div><span class="icon-btn" style="color:var(--on-surface)"><span class="ms f s28">pause</span></span><span class="icon-btn" style="color:var(--on-surface)"><span class="ms f">skip_next</span></span><span class="bar"><i></i></span></div><div class="navbar"><div class="it"><span class="pill"><span class="ms">home</span></span>Inicio</div><div class="it"><span class="pill"><span class="ms">search</span></span>Buscar</div><div class="it on"><span class="pill"><span class="ms f">library_music</span></span>Biblioteca</div><div class="it"><span class="pill"><span class="ms">groups</span></span>Juntos</div></div></div></div><div class="gesture"><i></i></div></div><div class="cap">Biblioteca</div></div><div><div class="phone"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div><div class="content"><div class="scroll"><div class="tb-row"><span class="icon-btn"><span class="ms">arrow_back</span></span><span class="grow"></span><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="cover-c a5"></div><div class="det"><h2>Bocanada</h2><div class="by"><i class="a2"></i>Gustavo Cerati</div><div class="meta">Álbum, 1999, 14 canciones, 1 h 2 min</div></div><div class="acts"><span class="icon-btn"><span class="ms f" style="color:var(--primary)">favorite</span></span><span class="icon-btn"><span class="ms">download</span></span><span class="icon-btn"><span class="ms">share</span></span><span class="grow"></span><span class="icon-btn"><span class="ms">shuffle</span></span><span class="fab round"><span class="ms f s28">play_arrow</span></span></div><div class="row"><span class="tn on">1</span><div class="tx"><div class="t1 playing">Tu Cicatriz en Mí</div><div class="t2">Gustavo Cerati</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="row"><span class="tn">2</span><div class="tx"><div class="t1">Engaña</div><div class="t2">Gustavo Cerati</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="row"><span class="tn">3</span><div class="tx"><div class="t1">Cosas Imposibles</div><div class="t2">Gustavo Cerati</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="row"><span class="tn">4</span><div class="tx"><div class="t1">Amo Dios</div><div class="t2">Gustavo Cerati</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div></div><div class="bottom"><div class="mini"><span class="art a4"></span><div class="tx"><div class="t1">De Música Ligera</div><div class="t2">Soda Stereo</div></div><span class="icon-btn" style="color:var(--on-surface)"><span class="ms f s28">pause</span></span><span class="icon-btn" style="color:var(--on-surface)"><span class="ms f">skip_next</span></span><span class="bar"><i></i></span></div></div></div><div class="gesture"><i></i></div></div><div class="cap">Álbum</div></div><div><div class="phone"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div><div class="content"><div class="scroll"><div class="hero-a a2"><div class="shade"></div><div class="top"><span class="icon-btn"><span class="ms">arrow_back</span></span><span class="icon-btn"><span class="ms">more_vert</span></span></div><h2>Gustavo Cerati</h2></div><div class="listen">3,2 M oyentes mensuales</div><div class="acts" style="padding-left:16px"><span class="btn outl" style="height:36px">Seguir</span><span class="icon-btn"><span class="ms">radio</span></span><span class="grow"></span><span class="icon-btn"><span class="ms">shuffle</span></span><span class="fab round"><span class="ms f s28">play_arrow</span></span></div><div class="sec" style="padding-top:8px"><h2 style="font-size:16px;font-weight:500">Populares</h2></div><div class="row"><span class="tn">1</span><div class="tx"><div class="t1">Engaña</div><div class="t2">98 M reproducciones</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="row"><span class="tn">2</span><div class="tx"><div class="t1">Cosas Imposibles</div><div class="t2">71 M reproducciones</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="row"><span class="tn">3</span><div class="tx"><div class="t1">Amo Dios</div><div class="t2">64 M reproducciones</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div></div><div class="bottom"><div class="mini"><span class="art a4"></span><div class="tx"><div class="t1">De Música Ligera</div><div class="t2">Soda Stereo</div></div><span class="icon-btn" style="color:var(--on-surface)"><span class="ms f s28">pause</span></span><span class="icon-btn" style="color:var(--on-surface)"><span class="ms f">skip_next</span></span><span class="bar"><i></i></span></div></div></div><div class="gesture"><i></i></div></div><div class="cap">Artista</div></div></div><div class="notes"><h3>Qué cambia</h3><ul><li>Biblioteca: título «Biblioteca» de 28 sp con buscar y «Nueva playlist». Fuera el degradado de cinco manchas (<code>LibraryScreen</code>).</li><li>Los 4 accesos (<code>AUTO_LIKED</code>, descargas, top, caché) como tarjetas de 64 dp con su cuenta.</li><li>Lista única de playlists, álbumes y artistas con subtítulo de tipo; las fijadas llevan chincheta. La tarjeta de controles se reduce a una línea de orden + cuadrícula.</li><li>Álbum: portada de 232 dp, título de 24 sp, artista con avatar, metadatos en una línea separada por comas. Me gusta, descargar y compartir a la izquierda; aleatorio y Reproducir (botón redondo) a la derecha.</li><li>Artista: foto a sangre con el nombre encima, oyentes, Seguir, radio, aleatorio y Reproducir; después Populares y Discografía.</li></ul><h3>Qué se conserva</h3><ul><li>Filtros, etiquetas, orden, modo reordenar, selección múltiple, menús y sincronización con YouTube Music.</li></ul><div class="dials"><span class="dial">Pantallas nuevas: 0</span><span class="dial">Código reutilizado: alto</span></div></div></div></section><section class="sketch"><div class="sk-head"><span class="sk-tag">BOCETO B</span><h2>Cuadrícula visual y cabeceras con color</h2><p>La Biblioteca pone por delante las portadas: accesos en píldoras, pestañas por tipo y una cuadrícula de dos columnas (con cambio a lista). Álbum y playlist centran la portada sobre un degradado del color de la carátula, con Reproducir y Aleatorio a todo el ancho y chips para el resto de acciones.</p></div><div class="sk-body"><div class="phones"><div><div class="phone"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div><div class="content"><div class="scroll"><div class="tab"><div class="t"><h1>Biblioteca</h1></div><span class="icon-btn"><span class="ms">search</span></span><span class="icon-btn"><span class="ms">add</span></span></div><div class="pills"><span class="pill2"><i class="i1"><span class="ms f s18">favorite</span></i>Me gusta</span><span class="pill2"><i class="i2"><span class="ms s18">download_done</span></i>Descargas</span><span class="pill2"><i class="i3"><span class="ms s18">trending_up</span></i>Mi top</span></div><div class="tabs" style="margin-top:4px"><div class="on">Playlists</div><div>Álbumes</div><div>Artistas</div><div>Canciones</div></div><div class="sortbar"><b><span class="ms s18">swap_vert</span>Recientes</b><span class="icon-btn"><span class="ms">view_list</span></span></div><div class="grid2"><div class="gi"><span class="art a1"></span><b>Para manejar</b><span>42 canciones</span></div><div class="gi"><span class="art a3"></span><b>Domingo tranquilo</b><span>18 canciones</span></div><div class="gi"><span class="art a6"></span><b>Rock nacional</b><span>67 canciones</span></div><div class="gi"><span class="art a7"></span><b>Gym</b><span>31 canciones</span></div></div></div><div class="bottom"><div class="mini"><span class="art a4"></span><div class="tx"><div class="t1">De Música Ligera</div><div class="t2">Soda Stereo</div></div><span class="icon-btn" style="color:var(--on-surface)"><span class="ms f s28">pause</span></span><span class="icon-btn" style="color:var(--on-surface)"><span class="ms f">skip_next</span></span><span class="bar"><i></i></span></div><div class="navbar"><div class="it"><span class="pill"><span class="ms">home</span></span>Inicio</div><div class="it"><span class="pill"><span class="ms">search</span></span>Buscar</div><div class="it on"><span class="pill"><span class="ms f">library_music</span></span>Biblioteca</div><div class="it"><span class="pill"><span class="ms">groups</span></span>Juntos</div></div></div></div><div class="gesture"><i></i></div></div><div class="cap">Biblioteca en cuadrícula</div></div><div><div class="phone"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div><div class="content"><div class="scroll"><div class="blur-h"><div class="tb-row"><span class="icon-btn"><span class="ms">arrow_back</span></span><span class="grow"></span><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="cover-c a4" style="width:208px;height:208px"></div></div><div class="det ctr" style="padding-top:4px"><h2>Signos</h2><div class="by"><i class="a8"></i>Soda Stereo</div><div class="meta">Álbum, 1986, 9 canciones</div></div><div class="btns"><span class="btn filled"><span class="ms f s18">play_arrow</span>Reproducir</span><span class="btn tonal"><span class="ms s18">shuffle</span>Aleatorio</span></div><div class="toolchips"><span class="chip assist"><span class="ms s18">favorite_border</span>Me gusta</span><span class="chip assist"><span class="ms s18">download</span>Descargar</span><span class="chip assist"><span class="ms s18">share</span></span></div><div class="row"><span class="tn">1</span><div class="tx"><div class="t1">Persiana Americana</div><div class="t2">Soda Stereo</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="row"><span class="tn on">2</span><div class="tx"><div class="t1 playing">Signos</div><div class="t2">Soda Stereo</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="row"><span class="tn">3</span><div class="tx"><div class="t1">No Existes</div><div class="t2">Soda Stereo</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div></div><div class="bottom"><div class="mini"><span class="art a4"></span><div class="tx"><div class="t1">De Música Ligera</div><div class="t2">Soda Stereo</div></div><span class="icon-btn" style="color:var(--on-surface)"><span class="ms f s28">pause</span></span><span class="icon-btn" style="color:var(--on-surface)"><span class="ms f">skip_next</span></span><span class="bar"><i></i></span></div></div></div><div class="gesture"><i></i></div></div><div class="cap">Álbum con color de la portada</div></div><div><div class="phone"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div><div class="content"><div class="scroll"><div class="tb-row"><span class="icon-btn"><span class="ms">arrow_back</span></span><span class="grow"></span><span class="icon-btn"><span class="ms">search</span></span><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="mosaic"><span class="a1"></span><span class="a3"></span><span class="a6"></span><span class="a5"></span></div><div class="det ctr" style="padding-top:12px"><h2>Para manejar</h2><div class="meta">Tu playlist, 42 canciones, 2 h 48 min</div></div><div class="btns"><span class="btn filled"><span class="ms f s18">play_arrow</span>Reproducir</span><span class="btn tonal"><span class="ms s18">shuffle</span>Aleatorio</span></div><div class="toolchips"><span class="chip assist"><span class="ms s18">edit</span>Editar</span><span class="chip assist"><span class="ms s18">sync</span>Sincronizar</span><span class="chip assist"><span class="ms s18">sort</span>Ordenar</span></div><div class="row"><span class="art a5" style="width:48px;height:48px"></span><div class="tx"><div class="t1">Crimen</div><div class="t2">Gustavo Cerati</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="row"><span class="art a7" style="width:48px;height:48px"></span><div class="tx"><div class="t1">Lamento Boliviano</div><div class="t2">Enanitos Verdes</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div></div><div class="bottom"><div class="mini"><span class="art a4"></span><div class="tx"><div class="t1">De Música Ligera</div><div class="t2">Soda Stereo</div></div><span class="icon-btn" style="color:var(--on-surface)"><span class="ms f s28">pause</span></span><span class="icon-btn" style="color:var(--on-surface)"><span class="ms f">skip_next</span></span><span class="bar"><i></i></span></div></div></div><div class="gesture"><i></i></div></div><div class="cap">Playlist propia</div></div></div><div class="notes"><h3>Qué cambia</h3><ul><li>Biblioteca: accesos fijos en píldoras desplazables; pestañas Playlists, Álbumes, Artistas, Canciones (sustituyen a los chips, «Géneros» pasa a Buscar).</li><li>Cuadrícula de 2 columnas por defecto; botón para lista.</li><li>Álbum: degradado con el color dominante de la portada (Palette, como el reproductor Clásico).</li><li>Botones Reproducir y Aleatorio iguales y a todo el ancho; Me gusta, Descargar, Compartir, Editar, Sincronizar y Ordenar en chips.</li><li>Playlist propia: mosaico 2×2 si no tiene portada.</li></ul><h3>A tener en cuenta</h3><ul><li>Pasar de chips a pestañas cambia cómo se recuerda el filtro (<code>ChipSortTypeKey</code>): la vista mezclada «Todo» desaparece.</li></ul><div class="dials"><span class="dial">Pantallas nuevas: 0</span><span class="dial">Código reutilizado: medio</span></div></div></div></section><section class="sketch"><div class="sk-head"><span class="sk-tag">BOCETO C</span><h2>Pestañas y cabecera compacta</h2><p>Pensado para bibliotecas grandes: pestañas fijas (Todo, Playlists, Álbumes, Artistas, Descargas), una zona «Fijados» y un botón flotante «Nueva playlist». El detalle usa una cabecera compacta (portada a la izquierda, datos a la derecha) y una barra de herramientas M3 para que la lista de canciones aparezca antes.</p></div><div class="sk-body"><div class="phones"><div><div class="phone"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div><div class="content"><div class="scroll"><div class="tab"><div class="t"><h1>Biblioteca</h1></div><span class="icon-btn"><span class="ms">search</span></span><span class="icon-btn"><span class="ms">history</span></span></div><div class="tabs sm"><div class="on">Todo</div><div>Playlists</div><div>Álbumes</div><div>Artistas</div><div>Descargas</div></div><div class="sec" style="padding-top:12px"><h2 style="font-size:16px;font-weight:500">Fijados</h2></div><div class="row"><span class="art a1"></span><div class="tx"><div class="t1">Me gusta</div><div class="t2">Playlist automática, 248</div></div></div><div class="row"><span class="art a6"></span><div class="tx"><div class="t1">Para manejar</div><div class="t2">Playlist, 42 canciones</div></div></div><div class="sortbar" style="padding-top:8px"><b><span class="ms s18">swap_vert</span>Recientes</b><span class="icon-btn"><span class="ms">grid_view</span></span></div><div class="row"><span class="art a5"></span><div class="tx"><div class="t1">Bocanada</div><div class="t2">Álbum, Gustavo Cerati</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="row"><span class="art a8 r"></span><div class="tx"><div class="t1">Soda Stereo</div><div class="t2">Artista</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="row"><span class="art a3"></span><div class="tx"><div class="t1">Domingo tranquilo</div><div class="t2">Playlist, 18 canciones</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div></div><div class="fab-ext"><span class="ms">add</span>Nueva playlist</div><div class="bottom"><div class="mini"><span class="art a4"></span><div class="tx"><div class="t1">De Música Ligera</div><div class="t2">Soda Stereo</div></div><span class="icon-btn" style="color:var(--on-surface)"><span class="ms f s28">pause</span></span><span class="icon-btn" style="color:var(--on-surface)"><span class="ms f">skip_next</span></span><span class="bar"><i></i></span></div><div class="navbar"><div class="it"><span class="pill"><span class="ms">home</span></span>Inicio</div><div class="it"><span class="pill"><span class="ms">search</span></span>Buscar</div><div class="it on"><span class="pill"><span class="ms f">library_music</span></span>Biblioteca</div><div class="it"><span class="pill"><span class="ms">groups</span></span>Juntos</div></div></div></div><div class="gesture"><i></i></div></div><div class="cap">Biblioteca con pestañas</div></div><div><div class="phone"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div><div class="content"><div class="scroll"><div class="tb-row"><span class="icon-btn"><span class="ms">arrow_back</span></span><span class="grow"></span><span class="icon-btn"><span class="ms">search</span></span><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="side"><span class="art a5"></span><div><h2>Bocanada</h2><div class="meta">Gustavo Cerati<br>Álbum, 1999<br>14 canciones, 1 h 2 min</div></div></div><div class="toolbar-x"><span class="icon-btn"><span class="ms f" style="color:var(--primary)">favorite</span></span><span class="icon-btn"><span class="ms">download</span></span><span class="icon-btn"><span class="ms">share</span></span><span class="icon-btn"><span class="ms">shuffle</span></span><span class="fab"><span class="ms f">play_arrow</span></span></div><div class="row"><span class="tn on">1</span><div class="tx"><div class="t1 playing">Tu Cicatriz en Mí</div><div class="t2">Gustavo Cerati</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="row"><span class="tn">2</span><div class="tx"><div class="t1">Engaña</div><div class="t2">Gustavo Cerati</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="row"><span class="tn">3</span><div class="tx"><div class="t1">Cosas Imposibles</div><div class="t2">Gustavo Cerati</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="row"><span class="tn">4</span><div class="tx"><div class="t1">Amo Dios</div><div class="t2">Gustavo Cerati</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="row"><span class="tn">5</span><div class="tx"><div class="t1">Lago en el Cielo</div><div class="t2">Gustavo Cerati</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div></div><div class="bottom"><div class="mini"><span class="art a4"></span><div class="tx"><div class="t1">De Música Ligera</div><div class="t2">Soda Stereo</div></div><span class="icon-btn" style="color:var(--on-surface)"><span class="ms f s28">pause</span></span><span class="icon-btn" style="color:var(--on-surface)"><span class="ms f">skip_next</span></span><span class="bar"><i></i></span></div></div></div><div class="gesture"><i></i></div></div><div class="cap">Álbum compacto</div></div><div><div class="phone"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16 f">signal_cellular_alt</span><span class="ms s16 f">wifi</span><span class="ms s16 f">battery_full</span></span></div><div class="content"><div class="scroll"><div class="tb-row"><span class="icon-btn"><span class="ms">arrow_back</span></span><span class="grow">Historial</span><span class="icon-btn"><span class="ms">search</span></span><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="tabs sm"><div class="on">En este teléfono</div><div>YouTube Music</div></div><div class="dayh">Hoy</div><div class="row"><span class="art a4"></span><div class="tx"><div class="t1">De Música Ligera</div><div class="t2">Soda Stereo, 21:40</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="row"><span class="art a5"></span><div class="tx"><div class="t1">Crimen</div><div class="t2">Gustavo Cerati, 21:36</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="dayh">Ayer</div><div class="row"><span class="art a3"></span><div class="tx"><div class="t1">Persiana Americana</div><div class="t2">Soda Stereo, 18:02</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="row"><span class="art a7"></span><div class="tx"><div class="t1">Lamento Boliviano</div><div class="t2">Enanitos Verdes, 17:55</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div><div class="row"><span class="art a1"></span><div class="tx"><div class="t1">Labios Compartidos</div><div class="t2">Maná, 17:51</div></div><span class="icon-btn"><span class="ms">more_vert</span></span></div></div><div class="bottom"><div class="mini"><span class="art a4"></span><div class="tx"><div class="t1">De Música Ligera</div><div class="t2">Soda Stereo</div></div><span class="icon-btn" style="color:var(--on-surface)"><span class="ms f s28">pause</span></span><span class="icon-btn" style="color:var(--on-surface)"><span class="ms f">skip_next</span></span><span class="bar"><i></i></span></div></div></div><div class="gesture"><i></i></div></div><div class="cap">Historial agrupado por día</div></div></div><div class="notes"><h3>Qué cambia</h3><ul><li>Pestañas M3 con Descargas como pestaña propia; los accesos Me gusta/Mi top viven en «Fijados» junto a lo que el usuario fije.</li><li>Botón flotante extendido «Nueva playlist» (sustituye al «+» de la lista de playlists).</li><li>Álbum y playlist: portada de 128 dp a la izquierda; la primera canción se ve sin desplazar.</li><li>Barra de herramientas flotante con Me gusta, Descargar, Compartir, Aleatorio y Reproducir.</li><li>Historial: pestañas «En este teléfono» / «YouTube Music» y encabezados por día que se quedan fijos.</li></ul><h3>A tener en cuenta</h3><ul><li>Es el que más mueve la Biblioteca: «Descargas» pasa de acceso a pestaña y la mezcla se llama «Todo».</li></ul><div class="dials"><span class="dial">Pantallas nuevas: 0</span><span class="dial">Código reutilizado: medio</span></div></div></div></section><section class="sketch"><div class="sk-head"><h2 style="font-size:22px">Para los tres</h2></div>
+<div class="sk-body"><div class="notes" style="max-width:none">
+<ul>
+<li>Una sola cabecera para álbum, playlist online, playlist propia y playlists automáticas (Me gusta, Descargas, Mi top, En caché); sólo cambian las acciones.</li>
+<li>Selección múltiple: barra superior contextual con contador, seleccionar todo, añadir a playlist, descargar y quitar.</li>
+<li>Descargas: tarjeta de progreso arriba («Descargando 3 de 12») que abre la cola de descargas; Lossless con su insignia.</li>
+<li>Estados: biblioteca vacía (con «Buscar música»), playlist vacía (con «Añadir canciones»), álbum no encontrado con «Reintentar», cargando con shimmer.</li>
+<li>Filas de 64 dp, textos mínimos de 12 sp, áreas táctiles de 48 dp; reordenar con asa y también desde el menú (alternativa al gesto).</li>
+<li>Tema oscuro generado automáticamente al aprobar.</li>
+</ul>
+<h3>Elige</h3><p>Dime «Boceto A», «B» o «C», o una mezcla (por ejemplo «A con el historial de C»).</p>
+</div></div></section>
+</div>
+</body>
+</html>

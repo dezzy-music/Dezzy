@@ -142,3 +142,6 @@
 -keepclasseswithmembernames class * {
     native <methods>;
 }
+
+# Red social P2P (Nostr / Bouncy Castle)
+-dontwarn org.bouncycastle.**

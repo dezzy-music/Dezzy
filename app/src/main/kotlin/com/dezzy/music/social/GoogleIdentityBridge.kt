@@ -13,6 +13,7 @@ import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.net.toUri
 import com.dezzy.music.constants.AccountNameKey
 import com.dezzy.music.constants.InnerTubeCookieKey
+import com.dezzy.music.security.SessionCrypto
 import com.dezzy.music.utils.SupabaseConfig
 import com.dezzy.music.utils.dataStore
 import com.dezzy.music.utils.reportException
@@ -124,7 +125,7 @@ object GoogleIdentityBridge {
             var wasSignedIn: Boolean? = null
             appContext.dataStore.data
                 .map { prefs ->
-                    (prefs[InnerTubeCookieKey]?.contains("SAPISID") == true) to
+                    (SessionCrypto.decrypt(prefs[InnerTubeCookieKey].orEmpty()).contains("SAPISID")) to
                         prefs[AccountNameKey].orEmpty()
                 }
                 .distinctUntilChanged()

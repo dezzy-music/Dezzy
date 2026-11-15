@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 /*
  * Dezzy Project Original (2026)
  * Dezzy (github.com/dezzy-music)
@@ -49,9 +49,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularWavyProgressIndicator
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
@@ -1731,7 +1730,7 @@ fun PlayerPlaybackControls(
                             .clip(RoundedCornerShape(32.dp))
                     ) {
                         if (isLoading) {
-                            CircularWavyProgressIndicator(
+                            CircularProgressIndicator(
                                 modifier = Modifier.size(42.dp),
                                 color = iconButtonColor,
                             )
@@ -1838,7 +1837,7 @@ fun PlayerPlaybackControls(
                         contentAlignment = Alignment.Center
                     ) {
                         if (isLoading) {
-                            CircularWavyProgressIndicator(
+                            CircularProgressIndicator(
                                 modifier = Modifier.size(32.dp),
                                 color = icBackgroundColor,
                             )
@@ -2007,7 +2006,7 @@ fun PlayerPlaybackControls(
                             contentAlignment = Alignment.Center
                         ) {
                             if (isLoading) {
-                                CircularWavyProgressIndicator(
+                                CircularProgressIndicator(
                                     modifier = Modifier.size(40.dp),
                                     color = icBackgroundColor,
                                 )
@@ -2146,7 +2145,7 @@ fun PlayerPlaybackControls(
                             },
                 ) {
                     if (isLoading) {
-                        CircularWavyProgressIndicator(
+                        CircularProgressIndicator(
                             modifier = Modifier
                                 .align(Alignment.Center)
                                 .size(36.dp),
@@ -2273,7 +2272,7 @@ fun PlayerPlaybackControls(
                                 contentAlignment = Alignment.Center
                             ) {
                                 if (isLoading) {
-                                    CircularWavyProgressIndicator(
+                                    CircularProgressIndicator(
                                         modifier = Modifier.size(40.dp),
                                         color = iconButtonColor,
                                     )
@@ -2438,7 +2437,7 @@ fun PlayerPlaybackControls(
                         contentAlignment = Alignment.Center
                     ) {
                         if (isLoading) {
-                            CircularWavyProgressIndicator(
+                            CircularProgressIndicator(
                                 modifier = Modifier.size(44.dp),
                                 color = textBackgroundColor,
                             )

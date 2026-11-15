@@ -38,6 +38,7 @@ data class TogetherRoomSettings(
     val isPublic: Boolean = false,
     val djModeEnabled: Boolean = false,
     val theme: TogetherRoomTheme = TogetherRoomTheme.MIXED,
+    val customTheme: String? = null,
 )
 
 @Serializable
@@ -146,4 +147,5 @@ data class TogetherPublicRoom(
     val currentTrackArtist: String? = null,
     val currentTrackThumbnail: String? = null,
     val isPublic: Boolean = true,
+    val themeName: String? = null,
 )

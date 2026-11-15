@@ -268,6 +268,7 @@ dependencies {
     implementation(libs.concurrent.futures)
 
     implementation(libs.activity)
+    implementation(libs.appcompat)
     implementation(libs.navigation)
     implementation(libs.hilt.navigation)
     implementation(libs.datastore)
@@ -296,6 +297,8 @@ dependencies {
     implementation("io.ktor:ktor-client-content-negotiation:3.0.3")
     implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.3")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
+    // Red social P2P (Nostr): curva secp256k1 para firmas Schnorr y cifrado NIP-44.
+    implementation("org.bouncycastle:bcprov-jdk18on:1.79")
 
     implementation(libs.material3)
     implementation(libs.palette)

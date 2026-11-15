@@ -8,6 +8,17 @@
 
 package com.dezzy.music.ui.screens
 
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.surfaceColorAtElevation
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -26,6 +37,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -50,6 +62,9 @@ import androidx.compose.material3.carousel.HorizontalCenteredHeroCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
@@ -139,6 +154,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.dezzy.music.viewmodels.HomeViewModel
+import com.dezzy.music.ui.screens.musicrecognition.MusicRecognitionRoute
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -779,6 +795,75 @@ fun HomeLoadingShimmer(modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * Tarjeta interactiva "Sorpréndeme": toca el dado y suena una canción al azar
+ * de tu música (quick picks / lo que escuchas). Después del toque muestra
+ * qué canción te tocó, para que sepas qué está sonando.
+ */
+@Composable
+fun SurpriseMeCard(
+    songs: List<Song>,
+    playerConnection: PlayerConnection,
+    haptic: HapticFeedback,
+    modifier: Modifier = Modifier,
+) {
+    var lastPicked by remember { mutableStateOf<Song?>(null) }
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clickable {
+                val pick = songs.randomOrNull() ?: return@clickable
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                lastPicked = pick
+                playerConnection.playQueue(YouTubeQueue.radio(pick.toMediaMetadata()))
+            },
+    ) {
+        Box(
+            modifier = Modifier
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(Color(0xFF7C4DFF), Color(0xFFE91E63)),
+                    )
+                )
+                .padding(16.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    painter = painterResource(R.drawable.casino),
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(40.dp),
+                )
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "Sorpréndeme",
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        lastPicked?.let { "Te tocó: ${it.song.title}" }
+                            ?: "Toca el dado y descubre algo de tu música",
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 13.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Icon(
+                    painter = painterResource(R.drawable.play),
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp),
+                )
+            }
+        }
+    }
+}
+
 // ============== Helper Composables ==============
 
 /**
@@ -1163,112 +1248,6 @@ fun SpotifyGreetingGrid(
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        val currentHour = remember { java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY) }
-        val greeting = when {
-            currentHour < 12 -> "Buenos días"
-            currentHour < 19 -> "Buenas tardes"
-            else -> "Buenas noches"
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = greeting,
-                color = Color.White,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false)
-            )
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                // Notificaciones (novedades)
-                IconButton(
-                    onClick = { navController.navigate("new_release") },
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.notifications),
-                        contentDescription = stringResource(R.string.new_release_albums),
-                        tint = Color.White,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-
-                // Historial de reproducción
-                IconButton(
-                    onClick = { navController.navigate("history") },
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.history),
-                        contentDescription = stringResource(R.string.history),
-                        tint = Color.White,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-
-                // Estadísticas
-                IconButton(
-                    onClick = { navController.navigate("stats") },
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.stats),
-                        contentDescription = stringResource(R.string.stats),
-                        tint = Color.White,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-
-                // Perfil (a un lado del engranaje)
-                IconButton(
-                    onClick = onAccountClick,
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    if (accountImageUrl != null) {
-                        AsyncImage(
-                            model = accountImageUrl,
-                            contentDescription = stringResource(R.string.account),
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(24.dp)
-                                .clip(CircleShape)
-                        )
-                    } else {
-                        Icon(
-                            painter = painterResource(R.drawable.account),
-                            contentDescription = stringResource(R.string.account),
-                            tint = Color.White,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                }
-
-                // Engranaje (Ajustes)
-                IconButton(
-                    onClick = { navController.navigate("settings") },
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.settings),
-                        contentDescription = "Ajustes",
-                        tint = Color.White,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-            }
-        }
-
         val gridItems = mutableListOf<Any>()
 
         // Slot 1: Canciones que te gustan
@@ -1283,16 +1262,16 @@ fun SpotifyGreetingGrid(
         // Slot 4: Pinned 2
         gridItems.add(pinnedPlaylist2 ?: "ADD_PLAYLIST_2")
 
-        // Slots 5-8: sugerencias automáticas (quickPicks)
-        val picks = (quickPicks ?: emptyList()).take(4)
+        // Slots 5-6: sugerencias automáticas (quickPicks)
+        val picks = (quickPicks ?: emptyList()).take(2)
         gridItems.addAll(picks)
 
-        // Rellenar con vacíos si no hay 8 elementos
-        while (gridItems.size < 8) {
+        // Rellenar con vacíos si no hay 6 elementos (cuadrícula 2 × 3)
+        while (gridItems.size < 6) {
             gridItems.add("EMPTY_SLOT")
         }
 
-        val rows = 4
+        val rows = 3
         for (i in 0 until rows) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1354,8 +1333,8 @@ fun SpotifyGenericCajon(
 
     Surface(
         modifier = modifier
-            .height(56.dp)
-            .clip(RoundedCornerShape(4.dp))
+            .heightIn(min = 56.dp)
+            .clip(RoundedCornerShape(12.dp))
             .combinedClickable(
                 onClick = {
                     when (item) {
@@ -1391,10 +1370,10 @@ fun SpotifyGenericCajon(
                     }
                 }
             ),
-        color = Color(0xFF282828),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
         Row(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             when (item) {
@@ -1404,24 +1383,20 @@ fun SpotifyGenericCajon(
                         Box(
                             modifier = Modifier
                                 .size(56.dp)
-                                .background(
-                                    Brush.linearGradient(
-                                        listOf(Color(0xFF450AF5), Color(0xFF8E8EE5))
-                                    )
-                                ),
+                                .background(MaterialTheme.colorScheme.primaryContainer),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.favorite),
                                 contentDescription = null,
-                                tint = Color.White,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
                         Text(
-                            text = "Canciones que te gustan",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                            text = "Tus me gusta",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier
@@ -1457,8 +1432,8 @@ fun SpotifyGenericCajon(
                         val djName = if (customDjName.isNotBlank()) "DJ $customDjName" else "DJ"
                         Text(
                             text = djName,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier
@@ -1481,8 +1456,8 @@ fun SpotifyGenericCajon(
                         }
                         Text(
                             text = "Añadir Playlist",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
@@ -1514,8 +1489,8 @@ fun SpotifyGenericCajon(
                     )
                     Text(
                         text = item.playlist.name,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier
@@ -1532,8 +1507,8 @@ fun SpotifyGenericCajon(
                     )
                     Text(
                         text = item.song.title,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier
@@ -1546,3 +1521,294 @@ fun SpotifyGenericCajon(
     }
 }
 
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SpotifyMenuDrawerSheet(
+    navController: NavController,
+    accountImageUrl: String? = null,
+    onAccountClick: () -> Unit = {},
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
+
+    // Esconde el sheet (esperando su animación) y DESPUÉS ejecuta la acción.
+    // Antes cada botón hacía onDismiss() + navigate() en el mismo toque y al
+    // quitar el sheet de la composición en ese mismo frame la navegación se
+    // perdía: el botón parecía no funcionar.
+    fun hideThen(action: () -> Unit) {
+        scope.launch {
+            runCatching { sheetState.hide() }
+            onDismiss()
+            action()
+        }
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        dragHandle = {
+            BottomSheetDefaults.DragHandle(
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+            )
+        }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 32.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = "Más de Dezzy",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
+            )
+
+            // Header: Avatar + Título
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .clickable {
+                        hideThen { onAccountClick() }
+                    }
+                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (accountImageUrl != null) {
+                    AsyncImage(
+                        model = accountImageUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                    )
+                } else {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                painter = painterResource(R.drawable.account),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.width(14.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Tu Cuenta y Espacio",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = "Ver perfil y detalles de sesión",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Icon(
+                    painter = painterResource(R.drawable.navigate_next),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            Text(
+                text = "Tu Actividad",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 4.dp)
+            )
+
+            SpotifyMenuItemRow(
+                title = "Novedades y Lanzamientos",
+                subtitle = "Lo más nuevo de los artistas que sigues",
+                iconRes = R.drawable.notifications,
+                onClick = {
+                    hideThen { navController.navigate("new_release") }
+                }
+            )
+
+            SpotifyMenuItemRow(
+                title = "Historial de Reproducción",
+                subtitle = "Revisa las pistas que has escuchado recientemente",
+                iconRes = R.drawable.history,
+                onClick = {
+                    hideThen { navController.navigate("history") }
+                }
+            )
+
+            SpotifyMenuItemRow(
+                title = "Estadísticas de Escucha",
+                subtitle = "Tus artistas top, canciones más repetidas y minutos",
+                iconRes = R.drawable.stats,
+                onClick = {
+                    hideThen { navController.navigate("stats") }
+                }
+            )
+
+            SpotifyMenuItemRow(
+                title = "Mis Descargas",
+                subtitle = "Canciones descargadas y cola de descargas",
+                iconRes = R.drawable.download,
+                onClick = {
+                    hideThen { navController.navigate(Screens.DownloadQueue.route) }
+                }
+            )
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            Text(
+                text = "Descubrimiento y Más",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 4.dp)
+            )
+
+            SpotifyMenuItemRow(
+                title = "DJ Dezzy AI",
+                subtitle = "Voz inteligente, recomendaciones y mezclas continuas",
+                iconRes = R.drawable.auto_awesome,
+                onClick = {
+                    hideThen { navController.navigate("dj_dezzy") }
+                }
+            )
+
+            SpotifyMenuItemRow(
+                title = "Escuchar Juntos",
+                subtitle = "Salas públicas y privadas en tiempo real",
+                iconRes = R.drawable.group,
+                onClick = {
+                    hideThen { navController.navigate("public_rooms") }
+                }
+            )
+
+            SpotifyMenuItemRow(
+                title = "Listas de Éxitos",
+                subtitle = "Lo más viral y charts mundiales",
+                iconRes = R.drawable.star,
+                onClick = {
+                    hideThen { navController.navigate("charts_screen") }
+                }
+            )
+
+            SpotifyMenuItemRow(
+                title = "Mapa Musical",
+                subtitle = "Explora sonidos y tendencias por país",
+                iconRes = R.drawable.language,
+                onClick = {
+                    hideThen { navController.navigate("music_map") }
+                }
+            )
+
+            SpotifyMenuItemRow(
+                title = "Resumen del Año",
+                subtitle = "Revive tu Year in Music personalizado",
+                iconRes = R.drawable.star,
+                onClick = {
+                    hideThen { navController.navigate("year_in_music") }
+                }
+            )
+
+            SpotifyMenuItemRow(
+                title = "Reconocer Música",
+                subtitle = "Descubre qué canción está sonando",
+                iconRes = R.drawable.mic,
+                onClick = {
+                    hideThen { navController.navigate(MusicRecognitionRoute) }
+                }
+            )
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            SpotifyMenuItemRow(
+                title = "Ajustes",
+                subtitle = "Apariencia, reproducción, cuentas y más",
+                iconRes = R.drawable.settings,
+                onClick = {
+                    hideThen { navController.navigate("settings") }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun SpotifyMenuItemRow(
+    title: String,
+    subtitle: String,
+    iconRes: Int,
+    onClick: () -> Unit,
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        color = Color.Transparent,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp, horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        painter = painterResource(iconRes),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+            Spacer(Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Icon(
+                painter = painterResource(R.drawable.navigate_next),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                modifier = Modifier.size(18.dp)
+            )
+        }
+    }
+}

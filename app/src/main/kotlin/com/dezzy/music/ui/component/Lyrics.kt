@@ -159,7 +159,8 @@ import com.dezzy.music.constants.TranslateModeKey
 import com.dezzy.music.LocalDatabase
 import com.dezzy.music.lyrics.LyricsTranslationHelper
 import com.dezzy.music.lyrics.LanguageDetectionHelper
-import com.dezzy.music.constants.LyricsLineBlurKey
+import com.dezzy.music.constants.AppleMusicLyricsBlurKey
+import com.dezzy.music.constants.LyricsStandardBlurKey
 import com.dezzy.music.constants.LyricsTextSizeKey
 import com.dezzy.music.constants.LyricsLineSpacingKey
 import com.dezzy.music.constants.PlayerBackgroundStyle
@@ -756,7 +757,10 @@ fun Lyrics(
     var showColorPickerDialog by remember { mutableStateOf(false) }
     var selectedGlassStyle by remember { mutableStateOf(LyricsGlassStyle.FrostedDark) }
     var paletteGlassStyle by remember { mutableStateOf<LyricsGlassStyle?>(null) }
-    val lyricsLineBlur by rememberPreference(LyricsLineBlurKey, true)
+    // "Desenfoque estilo Apple Music" (Apariencia): difumina las líneas inactivas.
+    val lyricsLineBlur by rememberPreference(AppleMusicLyricsBlurKey, true)
+    // "Desenfoque de letras estándar" (Apariencia): portada difuminada de fondo.
+    val lyricsStandardBlur by rememberPreference(LyricsStandardBlurKey, false)
 
     var isSelectionModeActive by rememberSaveable { mutableStateOf(false) }
     androidx.compose.runtime.LaunchedEffect(com.dezzy.music.lyrics.LyricsSelectionState.isSelectingForShare) {
@@ -957,6 +961,23 @@ fun Lyrics(
             .fillMaxSize()
             .padding(bottom = 12.dp)
     ) {
+        if (lyricsStandardBlur) {
+            coil3.compose.AsyncImage(
+                model = mediaMetadata?.thumbnailUrl,
+                contentDescription = null,
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                modifier = Modifier
+                    .matchParentSize()
+                    .blur(48.dp, BlurredEdgeTreatment.Rectangle)
+                    .alpha(0.45f),
+            )
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(Color.Black.copy(alpha = 0.35f))
+            )
+        }
+
         // Status UI for translation
         Box(
             modifier = Modifier

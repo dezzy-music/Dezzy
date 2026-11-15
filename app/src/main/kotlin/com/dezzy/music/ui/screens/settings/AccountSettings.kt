@@ -8,6 +8,17 @@
 
 package com.dezzy.music.ui.screens.settings
 
+import com.dezzy.music.ui.utils.backToMain
+import com.dezzy.music.constants.SpotifySpDcKey
+import com.dezzy.music.constants.ListenBrainzTokenKey
+import com.dezzy.music.constants.LastFMSessionKey
+import com.dezzy.music.constants.DiscordTokenKey
+import com.dezzy.music.LocalPlayerAwareWindowInsets
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
@@ -95,6 +106,7 @@ import com.dezzy.music.constants.AccountEmailKey
 import com.dezzy.music.constants.AccountNameKey
 import com.dezzy.music.constants.DataSyncIdKey
 import com.dezzy.music.constants.InnerTubeCookieKey
+import com.dezzy.music.security.SessionCrypto
 import com.dezzy.music.constants.PoTokenKey
 import com.dezzy.music.constants.SelectedYtmPlaylistsKey
 import com.dezzy.music.constants.UseLoginForBrowse
@@ -129,7 +141,7 @@ fun AccountSettings(
     val (dataSyncId, onDataSyncIdChange) = rememberPreference(DataSyncIdKey, "")
 
     val isLoggedIn = remember(innerTubeCookie) {
-        "SAPISID" in parseCookieString(innerTubeCookie)
+        "SAPISID" in parseCookieString(SessionCrypto.decrypt(innerTubeCookie))
     }
     val (useLoginForBrowse, onUseLoginForBrowseChange) = rememberPreference(UseLoginForBrowse, true)
     val (ytmSync, onYtmSyncChange) = rememberPreference(YtmSyncKey, true)
@@ -172,6 +184,7 @@ fun AccountSettings(
                 },
                 onLogout = {
                     onInnerTubeCookieChange("")
+                    SessionCrypto.getSecurePreferences(context).edit().clear().apply()
                     forgetAccount(context)
                 }
             )
@@ -1002,5 +1015,268 @@ private fun PlaylistSelectionDialog(onDismiss: () -> Unit) {
                 }
             }
         }
+    )
+}
+
+/**
+ * «Cuentas y servicios» (fase 7, boceto A): sustituye al diálogo flotante de cuenta.
+ * Reúne la cuenta de YouTube Music, los servicios conectados y las opciones avanzadas.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AccountsServicesScreen(
+    navController: NavController,
+) {
+    val context = LocalContext.current
+
+    val (accountNamePref, onAccountNameChange) = rememberPreference(AccountNameKey, "")
+    val (accountEmail, onAccountEmailChange) = rememberPreference(AccountEmailKey, "")
+    val (accountChannelHandle, onAccountChannelHandleChange) = rememberPreference(AccountChannelHandleKey, "")
+    val (innerTubeCookie, onInnerTubeCookieChange) = rememberPreference(InnerTubeCookieKey, "")
+    val (_, onPoTokenChange) = rememberPreference(PoTokenKey, "")
+    val (visitorData, onVisitorDataChange) = rememberPreference(VisitorDataKey, "")
+    val (dataSyncId, onDataSyncIdChange) = rememberPreference(DataSyncIdKey, "")
+    val (useLoginForBrowse, onUseLoginForBrowseChange) = rememberPreference(UseLoginForBrowse, true)
+    val (ytmSync, onYtmSyncChange) = rememberPreference(YtmSyncKey, true)
+    val (spotifySpDc) = rememberPreference(SpotifySpDcKey, "")
+    val (discordToken) = rememberPreference(DiscordTokenKey, "")
+    val (lastFmSession) = rememberPreference(LastFMSessionKey, "")
+    val (listenBrainzToken) = rememberPreference(ListenBrainzTokenKey, "")
+
+    val isLoggedIn = remember(innerTubeCookie) {
+        "SAPISID" in parseCookieString(SessionCrypto.decrypt(innerTubeCookie))
+    }
+    val spotifyConnected = remember(spotifySpDc) {
+        runCatching { SessionCrypto.decrypt(spotifySpDc).isNotEmpty() }.getOrDefault(false)
+    }
+
+    val viewModel = rememberActivityHomeViewModel()
+    val accountName by viewModel.accountName.collectAsState()
+    val accountImageUrl by viewModel.accountImageUrl.collectAsState()
+
+    var showTokenEditor by remember { mutableStateOf(false) }
+    var showPlaylistDialog by remember { mutableStateOf(false) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
+    if (showTokenEditor) {
+        TokenEditorDialog(
+            innerTubeCookie = innerTubeCookie,
+            visitorData = visitorData,
+            dataSyncId = dataSyncId,
+            accountNamePref = accountNamePref,
+            accountEmail = accountEmail,
+            accountChannelHandle = accountChannelHandle,
+            onInnerTubeCookieChange = onInnerTubeCookieChange,
+            onPoTokenChange = onPoTokenChange,
+            onVisitorDataChange = onVisitorDataChange,
+            onDataSyncIdChange = onDataSyncIdChange,
+            onAccountNameChange = onAccountNameChange,
+            onAccountEmailChange = onAccountEmailChange,
+            onAccountChannelHandleChange = onAccountChannelHandleChange,
+            onDismiss = { showTokenEditor = false },
+        )
+    }
+
+    if (showPlaylistDialog) {
+        PlaylistSelectionDialog(onDismiss = { showPlaylistDialog = false })
+    }
+
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text("¿Cerrar sesión de YouTube?") },
+            text = {
+                Text(
+                    text = "Tu biblioteca descargada se queda en el dispositivo. Dejarás de sincronizar con YouTube Music.",
+                    fontSize = 14.sp,
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                        onInnerTubeCookieChange("")
+                        SessionCrypto.getSecurePreferences(context).edit().clear().apply()
+                        forgetAccount(context)
+                    },
+                ) { Text("Cerrar sesión") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            },
+        )
+    }
+
+    Column(
+        Modifier
+            .windowInsetsPadding(LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom))
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp),
+    ) {
+        Spacer(Modifier.windowInsetsPadding(LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Top)))
+
+        // Tu cuenta
+        DezzySectionLabel("Tu cuenta")
+        val accountRows = if (isLoggedIn) 4 else 1
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            DezzySettingsRow(
+                title = if (isLoggedIn) accountName else "YouTube Music",
+                subtitle = when {
+                    isLoggedIn && accountEmail.isNotBlank() -> "YouTube Music, $accountEmail"
+                    isLoggedIn -> "YouTube Music"
+                    else -> "Inicia sesión para sincronizar tu biblioteca"
+                },
+                shape = dezzyItemShape(0, accountRows),
+                leading = {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (isLoggedIn && !accountImageUrl.isNullOrBlank()) {
+                            AsyncImage(
+                                model = accountImageUrl,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.size(40.dp),
+                            )
+                        } else {
+                            Icon(
+                                painter = painterResource(R.drawable.person),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(22.dp),
+                            )
+                        }
+                    }
+                },
+                trailing = { DezzyStatusChip(if (isLoggedIn) "Conectado" else "Conectar", active = isLoggedIn) },
+                onClick = {
+                    if (isLoggedIn) navController.navigate("account") else navController.navigate(buildLoginRoute())
+                },
+            )
+            if (isLoggedIn) {
+                DezzySettingsSwitchRow(
+                    icon = R.drawable.add_circle,
+                    title = "Usar la cuenta para explorar",
+                    subtitle = stringResource(R.string.use_login_for_browse_desc),
+                    checked = useLoginForBrowse,
+                    onCheckedChange = {
+                        YouTube.useLoginForBrowse = it
+                        onUseLoginForBrowseChange(it)
+                    },
+                    shape = dezzyItemShape(1, accountRows),
+                )
+                DezzySettingsSwitchRow(
+                    icon = R.drawable.cached,
+                    title = "Sincronizar biblioteca",
+                    subtitle = "Me gusta, playlists y suscripciones con YouTube Music",
+                    checked = ytmSync,
+                    onCheckedChange = onYtmSyncChange,
+                    shape = dezzyItemShape(2, accountRows),
+                )
+                DezzySettingsRow(
+                    title = "Playlists a sincronizar",
+                    subtitle = "Elige qué playlists se descargan a tu biblioteca",
+                    shape = dezzyItemShape(3, accountRows),
+                    leading = { DezzySettingsIcon(R.drawable.playlist_add, DezzyIconTone.SECONDARY) },
+                    onClick = { showPlaylistDialog = true },
+                )
+            }
+        }
+
+        // Servicios conectados
+        DezzySectionLabel("Servicios conectados")
+        val services = listOf(
+            Triple("Spotify", R.drawable.login, spotifyConnected) to "settings/spotify",
+            Triple("Discord", R.drawable.discord, discordToken.isNotEmpty()) to "settings/discord",
+            Triple("Last.fm", R.drawable.music_note, lastFmSession.isNotEmpty()) to "settings/lastfm",
+            Triple("ListenBrainz", R.drawable.headphones, listenBrainzToken.isNotEmpty()) to "settings/integration",
+        )
+        val serviceSubtitles = mapOf(
+            "Spotify" to "Importa playlists y tu biblioteca",
+            "Discord" to "Muestra lo que escuchas en tu perfil",
+            "Last.fm" to "Registra tus escuchas (scrobbling)",
+            "ListenBrainz" to "Registro abierto de escuchas",
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            services.forEachIndexed { index, (info, route) ->
+                val (name, icon, connected) = info
+                DezzySettingsRow(
+                    title = name,
+                    subtitle = serviceSubtitles[name],
+                    shape = dezzyItemShape(index, services.size),
+                    leading = { DezzySettingsIcon(icon, if (connected) DezzyIconTone.PRIMARY else DezzyIconTone.NEUTRAL) },
+                    trailing = { DezzyStatusChip(if (connected) "Conectado" else "Conectar", active = connected) },
+                    onClick = { navController.navigate(route) },
+                )
+            }
+        }
+
+        // Más funciones de cuenta
+        DezzySectionLabel("Más")
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            DezzySettingsRow(
+                title = "Escuchar juntos",
+                subtitle = "Salas para escuchar en sincronía con amigos",
+                shape = dezzyItemShape(0, 3),
+                leading = { DezzySettingsIcon(R.drawable.fire, DezzyIconTone.TERTIARY) },
+                onClick = { navController.navigate("settings/music_together") },
+            )
+            DezzySettingsRow(
+                title = "Descarga lossless",
+                subtitle = "FLAC y alta resolución",
+                shape = dezzyItemShape(1, 3),
+                leading = { DezzySettingsIcon(R.drawable.download, DezzyIconTone.TERTIARY) },
+                onClick = { navController.navigate("settings/lossless") },
+            )
+            DezzySettingsRow(
+                title = "Todas las integraciones",
+                subtitle = "Discord, Last.fm, ListenBrainz y otras",
+                shape = dezzyItemShape(2, 3),
+                leading = { DezzySettingsIcon(R.drawable.integration, DezzyIconTone.NEUTRAL) },
+                onClick = { navController.navigate("settings/integration") },
+            )
+        }
+
+        // Avanzado
+        DezzySectionLabel("Avanzado")
+        val advancedRows = if (isLoggedIn) 2 else 1
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            DezzySettingsRow(
+                title = "Inicio de sesión avanzado",
+                subtitle = "Editar cookie, visitor data y datos de la cuenta",
+                shape = dezzyItemShape(0, advancedRows),
+                leading = { DezzySettingsIcon(R.drawable.token, DezzyIconTone.NEUTRAL) },
+                onClick = { showTokenEditor = true },
+            )
+            if (isLoggedIn) {
+                DezzySettingsRow(
+                    title = "Cerrar sesión de YouTube",
+                    subtitle = accountEmail.ifBlank { null },
+                    shape = dezzyItemShape(1, advancedRows),
+                    leading = { DezzySettingsIcon(R.drawable.logout, DezzyIconTone.ERROR) },
+                    onClick = { showLogoutDialog = true },
+                )
+            }
+        }
+
+        Spacer(Modifier.height(32.dp))
+    }
+
+    TopAppBar(
+        title = { Text("Cuentas y servicios") },
+        navigationIcon = {
+            com.dezzy.music.ui.component.IconButton(
+                onClick = navController::navigateUp,
+                onLongClick = navController::backToMain,
+            ) {
+                Icon(painterResource(R.drawable.arrow_back), contentDescription = null)
+            }
+        },
     )
 }

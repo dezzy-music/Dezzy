@@ -1,0 +1,698 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dezzy · Fase 10 · Red social sin servidores</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<style>
+:root{
+  --primary:#9C3F48; --on-primary:#FFFFFF;
+  --primary-container:#FFDADB; --on-primary-container:#40000E;
+  --secondary:#775657; --secondary-container:#FFDADA; --on-secondary-container:#2C1516;
+  --tertiary-container:#F8DEB0; --on-tertiary-container:#271900;
+  --surface:#FFF8F7; --on-surface:#22191A; --on-surface-variant:#534344;
+  --outline:#857373; --outline-variant:#D8C1C2;
+  --sc-lowest:#FFFFFF; --sc-low:#FEF1F1; --sc:#F8EBEB; --sc-high:#F3E5E5; --sc-highest:#EDE0E0;
+  --inverse:#382E2E; --on-inverse:#FFEDEC; --inverse-primary:#FFB3B5;
+  --page:#F4EFEF; --ink:#22191A; --muted:#5E5051;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--page);color:var(--ink);font-family:Roboto,system-ui,sans-serif;line-height:1.45}
+.ms{font-family:'Material Symbols Outlined';font-weight:400;font-style:normal;font-size:24px;line-height:1;display:inline-block;
+  letter-spacing:normal;text-transform:none;white-space:nowrap;direction:ltr;-webkit-font-smoothing:antialiased;
+  font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;user-select:none}
+.ms.f{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+.s16{font-size:16px!important}.s18{font-size:18px!important}.s20{font-size:20px!important}.s28{font-size:28px!important}.s32{font-size:32px!important}.s40{font-size:40px!important}
+
+.wrap{max-width:1240px;margin:0 auto;padding:40px 16px 80px}
+header.top h1{font-family:'Roboto Flex',Roboto;font-size:36px;font-weight:700;letter-spacing:-.5px}
+header.top p.lead{font-size:16px;color:var(--muted);max-width:860px;margin-top:8px}
+.today{margin-top:20px;background:#fff;border:1px solid var(--outline-variant);border-radius:20px;padding:18px 20px;font-size:14px;max-width:980px}
+.today h4{font-size:15px;margin-bottom:6px}
+.today ul{padding-left:18px}.today li{margin:3px 0}
+section.sketch{margin-top:56px;padding-top:28px;border-top:3px solid var(--primary)}
+.sk-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.sk-tag{font:700 13px Roboto;letter-spacing:1px;background:var(--primary);color:#fff;border-radius:8px;padding:4px 10px}
+.sk-head h3{font-family:'Roboto Flex',Roboto;font-size:28px;font-weight:700}
+.sk-head p{flex-basis:100%;color:var(--muted);font-size:15px;max-width:880px}
+.sk-body{display:flex;gap:28px;flex-wrap:wrap;margin-top:24px;align-items:flex-start}
+.phones{display:flex;gap:28px;flex-wrap:wrap}
+.cap{font-size:13px;color:var(--muted);text-align:center;margin-top:12px;max-width:360px}
+.notes{flex:1 1 300px;min-width:280px;background:#fff;border:1px solid var(--outline-variant);border-radius:20px;padding:20px;font-size:14px}
+.notes h4{font-size:15px;margin:14px 0 6px}.notes h4:first-child{margin-top:0}
+.notes ul{padding-left:18px}.notes li{margin:3px 0}
+.notes code,.today code{font-size:12.5px;background:var(--sc);border-radius:4px;padding:1px 4px}
+.pro{color:#2E6B3A}.con{color:#9C3F48}
+
+/* Teléfono: 1px = 1dp */
+.phone{width:360px;height:780px;border-radius:32px;background:var(--surface);overflow:hidden;position:relative;
+  box-shadow:0 0 0 10px #1d1b1b,0 18px 40px rgba(0,0,0,.25);display:flex;flex-direction:column;color:var(--on-surface)}
+.statusbar{height:28px;flex:none;background:color-mix(in srgb,var(--primary) 92%,transparent);color:#fff;display:flex;align-items:center;
+  justify-content:space-between;padding:0 16px;font-size:13px;font-weight:500;z-index:5}
+.statusbar .ic{display:flex;gap:4px}
+.gesture{height:20px;flex:none;background:color-mix(in srgb,var(--primary) 92%,transparent);display:flex;align-items:center;justify-content:center;z-index:5}
+.gesture i{width:108px;height:4px;border-radius:2px;background:rgba(255,255,255,.9)}
+.content{flex:1;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.scrim{position:absolute;inset:0;background:rgba(34,25,26,.38);z-index:2}
+
+.art{border-radius:8px;flex:none;position:relative;overflow:hidden}
+.a1{background:linear-gradient(135deg,#7E2F3A,#E0828A)}.a2{background:linear-gradient(135deg,#2E5E63,#8CC1BC)}
+.a3{background:linear-gradient(135deg,#5B4A7A,#B9A6D9)}.a4{background:linear-gradient(135deg,#6E5A1F,#E1C27A)}
+.a5{background:linear-gradient(135deg,#334A66,#96B2D6)}.a6{background:linear-gradient(135deg,#4F6331,#B6CC8C)}
+.a7{background:linear-gradient(135deg,#7A3E22,#E6A17E)}.a8{background:linear-gradient(135deg,#3C3A3B,#A39D9E)}
+.art .ms{position:absolute;inset:0;display:grid;place-items:center;color:rgba(255,255,255,.8)}
+.mosaic{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;border-radius:12px;overflow:hidden;flex:none}
+.mosaic i{display:block}
+
+.icon-btn{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;color:var(--on-surface-variant);flex:none;position:relative}
+.btn{height:40px;border-radius:20px;padding:0 20px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:500;flex:none;white-space:nowrap}
+.btn.filled{background:var(--primary);color:var(--on-primary)}
+.btn.tonal{background:var(--secondary-container);color:var(--on-secondary-container)}
+.btn.outlined{border:1px solid var(--outline);color:var(--primary)}
+.btn.text{color:var(--primary);padding:0 12px}
+.btn .ms{font-size:18px}
+.round{width:56px;height:56px;border-radius:50%;background:var(--primary);color:#fff;display:grid;place-items:center;flex:none}
+.chips{display:flex;gap:8px;padding:4px 16px 8px;overflow:hidden;flex:none}
+.chip{height:32px;border-radius:8px;border:1px solid var(--outline-variant);padding:0 12px;display:flex;align-items:center;gap:6px;
+  font-size:14px;font-weight:500;color:var(--on-surface-variant);white-space:nowrap;flex:none}
+.chip.sel{background:var(--secondary-container);border-color:transparent;color:var(--on-secondary-container)}
+.chip .ms{font-size:18px}
+.tab{display:flex;align-items:center;gap:4px;padding:8px 4px;min-height:64px;flex:none}
+.tab .t{flex:1;min-width:0;padding-left:4px}
+.tab h1{font-size:22px;font-weight:400;line-height:28px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tab .sub{font-size:13px;color:var(--on-surface-variant)}
+.search{height:48px;border-radius:24px;background:var(--sc-high);display:flex;align-items:center;gap:10px;padding:0 6px 0 16px;
+  font-size:16px;color:var(--on-surface-variant);flex:none}
+.search .ph{flex:1}
+.search.focus{background:var(--sc-lowest);box-shadow:inset 0 0 0 2px var(--primary);color:var(--on-surface)}
+.caret{display:inline-block;width:2px;height:20px;background:var(--primary);vertical-align:-4px;margin-left:1px}
+
+.row{display:flex;align-items:center;gap:12px;padding:6px 4px 6px 16px;min-height:64px}
+.row .art{width:48px;height:48px}
+.row .tx{flex:1;min-width:0}
+.row .tt{font-size:16px;line-height:22px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .ss{font-size:14px;color:var(--on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:4px}
+.e{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:3px;background:var(--sc-highest);color:var(--on-surface-variant);font-size:10px;font-weight:700;flex:none}
+.why{font-size:12px;color:var(--primary);font-weight:500}
+.add{width:48px;height:48px;display:grid;place-items:center;flex:none}
+.add span.c{width:32px;height:32px;border-radius:50%;border:2px solid var(--outline);display:grid;place-items:center;color:var(--on-surface-variant)}
+.add span.c .ms{font-size:20px}
+.add.on span.c{background:var(--primary);border-color:var(--primary);color:#fff}
+.chk{width:24px;height:24px;border-radius:6px;border:2px solid var(--outline);flex:none;display:grid;place-items:center;margin-right:12px}
+.chk.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.chk .ms{font-size:18px}
+.sec{display:flex;align-items:center;padding:14px 4px 4px 16px;flex:none}
+.sec h5{flex:1;font-size:16px;font-weight:500}
+.sec .sub{font-size:13px;color:var(--on-surface-variant);font-weight:400}
+.divider{height:1px;background:var(--outline-variant);opacity:.6;flex:none}
+.handle{width:32px;height:4px;border-radius:2px;background:var(--outline);opacity:.5;margin:10px auto 6px}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--sc-low);border-radius:28px 28px 0 0;z-index:3;display:flex;flex-direction:column;overflow:hidden}
+.snack{position:absolute;left:12px;right:12px;bottom:12px;background:var(--inverse);color:var(--on-inverse);border-radius:8px;min-height:48px;
+  display:flex;align-items:center;padding:0 8px 0 16px;font-size:14px;z-index:4;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.snack .t{flex:1}
+.snack b{color:var(--inverse-primary);font-weight:500;padding:0 8px}
+.mini{height:64px;flex:none;background:var(--sc-high);display:flex;align-items:center;gap:12px;padding:0 8px 0 12px;border-top:1px solid var(--outline-variant)}
+.mini .art{width:44px;height:44px}
+.mini .tx{flex:1;min-width:0;font-size:14px}
+.mini .tx b{font-weight:500;display:block}
+.mini .tx span{color:var(--on-surface-variant);font-size:13px}
+.navbar{height:72px;flex:none;background:var(--sc);display:flex;justify-content:space-around;align-items:center;font-size:12px;font-weight:500;color:var(--on-surface-variant)}
+.navbar div{display:flex;flex-direction:column;align-items:center;gap:4px}
+.navbar .pillc{width:56px;height:32px;border-radius:16px;display:grid;place-items:center}
+.navbar .on .pillc{background:var(--secondary-container);color:var(--on-secondary-container)}
+.navbar .on{color:var(--on-surface)}
+.ph-head{display:flex;gap:16px;padding:8px 16px 4px;align-items:flex-end;flex:none}
+.ph-head h2{font-size:24px;font-weight:700;line-height:30px}
+.ph-head .meta{font-size:14px;color:var(--on-surface-variant)}
+.actions{display:flex;align-items:center;gap:4px;padding:8px 12px 8px 8px;flex:none}
+.hl{box-shadow:0 0 0 3px #F6A04D;border-radius:inherit}
+.callout{position:absolute;background:#F6A04D;color:#2b1a00;font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px;z-index:6;letter-spacing:.3px}
+.tabs{display:flex;border-bottom:1px solid var(--outline-variant);flex:none;padding:0 4px}
+.tabs div{padding:12px 12px 10px;font-size:14px;font-weight:500;color:var(--on-surface-variant);position:relative;white-space:nowrap}
+.tabs div.on{color:var(--primary)}
+.tabs div.on::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:3px;border-radius:3px 3px 0 0;background:var(--primary)}
+.cardrow{display:flex;gap:12px;padding:4px 16px 8px;overflow:hidden;flex:none}
+.scard{width:132px;flex:none}
+.scard .art{width:132px;height:132px;border-radius:12px}
+.scard .t{font-size:14px;font-weight:500;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scard .s{font-size:12px;color:var(--on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plus-on-art{position:absolute;right:6px;bottom:6px;width:32px;height:32px;border-radius:50%;background:#fff;color:var(--primary);display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.plus-on-art.on{background:var(--primary);color:#fff}
+.tray{flex:none;background:var(--sc-highest);display:flex;align-items:center;gap:10px;padding:10px 12px 10px 16px;border-radius:24px 24px 0 0;box-shadow:0 -4px 14px rgba(0,0,0,.08)}
+.stack{display:flex}
+.stack .art{width:36px;height:36px;border-radius:8px;border:2px solid var(--sc-highest);margin-left:-12px}
+.stack .art:first-child{margin-left:0}
+.tray .tx{flex:1;font-size:14px;min-width:0}
+.tray .tx b{display:block;font-size:15px}
+.tray .tx span{color:var(--on-surface-variant);font-size:13px}
+.empty-card{margin:12px 16px;background:var(--sc-low);border:1px dashed var(--outline);border-radius:20px;padding:20px;text-align:center}
+.empty-card h6{font-size:18px;font-weight:500;margin:8px 0 4px}
+.empty-card p{font-size:14px;color:var(--on-surface-variant)}
+.inline-panel{margin:8px 12px 0;background:var(--sc-low);border-radius:24px;padding:4px 0 8px;flex:none}
+.pulse{background:color-mix(in srgb,var(--primary-container) 70%,transparent)}
+/* ---- Fase 10: red social P2P ---- */
+.av{border-radius:50%;flex:none;display:grid;place-items:center;color:#fff;font-weight:700;position:relative}
+.av.g1{background:linear-gradient(135deg,#9C3F48,#E58B92)}.av.g2{background:linear-gradient(135deg,#2E5E63,#7FB8B2)}
+.av.g3{background:linear-gradient(135deg,#5B4A7A,#B39FD6)}.av.g4{background:linear-gradient(135deg,#7A5A12,#E1BF6E)}
+.av.g5{background:linear-gradient(135deg,#334A66,#8FAED6)}.av.g6{background:linear-gradient(135deg,#4F6331,#ADC683)}
+.av.ring{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--primary)}
+.av .dot{position:absolute;right:0;bottom:0;width:14px;height:14px;border-radius:50%;background:#3E8E4F;border:2px solid var(--surface)}
+.lock{display:inline-flex;align-items:center;gap:3px;color:#2E6B3A;font-size:12px;font-weight:500}
+.lock .ms{font-size:14px}
+.netchip{display:inline-flex;align-items:center;gap:6px;height:28px;border-radius:14px;padding:0 10px 0 8px;font-size:12px;font-weight:500;
+  background:#DDEFE0;color:#1E4D28;white-space:nowrap}
+.netchip .ms{font-size:16px}
+.netchip.warn{background:#FCE8C8;color:#5A3A00}
+.now{width:76px;flex:none;text-align:center}
+.now .av{width:60px;height:60px;margin:6px auto 6px;font-size:20px}
+.now b{display:block;font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.now span{display:block;font-size:12px;color:var(--on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chatrow{display:flex;align-items:center;gap:12px;padding:8px 16px;min-height:72px}
+.chatrow .av{width:48px;height:48px;font-size:17px}
+.chatrow .tx{flex:1;min-width:0}
+.chatrow .tt{font-size:16px;font-weight:500;display:flex;gap:6px;align-items:center}
+.chatrow .tt i{font-style:normal;margin-left:auto;font-size:12px;font-weight:400;color:var(--on-surface-variant)}
+.chatrow .ss{font-size:14px;color:var(--on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;gap:4px;align-items:center}
+.badge{min-width:20px;height:20px;border-radius:10px;background:var(--primary);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 5px;flex:none}
+.fab{position:absolute;right:16px;bottom:152px;height:56px;border-radius:16px;background:var(--primary-container);color:var(--on-primary-container);
+  display:flex;align-items:center;gap:10px;padding:0 18px 0 16px;font-size:15px;font-weight:500;box-shadow:0 4px 10px rgba(0,0,0,.18);z-index:3}
+.bubbles{flex:1;padding:8px 12px;display:flex;flex-direction:column;gap:8px;overflow:hidden;background:var(--sc-low)}
+.bub{max-width:78%;padding:8px 12px;border-radius:18px;font-size:15px;line-height:20px;background:var(--sc-lowest);align-self:flex-start;border-bottom-left-radius:6px}
+.bub.me{align-self:flex-end;background:var(--primary-container);color:var(--on-primary-container);border-radius:18px;border-bottom-right-radius:6px}
+.bub small{display:block;font-size:11px;color:var(--on-surface-variant);text-align:right;margin-top:2px}
+.bub.me small{color:#7A3A40}
+.e2e{margin:4px auto 4px;max-width:92%;background:#FFF4D6;color:#4A3600;font-size:12.5px;border-radius:10px;padding:8px 10px;text-align:center;line-height:17px}
+.songcard{display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.6);border-radius:12px;padding:6px 8px 6px 6px;margin-bottom:4px}
+.songcard .art{width:44px;height:44px}
+.songcard .t{flex:1;min-width:0;font-size:14px;line-height:18px}
+.songcard .t b{display:block;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.songcard .play{width:36px;height:36px;border-radius:50%;background:var(--primary);color:#fff;display:grid;place-items:center;flex:none}
+.composer{flex:none;display:flex;align-items:center;gap:6px;padding:8px 8px 8px 8px;background:var(--surface)}
+.composer .field{flex:1;height:48px;border-radius:24px;background:var(--sc-high);display:flex;align-items:center;gap:6px;padding:0 6px 0 14px;font-size:15px;color:var(--on-surface-variant)}
+.composer .field span.p{flex:1}
+.send{width:48px;height:48px;border-radius:50%;background:var(--primary);color:#fff;display:grid;place-items:center;flex:none}
+.hero-ic{width:96px;height:96px;border-radius:28px;background:var(--primary-container);color:var(--on-primary-container);display:grid;place-items:center;margin:8px auto 18px}
+.onb{flex:1;padding:16px 24px 20px;display:flex;flex-direction:column}
+.onb h2{font-size:28px;line-height:34px;font-weight:400;text-align:center}
+.onb p.l{font-size:15px;color:var(--on-surface-variant);text-align:center;margin-top:8px}
+.feat{display:flex;gap:14px;align-items:flex-start;margin-top:16px}
+.feat .ic{width:40px;height:40px;border-radius:50%;background:var(--sc-high);display:grid;place-items:center;color:var(--primary);flex:none}
+.feat b{display:block;font-size:15px;font-weight:500}
+.feat span{font-size:13.5px;color:var(--on-surface-variant);line-height:18px;display:block}
+.tf{border:1px solid var(--outline);border-radius:4px;height:56px;display:flex;align-items:center;padding:0 16px;font-size:16px;position:relative;margin-top:22px}
+.tf label{position:absolute;top:-9px;left:12px;background:var(--surface);padding:0 4px;font-size:12px;color:var(--primary)}
+.tf.focus{border:2px solid var(--primary)}
+.full{width:100%;height:48px;border-radius:24px}
+.card{margin:8px 16px;background:var(--sc-lowest);border:1px solid var(--outline-variant);border-radius:20px;padding:14px 16px}
+.post{margin:6px 12px;background:var(--sc-lowest);border-radius:20px;padding:12px 14px 6px;border:1px solid color-mix(in srgb,var(--outline-variant) 60%,transparent)}
+.post .hd{display:flex;gap:10px;align-items:center}
+.post .hd .av{width:40px;height:40px;font-size:15px}
+.post .hd .n{flex:1;min-width:0;font-size:14px;line-height:18px}
+.post .hd .n b{font-weight:500;font-size:15px}
+.post .hd .n span{color:var(--on-surface-variant)}
+.post p.c{font-size:15px;margin:8px 0;line-height:20px}
+.post .songcard{background:var(--sc)}
+.post .ft{display:flex;gap:2px;color:var(--on-surface-variant);font-size:13px;align-items:center;margin-left:-8px}
+.post .ft div{display:flex;align-items:center;gap:4px;height:40px;padding:0 8px}
+.post .ft .ms{font-size:20px}
+.post .ft .on{color:var(--primary)}
+.compose-pill{margin:6px 12px 6px;height:52px;border-radius:26px;background:var(--sc-high);display:flex;align-items:center;gap:10px;padding:0 6px 0 8px;font-size:15px;color:var(--on-surface-variant);flex:none}
+.compose-pill .av{width:36px;height:36px;font-size:13px}
+.compose-pill .p{flex:1}
+.prof{padding:4px 16px 0;flex:none}
+.prof .row1{display:flex;align-items:center;gap:16px}
+.prof .av{width:84px;height:84px;font-size:30px}
+.prof .stats{display:flex;gap:18px;font-size:13px;color:var(--on-surface-variant)}
+.prof .stats b{display:block;font-size:18px;color:var(--on-surface);font-weight:700}
+.prof h2{font-size:22px;font-weight:700;margin-top:10px}
+.key{font-family:ui-monospace,Consolas,monospace;font-size:12px;background:var(--sc);border-radius:6px;padding:2px 6px;color:var(--on-surface-variant)}
+.status{display:flex;align-items:center;gap:10px;background:var(--sc-low);border-radius:16px;padding:8px 10px;margin-top:10px}
+.status .art{width:40px;height:40px}
+.status .t{flex:1;min-width:0;font-size:13px;line-height:17px}
+.status .t b{display:block;font-size:14px;font-weight:500}
+.eq{display:inline-flex;gap:2px;align-items:flex-end;height:14px;margin-right:4px}
+.eq i{width:3px;background:var(--primary);border-radius:1px}
+.timeline{margin:6px 16px 4px;height:44px;position:relative;flex:none}
+.timeline .bar{position:absolute;left:0;right:0;top:30px;height:4px;border-radius:2px;background:var(--sc-highest)}
+.timeline .prog{position:absolute;left:0;width:38%;top:30px;height:4px;border-radius:2px;background:var(--primary)}
+.timeline .pin{position:absolute;top:0;transform:translateX(-50%)}
+.timeline .pin .av{width:24px;height:24px;font-size:10px;border:2px solid var(--surface)}
+.timeline .pin::after{content:"";position:absolute;left:50%;top:24px;width:2px;height:8px;background:var(--outline);transform:translateX(-50%)}
+.tc{display:flex;gap:10px;padding:8px 16px}
+.tc .av{width:36px;height:36px;font-size:13px}
+.tc .b{flex:1;min-width:0;font-size:14px;line-height:19px}
+.tc .b b{font-weight:500}
+.tc .ts{display:inline-block;font-size:12px;font-weight:700;color:var(--primary);background:var(--primary-container);border-radius:6px;padding:0 6px;margin-right:4px}
+.seg{display:flex;margin:4px 16px 8px;border:1px solid var(--outline);border-radius:20px;overflow:hidden;flex:none}
+.seg div{flex:1;height:40px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:14px;font-weight:500;border-left:1px solid var(--outline)}
+.seg div:first-child{border-left:none}
+.seg div.on{background:var(--secondary-container);color:var(--on-secondary-container)}
+.seg .ms{font-size:18px}
+.radar{margin:4px 16px 8px;height:200px;border-radius:24px;background:radial-gradient(circle at 50% 55%,var(--primary-container) 0 18%,transparent 18.5%),radial-gradient(circle at 50% 55%,transparent 0 33%,color-mix(in srgb,var(--primary) 18%,transparent) 33.4% 34%,transparent 34.4%),radial-gradient(circle at 50% 55%,transparent 0 52%,color-mix(in srgb,var(--primary) 14%,transparent) 52.4% 53%,transparent 53.4%),var(--sc-low);position:relative;flex:none;overflow:hidden}
+.radar .me{position:absolute;left:50%;top:55%;transform:translate(-50%,-50%)}
+.radar .p{position:absolute;text-align:center;font-size:11px;font-weight:500;width:70px;margin-left:-35px}
+.radar .p .av{width:40px;height:40px;margin:0 auto 2px;font-size:14px}
+.radar .lbl{position:absolute;left:14px;top:12px;font-size:13px;font-weight:500;color:var(--on-surface-variant);display:flex;gap:6px;align-items:center}
+.set{display:flex;align-items:center;gap:14px;padding:10px 16px;min-height:60px}
+.set .ic{width:40px;height:40px;border-radius:50%;background:var(--sc-high);display:grid;place-items:center;color:var(--primary);flex:none}
+.set .tx{flex:1;min-width:0}
+.set .tx b{display:block;font-size:16px;font-weight:400}
+.set .tx span{display:block;font-size:13.5px;color:var(--on-surface-variant);line-height:18px}
+.sw{width:52px;height:32px;border-radius:16px;background:var(--primary);position:relative;flex:none}
+.sw::after{content:"";position:absolute;right:4px;top:4px;width:24px;height:24px;border-radius:50%;background:#fff}
+.sw.off{background:var(--sc-highest);box-shadow:inset 0 0 0 2px var(--outline)}
+.sw.off::after{left:6px;right:auto;top:8px;width:16px;height:16px;background:var(--outline)}
+.grp{margin:4px 12px;background:var(--sc-lowest);border-radius:24px;overflow:hidden;flex:none}
+.grp .set+.set{border-top:1px solid color-mix(in srgb,var(--outline-variant) 50%,transparent)}
+.qr{width:120px;height:120px;border-radius:12px;flex:none;background:
+  conic-gradient(from 90deg at 18% 18%,#22191A 0 25%,transparent 0) 0 0/20px 20px,
+  repeating-linear-gradient(90deg,#22191A 0 6px,transparent 6px 11px),#fff;opacity:.9;border:8px solid #fff;box-shadow:0 0 0 1px var(--outline-variant)}
+.words{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px}
+.words span{background:var(--sc);border-radius:8px;padding:6px 6px;font-size:12.5px;font-family:ui-monospace,Consolas,monospace}
+.words span i{font-style:normal;color:var(--outline);margin-right:4px}
+/* diagrama */
+.arch{margin-top:20px;background:#fff;border:1px solid var(--outline-variant);border-radius:20px;padding:20px;max-width:1180px}
+.arch h4{font-size:16px;margin-bottom:12px}
+.diagram{display:grid;grid-template-columns:1fr 60px 1fr 60px 1fr;align-items:center;gap:0}
+.box{border-radius:16px;padding:14px;font-size:13.5px;line-height:19px;min-height:150px}
+.box h5{font-size:15px;margin-bottom:6px;display:flex;gap:8px;align-items:center}
+.box.dev{background:var(--primary-container);color:var(--on-primary-container)}
+.box.rel{background:var(--sc)}
+.box.near{background:#DDEFE0;color:#163D20}
+.arrow{text-align:center;color:var(--outline);font-size:12px}
+.arrow .ms{font-size:32px;display:block}
+table.cmp{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:8px}
+table.cmp th,table.cmp td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--outline-variant);vertical-align:top}
+table.cmp th{font-size:13px;color:var(--muted);font-weight:500}
+table.cmp tr.pick td{background:#F1F8F2}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px;max-width:1180px}
+.two .today{max-width:none;margin-top:0}
+@media (max-width:820px){.diagram{grid-template-columns:1fr}.arrow .ms{transform:rotate(90deg)}.two{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>Fase 10 · Red social sin servidores</h1>
+  <p class="lead">Volver a encender Amigos, Comunidad y Mensajes sin Supabase y sin pagar nube. Tu cuenta vive en tu teléfono, los mensajes se cifran en el teléfono antes de salir, y la red la sostienen relés públicos gratuitos e intercambiables (protocolo abierto Nostr) más conexión directa con quien tengas cerca. Abajo, primero cómo funcionaría, luego tres propuestas de interfaz.</p>
+
+  <div class="arch">
+    <h4>Cómo funcionaría (igual en las tres propuestas)</h4>
+    <div class="diagram">
+      <div class="box dev">
+        <h5><span class="ms">smartphone</span>Tu teléfono</h5>
+        • Crea tu <b>identidad</b>: un par de claves (como una cartera). La privada no sale nunca del Android Keystore.<br>
+        • Respaldo con <b>12 palabras</b>; con ellas recuperas la cuenta en otro móvil.<br>
+        • Cifra cada mensaje privado (NIP-44 + «gift wrap» NIP-17: ni el relé ve quién habla con quién).<br>
+        • Guarda chats, amigos y publicaciones en una base local cifrada.
+      </div>
+      <div class="arrow"><span class="ms">sync_alt</span>firmado<br>y cifrado</div>
+      <div class="box rel">
+        <h5><span class="ms">hub</span>Relés públicos (Nostr)</h5>
+        • Cientos de relés gratuitos que ya existen y mantienen otros. La app usa 5–8 a la vez; si uno cae, sigue con los demás.<br>
+        • Sólo guardan sobres firmados: <b>no pueden leer</b> los privados ni falsificar tus publicaciones.<br>
+        • Cualquiera puede añadir el suyo (o un amigo montarlo en un PC viejo).<br>
+        • Coste para ti: <b>0</b>.
+      </div>
+      <div class="arrow"><span class="ms">sync_alt</span>directo,<br>sin internet</div>
+      <div class="box near">
+        <h5><span class="ms">bluetooth_searching</span>Cerca de ti</h5>
+        • Bluetooth / Wi-Fi Direct (Nearby Connections) para encontrar a quien está al lado.<br>
+        • Añadir amigo con QR, compartir canciones y salas «Juntos» locales <b>sin datos</b>.<br>
+        • Los mensajes pendientes se reenvían en cuanto haya conexión.
+      </div>
+    </div>
+  </div>
+
+  <div class="two">
+    <div class="today">
+      <h4>Qué se migra (todo lo social que hoy va a Supabase)</h4>
+      <ul>
+        <li><b>Perfil y cuenta</b> → evento de perfil firmado (nombre, foto, bio). Sin correo, sin contraseña, sin Google obligatorio.</li>
+        <li><b>Amigos / seguir</b> → lista de contactos firmada; «amigos» = os seguís mutuamente.</li>
+        <li><b>Mensajes</b> → DMs cifrados de extremo a extremo.</li>
+        <li><b>Escuchando ahora</b> → estado de música efímero (caduca solo), visible para amigos o para todos.</li>
+        <li><b>Comunidad</b> → publicaciones, me gusta, comentarios y comentarios en un momento de la canción, todo como eventos firmados.</li>
+        <li><b>Juntos</b> → la sincronización de la sala viaja en eventos efímeros cifrados para los miembros.</li>
+        <li><b>Contactos de la agenda</b>: ya no se suben teléfonos (ni con hash); se invita por enlace o QR.</li>
+      </ul>
+    </div>
+    <div class="today">
+      <h4>Límites honestos (para decidir con los ojos abiertos)</h4>
+      <ul>
+        <li>«Sin servidores» al 100 % no existe en móviles: Android mata las apps en segundo plano y las redes móviles no aceptan conexiones entrantes. Los relés son de terceros, pero gratuitos, reemplazables y no pueden leer lo privado.</li>
+        <li>Si pierdes el teléfono <b>y</b> las 12 palabras, la cuenta se pierde. No hay «olvidé mi contraseña».</li>
+        <li>El cifrado es fuerte pero no idéntico a Signal: sin «forward secrecy» completa (llegará con MLS cuando madure).</li>
+        <li>Moderación sin dueño central: silenciar, bloquear y reportar en tu teléfono, más listas de bloqueo compartidas.</li>
+        <li>Los recuentos (seguidores, me gusta) son aproximados: se cuentan con lo que devuelven los relés.</li>
+        <li><b>Mapa musical:</b> los rankings por país necesitan sumar datos de mucha gente. Se puede sacar de las publicaciones públicas de «escuchando ahora» o de las listas de YouTube; está por decidir.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="arch">
+    <h4>Alternativas que descarté</h4>
+    <table class="cmp">
+      <tr><th>Opción</th><th>Por qué no (o sólo como apoyo)</th></tr>
+      <tr class="pick"><td><b>Nostr + Nearby + base local cifrada</b> (elegida)</td><td>Funciona hoy para millones, coste cero, código 100 % dentro de la app, sin migraciones ni terminales. Hay clientes Android en Kotlin de referencia.</td></tr>
+      <tr><td>DHT pura tipo BitTorrent / libp2p</td><td>En móvil la NAT y el ahorro de batería la rompen; igualmente necesita nodos de arranque siempre encendidos.</td></tr>
+      <tr><td>Matrix / ActivityPub (Mastodon)</td><td>Requieren tener (y pagar) un servidor propio o depender del de otro con cuenta.</td></tr>
+      <tr><td>WebRTC puro</td><td>Necesita servidor de señalización y TURN para conectar móviles entre redes distintas.</td></tr>
+      <tr><td>IPFS / Briar (Tor)</td><td>IPFS necesita nodos que fijen el contenido; Briar/Tor gasta mucha batería y es lento para algo social. La parte «sin internet» la cubre Nearby.</td></tr>
+    </table>
+  </div>
+</header>
+
+<!-- ===================== BOCETO A ===================== -->
+<section class="sketch">
+  <div class="sk-head">
+    <span class="sk-tag">BOCETO A</span>
+    <h3>Círculo privado (estilo WhatsApp)</h3>
+    <p>Lo social empieza por tus amigos: quién está escuchando qué y vuestros chats cifrados. La Comunidad pública queda en segundo plano (un icono). Ideal si quieres algo íntimo y seguro antes que una red abierta.</p>
+  </div>
+  <div class="sk-body">
+    <div class="phones">
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content">
+            <div class="tab"><div class="icon-btn"><span class="ms">arrow_back</span></div></div>
+            <div class="onb">
+              <div class="hero-ic"><span class="ms s40">key</span></div>
+              <h2>Tu cuenta vive en tu teléfono</h2>
+              <p class="l">Sin correo ni contraseña. Nadie, ni Dezzy, puede leer tus mensajes.</p>
+              <div class="feat"><div class="ic"><span class="ms">lock</span></div><div><b>Cifrado de extremo a extremo</b><span>Los chats se cifran aquí antes de salir.</span></div></div>
+              <div class="feat"><div class="ic"><span class="ms">cloud_off</span></div><div><b>Sin servidores de Dezzy</b><span>Viaja por relés públicos gratuitos que no pueden leerlo.</span></div></div>
+              <div class="feat"><div class="ic"><span class="ms">password</span></div><div><b>12 palabras de respaldo</b><span>Te las mostramos al terminar. Guárdalas: son tu llave.</span></div></div>
+              <div class="tf focus"><label>Tu nombre</label>Dezzy<span class="caret"></span></div>
+              <div style="flex:1"></div>
+              <div class="btn filled full">Crear mi identidad</div>
+              <div class="btn text" style="margin:8px auto 0">Ya tengo 12 palabras</div>
+            </div>
+          </div>
+          <div class="gesture"><i></i></div>
+        </div>
+        <p class="cap">A1 · Primera vez: se crea la identidad en el dispositivo. Luego, pantalla de 12 palabras con «Ya las guardé».</p>
+      </div>
+
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content">
+            <div class="tab">
+              <div class="t"><h1>Amigos</h1></div>
+              <div class="icon-btn"><span class="ms">public</span></div>
+              <div class="icon-btn"><span class="ms">qr_code_scanner</span></div>
+            </div>
+            <div style="padding:0 16px 6px;flex:none"><span class="netchip"><span class="ms">lock</span>Cifrado · 6 relés conectados</span></div>
+            <div class="sec"><h5>Escuchando ahora</h5></div>
+            <div class="cardrow" style="gap:6px">
+              <div class="now"><div class="av g2 ring">AL<span class="dot"></span></div><b>Ale</b><span>Bad Bunny</span></div>
+              <div class="now"><div class="av g3 ring">MA</div><b>Marta</b><span>Rosalía</span></div>
+              <div class="now"><div class="av g4 ring">JP</div><b>Juanpi</b><span>Peso Pluma</span></div>
+              <div class="now"><div class="av g5">SO</div><b>Sofi</b><span>hace 20 min</span></div>
+            </div>
+            <div class="sec"><h5>Chats</h5></div>
+            <div class="chatrow"><div class="av g2">AL</div><div class="tx"><div class="tt">Ale<i>9:38</i></div><div class="ss"><span class="ms s16">music_note</span>DtMF — Bad Bunny</div></div><span class="badge">2</span></div>
+            <div class="chatrow"><div class="av g3">MA</div><div class="tx"><div class="tt">Marta<i>ayer</i></div><div class="ss">¿Sala Juntos esta noche?</div></div></div>
+            <div class="chatrow"><div class="av g6">Gr</div><div class="tx"><div class="tt">Grupo reggaetón<i>lun</i></div><div class="ss">Juanpi: esta está buenísima</div></div></div>
+            <div class="chatrow"><div class="av g5">SO</div><div class="tx"><div class="tt">Sofi<i>dom</i></div><div class="ss"><span class="ms s16">done_all</span>Te la paso por QR</div></div></div>
+            <div class="fab"><span class="ms">person_add</span>Añadir amigo</div>
+            <div style="flex:1"></div>
+            <div class="mini"><div class="art a1"></div><div class="tx"><b>Monaco</b><span>Bad Bunny</span></div><div class="icon-btn"><span class="ms f">pause</span></div></div>
+            <div class="navbar"><div><span class="pillc"><span class="ms">home</span></span>Inicio</div><div><span class="pillc"><span class="ms">search</span></span>Buscar</div><div class="on"><span class="pillc"><span class="ms f">group</span></span>Amigos</div><div><span class="pillc"><span class="ms">library_music</span></span>Biblioteca</div></div>
+          </div>
+          <div class="gesture"><i></i></div>
+        </div>
+        <p class="cap">A2 · «Amigos»: quién escucha qué y los chats. «Añadir amigo» = mostrar mi QR, escanear o compartir enlace. El globo abre la Comunidad pública.</p>
+      </div>
+
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content">
+            <div class="tab" style="gap:8px">
+              <div class="icon-btn"><span class="ms">arrow_back</span></div>
+              <div class="av g2" style="width:40px;height:40px;font-size:14px">AL</div>
+              <div class="t"><h1 style="font-size:18px;line-height:22px">Ale</h1><div class="lock"><span class="ms">lock</span>Cifrado de extremo a extremo</div></div>
+              <div class="icon-btn"><span class="ms">headphones</span></div>
+            </div>
+            <div class="bubbles">
+              <div class="e2e"><span class="ms s16" style="vertical-align:-3px">lock</span> Los mensajes y canciones se cifran en tu teléfono. Ni los relés ni Dezzy pueden leerlos. Toca para verificar el código de seguridad.</div>
+              <div class="bub">¿Ya escuchaste lo nuevo?<small>9:30</small></div>
+              <div class="bub"><div class="songcard"><div class="art a1"></div><div class="t"><b>DtMF</b>Bad Bunny</div><div class="play"><span class="ms f s20">play_arrow</span></div></div>Esta 🔥<small>9:31</small></div>
+              <div class="bub me">Siii, la tengo en bucle<small>9:35 <span class="ms s16" style="vertical-align:-4px">done_all</span></small></div>
+              <div class="bub me"><div class="songcard"><div class="art a3"></div><div class="t"><b>Escuchar juntos</b>Sala privada · 2 personas</div><div class="play"><span class="ms s20">login</span></div></div>¿Te unes?<small>9:38</small></div>
+            </div>
+            <div class="composer">
+              <div class="icon-btn"><span class="ms">add_circle</span></div>
+              <div class="field"><span class="p">Mensaje</span><span class="ms">music_note</span></div>
+              <div class="send"><span class="ms f">send</span></div>
+            </div>
+          </div>
+          <div class="gesture"><i></i></div>
+        </div>
+        <p class="cap">A3 · Chat cifrado: compartir canción (con su portada) e invitar a «Juntos» desde el chat. Los auriculares arriba abren una sala con esa persona.</p>
+      </div>
+    </div>
+    <div class="notes">
+      <h4>Qué cambia</h4>
+      <ul>
+        <li>«Amigos» ocupa el sitio social de la barra; Comunidad queda detrás del icono de globo.</li>
+        <li>Alta sin correo: nombre y foto, y el teléfono crea las claves.</li>
+        <li>Añadir amigo por QR, enlace o «cerca de ti».</li>
+      </ul>
+      <h4>Pros y contras</h4>
+      <ul>
+        <li class="pro">+ Lo más privado y lo más fácil de explicar («como WhatsApp, pero de música»).</li>
+        <li class="pro">+ Menos moderación: casi todo es entre amigos.</li>
+        <li class="con">− Descubrir gente nueva queda escondido.</li>
+        <li class="con">− Sin red de amigos al principio, la pantalla está vacía (se mitiga con invitar por enlace).</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== BOCETO B ===================== -->
+<section class="sketch">
+  <div class="sk-head">
+    <span class="sk-tag">BOCETO B</span>
+    <h3>Comunidad abierta (feed primero)</h3>
+    <p>Se parece a la Comunidad de la fase 5, pero sin Supabase: un feed público de lo que se publica y escucha, perfiles verificados por clave y comentarios en el momento exacto de la canción. Los mensajes privados siguen cifrados, detrás de su icono.</p>
+  </div>
+  <div class="sk-body">
+    <div class="phones">
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content">
+            <div class="tab">
+              <div class="t"><h1>Comunidad</h1></div>
+              <div class="icon-btn"><span class="ms">search</span></div>
+              <div class="icon-btn"><span class="ms">chat</span><span class="badge" style="position:absolute;top:6px;right:4px;min-width:16px;height:16px;font-size:10px">3</span></div>
+            </div>
+            <div class="tabs"><div class="on">Siguiendo</div><div>Descubrir</div><div>Cerca</div><div>#reggaetón</div></div>
+            <div class="compose-pill"><div class="av g1">DZ</div><span class="p">¿Qué estás escuchando?</span><div class="btn tonal" style="height:40px">Publicar</div></div>
+            <div class="post">
+              <div class="hd"><div class="av g3">MA</div><div class="n"><b>Marta</b> <span class="ms s16" style="color:var(--primary);vertical-align:-3px">verified</span><br><span>hace 12 min</span></div><div class="icon-btn" style="width:40px;height:40px"><span class="ms">more_vert</span></div></div>
+              <p class="c">El final de esta canción es otra cosa 😭</p>
+              <div class="songcard"><div class="art a3"></div><div class="t"><b>La Perla</b>Rosalía · 3:58</div><div class="play"><span class="ms f s20">play_arrow</span></div></div>
+              <div class="ft"><div class="on"><span class="ms f">favorite</span>48</div><div><span class="ms">mode_comment</span>9</div><div><span class="ms">repeat</span>3</div><div style="margin-left:auto"><span class="ms">bookmark</span></div></div>
+            </div>
+            <div class="post">
+              <div class="hd"><div class="av g4">JP</div><div class="n"><b>Juanpi</b><br><span>hace 1 h · escuchando</span></div></div>
+              <div class="songcard" style="margin-top:8px"><div class="art a4"></div><div class="t"><b>Tu Sancho</b>Fuerza Regida</div><div class="play"><span class="ms f s20">play_arrow</span></div></div>
+              <div class="ft"><div><span class="ms">favorite</span>12</div><div><span class="ms">mode_comment</span>2</div></div>
+            </div>
+            <div style="flex:1"></div>
+            <div class="mini"><div class="art a1"></div><div class="tx"><b>Monaco</b><span>Bad Bunny</span></div><div class="icon-btn"><span class="ms f">pause</span></div></div>
+            <div class="navbar"><div><span class="pillc"><span class="ms">home</span></span>Inicio</div><div><span class="pillc"><span class="ms">search</span></span>Buscar</div><div class="on"><span class="pillc"><span class="ms f">forum</span></span>Comunidad</div><div><span class="pillc"><span class="ms">library_music</span></span>Biblioteca</div></div>
+          </div>
+          <div class="gesture"><i></i></div>
+        </div>
+        <p class="cap">B1 · Feed con pestañas Siguiendo / Descubrir / Cerca / etiquetas. El insignia azul = perfil comprobado por su clave (nadie puede suplantarlo).</p>
+      </div>
+
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content">
+            <div class="tab"><div class="icon-btn"><span class="ms">arrow_back</span></div><div class="t"></div><div class="icon-btn"><span class="ms">qr_code_2</span></div><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+            <div class="prof">
+              <div class="row1"><div class="av g3">MA</div><div class="stats"><div><b>1,2 mil</b>seguidores</div><div><b>318</b>siguiendo</div><div><b>86</b>posts</div></div></div>
+              <h2>Marta <span class="ms s20" style="color:var(--primary);vertical-align:-3px">verified</span></h2>
+              <div style="font-size:14px;color:var(--on-surface-variant);margin-top:2px">Pop, flamenco y lo que caiga ✨</div>
+              <div style="margin-top:6px"><span class="key">dezzy:7f3a·c19e·88b2</span></div>
+              <div class="status"><div class="art a3"></div><div class="t"><b><span class="eq"><i style="height:8px"></i><i style="height:14px"></i><i style="height:10px"></i></span>Escuchando ahora</b>La Perla — Rosalía</div><div class="btn text">Unirme</div></div>
+              <div style="display:flex;gap:8px;margin-top:12px"><div class="btn filled" style="flex:1">Seguir</div><div class="btn tonal" style="flex:1"><span class="ms">lock</span>Mensaje</div></div>
+            </div>
+            <div class="tabs" style="margin-top:10px"><div class="on">Publicaciones</div><div>Top artistas</div><div>Playlists</div></div>
+            <div class="post" style="margin-top:8px"><p class="c" style="margin-top:0">Mi top de la semana 👇</p><div class="songcard"><div class="mosaic" style="width:44px;height:44px;border-radius:8px"><i class="a3"></i><i class="a1"></i><i class="a5"></i><i class="a7"></i></div><div class="t"><b>Lo mejor de noviembre</b>Playlist · 24 canciones</div><div class="play"><span class="ms f s20">play_arrow</span></div></div></div>
+          </div>
+          <div class="gesture"><i></i></div>
+        </div>
+        <p class="cap">B2 · Perfil: huella corta de la clave para comprobar que es quien dice ser, «Escuchando ahora» con «Unirme» (sala Juntos) y «Mensaje» cifrado.</p>
+      </div>
+
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content">
+            <div class="tab"><div class="icon-btn"><span class="ms">close</span></div><div class="t"><h1 style="font-size:18px">Comentarios de la canción</h1></div></div>
+            <div style="display:flex;gap:12px;align-items:center;padding:0 16px 4px;flex:none"><div class="art a3" style="width:56px;height:56px"></div><div><div style="font-size:16px;font-weight:500">La Perla</div><div style="font-size:14px;color:var(--on-surface-variant)">Rosalía · 42 comentarios</div></div></div>
+            <div class="timeline">
+              <div class="bar"></div><div class="prog"></div>
+              <div class="pin" style="left:12%"><div class="av g2">AL</div></div>
+              <div class="pin" style="left:38%"><div class="av g3">MA</div></div>
+              <div class="pin" style="left:61%"><div class="av g4">JP</div></div>
+              <div class="pin" style="left:88%"><div class="av g5">SO</div></div>
+            </div>
+            <div class="chips"><div class="chip sel">Momentos</div><div class="chip">Recientes</div><div class="chip">Amigos</div></div>
+            <div class="tc"><div class="av g3">MA</div><div class="b"><b>Marta</b><br><span class="ts">1:31</span>Aquí es cuando entra el coro 😭</div></div>
+            <div class="tc"><div class="av g2">AL</div><div class="b"><b>Ale</b><br><span class="ts">0:28</span>Ese bajo…</div></div>
+            <div class="tc"><div class="av g4">JP</div><div class="b"><b>Juanpi</b><br><span class="ts">2:24</span>La producción está loquísima</div></div>
+            <div class="tc"><div class="av g5">SO</div><div class="b"><b>Sofi</b><br><span class="ts">3:28</span>Final perfecto</div></div>
+            <div style="flex:1"></div>
+            <div class="composer"><div class="field"><span class="ts" style="font-size:12px;font-weight:700;color:var(--primary);background:var(--primary-container);border-radius:6px;padding:0 6px">1:31</span><span class="p">Comenta en este momento</span></div><div class="send"><span class="ms f">send</span></div></div>
+          </div>
+          <div class="gesture"><i></i></div>
+        </div>
+        <p class="cap">B3 · Comentarios en el momento de la canción (ya existe; ahora son eventos firmados). Tocar un avatar en la línea salta a ese segundo.</p>
+      </div>
+    </div>
+    <div class="notes">
+      <h4>Qué cambia</h4>
+      <ul>
+        <li>Se mantiene la estructura de la Comunidad de la fase 5; sólo cambia de dónde salen los datos.</li>
+        <li>Pestaña «Cerca» para lo que publica gente a tu alrededor (Bluetooth / Wi-Fi, sin ubicación exacta).</li>
+        <li>Perfiles con huella de clave y QR.</li>
+      </ul>
+      <h4>Pros y contras</h4>
+      <ul>
+        <li class="pro">+ Máximo descubrimiento: la app se llena de contenido desde el primer día (los relés ya tienen millones de usuarios).</li>
+        <li class="pro">+ Reaprovecha casi toda la UI actual.</li>
+        <li class="con">− Más spam y moderación: hace falta filtro por defecto (sólo contenido musical de usuarios Dezzy + listas de bloqueo).</li>
+        <li class="con">− Los números (seguidores, me gusta) son aproximados.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== BOCETO C ===================== -->
+<section class="sketch">
+  <div class="sk-head">
+    <span class="sk-tag">BOCETO C</span>
+    <h3>Social en tres anillos: Amigos · Cerca · Comunidad</h3>
+    <p>Un solo destino «Social» con selector segmentado. Lo nuevo es «Cerca»: ver quién escucha música a tu alrededor y compartir sin internet. Incluye la pantalla «Tu identidad y privacidad», que haría falta en cualquier propuesta.</p>
+  </div>
+  <div class="sk-body">
+    <div class="phones">
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content">
+            <div class="tab"><div class="t"><h1>Social</h1></div><div class="icon-btn"><span class="ms">chat</span></div><div class="icon-btn"><div class="av g1" style="width:32px;height:32px;font-size:12px">DZ</div></div></div>
+            <div class="seg"><div><span class="ms">group</span>Amigos</div><div class="on"><span class="ms">near_me</span>Cerca</div><div><span class="ms">public</span>Comunidad</div></div>
+            <div class="radar">
+              <div class="lbl"><span class="ms s18">bluetooth_searching</span>Buscando a tu alrededor…</div>
+              <div class="me"><div class="av g1" style="width:48px;height:48px;font-size:16px">Tú</div></div>
+              <div class="p" style="left:22%;top:20%"><div class="av g6 ring">LU</div>Lucía</div>
+              <div class="p" style="left:78%;top:30%"><div class="av g5">AN</div>Andrés</div>
+              <div class="p" style="left:70%;top:66%"><div class="av g4 ring">KE</div>Kev</div>
+            </div>
+            <div class="sec"><h5>3 personas cerca <span class="sub">· sin datos</span></h5></div>
+            <div class="chatrow"><div class="av g6">LU</div><div class="tx"><div class="tt">Lucía</div><div class="ss"><span class="eq"><i style="height:8px"></i><i style="height:14px"></i><i style="height:10px"></i></span>Ojitos Lindos — Bad Bunny</div></div><div class="btn tonal" style="height:36px;padding:0 14px">Unirme</div></div>
+            <div class="chatrow"><div class="av g4">KE</div><div class="tx"><div class="tt">Kev</div><div class="ss">Sala «Fiesta» · 5 personas</div></div><div class="btn tonal" style="height:36px;padding:0 14px">Entrar</div></div>
+            <div class="chatrow"><div class="av g5">AN</div><div class="tx"><div class="tt">Andrés</div><div class="ss">No está escuchando</div></div><div class="icon-btn"><span class="ms">person_add</span></div></div>
+            <div style="flex:1"></div>
+            <div class="mini"><div class="art a1"></div><div class="tx"><b>Monaco</b><span>Bad Bunny</span></div><div class="icon-btn"><span class="ms f">pause</span></div></div>
+            <div class="navbar"><div><span class="pillc"><span class="ms">home</span></span>Inicio</div><div><span class="pillc"><span class="ms">search</span></span>Buscar</div><div class="on"><span class="pillc"><span class="ms f">diversity_3</span></span>Social</div><div><span class="pillc"><span class="ms">library_music</span></span>Biblioteca</div></div>
+          </div>
+          <div class="gesture"><i></i></div>
+        </div>
+        <p class="cap">C1 · «Cerca»: quién escucha a tu alrededor (sólo quien lo activa; nunca se comparte la ubicación). Unirse a su música o a una sala local.</p>
+      </div>
+
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content">
+            <div class="tab"><div class="t"><h1>Social</h1></div><div class="icon-btn"><span class="ms">chat</span></div></div>
+            <div class="seg"><div class="on"><span class="ms">group</span>Amigos</div><div><span class="ms">near_me</span>Cerca</div><div><span class="ms">public</span>Comunidad</div></div>
+            <div class="post"><div class="hd"><div class="av g2">AL</div><div class="n"><b>Ale</b><br><span>escuchando ahora</span></div></div><div class="songcard" style="margin-top:8px"><div class="art a1"></div><div class="t"><b>DtMF</b>Bad Bunny</div><div class="play"><span class="ms f s20">play_arrow</span></div></div></div>
+            <div class="scrim"></div>
+            <div class="sheet" style="height:470px">
+              <div class="handle"></div>
+              <div style="padding:4px 20px 8px;flex:none"><div style="font-size:22px">Compartir «Monaco»</div><div style="font-size:14px;color:var(--on-surface-variant)">Cifrado para quien elijas</div></div>
+              <div class="sec" style="padding-top:6px"><h5>Cerca de ti <span class="sub">· funciona sin internet</span></h5></div>
+              <div class="cardrow" style="gap:6px">
+                <div class="now"><div class="av g6 ring">LU</div><b>Lucía</b><span>Bluetooth</span></div>
+                <div class="now"><div class="av g4">KE</div><b>Kev</b><span>Wi-Fi Direct</span></div>
+                <div class="now"><div class="av g5">AN</div><b>Andrés</b><span>Bluetooth</span></div>
+              </div>
+              <div class="sec"><h5>Amigos</h5></div>
+              <div class="chatrow" style="min-height:60px"><div class="av g2" style="width:40px;height:40px">AL</div><div class="tx"><div class="tt" style="font-size:15px">Ale</div></div><div class="chk on"><span class="ms">check</span></div></div>
+              <div class="chatrow" style="min-height:60px"><div class="av g3" style="width:40px;height:40px">MA</div><div class="tx"><div class="tt" style="font-size:15px">Marta</div></div><div class="chk"></div></div>
+              <div style="display:flex;gap:8px;padding:10px 16px 14px;margin-top:auto"><div class="btn outlined" style="flex:1"><span class="ms">link</span>Copiar enlace</div><div class="btn filled" style="flex:1"><span class="ms">send</span>Enviar · 1</div></div>
+            </div>
+          </div>
+          <div class="gesture"><i></i></div>
+        </div>
+        <p class="cap">C2 · Compartir: primero quien tienes al lado (sin datos), luego amigos (cifrado) y, si no tienen Dezzy, un enlace.</p>
+      </div>
+
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content">
+            <div class="tab"><div class="icon-btn"><span class="ms">arrow_back</span></div><div class="t"><h1>Identidad y privacidad</h1></div></div>
+            <div class="card" style="display:flex;gap:14px;align-items:center;border-radius:24px">
+              <div class="qr"></div>
+              <div style="min-width:0"><div style="font-size:18px;font-weight:500">Dezzy</div><div style="margin:4px 0 8px"><span class="key">dezzy:a91c·04fe·3b7d</span></div><div class="btn tonal" style="height:36px;padding:0 14px"><span class="ms">share</span>Compartir</div></div>
+            </div>
+            <div class="grp">
+              <div class="set"><div class="ic"><span class="ms">password</span></div><div class="tx"><b>12 palabras de respaldo</b><span style="color:#2E6B3A">Guardadas el 14/nov/2026</span></div><span class="ms" style="color:var(--on-surface-variant)">chevron_right</span></div>
+              <div class="set"><div class="ic"><span class="ms">hub</span></div><div class="tx"><b>Relés</b><span>6 de 8 conectados · añadir el tuyo</span></div><span class="ms" style="color:var(--on-surface-variant)">chevron_right</span></div>
+            </div>
+            <div class="grp">
+              <div class="set"><div class="ic"><span class="ms">headphones</span></div><div class="tx"><b>Quién ve lo que escucho</b><span>Sólo amigos</span></div><span class="ms" style="color:var(--on-surface-variant)">chevron_right</span></div>
+              <div class="set"><div class="ic"><span class="ms">near_me</span></div><div class="tx"><b>Aparecer en «Cerca»</b><span>Sólo mientras la app está abierta</span></div><div class="sw"></div></div>
+              <div class="set"><div class="ic"><span class="ms">block</span></div><div class="tx"><b>Bloqueados y silenciados</b><span>2 personas · lista compartida activada</span></div><span class="ms" style="color:var(--on-surface-variant)">chevron_right</span></div>
+            </div>
+            <div class="grp">
+              <div class="set"><div class="ic" style="color:#9C3F48"><span class="ms">logout</span></div><div class="tx"><b>Cerrar sesión en este teléfono</b><span>Necesitarás las 12 palabras para volver</span></div></div>
+            </div>
+          </div>
+          <div class="gesture"><i></i></div>
+        </div>
+        <p class="cap">C3 · Tu identidad (QR + huella), respaldo, relés, privacidad de «escuchando», «Cerca» y bloqueos. Iría en Ajustes → Cuentas y servicios.</p>
+      </div>
+    </div>
+    <div class="notes">
+      <h4>Qué cambia</h4>
+      <ul>
+        <li>Un destino «Social» con tres anillos; recuerda la última pestaña elegida.</li>
+        <li>«Cerca» y compartir sin datos son lo diferencial frente a otras apps.</li>
+        <li>Mensajes en el icono de chat (mismo chat cifrado del boceto A).</li>
+      </ul>
+      <h4>Pros y contras</h4>
+      <ul>
+        <li class="pro">+ Lo más completo y lo que mejor aprovecha la red sin servidores.</li>
+        <li class="pro">+ «Cerca» funciona en fiestas, conciertos o sin datos.</li>
+        <li class="con">− Más trabajo (Nearby pide permisos de Bluetooth y dispositivos cercanos).</li>
+        <li class="con">− Tres pestañas: algo más que aprender.</li>
+      </ul>
+      <h4>Se puede mezclar</h4>
+      <ul><li>Por ejemplo: A1 + A3 (alta y chat), B1–B3 (Comunidad), C2 + C3 (compartir e identidad).</li></ul>
+    </div>
+  </div>
+</section>
+
+</div>
+</body>
+</html>

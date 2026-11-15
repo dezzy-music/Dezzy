@@ -30,6 +30,7 @@ import timber.log.Timber
 import java.io.File
 import java.time.LocalDateTime
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -64,7 +65,25 @@ class LosslessDownloadManager @Inject constructor(
     /** Descargas en curso/terminadas, por trackKey. La UI observa este flujo. */
     val downloads = MutableStateFlow<Map<String, LosslessDownloadState>>(emptyMap())
 
+    /** trackKeys que el usuario ha parado; la descarga en curso lo mira y se corta. */
+    private val cancelled: MutableSet<String> = ConcurrentHashMap.newKeySet()
+
     suspend fun search(query: String): List<LosslessTrack> = searchClient.search(query)
+
+    suspend fun searchAlbums(query: String): List<LosslessAlbum> = searchClient.searchAlbums(query)
+
+    suspend fun albumTracks(album: LosslessAlbum): List<LosslessTrack> = searchClient.albumTracks(album)
+
+    /**
+     * Para una descarga: cancela el trabajo de WorkManager (si aún no empezó, no llega a
+     * correr) y, si ya está bajando, el bucle de copia lo ve y se corta borrando el parcial.
+     */
+    fun cancel(track: LosslessTrack) {
+        val key = trackKey(track)
+        cancelled.add(key)
+        WorkManager.getInstance(context).cancelUniqueWork(LosslessDownloadWorker.uniqueName(track))
+        downloads.update { it - key }
+    }
 
     fun trackKey(track: LosslessTrack): String = "${track.provider.id}:${track.providerTrackId}"
 
@@ -76,6 +95,7 @@ class LosslessDownloadManager @Inject constructor(
      */
     suspend fun enqueue(track: LosslessTrack, quality: LosslessQuality) {
         val wifiOnly = context.dataStore.getAsync(LosslessWifiOnlyKey, false)
+        cancelled.remove(trackKey(track))
         setState(
             LosslessDownloadState(
                 trackKey(track), track.title, track.provider,
@@ -146,7 +166,7 @@ class LosslessDownloadManager @Inject constructor(
             val target = File(LocalMusicImporter.directory(context), "$mediaId.${resolved.container}")
 
             val bytesResult = runCatching {
-                streamToFile(resolved.downloadUrl, target, resolved.sizeBytes) { p ->
+                streamToFile(resolved.downloadUrl, target, resolved.sizeBytes, shouldStop = { key in cancelled }) { p ->
                     setState(state(key)?.copy(progress = p))
                 }
             }
@@ -213,6 +233,7 @@ class LosslessDownloadManager @Inject constructor(
         url: String,
         target: File,
         knownSize: Long?,
+        shouldStop: () -> Boolean = { false },
         onProgress: (Float) -> Unit,
     ) {
         val request = Request.Builder().url(url).build()
@@ -225,6 +246,7 @@ class LosslessDownloadManager @Inject constructor(
                     val buffer = ByteArray(64 * 1024)
                     var downloaded = 0L
                     while (true) {
+                        if (shouldStop()) error("Descarga cancelada")
                         val read = input.read(buffer)
                         if (read == -1) break
                         output.write(buffer, 0, read)
@@ -258,6 +280,11 @@ class LosslessDownloadManager @Inject constructor(
     }
 
     private fun fail(key: String, track: LosslessTrack, message: String): Result<String> {
+        // Parada por el usuario: no la mostramos como error, simplemente desaparece.
+        if (key in cancelled) {
+            downloads.update { it - key }
+            return Result.failure(IllegalStateException("Descarga cancelada"))
+        }
         setState(
             LosslessDownloadState(
                 trackKey = key,

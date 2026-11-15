@@ -39,6 +39,54 @@ class DeezerSearchClient(
             }
         }
 
+    /** Álbumes de Deezer para la consulta (chip «Álbumes» de la búsqueda lossless). */
+    suspend fun searchAlbums(query: String, limit: Int = 20): List<LosslessAlbum> =
+        withContext(Dispatchers.IO) {
+            val q = query.trim()
+            if (q.isEmpty()) return@withContext emptyList()
+            runCatching {
+                val url = "$API/search/album?q=${URLEncoder.encode(q, "UTF-8")}&limit=$limit"
+                get(url)?.let(::parseAlbums).orEmpty()
+            }.getOrElse {
+                Timber.w(it, "[Lossless] búsqueda de álbumes Deezer falló")
+                emptyList()
+            }
+        }
+
+    /** Pistas de un álbum, con el nombre y la portada del álbum (la API no los repite por pista). */
+    suspend fun albumTracks(album: LosslessAlbum): List<LosslessTrack> = withContext(Dispatchers.IO) {
+        runCatching {
+            val raw = get("$API/album/${album.id}") ?: return@runCatching emptyList()
+            val root = JSONObject(raw)
+            val cover = root.optString("cover_big").takeIf { it.isNotBlank() } ?: album.thumbnailUrl
+            val title = root.optString("title").takeIf { it.isNotBlank() } ?: album.title
+            val data = root.optJSONObject("tracks")?.optJSONArray("data") ?: return@runCatching emptyList()
+            buildList {
+                for (i in 0 until data.length()) {
+                    val o = data.optJSONObject(i) ?: continue
+                    val id = o.optLong("id").takeIf { it != 0L }?.toString() ?: continue
+                    val artist = o.optJSONObject("artist")?.optString("name")?.takeIf { it.isNotBlank() }
+                    add(
+                        LosslessTrack(
+                            providerTrackId = id,
+                            provider = LosslessProvider.DEEZER,
+                            title = o.optString("title"),
+                            artistNames = listOfNotNull(artist ?: album.artistName.takeIf { it.isNotBlank() }),
+                            albumName = title,
+                            durationSec = o.optInt("duration", -1),
+                            isrc = o.optString("isrc").takeIf { it.isNotBlank() },
+                            thumbnailUrl = cover,
+                            explicit = o.optBoolean("explicit_lyrics", false),
+                        ),
+                    )
+                }
+            }
+        }.getOrElse {
+            Timber.w(it, "[Lossless] pistas del álbum Deezer fallaron")
+            emptyList()
+        }
+    }
+
     /** ISRC de una pista de Deezer, necesario para descargar por otro proveedor. */
     suspend fun isrcFor(deezerId: String): String? = withContext(Dispatchers.IO) {
         runCatching {
@@ -80,6 +128,27 @@ class DeezerSearchClient(
         }
     }
 
+    private fun parseAlbums(raw: String): List<LosslessAlbum> {
+        val data = JSONObject(raw).optJSONArray("data") ?: return emptyList()
+        return buildList {
+            for (i in 0 until data.length()) {
+                val o = data.optJSONObject(i) ?: continue
+                val id = o.optLong("id").takeIf { it != 0L }?.toString() ?: continue
+                add(
+                    LosslessAlbum(
+                        id = id,
+                        title = o.optString("title"),
+                        artistName = o.optJSONObject("artist")?.optString("name").orEmpty(),
+                        thumbnailUrl = o.optString("cover_big").takeIf { it.isNotBlank() }
+                            ?: o.optString("cover_medium").takeIf { it.isNotBlank() },
+                        trackCount = o.optInt("nb_tracks", 0),
+                        explicit = o.optBoolean("explicit_lyrics", false),
+                    ),
+                )
+            }
+        }
+    }
+
     companion object {
         private const val API = "https://api.deezer.com"
 
@@ -89,3 +158,13 @@ class DeezerSearchClient(
             .build()
     }
 }
+
+/** Álbum de Deezer en la búsqueda lossless. Sus pistas se piden aparte ([DeezerSearchClient.albumTracks]). */
+data class LosslessAlbum(
+    val id: String,
+    val title: String,
+    val artistName: String,
+    val thumbnailUrl: String?,
+    val trackCount: Int,
+    val explicit: Boolean = false,
+)

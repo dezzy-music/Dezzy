@@ -5,6 +5,25 @@
  */
 
 package com.dezzy.music.ui.screens.settings
+import com.dezzy.music.together.membershipIn
+import com.dezzy.music.together.currentTogetherRoom
+import com.dezzy.music.together.TogetherRoomMembership
+import com.dezzy.music.together.TogetherSessionState
+import androidx.compose.runtime.collectAsState
+import kotlinx.coroutines.flow.MutableStateFlow
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextAlign
+import com.dezzy.music.LocalPlayerConnection
 
 import android.os.Build
 import androidx.compose.material3.CircularProgressIndicator
@@ -146,8 +165,15 @@ fun PublicRoomsScreen(
     scrollBehavior: TopAppBarScrollBehavior,
 ) {
     val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
+    val playerConnection = LocalPlayerConnection.current
+    val clipboard = LocalClipboardManager.current
+
+    var selectedTab by rememberSaveable { mutableStateOf(0) }
+    var privateRoomCode by rememberSaveable { mutableStateOf("") }
     var selectedTheme by remember { mutableStateOf<TogetherRoomTheme?>(null) }
     var searchQuery by remember { mutableStateOf("") }
+    var showSearch by rememberSaveable { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
     val (serverUrl, _) = rememberPreference(
@@ -161,6 +187,32 @@ fun PublicRoomsScreen(
 
     var publicRooms by remember { mutableStateOf<List<TogetherPublicRoom>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
+
+    // Sala en la que ya está este dispositivo (anfitrión o invitado). Se recalcula cuando cambia
+    // la sesión y en cada refresco de la lista (cada 5 s).
+    val idleTogether = remember { MutableStateFlow<TogetherSessionState>(TogetherSessionState.Idle) }
+    val togetherState by (playerConnection?.service?.togetherSessionState ?: idleTogether).collectAsState()
+    val myRoom = remember(togetherState, publicRooms) { currentTogetherRoom(togetherState) }
+
+    // Abre la sala en la que ya estás o se une a una nueva. Unirse a la propia sala dejaba al
+    // anfitrión fuera y la sala sin host.
+    fun openOrJoin(code: String) {
+        when (myRoom.membershipIn(code)) {
+            TogetherRoomMembership.HOST -> navController.navigate("settings/music_together")
+            TogetherRoomMembership.GUEST -> navController.navigate("listen_together_chat")
+            TogetherRoomMembership.NONE -> {
+                val service = playerConnection?.service
+                if (service != null) {
+                    service.joinTogether(code, displayName)
+                } else {
+                    val client = ListenTogetherClient.getInstance()
+                        ?: ListenTogetherClient(context).also { ListenTogetherClient.setInstance(it) }
+                    client.joinRoom(code, displayName)
+                }
+                navController.navigate("listen_together_chat")
+            }
+        }
+    }
 
     fun fetchRooms() {
         scope.launch(Dispatchers.IO) {
@@ -209,7 +261,8 @@ fun PublicRoomsScreen(
                                 currentTrackTitle = r.optString("currentTrackTitle").takeIf { it.isNotBlank() },
                                 currentTrackArtist = r.optString("currentTrackArtist").takeIf { it.isNotBlank() },
                                 currentTrackThumbnail = r.optString("currentTrackThumbnail").takeIf { it.isNotBlank() },
-                                isPublic = r.optBoolean("isPublic", true)
+                                isPublic = r.optBoolean("isPublic", true),
+                                themeName = themeStr
                             )
                         )
                     }
@@ -235,15 +288,16 @@ fun PublicRoomsScreen(
     }
 
     val filteredRooms = publicRooms.filter { room ->
-        val matchesTheme = selectedTheme == null || room.theme == selectedTheme
+        val matchesTheme = selectedTheme == null || room.theme == selectedTheme || room.themeName?.equals(selectedTheme?.name, ignoreCase = true) == true
         val matchesQuery = searchQuery.isBlank() ||
             room.hostName.contains(searchQuery, ignoreCase = true) ||
             room.code.contains(searchQuery, ignoreCase = true) ||
             (room.currentTrackTitle?.contains(searchQuery, ignoreCase = true) == true) ||
             (room.currentTrackArtist?.contains(searchQuery, ignoreCase = true) == true) ||
-            room.theme.name.contains(searchQuery, ignoreCase = true)
+            room.theme.name.contains(searchQuery, ignoreCase = true) ||
+            (room.themeName?.contains(searchQuery, ignoreCase = true) == true)
         matchesTheme && matchesQuery
-    }
+    }.sortedByDescending { myRoom.membershipIn(it.code) != TogetherRoomMembership.NONE }
 
     Column(
         modifier = Modifier
@@ -259,44 +313,62 @@ fun PublicRoomsScreen(
     ) {
         TopAppBar(
             title = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        painter = painterResource(R.drawable.resource_public),
-                        contentDescription = null,
-                        modifier = Modifier.size(22.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(Modifier.width(8.dp))
+                Column {
                     Text(
-                        text = "Salas Públicas",
+                        text = if (selectedTab == 0) "Juntos" else "Unirse con código",
                         fontWeight = FontWeight.Bold,
                     )
+                    if (selectedTab == 0) {
+                        Text(
+                            text = "Escucha en sincronía con otras personas",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
             },
             navigationIcon = {
-                androidx.compose.material3.IconButton(onClick = { navController.navigateUp() }) {
-                    Icon(painter = painterResource(R.drawable.arrow_back), contentDescription = null)
+                androidx.compose.material3.IconButton(
+                    onClick = { if (selectedTab == 1) selectedTab = 0 else navController.navigateUp() }
+                ) {
+                    Icon(painterResource(R.drawable.arrow_back), contentDescription = "Volver")
                 }
             },
             actions = {
-                androidx.compose.material3.IconButton(
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        fetchRooms()
-                    }
-                ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    } else {
+                if (selectedTab == 0) {
+                    androidx.compose.material3.IconButton(
+                        onClick = {
+                            showSearch = !showSearch
+                            if (!showSearch) searchQuery = ""
+                        }
+                    ) {
                         Icon(
-                            painter = painterResource(R.drawable.sync),
-                            contentDescription = "Actualizar",
-                            modifier = Modifier.size(20.dp),
+                            painter = painterResource(if (showSearch) R.drawable.close else R.drawable.search),
+                            contentDescription = if (showSearch) "Cerrar búsqueda" else "Buscar salas",
+                            modifier = Modifier.size(22.dp),
                         )
+                    }
+                    androidx.compose.material3.IconButton(
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            fetchRooms()
+                        }
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        } else {
+                            Icon(
+                                painter = painterResource(R.drawable.sync),
+                                contentDescription = "Actualizar",
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
                     }
                 }
             },
@@ -306,132 +378,356 @@ fun PublicRoomsScreen(
             ),
         )
 
-        androidx.compose.material3.OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { searchQuery = it },
-            placeholder = { Text("Buscar salas por anfitrión, código o tema...", style = MaterialTheme.typography.bodyMedium) },
-            leadingIcon = {
-                Icon(painter = painterResource(R.drawable.search), contentDescription = null, modifier = Modifier.size(18.dp))
-            },
-            trailingIcon = {
-                if (searchQuery.isNotEmpty()) {
-                    androidx.compose.material3.IconButton(onClick = { searchQuery = "" }) {
-                        Icon(painter = painterResource(R.drawable.close), contentDescription = null, modifier = Modifier.size(18.dp))
+        BackHandler(enabled = selectedTab == 1) { selectedTab = 0 }
+
+        if (selectedTab == 0) {
+            // Toda la pestaña es una sola lista con scroll (buscador, filtros y
+            // salas o estado vacío). Antes el estado vacío era un Box fijo: con
+            // el mini reproductor visible le quedaba poco alto y el botón
+            // "Crear sala pública" se aplastaba.
+            LazyColumn(
+                contentPadding = PaddingValues(bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    // El mini reproductor cubre la parte inferior: este padding
+                    // deja el último elemento siempre por encima de él.
+                    .windowInsetsPadding(
+                        LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)
+                    ),
+            ) {
+                item(key = "actions") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 16.dp, end = 16.dp, top = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        TogetherActionCard(
+                            iconRes = R.drawable.add_circle,
+                            title = "Crear sala",
+                            subtitle = "Tú eliges la música",
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            onClick = { navController.navigate("settings/music_together") },
+                            modifier = Modifier.weight(1f),
+                        )
+                        TogetherActionCard(
+                            iconRes = R.drawable.lock,
+                            title = "Unirse con código",
+                            subtitle = "Sala privada de 6 caracteres",
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            contentColor = MaterialTheme.colorScheme.onSurface,
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                selectedTab = 1
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
                     }
                 }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp),
-            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-            )
-        )
 
-        // Theme filter chips
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            themeFilters.forEach { filter ->
-                FilterChip(
-                    selected = selectedTheme == filter.theme,
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        selectedTheme = if (selectedTheme == filter.theme) null else filter.theme
-                    },
-                    leadingIcon = {
-                        Icon(
-                            painter = painterResource(filter.iconRes),
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = if (selectedTheme == filter.theme) {
-                                filter.theme?.let { themeColor(it) } ?: MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            }
+                if (showSearch) {
+                    item(key = "search") {
+                        androidx.compose.material3.OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            placeholder = { Text("Buscar salas por anfitrión, código o tema...", style = MaterialTheme.typography.bodyMedium) },
+                            leadingIcon = {
+                                Icon(painter = painterResource(R.drawable.search), contentDescription = null, modifier = Modifier.size(18.dp))
+                            },
+                            trailingIcon = {
+                                if (searchQuery.isNotEmpty()) {
+                                    androidx.compose.material3.IconButton(onClick = { searchQuery = "" }) {
+                                        Icon(painterResource(R.drawable.close), contentDescription = null, modifier = Modifier.size(18.dp))
+                                    }
+                                }
+                            },
+                            singleLine = true,
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 16.dp, end = 16.dp, top = 4.dp),
+                            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                            )
                         )
-                    },
-                    label = { Text(filter.label) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = filter.theme?.let { themeColor(it) }?.copy(alpha = 0.2f)
-                            ?: MaterialTheme.colorScheme.primaryContainer,
-                        selectedLabelColor = filter.theme?.let { themeColor(it) }
-                            ?: MaterialTheme.colorScheme.primary,
-                    ),
-                )
-            }
-        }
+                    }
+                }
 
-        if (filteredRooms.isEmpty()) {
-            // Empty state — prompt to create a public room
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.padding(32.dp),
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.resource_public),
-                        contentDescription = null,
-                        modifier = Modifier.size(56.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                item(key = "rooms_header") {
+                    TogetherSectionHeader(
+                        title = "Salas públicas",
+                        trailing = publicRooms.size.takeIf { it > 0 }?.let { n ->
+                            if (n == 1) "1 activa" else "$n activas"
+                        },
+                        live = true,
+                        modifier = Modifier.padding(top = 8.dp),
                     )
-                    Text(
-                        text = "No hay salas públicas activas",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = "¡Sé el primero! Crea una sala pública y comparte tu música con el mundo.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Button(
-                        onClick = { navController.navigate("settings/music_together") },
+                }
+
+                // Theme filter chips
+                item(key = "filters") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Icon(
-                            painter = painterResource(R.drawable.add),
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
+                        themeFilters.forEach { filter ->
+                            FilterChip(
+                                selected = selectedTheme == filter.theme,
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    selectedTheme = if (selectedTheme == filter.theme) null else filter.theme
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        painter = painterResource(filter.iconRes),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = if (selectedTheme == filter.theme) {
+                                            filter.theme?.let { themeColor(it) } ?: MaterialTheme.colorScheme.primary
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                        }
+                                    )
+                                },
+                                label = { Text(filter.label) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = filter.theme?.let { themeColor(it) }?.copy(alpha = 0.2f)
+                                        ?: MaterialTheme.colorScheme.primaryContainer,
+                                    selectedLabelColor = filter.theme?.let { themeColor(it) }
+                                        ?: MaterialTheme.colorScheme.primary,
+                                ),
+                            )
+                        }
+                    }
+                }
+
+                if (filteredRooms.isEmpty()) {
+                    item(key = "empty") {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 32.dp, vertical = 40.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.resource_public),
+                                contentDescription = null,
+                                modifier = Modifier.size(56.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "No hay salas públicas activas",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                textAlign = TextAlign.Center,
+                            )
+                            Text(
+                                text = "¡Sé el primero! Crea una sala pública y comparte tu música con el mundo.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                textAlign = TextAlign.Center,
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Button(
+                                onClick = { navController.navigate("settings/music_together") },
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.add),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text("Crear sala pública")
+                            }
+                        }
+                    }
+                } else {
+                    items(filteredRooms, key = { it.sessionId }) { room ->
+                        TogetherPublicRoomRow(
+                            room = room,
+                            membership = myRoom.membershipIn(room.code),
+                            onJoin = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                openOrJoin(room.code)
+                            },
+                            modifier = Modifier.padding(horizontal = 16.dp),
                         )
-                        Spacer(Modifier.width(8.dp))
-                        Text("Crear sala pública")
                     }
                 }
             }
         } else {
-            LazyColumn(
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.windowInsetsPadding(
-                    LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)
-                ),
-            ) {
-                items(filteredRooms, key = { it.sessionId }) { room ->
-                    PublicRoomCard(
-                        room = room,
-                        onJoin = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            val client = ListenTogetherClient.getInstance()
-                            if (client != null) {
-                                client.joinRoom(room.code, displayName)
-                                navController.navigate("listen_together_chat")
-                            } else {
-                                navController.navigate("settings/music_together")
-                            }
-                        },
+            // Private code join tab
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(20.dp)
+                    // El mini reproductor cubre la parte inferior: sin este
+                    // padding el botón "Conectarse a la sesión" y la tarjeta
+                    // de anfitrión quedaban debajo de él y no se podían pulsar.
+                    .windowInsetsPadding(
+                        LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Bottom)
                     )
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Spacer(Modifier.height(16.dp))
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    modifier = Modifier.size(76.dp),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            painter = painterResource(R.drawable.lock),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(38.dp)
+                        )
+                    }
+                }
+
+                Text(
+                    text = "Unirse a Sala Privada",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                )
+
+                Text(
+                    text = "Introduce el código de 6 caracteres compartido por el anfitrión para sincronizar la música en tiempo real.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                androidx.compose.material3.OutlinedTextField(
+                    value = privateRoomCode,
+                    onValueChange = { privateRoomCode = it.uppercase().take(8) },
+                    placeholder = {
+                        Text(
+                            "CÓDIGO (ej. AB12CD)",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    },
+                    textStyle = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace,
+                        textAlign = TextAlign.Center,
+                        letterSpacing = 4.sp
+                    ),
+                    singleLine = true,
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp),
+                    trailingIcon = {
+                        if (privateRoomCode.isNotEmpty()) {
+                            androidx.compose.material3.IconButton(onClick = { privateRoomCode = "" }) {
+                                Icon(painterResource(R.drawable.close), null, modifier = Modifier.size(18.dp))
+                            }
+                        } else {
+                            androidx.compose.material3.IconButton(
+                                onClick = {
+                                    val text = clipboard.getText()?.text?.trim().orEmpty()
+                                    if (text.isNotBlank()) {
+                                        privateRoomCode = text.uppercase().take(8)
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.link),
+                                    contentDescription = "Pegar",
+                                    modifier = Modifier.size(18.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    },
+                    colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                    )
+                )
+
+                Spacer(Modifier.height(4.dp))
+
+                Button(
+                    onClick = {
+                        val trimmed = privateRoomCode.trim().uppercase()
+                        if (trimmed.isNotBlank()) {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            openOrJoin(trimmed)
+                        }
+                    },
+                    enabled = privateRoomCode.trim().length >= 4,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp)
+                        .height(52.dp),
+                ) {
+                    Icon(painterResource(R.drawable.login), null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Conectarse a la sesión", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.add),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "¿Quieres ser el anfitrión?",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Crea tu propia sala y comparte tu música.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                        }
+                        TextButton(
+                            onClick = { navController.navigate("settings/music_together") }
+                        ) {
+                            Text("Crear", fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
             }
         }
@@ -442,6 +738,7 @@ fun PublicRoomsScreen(
 fun PublicRoomCard(
     room: TogetherPublicRoom,
     onJoin: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val color = themeColor(room.theme)
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
@@ -453,7 +750,7 @@ fun PublicRoomCard(
     )
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface,
@@ -493,8 +790,9 @@ fun PublicRoomCard(
                     }
                     Spacer(Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
+                        val displayTheme = room.themeName?.takeIf { it.isNotBlank() } ?: room.theme.name
                         Text(
-                            text = room.theme.name.lowercase().replaceFirstChar { it.uppercase() } + " Room",
+                            text = displayTheme.lowercase().replaceFirstChar { it.uppercase() } + " Room",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                         )

@@ -45,6 +45,7 @@ import com.dezzy.music.R
 import com.dezzy.music.constants.EnableSpotifyKey
 import com.dezzy.music.constants.SpotifyAccessTokenKey
 import com.dezzy.music.constants.SpotifySpDcKey
+import com.dezzy.music.security.SessionCrypto
 import com.dezzy.music.constants.SpotifySpKeyKey
 import com.dezzy.music.constants.SpotifySyncLikesKey
 import com.dezzy.music.constants.SpotifyTokenExpiryKey
@@ -89,7 +90,7 @@ fun SpotifySettings(
     )
 
     val isLoggedIn = remember(spotifySpDc) {
-        spotifySpDc.isNotEmpty()
+        SessionCrypto.decrypt(spotifySpDc).isNotEmpty()
     }
 
     Column(

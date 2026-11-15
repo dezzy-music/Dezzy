@@ -12,6 +12,7 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import com.dezzy.music.constants.InnerTubeCookieKey
+import com.dezzy.music.security.SessionCrypto
 import com.dezzy.music.constants.YtmSyncKey
 import com.dezzy.music.utils.dataStore
 import com.dezzy.music.utils.get
@@ -22,7 +23,7 @@ fun Context.isSyncEnabled(): Boolean {
 }
 
 fun Context.isUserLoggedIn(): Boolean {
-    val cookie = dataStore[InnerTubeCookieKey] ?: ""
+    val cookie = SessionCrypto.decrypt(dataStore[InnerTubeCookieKey] ?: "")
     return "SAPISID" in parseCookieString(cookie) && isInternetConnected()
 }
 

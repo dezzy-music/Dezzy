@@ -362,4 +362,5 @@
     <string name="video_keep_mode_desc">Stay in video mode when the song changes</string>
     <string name="cast_video">Cast video</string>
     <string name="cast_video_desc">Send the music video (not just audio) when casting</string>
+    <string name="social_tab">Social</string>
 </resources>

@@ -159,6 +159,8 @@ fun getTypography(fontName: String): Typography {
         "SERIF"            -> FontFamily.Serif
         "MONOSPACE"        -> FontFamily.Monospace
         "SYSTEM"           -> FontFamily.Default
+        // Material 3 baseline: Roboto con la escala tipográfica oficial de M3
+        "MATERIAL3"        -> createVariableFontFamily(R.font.roboto)
         // Bundled Google Fonts (OFL license) — work offline, no GMS dependency
         "INTER"            -> createVariableFontFamily(R.font.inter)
         "ROBOTO"           -> createVariableFontFamily(R.font.roboto)
@@ -190,6 +192,7 @@ fun getTypeface(context: Context, fontName: String): Typeface {
         "SF_PRO"           -> R.font.sfprodisplaybold
         "INTER"            -> R.font.inter
         "ROBOTO"           -> R.font.roboto
+        "MATERIAL3"        -> R.font.roboto
         "MONTSERRAT"       -> R.font.montserrat
         "LORA"             -> R.font.lora
         "PLAYFAIR_DISPLAY" -> R.font.playfair_display

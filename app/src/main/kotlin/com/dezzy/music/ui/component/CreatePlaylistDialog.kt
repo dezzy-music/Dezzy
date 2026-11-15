@@ -36,6 +36,7 @@ import com.dezzy.music.LocalDatabase
 import com.dezzy.music.R
 import com.dezzy.music.db.entities.PlaylistEntity
 import com.dezzy.music.constants.InnerTubeCookieKey
+import com.dezzy.music.security.SessionCrypto
 import com.dezzy.music.extensions.isSyncEnabled
 import com.dezzy.music.utils.rememberPreference
 import kotlinx.coroutines.Dispatchers
@@ -55,7 +56,7 @@ fun CreatePlaylistDialog(
     val context = LocalContext.current
 
     val innerTubeCookie by rememberPreference(InnerTubeCookieKey, "")
-    val isSignedIn = innerTubeCookie.isNotEmpty()
+    val isSignedIn = SessionCrypto.decrypt(innerTubeCookie).isNotEmpty()
 
     TextFieldDialog(
         icon = { Icon(painter = painterResource(R.drawable.playlist_add), contentDescription = null) },

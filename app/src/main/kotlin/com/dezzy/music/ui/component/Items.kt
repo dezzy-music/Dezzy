@@ -230,7 +230,7 @@ fun GridItem(
 }
 
 @Composable
-private fun playlistCountText(
+internal fun playlistCountText(
     playlist: Playlist,
     autoPlaylist: Boolean,
 ): String =
@@ -251,7 +251,7 @@ private fun playlistCountText(
     }
 
 @Composable
-private fun playlistPlaceholderIcon(
+internal fun playlistPlaceholderIcon(
     playlist: Playlist,
     autoPlaylist: Boolean,
 ): Int =

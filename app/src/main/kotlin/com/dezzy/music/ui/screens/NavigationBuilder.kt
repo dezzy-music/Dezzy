@@ -94,7 +94,6 @@ import com.dezzy.music.ui.screens.musicrecognition.MusicRecognitionScreen
 import com.dezzy.music.ui.screens.settings.AODSettings
 import com.dezzy.music.ui.screens.settings.AiSettings
 import com.dezzy.music.ui.screens.SpotifyLoginScreen
-import com.dezzy.music.ui.screens.MusicMapScreen
 import com.dezzy.music.ui.screens.settings.PublicRoomsScreen
 
 import com.dezzy.music.ui.utils.ShowMediaInfo
@@ -137,11 +136,17 @@ fun NavGraphBuilder.navigationBuilder(
     composable("stats") {
         StatsScreen(navController)
     }
+    composable("experiences") {
+        com.dezzy.music.ui.screens.ExperiencesScreen(navController)
+    }
+    composable("time_machine") {
+        com.dezzy.music.ui.screens.TimeMachineScreen(navController)
+    }
     composable("year_in_music") {
         com.dezzy.music.ui.screens.YearInMusicScreen(navController)
     }
     composable("search") {
-        MoodAndGenresScreen(navController)
+        SearchHomeScreen(navController)
     }
     composable("dj_dezzy") {
         com.dezzy.music.ui.screens.DJDezzyScreen(navController)
@@ -161,43 +166,45 @@ fun NavGraphBuilder.navigationBuilder(
     composable("charts_screen") {
         ChartsScreen(navController)
     }
+    composable(ChartsVideosRoute) {
+        ChartsScreen(navController, scrollToVideos = true)
+    }
     composable("music_map") {
         com.dezzy.music.ui.screens.musicmap.MusicMapScreen(navController)
     }
+    // Red social P2P (Nostr, cifrado de extremo a extremo, sin servidores propios).
     composable("social") {
-        com.dezzy.music.ui.screens.social.SocialScreen(navController)
+        com.dezzy.music.ui.screens.p2p.SocialHubScreen(navController)
+    }
+    composable("social/nearby") {
+        com.dezzy.music.ui.screens.p2p.SocialHubScreen(navController, com.dezzy.music.ui.screens.p2p.SocialTab.NEARBY)
     }
     composable("feed") {
-        com.dezzy.music.ui.screens.social.FeedScreen(navController)
+        com.dezzy.music.ui.screens.p2p.SocialHubScreen(navController, com.dezzy.music.ui.screens.p2p.SocialTab.COMMUNITY)
     }
-    // Red social musical: actividad de amigos en vivo + feed de música compartida.
     composable("community") {
-        com.dezzy.music.ui.screens.social.MusicFeedScreen(navController)
+        com.dezzy.music.ui.screens.p2p.SocialHubScreen(navController, com.dezzy.music.ui.screens.p2p.SocialTab.COMMUNITY)
     }
-    // Bandeja de mensajes (estilo Instagram DMs).
     composable("messages") {
-        com.dezzy.music.ui.screens.social.MessagesInboxScreen(navController)
+        com.dezzy.music.ui.screens.p2p.SocialHubScreen(navController, com.dezzy.music.ui.screens.p2p.SocialTab.FRIENDS)
     }
-    // Perfil propio estilo Threads (vista); la edición vive en /edit.
     composable("social/profile") {
-        com.dezzy.music.ui.screens.social.MyProfileScreen(navController)
+        com.dezzy.music.ui.screens.p2p.P2PProfileScreen(navController, pubkey = null)
     }
     composable("social/profile/edit") {
-        com.dezzy.music.ui.screens.social.ProfileScreen(navController)
+        com.dezzy.music.ui.screens.p2p.P2PProfileScreen(navController, pubkey = null, startEditing = true)
     }
-    // Perfil musical de otro usuario (top artistas/canciones, seguir).
     composable("social/profile/{userId}") { backStackEntry ->
-        com.dezzy.music.ui.screens.social.MusicProfileScreen(
+        com.dezzy.music.ui.screens.p2p.P2PProfileScreen(
             navController = navController,
-            userId = backStackEntry.arguments?.getString("userId").orEmpty(),
+            pubkey = backStackEntry.arguments?.getString("userId").orEmpty(),
         )
     }
     composable("chat/{friendId}/{friendName}") { backStackEntry ->
-        val friendId = backStackEntry.arguments?.getString("friendId").orEmpty()
-        val friendName = backStackEntry.arguments?.getString("friendName")
-            ?.let { runCatching { java.net.URLDecoder.decode(it, "UTF-8") }.getOrDefault(it) }
-            .orEmpty()
-        com.dezzy.music.ui.screens.social.ChatScreen(navController, friendId, friendName)
+        com.dezzy.music.ui.screens.p2p.P2PChatScreen(
+            navController = navController,
+            peer = backStackEntry.arguments?.getString("friendId").orEmpty(),
+        )
     }
     composable("public_rooms") {
         PublicRoomsScreen(navController, scrollBehavior)
@@ -393,6 +400,9 @@ fun NavGraphBuilder.navigationBuilder(
     }
     composable("settings") {
         SettingsScreen(navController, scrollBehavior, latestVersionName)
+    }
+    composable("settings/accounts") {
+        com.dezzy.music.ui.screens.settings.AccountsServicesScreen(navController)
     }
     composable("settings/appearance") {
         AppearanceSettings(navController, scrollBehavior)

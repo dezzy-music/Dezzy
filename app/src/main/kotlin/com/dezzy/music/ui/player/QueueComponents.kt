@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 
 /*
  * Dezzy Project Original (2026)
@@ -34,21 +34,20 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import com.dezzy.music.ui.component.ConnectedButtonShapes
+import com.dezzy.music.ui.component.StandardToggleButton
+import com.dezzy.music.ui.component.ToggleColors
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.ToggleButton
-import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -263,29 +262,29 @@ fun CurrentSongHeader(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
+            horizontalArrangement = Arrangement.spacedBy(ConnectedButtonShapes.SpaceBetween),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val uncheckedColors = ToggleButtonDefaults.toggleButtonColors(
+            val uncheckedColors = ToggleColors(
                 containerColor = onBackgroundColor.copy(alpha = 0.12f),
                 contentColor = onBackgroundColor,
             )
-            val checkedColors = ToggleButtonDefaults.toggleButtonColors(
+            val checkedColors = ToggleColors(
                 checkedContainerColor = onBackgroundColor.copy(alpha = 0.22f),
                 checkedContentColor = onBackgroundColor,
             )
-            val infiniteCheckedColors = ToggleButtonDefaults.toggleButtonColors(
+            val infiniteCheckedColors = ToggleColors(
                 checkedContainerColor = MaterialTheme.colorScheme.primary,
                 checkedContentColor = MaterialTheme.colorScheme.onPrimary,
                 containerColor = onBackgroundColor.copy(alpha = 0.12f),
                 contentColor = onBackgroundColor.copy(alpha = 0.5f),
             )
 
-            ToggleButton(
+            StandardToggleButton(
                 checked = shuffleModeEnabled,
                 onCheckedChange = { onShuffleClick() },
                 modifier = Modifier.weight(1f).size(48.dp),
-                shapes = ButtonGroupDefaults.connectedLeadingButtonShapes(),
+                shape = ConnectedButtonShapes.Leading,
                 colors = if (shuffleModeEnabled) checkedColors else uncheckedColors,
             ) {
                 Icon(
@@ -295,11 +294,11 @@ fun CurrentSongHeader(
                 )
             }
 
-            ToggleButton(
+            StandardToggleButton(
                 checked = repeatMode != Player.REPEAT_MODE_OFF,
                 onCheckedChange = { onRepeatClick() },
                 modifier = Modifier.weight(1f).size(48.dp),
-                shapes = ButtonGroupDefaults.connectedMiddleButtonShapes(),
+                shape = ConnectedButtonShapes.Middle,
                 colors = if (repeatMode != Player.REPEAT_MODE_OFF) checkedColors else uncheckedColors,
             ) {
                 Icon(
@@ -315,11 +314,11 @@ fun CurrentSongHeader(
                 )
             }
 
-            ToggleButton(
+            StandardToggleButton(
                 checked = infiniteQueueEnabled,
                 onCheckedChange = { onInfiniteQueueClick() },
                 modifier = Modifier.weight(1f).size(48.dp),
-                shapes = ButtonGroupDefaults.connectedTrailingButtonShapes(),
+                shape = ConnectedButtonShapes.Trailing,
                 colors = infiniteCheckedColors,
             ) {
                 Icon(
@@ -413,7 +412,7 @@ fun SleepTimerDialog(
 
                 Spacer(Modifier.height(8.dp))
 
-                OutlinedButton(onClick = onEndOfSong, shapes = ButtonDefaults.shapes()) {
+                OutlinedButton(onClick = onEndOfSong) {
                     Text(stringResource(R.string.end_of_song))
                 }
             }
@@ -884,7 +883,6 @@ fun QueueCollapsedContentV1(
             TextButton(
                 onClick = onExpandQueue,
                 modifier = Modifier.weight(1f),
-                shapes = ButtonDefaults.shapes(),
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -912,7 +910,6 @@ fun QueueCollapsedContentV1(
             TextButton(
                 onClick = onSleepTimerClick,
                 modifier = Modifier.weight(1.2f),
-                shapes = ButtonDefaults.shapes(),
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -956,7 +953,6 @@ fun QueueCollapsedContentV1(
             TextButton(
                 onClick = onShowLyrics,
                 modifier = Modifier.weight(1f),
-                shapes = ButtonDefaults.shapes(),
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,

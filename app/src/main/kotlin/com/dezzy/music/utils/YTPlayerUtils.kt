@@ -207,6 +207,12 @@ object YTPlayerUtils {
     )
 
     private val VIDEO_MODE_CLIENTS: List<YouTubeClient> = listOf(
+        // WEB first: ANDROID_VR / IOS / TVHTML5 are currently rejected by YouTube
+        // with LOGIN_REQUIRED ("Sign in to confirm you're not a bot") because those
+        // requests go out without a poToken. WEB mints a fresh per-video player
+        // poToken through the BotGuard bridge (PlaybackPoTokenController), so it is
+        // the client that can actually return streamingData for video mode.
+        WEB,
         ANDROID_VR_1_61_48,
         ANDROID_VR_1_43_32,
         IOS,

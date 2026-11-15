@@ -5,6 +5,7 @@
 
 package com.dezzy.music.ui.screens.social
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -94,6 +95,9 @@ fun MusicFeedScreen(navController: NavController) {
                     }
                 },
                 actions = {
+                    IconButton(onClick = { navController.navigate("messages") }) {
+                        Icon(painterResource(R.drawable.social_chat), contentDescription = "Mensajes")
+                    }
                     IconButton(onClick = { navController.navigate("social") }) {
                         Icon(painterResource(R.drawable.social_friends), contentDescription = "Amigos")
                     }
@@ -124,15 +128,6 @@ fun MusicFeedScreen(navController: NavController) {
                         enabled = nowPlaying != null,
                         onClick = { showComposer = true },
                     )
-                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHighest)
-                }
-
-                // ── Pistas más comentadas (estilo YouTube Music) ──
-                item {
-                    TopCommentedTracksSection(
-                        header = { SectionHeader("Pistas más comentadas") },
-                    )
-                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHighest)
                 }
 
                 // ── Amigos escuchando ahora ──
@@ -145,6 +140,14 @@ fun MusicFeedScreen(navController: NavController) {
                         Spacer(Modifier.height(8.dp))
                         HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHighest)
                     }
+                }
+
+                // ── Pistas más comentadas (estilo YouTube Music) ──
+                item {
+                    TopCommentedTracksSection(
+                        header = { SectionHeader("Pistas más comentadas") },
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHighest)
                 }
 
                 // ── Selector Siguiendo / Descubrir ──
@@ -244,30 +247,41 @@ fun MusicFeedScreen(navController: NavController) {
     }
 }
 
-/** Fila superior tipo Threads: avatar + "¿Qué novedades tienes?". */
+/** Composer en píldora (fase 5, boceto A): comparte lo que suena ahora. */
 @Composable
 private fun ComposerRow(avatarUrl: String?, enabled: Boolean, onClick: () -> Unit) {
-    Row(
+    Surface(
+        shape = RoundedCornerShape(28.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
-        ListeningAvatar(avatarUrl = avatarUrl, isPlaying = false, size = 40.dp)
-        Spacer(Modifier.width(12.dp))
-        Text(
-            text = if (enabled) "¿Qué novedades tienes?" else "Reproduce algo para compartirlo",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
-        )
-        Icon(
-            painter = painterResource(R.drawable.social_feed),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(20.dp),
-        )
+        Row(
+            modifier = Modifier
+                .clickable(enabled = enabled, onClick = onClick)
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            ListeningAvatar(avatarUrl = avatarUrl, isPlaying = false, size = 36.dp)
+            Spacer(Modifier.width(12.dp))
+            Text(
+                text = if (enabled) "Comparte lo que suena…" else "Reproduce algo para compartirlo",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Spacer(Modifier.width(8.dp))
+            FilledTonalButton(
+                onClick = onClick,
+                enabled = enabled,
+                contentPadding = PaddingValues(horizontal = 16.dp),
+            ) {
+                Text("Publicar", fontWeight = FontWeight.SemiBold)
+            }
+        }
     }
 }
 
@@ -441,7 +455,15 @@ private fun FriendActivityStrip(
                     ListeningAvatar(
                         avatarUrl = friend.avatarUrl,
                         isPlaying = friend.isPlaying,
-                        size = 62.dp,
+                        size = 56.dp,
+                        modifier = Modifier
+                            .border(
+                                width = 2.dp,
+                                color = if (friend.isPlaying) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.outlineVariant,
+                                shape = CircleShape,
+                            )
+                            .padding(4.dp),
                     )
                     // Carátula pequeña encima del avatar: se ve QUÉ escucha sin
                     // tener que leer el texto.
@@ -484,134 +506,142 @@ private fun MusicPostCard(
     onComment: () -> Unit,
     onShare: () -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-        // Autor
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onOpenProfile)
-                .padding(horizontal = 16.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            ListeningAvatar(avatarUrl = post.authorAvatar, isPlaying = false, size = 34.dp)
-            Spacer(Modifier.width(10.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = post.authorName,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                )
-                val meta = listOfNotNull(
-                    post.authorUsername?.let { "@$it" },
-                    relativeTime(post.createdAt).takeIf { it.isNotBlank() },
-                ).joinToString(" · ")
-                if (meta.isNotBlank()) {
-                    Text(
-                        text = meta,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                    )
-                }
-            }
-        }
-
-        if (!post.caption.isNullOrBlank()) {
-            Text(
-                text = post.caption,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-            )
-        }
-
-        // Entidad musical — el corazón de la tarjeta
-        Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surfaceContainer,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp)
-                .clickable(onClick = onPlay),
-        ) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+            // Autor
             Row(
-                modifier = Modifier.padding(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onOpenProfile)
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                ArtworkThumb(url = post.artworkUrl, size = 64.dp, corner = 10.dp)
-                Spacer(Modifier.width(12.dp))
+                ListeningAvatar(avatarUrl = post.authorAvatar, isPlaying = false, size = 34.dp)
+                Spacer(Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = post.entityTitle,
-                        style = MaterialTheme.typography.titleSmall,
+                        text = post.authorName,
+                        style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
                     )
-                    if (!post.entitySubtitle.isNullOrBlank()) {
+                    val meta = listOfNotNull(
+                        post.authorUsername?.let { "@$it" },
+                        relativeTime(post.createdAt).takeIf { it.isNotBlank() },
+                    ).joinToString(" · ")
+                    if (meta.isNotBlank()) {
                         Text(
-                            text = post.entitySubtitle,
-                            style = MaterialTheme.typography.bodySmall,
+                            text = meta,
+                            style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                    }
+                }
+            }
+
+            if (!post.caption.isNullOrBlank()) {
+                Text(
+                    text = post.caption,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+            }
+
+            // Entidad musical — el corazón de la tarjeta
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                    .clickable(onClick = onPlay),
+            ) {
+                Row(
+                    modifier = Modifier.padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    ArtworkThumb(url = post.artworkUrl, size = 64.dp, corner = 10.dp)
+                    Spacer(Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = post.entityTitle,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
+                        if (!post.entitySubtitle.isNullOrBlank()) {
+                            Text(
+                                text = post.entitySubtitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        Spacer(Modifier.height(3.dp))
+                        Text(
+                            text = when (post.entityType) {
+                                "album" -> "Álbum"
+                                "playlist" -> "Playlist"
+                                "artist" -> "Artista"
+                                else -> "Canción"
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
-                    Spacer(Modifier.height(3.dp))
-                    Text(
-                        text = when (post.entityType) {
-                            "album" -> "Álbum"
-                            "playlist" -> "Playlist"
-                            "artist" -> "Artista"
-                            else -> "Canción"
-                        },
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Spacer(Modifier.width(8.dp))
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary)
-                        .clickable(onClick = onPlay),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.play),
-                        contentDescription = "Reproducir",
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(20.dp),
-                    )
+                    Spacer(Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary)
+                            .clickable(onClick = onPlay),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.play),
+                            contentDescription = "Reproducir",
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
                 }
             }
-        }
 
-        // Acciones estilo Threads: me gusta · comentar · compartir
-        Row(
-            modifier = Modifier.padding(start = 14.dp, end = 16.dp, top = 2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            PostAction(
-                iconRes = if (post.likedByMe) R.drawable.social_heart_filled else R.drawable.social_heart,
-                tint = if (post.likedByMe) NowPlayingGreen else MaterialTheme.colorScheme.onSurfaceVariant,
-                count = post.likesCount,
-                onClick = onLike,
-            )
-            PostAction(
-                iconRes = R.drawable.social_chat,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                count = post.commentsCount,
-                onClick = onComment,
-            )
-            PostAction(
-                iconRes = R.drawable.social_send,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                count = 0,
-                onClick = onShare,
-            )
+            // Acciones estilo Threads: me gusta · comentar · compartir
+            Row(
+                modifier = Modifier.padding(start = 14.dp, end = 16.dp, top = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                PostAction(
+                    iconRes = if (post.likedByMe) R.drawable.social_heart_filled else R.drawable.social_heart,
+                    tint = if (post.likedByMe) NowPlayingGreen else MaterialTheme.colorScheme.onSurfaceVariant,
+                    count = post.likesCount,
+                    onClick = onLike,
+                )
+                PostAction(
+                    iconRes = R.drawable.social_chat,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    count = post.commentsCount,
+                    onClick = onComment,
+                )
+                PostAction(
+                    iconRes = R.drawable.social_send,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    count = 0,
+                    onClick = onShare,
+                )
+            }
         }
     }
 }

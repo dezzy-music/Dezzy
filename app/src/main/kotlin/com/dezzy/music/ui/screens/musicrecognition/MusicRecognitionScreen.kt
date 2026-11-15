@@ -4,7 +4,7 @@
  * Licensed Under GPL-3.0 | see git history for contributors
  */
 
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 
 package com.dezzy.music.ui.screens.musicrecognition
 
@@ -59,23 +59,22 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LargeFlexibleTopAppBar
-import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import com.dezzy.music.ui.component.ConnectedButtonShapes
+import com.dezzy.music.ui.component.StandardToggleButton
+import com.dezzy.music.ui.component.ToggleColors
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.ToggleButton
-import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -261,7 +260,7 @@ fun MusicRecognitionScreen(
 
     Scaffold(
         topBar = {
-            LargeFlexibleTopAppBar(
+            LargeTopAppBar(
                 title = { Text(stringResource(R.string.music_recognition)) },
                 navigationIcon = {
                     Surface(
@@ -484,7 +483,7 @@ private fun RecognitionListenPane(
                     .padding(top = 18.dp),
                 horizontalArrangement = Arrangement.Center,
             ) {
-                LoadingIndicator(modifier = Modifier.size(36.dp))
+                CircularProgressIndicator(modifier = Modifier.size(36.dp))
             }
         }
 
@@ -498,7 +497,6 @@ private fun RecognitionListenPane(
                 modifier = Modifier
                     .padding(top = 16.dp)
                     .heightIn(min = 48.dp),
-                shapes = ButtonDefaults.shapes(),
             ) {
                 Text(stringResource(R.string.cancel))
             }
@@ -540,7 +538,7 @@ private fun RecognitionHistorySection(
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.weight(1f),
             )
-            TextButton(onClick = onClear, shapes = ButtonDefaults.shapes()) {
+            TextButton(onClick = onClear) {
                 Text(stringResource(R.string.clear))
             }
         }
@@ -897,7 +895,6 @@ private fun ResultFirstSheet(
                                 )
                             },
                             modifier = Modifier.heightIn(min = 48.dp),
-                            shapes = ButtonDefaults.shapes(),
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.link),
@@ -1188,7 +1185,6 @@ private fun PermissionCard(
             Button(
                 onClick = onAllow,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                shapes = ButtonDefaults.shapes(),
             ) {
                 Text(stringResource(R.string.music_recognition_permission_action))
             }
@@ -1225,7 +1221,7 @@ private fun FailureCard(
                 )
             }
             Spacer(modifier = Modifier.height(14.dp))
-            FilledTonalButton(onClick = onAction, shapes = ButtonDefaults.shapes()) {
+            FilledTonalButton(onClick = onAction) {
                 Text(actionLabel)
             }
         }
@@ -1249,7 +1245,6 @@ private fun SuccessActions(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 52.dp),
-            shapes = ButtonDefaults.shapes(),
         ) {
             Icon(
                 painter = painterResource(R.drawable.play),
@@ -1265,28 +1260,28 @@ private fun SuccessActions(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
+            horizontalArrangement = Arrangement.spacedBy(ConnectedButtonShapes.SpaceBetween),
         ) {
             SecondaryAction(
                 iconRes = R.drawable.replay,
                 label = stringResource(R.string.music_recognition_listen_again),
                 onClick = onListenAgain,
                 modifier = Modifier.weight(1f),
-                shapes = ButtonGroupDefaults.connectedLeadingButtonShapes(),
+                shapes = ConnectedButtonShapes.Leading,
             )
             SecondaryAction(
                 iconRes = R.drawable.share,
                 label = stringResource(R.string.share),
                 onClick = onShare,
                 modifier = Modifier.weight(1f),
-                shapes = ButtonGroupDefaults.connectedMiddleButtonShapes(),
+                shapes = ConnectedButtonShapes.Middle,
             )
             SecondaryAction(
                 iconRes = R.drawable.search,
                 label = stringResource(R.string.search),
                 onClick = onSearch,
                 modifier = Modifier.weight(1f),
-                shapes = ButtonGroupDefaults.connectedTrailingButtonShapes(),
+                shapes = ConnectedButtonShapes.Trailing,
             )
         }
     }
@@ -1298,14 +1293,14 @@ private fun SecondaryAction(
     label: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    shapes: androidx.compose.material3.ToggleButtonShapes,
+    shapes: androidx.compose.ui.graphics.Shape,
 ) {
-    ToggleButton(
+    StandardToggleButton(
         checked = false,
         onCheckedChange = { onClick() },
         modifier = modifier.heightIn(min = 48.dp),
-        shapes = shapes,
-        colors = ToggleButtonDefaults.toggleButtonColors(
+        shape = shapes,
+        colors = ToggleColors(
             containerColor = MaterialTheme.colorScheme.secondaryContainer,
             contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
             checkedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
