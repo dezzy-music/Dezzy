@@ -52,6 +52,10 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
@@ -84,8 +88,20 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.setProgress
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -118,6 +134,8 @@ import com.dezzy.music.ui.menu.AddToPlaylistDialog
 import com.dezzy.music.ui.screens.CommentSheet
 import com.dezzy.music.utils.makeTimeString
 import com.dezzy.music.utils.rememberEnumPreference
+import com.dezzy.music.video.MusicVideoDownloader
+import com.dezzy.music.video.VideoPipState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -151,6 +169,8 @@ fun VideoModeOverlay(
     val videoPlayer by playerConnection.videoPlayerInstance.collectAsState()
     val videoModeError by playerConnection.videoModeError.collectAsState()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
+    val inPip by VideoPipState.inPip.collectAsState()
+    val downloadState by MusicVideoDownloader.state.collectAsState()
 
     val scope = rememberCoroutineScope()
     val recommendations = remember { VideoRecommendations(scope) }
@@ -169,6 +189,8 @@ fun VideoModeOverlay(
     LaunchedEffect(visible) {
         if (!visible) feedOpen = false
     }
+    // La pantalla no se apaga mientras el video suena (sí cuando está en pausa).
+    KeepScreenOnWhilePlaying(if (visible) videoPlayer else null)
 
     val songId = mediaMetadata?.id
     val songTitle = mediaMetadata?.title.orEmpty()
@@ -241,8 +263,43 @@ fun VideoModeOverlay(
             }
         }
 
-        videoModeError?.let { message ->
-            VideoModeErrorSnack(message = message, onDismiss = { playerConnection.service.videoModeError.value = null })
+        if (!inPip) {
+            videoModeError?.let { message ->
+                VideoModeErrorSnack(
+                    message = message,
+                    onRetry = { playerConnection.retryVideoMode() },
+                    onDismiss = { playerConnection.service.videoModeError.value = null },
+                )
+            }
+            if (visible) {
+                VideoDownloadStatus(
+                    state = downloadState,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .navigationBarsPadding()
+                        .padding(start = 16.dp, end = 16.dp, bottom = 76.dp),
+                )
+            }
+        }
+    }
+}
+
+/** Mantiene la pantalla encendida sólo mientras [player] está reproduciendo. */
+@Composable
+private fun KeepScreenOnWhilePlaying(player: ExoPlayer?) {
+    val view = LocalView.current
+    DisposableEffect(player, view) {
+        if (player == null) return@DisposableEffect onDispose { }
+        val listener = object : Player.Listener {
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                view.keepScreenOn = isPlaying
+            }
+        }
+        view.keepScreenOn = player.isPlaying
+        player.addListener(listener)
+        onDispose {
+            player.removeListener(listener)
+            view.keepScreenOn = false
         }
     }
 }
@@ -259,7 +316,12 @@ internal class VideoPlaybackState {
 @Composable
 internal fun rememberVideoPlaybackState(player: ExoPlayer?): VideoPlaybackState {
     val state = remember { VideoPlaybackState() }
+    var ticking by remember { mutableStateOf(false) }
     DisposableEffect(player) {
+        fun sync(p: Player) {
+            state.position = p.currentPosition
+            state.duration = p.duration.takeIf { it > 0 } ?: 0L
+        }
         val listener = object : Player.Listener {
             override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
                 state.isPlaying = playWhenReady
@@ -267,17 +329,38 @@ internal fun rememberVideoPlaybackState(player: ExoPlayer?): VideoPlaybackState 
 
             override fun onPlaybackStateChanged(playbackState: Int) {
                 state.buffering = playbackState == Player.STATE_BUFFERING
+                player?.let(::sync)
+            }
+
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                ticking = isPlaying
+                player?.let(::sync)
+            }
+
+            // Saltos (doble toque, barra, notificación…) se reflejan aunque esté en pausa.
+            override fun onPositionDiscontinuity(
+                oldPosition: Player.PositionInfo,
+                newPosition: Player.PositionInfo,
+                reason: Int,
+            ) {
+                player?.let(::sync)
             }
         }
         if (player != null) {
             state.isPlaying = player.playWhenReady
             state.buffering = player.playbackState == Player.STATE_BUFFERING
+            ticking = player.isPlaying
+            sync(player)
             player.addListener(listener)
+        } else {
+            ticking = false
         }
         onDispose { player?.removeListener(listener) }
     }
-    LaunchedEffect(player) {
+    // Sólo se sondea la posición mientras el video avanza: en pausa no gasta batería.
+    LaunchedEffect(player, ticking) {
         val p = player ?: return@LaunchedEffect
+        if (!ticking) return@LaunchedEffect
         while (true) {
             state.position = p.currentPosition
             state.duration = p.duration.takeIf { it > 0 } ?: 0L
@@ -342,6 +425,12 @@ private fun VideoModeScreen(
     var fullscreen by rememberSaveable { mutableStateOf(false) }
     var showComments by remember { mutableStateOf(false) }
     var showPlaylistDialog by remember { mutableStateOf(false) }
+    var showQuality by remember { mutableStateOf(false) }
+    val inPip by VideoPipState.inPip.collectAsState()
+    val qualityOptions by playerConnection.videoQualityOptions.collectAsState()
+    val selectedHeight by playerConnection.videoSelectedHeight.collectAsState()
+    val playingHeight by playerConnection.videoPlayingHeight.collectAsState()
+    val qualityLabel = qualityLabel(selectedHeight, playingHeight)
 
     val togglePlay: () -> Unit = {
         videoPlayer?.let { it.playWhenReady = !it.playWhenReady }
@@ -413,6 +502,11 @@ private fun VideoModeScreen(
             },
         )
         DropdownMenuItem(
+            text = { Text("Calidad: $qualityLabel") },
+            leadingIcon = { Icon(painterResource(R.drawable.settings), null) },
+            onClick = { close(); showQuality = true },
+        )
+        DropdownMenuItem(
             text = { Text("Solo videos") },
             leadingIcon = { Icon(painterResource(R.drawable.slow_motion_video), null) },
             onClick = { close(); onOpenFeed() },
@@ -422,7 +516,7 @@ private fun VideoModeScreen(
             leadingIcon = { Icon(painterResource(R.drawable.download), null) },
             onClick = {
                 close()
-                videoPlayer?.let { downloadCurrentVideo(context, it, mediaMetadata?.title) }
+                playerConnection.downloadCurrentVideo()
             },
         )
         DropdownMenuItem(
@@ -458,12 +552,15 @@ private fun VideoModeScreen(
         ) {
             VideoStage(
                 player = videoPlayer,
-                surfaceActive = !fullscreen,
+                // En PiP la superficie la pone la capa raíz de MainActivity (una sola a la vez).
+                surfaceActive = !fullscreen && !inPip,
                 loading = loading,
                 playback = playback,
                 resizeMode = resizeModePref.toPlayerViewMode(),
                 fullscreen = false,
                 title = null,
+                qualityLabel = qualityLabel,
+                onOpenQuality = { showQuality = true },
                 onTogglePlay = togglePlay,
                 onSeekTo = seekTo,
                 onPrevious = previous,
@@ -537,7 +634,7 @@ private fun VideoModeScreen(
                         iconRes = R.drawable.download,
                         label = null,
                         contentDescription = "Descargar video",
-                        onClick = { videoPlayer?.let { downloadCurrentVideo(context, it, mediaMetadata?.title) } },
+                        onClick = { playerConnection.downloadCurrentVideo() },
                     )
                 }
 
@@ -575,7 +672,7 @@ private fun VideoModeScreen(
         }
     }
 
-    if (fullscreen) {
+    if (fullscreen && !inPip) {
         VideoFullscreenDialog(onDismiss = { fullscreen = false }) {
             VideoStage(
                 player = videoPlayer,
@@ -585,6 +682,8 @@ private fun VideoModeScreen(
                 resizeMode = resizeModePref.toPlayerViewMode(),
                 fullscreen = true,
                 title = mediaMetadata?.title,
+                qualityLabel = qualityLabel,
+                onOpenQuality = { showQuality = true },
                 onTogglePlay = togglePlay,
                 onSeekTo = seekTo,
                 onPrevious = previous,
@@ -608,6 +707,19 @@ private fun VideoModeScreen(
                 listOf(metadata.id)
             },
             onDismiss = { showPlaylistDialog = false },
+        )
+    }
+
+    if (showQuality && !inPip) {
+        VideoQualitySheet(
+            options = qualityOptions,
+            selectedHeight = selectedHeight,
+            playingHeight = playingHeight,
+            onSelect = { height ->
+                playerConnection.setVideoQuality(height)
+                showQuality = false
+            },
+            onDismiss = { showQuality = false },
         )
     }
 
@@ -645,6 +757,8 @@ private fun VideoStage(
     onToggleFullscreen: () -> Unit,
     menuItems: @Composable ColumnScope.(close: () -> Unit) -> Unit,
     modifier: Modifier = Modifier,
+    qualityLabel: String? = null,
+    onOpenQuality: (() -> Unit)? = null,
 ) {
     var controlsVisible by remember { mutableStateOf(true) }
     var hideTick by remember { mutableIntStateOf(0) }
@@ -671,23 +785,33 @@ private fun VideoStage(
     }
     val busy = loading || playback.buffering
     val currentSeekTo by rememberUpdatedState(onSeekTo)
+    val seekBy: (Long) -> Unit = { delta ->
+        player?.let { p ->
+            val max = p.duration.takeIf { it > 0 } ?: Long.MAX_VALUE
+            currentSeekTo((p.currentPosition + delta).coerceIn(0L, max))
+            seekHint = if (delta > 0) 10 else -10
+            seekHintTick++
+        }
+    }
 
     Box(
         modifier = modifier
             .background(Color.Black)
+            // El doble toque tiene alternativa para TalkBack (y botones visibles abajo).
+            .semantics {
+                customActions = listOf(
+                    CustomAccessibilityAction("Retroceder 10 segundos") { seekBy(-10_000L); true },
+                    CustomAccessibilityAction("Avanzar 10 segundos") { seekBy(10_000L); true },
+                )
+            }
             .pointerInput(player) {
                 detectTapGestures(
                     onTap = {
                         controlsVisible = !controlsVisible
                         hideTick++
                     },
-                    onDoubleTap = onDouble@{ offset ->
-                        val forward = offset.x > size.width / 2f
-                        val p = player ?: return@onDouble
-                        val delta = if (forward) 10_000L else -10_000L
-                        currentSeekTo((p.currentPosition + delta).coerceIn(0L, p.duration.coerceAtLeast(0L)))
-                        seekHint = if (forward) 10 else -10
-                        seekHintTick++
+                    onDoubleTap = { offset ->
+                        seekBy(if (offset.x > size.width / 2f) 10_000L else -10_000L)
                     },
                 )
             },
@@ -763,6 +887,38 @@ private fun VideoStage(
                         } else {
                             Spacer(Modifier.weight(1f))
                         }
+                        if (onOpenQuality != null) {
+                            Surface(
+                                onClick = { onOpenQuality(); poke() },
+                                shape = CircleShape,
+                                color = Color.Black.copy(alpha = 0.35f),
+                                modifier = Modifier
+                                    .heightIn(min = 48.dp)
+                                    .padding(vertical = 6.dp)
+                                    .semantics { contentDescription = "Calidad del video: ${qualityLabel.orEmpty()}" },
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.settings),
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                    if (qualityLabel != null) {
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(
+                                            text = qualityLabel,
+                                            color = Color.White,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                        )
+                                    }
+                                }
+                            }
+                        }
                         com.dezzy.music.ui.component.CastButton(tint = Color.White)
                         Box {
                             IconButton(onClick = { menuOpen = true }) {
@@ -781,12 +937,20 @@ private fun VideoStage(
                         }
                     }
 
-                    // Centro: anterior · play/pausa · siguiente
+                    // Centro: −10 s · anterior · play/pausa · siguiente · +10 s
                     Row(
                         modifier = Modifier.align(Alignment.Center),
-                        horizontalArrangement = Arrangement.spacedBy(if (fullscreen) 48.dp else 28.dp),
+                        horizontalArrangement = Arrangement.spacedBy(if (fullscreen) 32.dp else 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        IconButton(onClick = { seekBy(-10_000L); poke() }) {
+                            Icon(
+                                painter = painterResource(R.drawable.replay),
+                                contentDescription = "Retroceder 10 segundos",
+                                tint = Color.White,
+                                modifier = Modifier.size(26.dp),
+                            )
+                        }
                         IconButton(onClick = { onPrevious(); poke() }) {
                             Icon(
                                 painter = painterResource(R.drawable.skip_previous),
@@ -825,6 +989,14 @@ private fun VideoStage(
                                 contentDescription = "Siguiente",
                                 tint = Color.White,
                                 modifier = Modifier.size(32.dp),
+                            )
+                        }
+                        IconButton(onClick = { seekBy(10_000L); poke() }) {
+                            Icon(
+                                painter = painterResource(R.drawable.fast_forward),
+                                contentDescription = "Avanzar 10 segundos",
+                                tint = Color.White,
+                                modifier = Modifier.size(26.dp),
                             )
                         }
                     }
@@ -896,6 +1068,17 @@ private fun VideoSeekBar(
         modifier = Modifier
             .fillMaxWidth()
             .height(24.dp)
+            .semantics {
+                contentDescription = "Posición del video"
+                stateDescription = "${makeTimeString(position)} de ${makeTimeString(duration)}"
+                progressBarRangeInfo = ProgressBarRangeInfo(fraction, 0f..1f)
+                if (duration > 0) {
+                    setProgress { target ->
+                        commit((target.coerceIn(0f, 1f) * duration).toLong())
+                        true
+                    }
+                }
+            }
             .pointerInput(duration) {
                 detectTapGestures { offset ->
                     if (duration > 0) commit((offset.x / size.width * duration).toLong())
@@ -1183,6 +1366,18 @@ private fun VideoFullscreenDialog(
     onDismiss: () -> Unit,
     content: @Composable () -> Unit,
 ) {
+    // Gira la app de verdad a horizontal (sensor) mientras dure la pantalla completa y
+    // devuelve la orientación anterior al salir. Si el sistema no lo permite (p. ej. ventana
+    // múltiple), se mantiene el giro de 90° de la capa como respaldo.
+    val activityContext = LocalContext.current
+    DisposableEffect(activityContext) {
+        val activity = activityContext.findHostActivity()
+        val previous = activity?.requestedOrientation
+        activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        onDispose {
+            if (activity != null && previous != null) activity.requestedOrientation = previous
+        }
+    }
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
@@ -1311,36 +1506,162 @@ fun SongVideoToggle(
     }
 }
 
-/** Descarga el stream de video actual a Películas/Dezzy con el DownloadManager. */
-private fun downloadCurrentVideo(
-    context: android.content.Context,
-    videoPlayer: ExoPlayer,
-    title: String?,
+private tailrec fun android.content.Context.findHostActivity(): android.app.Activity? = when (this) {
+    is android.app.Activity -> this
+    is android.content.ContextWrapper -> baseContext.findHostActivity()
+    else -> null
+}
+
+/** «Auto (720p)», «1080p»… para el botón de calidad. */
+private fun qualityLabel(selected: Int?, playing: Int?): String = when {
+    selected != null -> "${selected}p"
+    playing != null && playing > 0 -> "Auto (${playing}p)"
+    else -> "Auto"
+}
+
+/**
+ * Hoja M3 para elegir la calidad del videoclip: «Automática» (adapta según la conexión,
+ * hasta el máximo de Ajustes) o una altura fija.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun VideoQualitySheet(
+    options: List<Int>,
+    selectedHeight: Int?,
+    playingHeight: Int?,
+    onSelect: (Int?) -> Unit,
+    onDismiss: () -> Unit,
 ) {
-    val uri = videoPlayer.currentMediaItem?.localConfiguration?.uri
-    if (uri == null || uri.scheme?.startsWith("http") != true) {
-        android.widget.Toast.makeText(context, "Video aún no disponible", android.widget.Toast.LENGTH_SHORT).show()
-        return
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(bottom = 16.dp)
+                .selectableGroup(),
+        ) {
+            Text(
+                text = "Calidad del video",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier
+                    .padding(horizontal = 24.dp, vertical = 8.dp)
+                    .semantics { heading() },
+            )
+            Text(
+                text = "Una calidad más alta usa más datos.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 8.dp),
+            )
+            QualityRow(
+                label = "Automática",
+                supporting = if (playingHeight != null && playingHeight > 0) {
+                    "Ahora en ${playingHeight}p · se adapta a tu conexión"
+                } else {
+                    "Se adapta a tu conexión"
+                },
+                selected = selectedHeight == null,
+                onClick = { onSelect(null) },
+            )
+            options.forEach { height ->
+                QualityRow(
+                    label = "${height}p",
+                    supporting = when {
+                        height >= 1080 -> "Full HD"
+                        height >= 720 -> "HD"
+                        height >= 480 -> "Estándar"
+                        else -> "Ahorro de datos"
+                    },
+                    selected = selectedHeight == height,
+                    onClick = { onSelect(height) },
+                )
+            }
+            if (options.isEmpty()) {
+                Text(
+                    text = "Este video sólo tiene una calidad disponible.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                )
+            }
+        }
     }
-    val safeName = (title ?: "video")
-        .replace(Regex("[^\\w\\s-]"), "").trim().ifBlank { "video" }
-    runCatching {
-        val dm = context.getSystemService(android.app.DownloadManager::class.java)
-        val request = android.app.DownloadManager.Request(uri)
-            .setTitle(safeName)
-            .setMimeType("video/mp4")
-            .setNotificationVisibility(
-                android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED,
-            )
-            .setDestinationInExternalPublicDir(
-                android.os.Environment.DIRECTORY_MOVIES,
-                "Dezzy/$safeName.mp4",
-            )
-        dm.enqueue(request)
-    }.onSuccess {
-        android.widget.Toast.makeText(context, "Descargando video en Películas/Dezzy…", android.widget.Toast.LENGTH_SHORT).show()
-    }.onFailure {
-        android.widget.Toast.makeText(context, "No se pudo iniciar la descarga", android.widget.Toast.LENGTH_SHORT).show()
+}
+
+@Composable
+private fun QualityRow(
+    label: String,
+    supporting: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    ListItem(
+        headlineContent = { Text(label) },
+        supportingContent = { Text(supporting) },
+        leadingContent = { RadioButton(selected = selected, onClick = null) },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        modifier = Modifier
+            .fillMaxWidth()
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick),
+    )
+}
+
+/** Aviso del progreso / resultado de «Descargar video» (sustituye a los Toasts). */
+@Composable
+private fun VideoDownloadStatus(state: MusicVideoDownloader.State, modifier: Modifier = Modifier) {
+    LaunchedEffect(state) {
+        if (state is MusicVideoDownloader.State.Done || state is MusicVideoDownloader.State.Failed) {
+            delay(4000)
+            MusicVideoDownloader.clearResult()
+        }
+    }
+    AnimatedVisibility(
+        visible = state !is MusicVideoDownloader.State.Idle,
+        enter = fadeIn(tween(150)),
+        exit = fadeOut(tween(250)),
+        modifier = modifier,
+    ) {
+        val failed = state is MusicVideoDownloader.State.Failed
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = if (failed) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.inverseSurface,
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { liveRegion = LiveRegionMode.Polite },
+        ) {
+            val onColor = if (failed) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.inverseOnSurface
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                when (state) {
+                    is MusicVideoDownloader.State.Running -> {
+                        Text(
+                            text = state.progress?.let { "Descargando video… ${(it * 100).toInt()} %" } ?: "Preparando descarga…",
+                            color = onColor,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Text(
+                            text = state.title,
+                            color = onColor.copy(alpha = 0.75f),
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        val progress = state.progress
+                        if (progress != null) {
+                            LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
+                        } else {
+                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                        }
+                    }
+                    is MusicVideoDownloader.State.Done -> Text(state.message, color = onColor, style = MaterialTheme.typography.bodyMedium)
+                    is MusicVideoDownloader.State.Failed -> Text(state.message, color = onColor, style = MaterialTheme.typography.bodyMedium)
+                    MusicVideoDownloader.State.Idle -> Unit
+                }
+            }
+        }
     }
 }
 
@@ -1356,25 +1677,45 @@ internal fun playRelatedVideo(
 }
 
 @Composable
-private fun VideoModeErrorSnack(message: String, onDismiss: () -> Unit) {
+private fun VideoModeErrorSnack(message: String, onRetry: () -> Unit, onDismiss: () -> Unit) {
+    // Tiempo suficiente para leerlo y pulsar «Reintentar»; TalkBack lo anuncia al aparecer.
     LaunchedEffect(message) {
-        delay(3000)
+        delay(8000)
         onDismiss()
     }
     Box(modifier = Modifier.fillMaxSize()) {
         Surface(
-            shape = CircleShape,
+            shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.errorContainer,
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .statusBarsPadding()
-                .padding(top = 8.dp),
+                .padding(top = 8.dp, start = 16.dp, end = 16.dp)
+                .semantics { liveRegion = LiveRegionMode.Polite },
         ) {
-            Text(
-                text = message,
-                color = MaterialTheme.colorScheme.onErrorContainer,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
+            ) {
+                Text(
+                    text = message,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .padding(vertical = 10.dp),
+                )
+                TextButton(onClick = { onDismiss(); onRetry() }) {
+                    Text("Reintentar", color = MaterialTheme.colorScheme.onErrorContainer, fontWeight = FontWeight.SemiBold)
+                }
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        painter = painterResource(R.drawable.close),
+                        contentDescription = "Cerrar aviso",
+                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                    )
+                }
+            }
         }
     }
 }

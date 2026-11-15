@@ -52,6 +52,17 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -78,7 +89,8 @@ import kotlinx.coroutines.withContext
 fun P2PPostCard(
     post: P2PPost,
     onOpenProfile: (String) -> Unit,
-    onToggleLike: () -> Unit,
+    /** Reaccionar con un emoji, o quitar la reacción con null. */
+    onReact: (String?) -> Unit,
     onComments: () -> Unit,
     onDelete: (() -> Unit)?,
     modifier: Modifier = Modifier,
@@ -88,6 +100,7 @@ fun P2PPostCard(
     val author = rememberP2PUser(post.author)
     val scheme = MaterialTheme.colorScheme
     var menu by remember { mutableStateOf(false) }
+    var viewingPhoto by remember { mutableStateOf(false) }
 
     Column(modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -140,7 +153,7 @@ fun P2PPostCard(
                             leadingIcon = { Icon(painterResource(R.drawable.share), null) },
                             onClick = {
                                 menu = false
-                                shareText(context, post.text + (post.song?.let { "\n🎵 ${it.title} · ${it.artist}\n${it.url}" } ?: ""))
+                                shareText(context, post.text + (post.song?.let { "\n${it.title} · ${it.artist}\n${it.url}" } ?: ""))
                             },
                         )
                     }
@@ -174,8 +187,17 @@ fun P2PPostCard(
                         .padding(top = 8.dp)
                         .fillMaxWidth()
                         .heightIn(max = 360.dp)
-                        .clip(RoundedCornerShape(16.dp)),
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable(onClickLabel = "Ver foto a pantalla completa") { viewingPhoto = true },
                 )
+                if (viewingPhoto) {
+                    P2PPhotoViewer(
+                        photos = listOf(url),
+                        onDismiss = { viewingPhoto = false },
+                        title = author.displayName,
+                        caption = post.text,
+                    )
+                }
             }
             post.song?.let { song ->
                 P2PSongCard(
@@ -187,17 +209,93 @@ fun P2PPostCard(
                 )
             }
             Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                PostAction(
-                    icon = if (post.likedByMe) R.drawable.favorite else R.drawable.favorite_border,
-                    count = post.likes,
-                    label = if (post.likedByMe) "Quitar me gusta" else "Me gusta",
-                    active = post.likedByMe,
-                    onClick = onToggleLike,
-                )
+                ReactionAction(post = post, onReact = onReact)
                 PostAction(R.drawable.chat_bubble, post.comments, "Comentarios", false, onComments)
                 PostAction(R.drawable.share, 0, "Compartir", false) {
                     val link = post.song?.url
                     shareText(context, listOfNotNull(post.text.takeIf { it.isNotBlank() }, link).joinToString("\n"))
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Reacciones al estilo Facebook: un toque pone o quita ❤️; mantener pulsado abre los seis
+ * emojis. Con TalkBack, cada emoji está también en el menú de acciones.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun ReactionAction(post: P2PPost, onReact: (String?) -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    val haptic = LocalHapticFeedback.current
+    var picker by remember { mutableStateOf(false) }
+    val mine = post.myReaction
+    val tint = if (mine != null) scheme.primary else scheme.onSurfaceVariant
+    val others = post.topReactions.filter { it != mine }.take(2)
+    val summary = if (post.likes > 0) {
+        "${post.likes} " + (if (post.likes == 1) "reacción" else "reacciones") +
+            (mine?.let { ", la tuya $it" } ?: "")
+    } else {
+        "Sin reacciones"
+    }
+    Box {
+        Row(
+            Modifier
+                .clip(RoundedCornerShape(50))
+                .combinedClickable(
+                    onClickLabel = if (mine != null) "Quitar tu reacción" else "Reaccionar con ${P2PSocial.DEFAULT_REACTION}",
+                    onLongClickLabel = "Elegir reacción",
+                    onLongClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        picker = true
+                    },
+                    onClick = { onReact(if (mine != null) null else P2PSocial.DEFAULT_REACTION) },
+                )
+                .heightIn(min = 48.dp)
+                .padding(horizontal = 10.dp)
+                .semantics {
+                    contentDescription = "Reacciones"
+                    stateDescription = summary
+                    customActions = P2PSocial.REACTIONS.map { emoji ->
+                        CustomAccessibilityAction(if (emoji == mine) "Quitar $emoji" else "Reaccionar con $emoji") {
+                            onReact(if (emoji == mine) null else emoji)
+                            true
+                        }
+                    }
+                },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            if (mine != null) {
+                Text(mine, fontSize = 18.sp)
+            } else {
+                Icon(painterResource(R.drawable.favorite_border), null, Modifier.size(20.dp), tint = tint)
+            }
+            if (others.isNotEmpty()) Text(others.joinToString(""), fontSize = 14.sp)
+            if (post.likes > 0) Text("${post.likes}", style = MaterialTheme.typography.labelLarge, color = tint)
+        }
+        DropdownMenu(expanded = picker, onDismissRequest = { picker = false }) {
+            Row(Modifier.padding(horizontal = 8.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                P2PSocial.REACTIONS.forEach { emoji ->
+                    val isMine = emoji == mine
+                    Box(
+                        Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(if (isMine) scheme.secondaryContainer else Color.Transparent)
+                            .clickable {
+                                picker = false
+                                onReact(if (isMine) null else emoji)
+                            }
+                            .semantics {
+                                contentDescription = if (isMine) "Quitar $emoji" else "Reaccionar con $emoji"
+                                selected = isMine
+                            },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(emoji, fontSize = 26.sp)
+                    }
                 }
             }
         }
@@ -233,6 +331,7 @@ fun P2PCommentsSheet(post: P2PPost, onDismiss: () -> Unit, onOpenProfile: (Strin
     var comments by remember { mutableStateOf<List<P2PComment>?>(null) }
     var input by remember { mutableStateOf("") }
     var sending by remember { mutableStateOf(false) }
+    var replyingTo by remember { mutableStateOf<P2PComment?>(null) }
     LaunchedEffect(post.id) { comments = runCatching { P2PSocial.comments(post) }.getOrDefault(emptyList()) }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
@@ -281,21 +380,59 @@ fun P2PCommentsSheet(post: P2PPost, onDismiss: () -> Unit, onOpenProfile: (Strin
                 ) {
                     items(list, key = { it.id }) { c ->
                         val user = rememberP2PUser(c.author)
+                        val isReply = c.replyTo != null
                         Row(
                             Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                                .padding(start = if (isReply) 64.dp else 16.dp, end = 16.dp, top = 8.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            P2PAvatar(user, size = 36.dp, modifier = Modifier.clickable { onOpenProfile(c.author) })
+                            P2PAvatar(
+                                user,
+                                size = if (isReply) 28.dp else 36.dp,
+                                modifier = Modifier.clickable(onClickLabel = "Ver perfil de ${user.displayName}") { onOpenProfile(c.author) },
+                            )
                             Column(Modifier.weight(1f)) {
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Text(user.displayName, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(
+                                        user.displayName,
+                                        style = MaterialTheme.typography.titleSmall,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f, fill = false),
+                                    )
                                     Text(timeAgo(c.createdAt), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Text(c.text, style = MaterialTheme.typography.bodyMedium)
+                                TextButton(
+                                    onClick = { replyingTo = c },
+                                    contentPadding = PaddingValues(horizontal = 0.dp),
+                                ) {
+                                    Text("Responder", style = MaterialTheme.typography.labelLarge)
+                                }
                             }
                         }
+                    }
+                }
+            }
+            replyingTo?.let { target ->
+                val targetUser = rememberP2PUser(target.author)
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 4.dp, top = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "Respondiendo a ${targetUser.displayName}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    IconButton(onClick = { replyingTo = null }) {
+                        Icon(painterResource(R.drawable.close), contentDescription = "Cancelar respuesta")
                     }
                 }
             }
@@ -309,7 +446,7 @@ fun P2PCommentsSheet(post: P2PPost, onDismiss: () -> Unit, onOpenProfile: (Strin
                 OutlinedTextField(
                     value = input,
                     onValueChange = { input = it.take(1000) },
-                    placeholder = { Text("Añade un comentario…") },
+                    placeholder = { Text(if (replyingTo != null) "Escribe tu respuesta…" else "Añade un comentario…") },
                     maxLines = 4,
                     shape = RoundedCornerShape(24.dp),
                     modifier = Modifier.weight(1f),
@@ -319,12 +456,14 @@ fun P2PCommentsSheet(post: P2PPost, onDismiss: () -> Unit, onOpenProfile: (Strin
                     onClick = {
                         sending = true
                         val text = input
+                        val target = replyingTo
                         scope.launch {
-                            val added = runCatching { P2PSocial.addComment(post, text) }.getOrNull()
+                            val added = runCatching { P2PSocial.addComment(post, text, target) }.getOrNull()
                             sending = false
                             if (added != null) {
                                 input = ""
-                                comments = comments.orEmpty() + added
+                                replyingTo = null
+                                comments = P2PSocial.threadComments(comments.orEmpty() + added)
                                 onCommented()
                             }
                         }

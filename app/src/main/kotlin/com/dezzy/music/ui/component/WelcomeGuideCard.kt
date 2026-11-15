@@ -52,7 +52,7 @@ fun WelcomeGuideCard(modifier: Modifier = Modifier) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "👋 ¡Bienvenido a Dezzy!",
+                text = "¡Bienvenido a Dezzy!",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -67,7 +67,7 @@ fun WelcomeGuideCard(modifier: Modifier = Modifier) {
             AnimatedVisibility(visible = expanded) {
                 Column {
                     GuideSection(
-                        title = "🎨 Canvas vs. 🎬 Video — no son lo mismo",
+                        title = "Canvas vs. Video — no son lo mismo",
                         body = "Al activar un Canvas, verás una miniatura animada en bucle sobre la carátula " +
                             "de la canción (como en Spotify). En cambio, el botón de \"Cambiar a video\" " +
                             "reproduce el video oficial de YouTube de la canción que estás escuchando. " +
@@ -76,7 +76,7 @@ fun WelcomeGuideCard(modifier: Modifier = Modifier) {
                             "la carátula para elegir la fuente del Canvas.",
                     )
                     GuideSection(
-                        title = "💾 Descargas y almacenamiento",
+                        title = "Descargas y almacenamiento",
                         body = "Puedes elegir dónde se guardan tus canciones descargadas: en el almacenamiento " +
                             "local del dispositivo (se exportan a tu carpeta de Música) o en la caché interna " +
                             "de la app. Lo configuras en Ajustes → Almacenamiento. Muy recomendado: aumenta " +
@@ -84,23 +84,23 @@ fun WelcomeGuideCard(modifier: Modifier = Modifier) {
                             "límite se queda corto, las canciones pueden cortarse a media descarga.",
                     )
                     GuideSection(
-                        title = "💬 Comentarios",
+                        title = "Comentarios",
                         body = "En el reproductor hay un botón de comentarios: tócalo para leer lo que dice la " +
                             "gente sobre la canción que está sonando.",
                     )
                     GuideSection(
-                        title = "🧪 Letras V2 (experimental)",
+                        title = "Letras V2 (experimental)",
                         body = "El modo de letras V2 (estilos animados como Chromatic, Spotlight, etc.) todavía " +
                             "es experimental: puede tener fallos visuales en algunas canciones. Si algo se ve " +
                             "raro, vuelve a las letras clásicas en Ajustes → Apariencia.",
                     )
                     GuideSection(
-                        title = "🖼️ Fondo de pantalla de inicio",
+                        title = "Fondo de pantalla de inicio",
                         body = "Puedes ponerle tu propio fondo (imagen o incluso video) a la pantalla de inicio " +
                             "desde Ajustes → Apariencia → Fondo de pantalla.",
                     )
                     GuideSection(
-                        title = "🌐 Traducción de letras por IA (recomendada)",
+                        title = "Traducción de letras por IA (recomendada)",
                         body = "Activa la traducción por IA para ver las letras en tu idioma en tiempo real. " +
                             "Funciona especialmente bien con canciones en inglés, coreano o japonés.",
                     )

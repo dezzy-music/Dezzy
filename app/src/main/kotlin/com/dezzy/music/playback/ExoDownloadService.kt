@@ -23,6 +23,7 @@ import com.dezzy.music.MainActivity
 import com.dezzy.music.R
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import timber.log.Timber
 
 @AndroidEntryPoint
 class ExoDownloadService : DownloadService(
@@ -89,7 +90,28 @@ class ExoDownloadService : DownloadService(
                 updateNotification()
             }
         }
-        return super.onStartCommand(intent, flags, startId)
+        return try {
+            super.onStartCommand(intent, flags, startId)
+        } catch (e: IllegalStateException) {
+            // Android 12+ puede negar el primer plano (p. ej. ForegroundServiceStartNotAllowedException
+            // cuando el sistema reinicia el servicio en segundo plano, o porque en Android 15 ya se
+            // gastaron las 6 h diarias de «dataSync»). Las descargas siguen en cola en el
+            // DownloadManager y se reanudan la próxima vez que se abra la app; no hay que tumbarla.
+            Timber.tag(TAG).w(e, "No se pudo pasar a primer plano; se detiene el servicio")
+            stopSelf()
+            START_NOT_STICKY
+        }
+    }
+
+    /**
+     * Android 15: el sistema avisa aquí cuando se agota el tiempo de «dataSync». Hay que salir
+     * del primer plano en unos segundos o el sistema mata la app.
+     */
+    override fun onTimeout(startId: Int, fgsType: Int) {
+        Timber.tag(TAG).w("Tiempo de primer plano agotado (tipo %d); se detiene el servicio", fgsType)
+        runCatching { super.onTimeout(startId, fgsType) }
+        runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
+        stopSelf()
     }
 
     override fun getDownloadManager() = downloadUtil.downloadManager
@@ -196,7 +218,14 @@ class ExoDownloadService : DownloadService(
         val downloads = downloadManager.currentDownloads
         if (downloads.isNotEmpty()) {
             val notification = getForegroundNotification(downloads.toMutableList(), 0)
-            startForeground(NOTIFICATION_ID, notification)
+            try {
+                startForeground(NOTIFICATION_ID, notification)
+            } catch (e: IllegalStateException) {
+                // Sin permiso para primer plano (límite de Android 15 o app en segundo plano):
+                // se actualiza sólo la notificación en vez de romper la app.
+                Timber.tag(TAG).w(e, "startForeground denegado; sólo se actualiza la notificación")
+                runCatching { NotificationUtil.setNotification(this, NOTIFICATION_ID, notification) }
+            }
         }
     }
 
@@ -226,6 +255,7 @@ class ExoDownloadService : DownloadService(
     }
 
     companion object {
+        private const val TAG = "ExoDownloadService"
         const val CHANNEL_ID = "download"
         const val NOTIFICATION_ID = 1
         const val JOB_ID = 1

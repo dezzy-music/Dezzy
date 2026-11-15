@@ -188,6 +188,22 @@ class ListenTogetherClient @Inject constructor(
     private val _pendingSuggestions = MutableStateFlow<List<SuggestionReceivedPayload>>(emptyList())
     val pendingSuggestions: StateFlow<List<SuggestionReceivedPayload>> = _pendingSuggestions.asStateFlow()
 
+    /** v2.3: foto de la sala que el servidor manda al anfitrión (null en servidores viejos). */
+    private val _dashboard = MutableStateFlow<RoomDashboardPayload?>(null)
+    val dashboard: StateFlow<RoomDashboardPayload?> = _dashboard.asStateFlow()
+
+    /** v2.3: sugerencias con votos, visibles para toda la sala. */
+    private val _suggestions = MutableStateFlow<List<SuggestionItem>>(emptyList())
+    val suggestions: StateFlow<List<SuggestionItem>> = _suggestions.asStateFlow()
+
+    /** Ida y vuelta del último PING/PONG, en ms (0 = sin medir). */
+    @Volatile
+    var lastRttMs: Long = 0L
+        private set
+
+    @Volatile
+    private var pingSentAtMs: Long = 0L
+
     private val _blockedUsernames = MutableStateFlow<Set<String>>(emptySet())
     val blockedUsernames: StateFlow<Set<String>> = _blockedUsernames.asStateFlow()
 
@@ -496,6 +512,7 @@ class ListenTogetherClient @Inject constructor(
         _typingUsers.value = emptySet()
         _pendingJoinRequests.value = emptyList()
         _pendingSuggestions.value = emptyList()
+        clearDashboardState()
         _bufferingUsers.value = emptyList()
         clearPersistedSession()
         reconnectAttempts = 0
@@ -508,6 +525,7 @@ class ListenTogetherClient @Inject constructor(
         pingJob = scope.launch {
             while (true) {
                 delay(PING_INTERVAL_MS)
+                pingSentAtMs = android.os.SystemClock.elapsedRealtime()
                 sendMessageNoPayload(MessageTypes.PING)
             }
         }
@@ -890,6 +908,7 @@ class ListenTogetherClient @Inject constructor(
                     _typingUsers.value = emptySet()
                     _pendingJoinRequests.value = emptyList()
                     _pendingSuggestions.value = emptyList()
+                    clearDashboardState()
                     _bufferingUsers.value = emptyList()
                     clearPersistedSession()
                     scope.launch { _events.emit(ListenTogetherEvent.Kicked(payload.reason)) }
@@ -1095,7 +1114,41 @@ class ListenTogetherClient @Inject constructor(
                 }
                 
                 MessageTypes.PONG -> {
-                    log(LogLevel.DEBUG, "Pong received")
+                    val sent = pingSentAtMs
+                    if (sent > 0L) {
+                        lastRttMs = (android.os.SystemClock.elapsedRealtime() - sent).coerceIn(0L, 60_000L)
+                        pingSentAtMs = 0L
+                    }
+                    log(LogLevel.DEBUG, "Pong received", "rtt=${lastRttMs}ms")
+                }
+
+                MessageTypes.ROOM_DASHBOARD -> {
+                    val payload = codec.decodePayload(msgType, payloadBytes, detectedFormat) as? RoomDashboardPayload ?: return
+                    _dashboard.value = payload
+                    _suggestions.value = payload.suggestions
+                }
+
+                MessageTypes.ROOM_SETTINGS_UPDATED -> {
+                    val payload = codec.decodePayload(msgType, payloadBytes, detectedFormat) as? UpdateRoomSettingsPayload ?: return
+                    val settings = payload.settings ?: return
+                    _roomState.value = _roomState.value?.copy(settings = settings)
+                }
+
+                MessageTypes.SUGGESTIONS_UPDATED -> {
+                    val payload = codec.decodePayload(msgType, payloadBytes, detectedFormat) as? SuggestionsUpdatedPayload ?: return
+                    _suggestions.value = payload.suggestions
+                    // Lo que ya no está (aprobado, rechazado o en cola por votos) deja de estar
+                    // pendiente también en la lista antigua y en las notificaciones.
+                    val alive = payload.suggestions.mapTo(HashSet()) { it.suggestionId }
+                    val gone = _pendingSuggestions.value.filter { it.suggestionId !in alive }
+                    if (gone.isNotEmpty()) {
+                        _pendingSuggestions.value = _pendingSuggestions.value.filter { it.suggestionId in alive }
+                        gone.forEach { g ->
+                            suggestionNotifications.remove(g.suggestionId)?.let { notifId ->
+                                NotificationManagerCompat.from(context).cancel(notifId)
+                            }
+                        }
+                    }
                 }
                 
                 MessageTypes.RECONNECTED -> {
@@ -1216,6 +1269,7 @@ class ListenTogetherClient @Inject constructor(
         _typingUsers.value = emptySet()
         _pendingJoinRequests.value = emptyList()
         _pendingSuggestions.value = emptyList()
+        clearDashboardState()
         _bufferingUsers.value = emptyList()
 
         clearPersistedSession()
@@ -1299,6 +1353,24 @@ class ListenTogetherClient @Inject constructor(
                 shuffleEnabled = shuffleEnabled
             )
         )
+        if (_role.value == RoomRole.HOST) applyOwnPlaybackLocally(action, position, trackInfo)
+    }
+
+    /** Refleja en el roomState local lo que este anfitrión acaba de publicar. */
+    private fun applyOwnPlaybackLocally(action: String, position: Long?, trackInfo: TrackInfo?) {
+        val state = _roomState.value ?: return
+        val now = System.currentTimeMillis()
+        _roomState.value = when (action) {
+            PlaybackActions.PLAY -> state.copy(isPlaying = true, position = position ?: state.position, lastUpdate = now)
+            PlaybackActions.PAUSE -> state.copy(isPlaying = false, position = position ?: state.position, lastUpdate = now)
+            PlaybackActions.SEEK -> state.copy(position = position ?: state.position, lastUpdate = now)
+            PlaybackActions.CHANGE_TRACK -> state.copy(
+                currentTrack = trackInfo ?: state.currentTrack,
+                position = position ?: 0L,
+                lastUpdate = now,
+            )
+            else -> state
+        }
     }
 
     fun sendBufferReady(trackId: String) {
@@ -1342,6 +1414,75 @@ class ListenTogetherClient @Inject constructor(
         suggestionNotifications.remove(suggestionId)?.let { notifId ->
             NotificationManagerCompat.from(context).cancel(notifId)
         }
+    }
+
+    // ------------------------------------------------------------------ v2.3
+
+    private fun clearDashboardState() {
+        _dashboard.value = null
+        _suggestions.value = emptyList()
+    }
+
+    /** Cada oyente (anfitrión incluido) informa de su reproducción; el servidor lo junta en el panel. */
+    fun sendListenerReport(trackId: String, position: Long, isPlaying: Boolean, buffering: Boolean, network: String) {
+        if (!isInRoom) return
+        sendMessage(
+            MessageTypes.LISTENER_REPORT,
+            ListenerReportPayload(
+                trackId = trackId,
+                position = position.coerceAtLeast(0L),
+                isPlaying = isPlaying,
+                buffering = buffering,
+                network = network,
+                rttMs = lastRttMs,
+            )
+        )
+    }
+
+    /** Votar (o quitar el voto) a una sugerencia. El servidor la pone en cola si llega al umbral. */
+    fun voteSuggestion(suggestionId: String, vote: Boolean = true) {
+        if (!isInRoom) return
+        sendMessage(MessageTypes.VOTE_SUGGESTION, VoteSuggestionPayload(suggestionId = suggestionId, vote = vote))
+        // Optimista: refleja el voto ya; la lista buena llega con suggestions_updated.
+        val me = _userId.value ?: return
+        _suggestions.value = _suggestions.value.map { s ->
+            if (s.suggestionId != suggestionId) s
+            else {
+                val has = me in s.voters
+                when {
+                    vote && !has -> s.copy(votes = s.votes + 1, voters = s.voters + me)
+                    !vote && has -> s.copy(votes = (s.votes - 1).coerceAtLeast(0), voters = s.voters - me)
+                    else -> s
+                }
+            }
+        }
+    }
+
+    /**
+     * Anfitrión: cambia con cuántos votos entra sola una sugerencia (0 = desactivado).
+     * El servidor reemplaza los ajustes enteros, así que se parte de los actuales; si aún no
+     * los conocemos (servidor viejo o sala recién creada) no se manda nada y devuelve false.
+     */
+    fun setAutoQueueVotes(votes: Int): Boolean {
+        if (_role.value != RoomRole.HOST) return false
+        val state = _roomState.value ?: return false
+        val current = state.settings ?: return false
+        val updated = current.copy(autoQueueVotes = votes.coerceIn(0, 20))
+        sendMessage(MessageTypes.UPDATE_ROOM_SETTINGS, UpdateRoomSettingsPayload(updated))
+        _roomState.value = state.copy(settings = updated)
+        return true
+    }
+
+    /** Anfitrión: pide el panel ya (al abrir la pantalla) sin esperar al siguiente informe. */
+    fun requestDashboard() {
+        if (_role.value != RoomRole.HOST) return
+        sendMessageNoPayload(MessageTypes.REQUEST_DASHBOARD)
+    }
+
+    /** Anfitrión: manda el estado de la sala a todos los invitados para que se recoloquen. */
+    fun resyncAll() {
+        if (_role.value != RoomRole.HOST) return
+        sendMessageNoPayload(MessageTypes.RESYNC_ALL)
     }
 
     fun requestSync() {

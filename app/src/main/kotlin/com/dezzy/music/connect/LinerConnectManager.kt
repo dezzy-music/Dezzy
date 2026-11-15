@@ -2,6 +2,8 @@ package com.dezzy.music.connect
 
 import android.bluetooth.BluetoothManager
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.wifi.WifiManager
 import android.os.Build
 import android.provider.Settings
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -10,10 +12,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import okhttp3.*
+import org.json.JSONArray
 import org.json.JSONObject
 import timber.log.Timber
 import java.net.DatagramPacket
 import java.net.DatagramSocket
+import java.net.Inet4Address
 import java.net.InetAddress
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -30,7 +34,9 @@ data class DiscoveredDevice(
     val name: String,
     val ip: String,
     val port: Int = 4884,
-    val isConnected: Boolean = false
+    val isConnected: Boolean = false,
+    /** false = conocido de antes pero no respondió en la última búsqueda. */
+    val isAvailable: Boolean = true,
 )
 
 data class DesktopTrack(
@@ -58,6 +64,12 @@ class LinerConnectManager @Inject constructor(
     }
 
     companion object {
+        private const val DISCOVERY_PORT = 4885
+        private const val DEFAULT_PORT = 4884
+        private const val DISCOVERY_WINDOW_MS = 6_000L
+        private const val CONNECT_TIMEOUT_MS = 8_000L
+        private const val MAX_KNOWN_DEVICES = 8
+
         @Volatile
         private var instance: LinerConnectManager? = null
 
@@ -131,167 +143,254 @@ class LinerConnectManager @Inject constructor(
     private val _connectedDeviceName = MutableStateFlow<String?>(null)
     val connectedDeviceName: StateFlow<String?> = _connectedDeviceName.asStateFlow()
 
-    private val _discoveredDevices = MutableStateFlow<List<DiscoveredDevice>>(emptyList())
+    /** IP del dispositivo conectado o al que se está conectando. */
+    private val _activeDeviceIp = MutableStateFlow<String?>(null)
+    val activeDeviceIp: StateFlow<String?> = _activeDeviceIp.asStateFlow()
+
+    private val _discoveredDevices = MutableStateFlow(loadKnownDevices())
     val discoveredDevices: StateFlow<List<DiscoveredDevice>> = _discoveredDevices.asStateFlow()
+
+    /** Hay una búsqueda en curso (independiente del estado de conexión). */
+    private val _isScanning = MutableStateFlow(false)
+    val isScanning: StateFlow<Boolean> = _isScanning.asStateFlow()
+
+    /** Último error visible para el usuario (p. ej. «No se pudo conectar con …»). */
+    private val _lastError = MutableStateFlow<String?>(null)
+    val lastError: StateFlow<String?> = _lastError.asStateFlow()
 
     private val _desktopState = MutableStateFlow<DesktopPlaybackState?>(null)
     val desktopState: StateFlow<DesktopPlaybackState?> = _desktopState.asStateFlow()
 
     private val client = OkHttpClient.Builder()
+        .connectTimeout(CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
         .readTimeout(0, TimeUnit.MILLISECONDS)
         .pingInterval(15, TimeUnit.SECONDS)
         .build()
 
+    @Volatile
     private var activeWebSocket: WebSocket? = null
     private var discoveryJob: Job? = null
+    private var connectTimeoutJob: Job? = null
+
+    // ── Dispositivos conocidos ────────────────────────────────────────────────
+
+    private fun loadKnownDevices(): List<DiscoveredDevice> = runCatching {
+        val arr = JSONArray(prefs.getString("known_devices", "[]"))
+        (0 until arr.length()).map { i ->
+            val o = arr.getJSONObject(i)
+            DiscoveredDevice(
+                name = o.getString("name"),
+                ip = o.getString("ip"),
+                port = o.optInt("port", DEFAULT_PORT),
+                isAvailable = false,
+            )
+        }
+    }.getOrDefault(emptyList())
+
+    private fun rememberDevice(device: DiscoveredDevice) {
+        val known = loadKnownDevices().filter { it.ip != device.ip && it.name != device.name }
+        val updated = (listOf(device) + known).take(MAX_KNOWN_DEVICES)
+        val arr = JSONArray()
+        updated.forEach { d ->
+            arr.put(JSONObject().apply {
+                put("name", d.name)
+                put("ip", d.ip)
+                put("port", d.port)
+            })
+        }
+        prefs.edit().putString("known_devices", arr.toString()).apply()
+    }
+
+    fun forgetDevice(device: DiscoveredDevice) {
+        val known = loadKnownDevices().filter { it.ip != device.ip }
+        val arr = JSONArray()
+        known.forEach { d ->
+            arr.put(JSONObject().apply {
+                put("name", d.name)
+                put("ip", d.ip)
+                put("port", d.port)
+            })
+        }
+        prefs.edit().putString("known_devices", arr.toString()).apply()
+        _discoveredDevices.value = _discoveredDevices.value.filter { it.ip != device.ip || it.isConnected }
+    }
+
+    fun clearError() {
+        _lastError.value = null
+    }
+
+    // ── Búsqueda ──────────────────────────────────────────────────────────────
 
     /**
-     * Descubrimiento multi-dispositivo estilo Spotify Connect: manda el probe
-     * por broadcast y recoge TODAS las respuestas durante ~4 s (no solo la
-     * primera), para que la hoja de dispositivos liste cada PC/laptop
-     * disponible en la red y el usuario elija dónde escuchar. NO conecta
-     * automáticamente: el usuario toca el dispositivo que quiere.
-     * Llamar al abrir la hoja de dispositivos y al pulsar "Buscar".
+     * Direcciones de broadcast reales de las redes del teléfono (calculadas con la IP y el
+     * prefijo de cada red), más el broadcast general como respaldo. Antes solo se probaban
+     * 192.168.0.255 y 192.168.1.255, y en redes 10.x o 192.168.100.x no aparecía nada.
+     */
+    private fun broadcastAddresses(): List<InetAddress> {
+        val result = linkedSetOf<InetAddress>()
+        runCatching {
+            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            @Suppress("DEPRECATION")
+            val networks = cm.allNetworks
+            for (network in networks) {
+                val props = cm.getLinkProperties(network) ?: continue
+                for (link in props.linkAddresses) {
+                    val addr = link.address as? Inet4Address ?: continue
+                    if (addr.isLoopbackAddress) continue
+                    val prefix = link.prefixLength.coerceIn(0, 32)
+                    val ip = addr.address.fold(0) { acc, b -> (acc shl 8) or (b.toInt() and 0xFF) }
+                    val mask = if (prefix == 0) 0 else (-1 shl (32 - prefix))
+                    val bcast = ip or mask.inv()
+                    val bytes = byteArrayOf(
+                        (bcast ushr 24).toByte(), (bcast ushr 16).toByte(),
+                        (bcast ushr 8).toByte(), bcast.toByte()
+                    )
+                    result += InetAddress.getByAddress(bytes)
+                }
+            }
+        }.onFailure { Timber.d(it, "[LinerConnect] Could not read link properties") }
+        result += InetAddress.getByName("255.255.255.255")
+        return result.toList()
+    }
+
+    /**
+     * Descubrimiento multi-dispositivo estilo Spotify Connect: manda el probe a las
+     * direcciones de broadcast de la red y recoge TODAS las respuestas durante ~6 s.
+     * Los dispositivos conocidos aparecen desde el principio marcados como no disponibles
+     * hasta que respondan. NO conecta automáticamente: el usuario elige.
      */
     fun discoverDevices() {
-        if (_connectionState.value == ConnectState.DISCOVERING) return
-        val wasConnected = _connectionState.value == ConnectState.CONNECTED
-        if (!wasConnected) _connectionState.value = ConnectState.DISCOVERING
+        if (_isScanning.value) return
+        _isScanning.value = true
         discoveryJob?.cancel()
         discoveryJob = coroutineScope.launch {
+            val connectedIp = _activeDeviceIp.value.takeIf { _connectionState.value == ConnectState.CONNECTED }
             val found = linkedMapOf<String, DiscoveredDevice>()
-            // Conservar los ya conocidos (p. ej. el dispositivo conectado).
-            _discoveredDevices.value.forEach { found[it.ip] = it }
+            // Conocidos (de esta sesión o guardados) como «no disponibles» hasta que respondan.
+            (_discoveredDevices.value + loadKnownDevices()).forEach { d ->
+                if (!found.containsKey(d.ip)) {
+                    found[d.ip] = d.copy(isAvailable = d.ip == connectedIp, isConnected = d.ip == connectedIp)
+                }
+            }
+            _discoveredDevices.value = found.values.toList()
+
+            // Algunos equipos descartan el broadcast si no hay un MulticastLock activo.
+            val wifi = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+            val lock = runCatching {
+                wifi?.createMulticastLock("dezzy-connect")?.apply {
+                    setReferenceCounted(false)
+                    acquire()
+                }
+            }.getOrNull()
+
+            var socket: DatagramSocket? = null
             try {
-                val socket = DatagramSocket().apply {
+                val s = DatagramSocket().apply {
                     broadcast = true
                     soTimeout = 1000
                 }
+                socket = s
                 val probeMsg = "DISCOVER_LINER".toByteArray()
-                val broadcastAddrs = listOf(
-                    InetAddress.getByName("255.255.255.255"),
-                    InetAddress.getByName("192.168.1.255"),
-                    InetAddress.getByName("192.168.0.255"),
-                    InetAddress.getByName("127.0.0.1")
-                )
-                for (addr in broadcastAddrs) {
-                    try {
-                        socket.send(DatagramPacket(probeMsg, probeMsg.size, addr, 4885))
-                    } catch (_: Exception) {}
+                val targets = broadcastAddresses()
+                // Dos rondas: el primer paquete a veces se pierde mientras el Wi‑Fi despierta.
+                repeat(2) { round ->
+                    for (addr in targets) {
+                        runCatching { s.send(DatagramPacket(probeMsg, probeMsg.size, addr, DISCOVERY_PORT)) }
+                    }
+                    if (round == 0) delay(300)
                 }
-                val deadline = System.currentTimeMillis() + 4000L
+                val deadline = System.currentTimeMillis() + DISCOVERY_WINDOW_MS
                 val buf = ByteArray(1024)
-                while (System.currentTimeMillis() < deadline) {
+                while (isActive && System.currentTimeMillis() < deadline) {
                     try {
                         val respPacket = DatagramPacket(buf, buf.size)
-                        socket.receive(respPacket)
-                        val responseStr = String(respPacket.data, 0, respPacket.length)
-                        val json = JSONObject(responseStr)
-                        if (json.optString("service") == "dezzy-connect") {
-                            val port = json.optInt("port", 4884)
-                            val ip = respPacket.address.hostAddress ?: continue
-                            val rawName = json.optString("name").trim()
-                            val exactName = if (rawName.isNotBlank() && !rawName.equals("Liner Desktop", ignoreCase = true)) {
-                                rawName
-                            } else {
-                                runCatching { respPacket.address.hostName }.getOrNull()
-                                    ?.takeIf { it.isNotBlank() && it != ip } ?: rawName.takeIf { it.isNotBlank() } ?: lastDeviceName
-                            }
-                            val isThisConnected = wasConnected && _connectedDeviceName.value == exactName
-                            found[ip] = DiscoveredDevice(name = exactName, ip = ip, port = port, isConnected = isThisConnected)
-                            _discoveredDevices.value = found.values.toList()
+                        s.receive(respPacket)
+                        val json = JSONObject(String(respPacket.data, 0, respPacket.length))
+                        if (json.optString("service") != "dezzy-connect") continue
+                        val port = json.optInt("port", DEFAULT_PORT)
+                        val ip = respPacket.address.hostAddress ?: continue
+                        val rawName = json.optString("name").trim()
+                        val exactName = if (rawName.isNotBlank() && !rawName.equals("Liner Desktop", ignoreCase = true)) {
+                            rawName
+                        } else {
+                            runCatching { respPacket.address.hostName }.getOrNull()
+                                ?.takeIf { it.isNotBlank() && it != ip } ?: rawName.takeIf { it.isNotBlank() } ?: lastDeviceName
                         }
+                        // Si el mismo equipo cambió de IP, quitar la entrada vieja con su nombre.
+                        found.entries.removeAll { it.key != ip && it.value.name == exactName && !it.value.isConnected }
+                        found[ip] = DiscoveredDevice(
+                            name = exactName,
+                            ip = ip,
+                            port = port,
+                            isConnected = ip == connectedIp,
+                            isAvailable = true,
+                        )
+                        _discoveredDevices.value = found.values.toList()
                     } catch (_: java.net.SocketTimeoutException) {
                         // Sin respuesta en este intervalo: seguir esperando hasta el deadline.
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (_: Exception) {
-                        break
+                        // Respuesta mal formada: ignorarla y seguir escuchando.
                     }
                 }
-                socket.close()
-            } catch (_: Exception) {
-                Timber.d("[LinerConnect] Discovery finished with error")
-            } finally {
-                if (!wasConnected) _connectionState.value = ConnectState.DISCONNECTED
-            }
-        }
-    }
-
-    fun startDiscoveryAndConnect() {
-        if (_connectionState.value == ConnectState.CONNECTED || _connectionState.value == ConnectState.DISCOVERING) {
-            return
-        }
-
-        _connectionState.value = ConnectState.DISCOVERING
-        discoveryJob?.cancel()
-        discoveryJob = coroutineScope.launch {
-            try {
-                val socket = DatagramSocket().apply {
-                    broadcast = true
-                    soTimeout = 4000
-                }
-
-                val probeMsg = "DISCOVER_LINER".toByteArray()
-                // Broadcast a direcciones de subred comunes y loopback
-                val broadcastAddrs = listOf(
-                    InetAddress.getByName("255.255.255.255"),
-                    InetAddress.getByName("192.168.1.255"),
-                    InetAddress.getByName("192.168.0.255"),
-                    InetAddress.getByName("127.0.0.1")
-                )
-
-                for (addr in broadcastAddrs) {
-                    try {
-                        val packet = DatagramPacket(probeMsg, probeMsg.size, addr, 4885)
-                        socket.send(packet)
-                    } catch (_: Exception) {}
-                }
-
-                val buf = ByteArray(1024)
-                val respPacket = DatagramPacket(buf, buf.size)
-                socket.receive(respPacket)
-
-                val responseStr = String(respPacket.data, 0, respPacket.length)
-                val json = JSONObject(responseStr)
-                if (json.optString("service") == "dezzy-connect") {
-                    val port = json.optInt("port", 4884)
-                    val ip = respPacket.address.hostAddress ?: "127.0.0.1"
-                    val rawName = json.optString("name").trim()
-
-                    // Resolver el nombre exacto de la máquina (ej. "Dezzy", "DESKTOP-ABC1234", etc.)
-                    val exactName = if (rawName.isNotBlank() && !rawName.equals("Liner Desktop", ignoreCase = true)) {
-                        rawName
-                    } else {
-                        runCatching {
-                            respPacket.address.hostName
-                        }.getOrNull()?.takeIf { it.isNotBlank() && it != ip } ?: rawName.takeIf { it.isNotBlank() } ?: lastDeviceName
-                    }
-
-                    _connectedDeviceName.value = exactName
-                    prefs.edit().putString("last_device_name", exactName).apply()
-
-                    val currentList = _discoveredDevices.value.filter { it.ip != ip }
-                    _discoveredDevices.value = currentList + DiscoveredDevice(name = exactName, ip = ip, port = port, isConnected = true)
-
-                    connectToHost(ip, port, exactName)
-                }
-                socket.close()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                Timber.d(e, "[LinerConnect] Auto-discovery timeout, attempting local loopback fallback")
-                val fallbackName = lastDeviceName
-                _connectedDeviceName.value = fallbackName
-                connectToHost("10.0.2.2", 4884, fallbackName)
+                Timber.d(e, "[LinerConnect] Discovery finished with error")
+            } finally {
+                runCatching { socket?.close() }
+                runCatching { if (lock?.isHeld == true) lock.release() }
+                _isScanning.value = false
             }
         }
     }
 
-    fun connectToHost(ip: String, port: Int = 4884, initialName: String? = null) {
-        _connectionState.value = ConnectState.CONNECTING
-        if (initialName != null) {
-            _connectedDeviceName.value = initialName
+    fun stopDiscovery() {
+        discoveryJob?.cancel()
+        _isScanning.value = false
+    }
+
+    /** Conexión «a ciegas» de versiones anteriores; se conserva por compatibilidad. */
+    fun startDiscoveryAndConnect() {
+        if (_connectionState.value == ConnectState.CONNECTED || _connectionState.value == ConnectState.CONNECTING) return
+        discoverDevices()
+    }
+
+    // ── Conexión ──────────────────────────────────────────────────────────────
+
+    /**
+     * Conecta y, solo cuando el WebSocket está abierto, pasa la canción a la PC y llama a
+     * [onHandedOff] en el hilo principal (ahí se pausa el teléfono). Si la conexión falla
+     * o tarda más de 8 s, el teléfono sigue sonando y se publica [lastError].
+     */
+    fun connectAndHandoff(
+        device: DiscoveredDevice,
+        title: String?,
+        artist: String?,
+        coverUrl: String?,
+        onHandedOff: () -> Unit,
+    ) {
+        connectToHost(device.ip, device.port, device.name) { ws ->
+            if (title != null) sendHandoff(ws, title, artist.orEmpty(), coverUrl)
+            coroutineScope.launch(Dispatchers.Main) { onHandedOff() }
         }
+    }
+
+    fun connectToHost(
+        ip: String,
+        port: Int = DEFAULT_PORT,
+        initialName: String? = null,
+        onOpened: ((WebSocket) -> Unit)? = null,
+    ) {
+        _lastError.value = null
+        _connectionState.value = ConnectState.CONNECTING
+        _activeDeviceIp.value = ip
+        val displayName = initialName ?: ip
+        _connectedDeviceName.value = initialName
 
         // Si aún no tenemos nombre exacto, resolverlo por DNS inverso
-        if (_connectedDeviceName.value.isNullOrBlank() || _connectedDeviceName.value == "Liner Desktop") {
+        if (initialName.isNullOrBlank() || initialName == "Liner Desktop") {
             coroutineScope.launch {
                 val host = runCatching {
                     InetAddress.getByName(ip).hostName
@@ -307,10 +406,13 @@ class LinerConnectManager @Inject constructor(
             .url("ws://$ip:$port")
             .build()
 
+        connectTimeoutJob?.cancel()
         activeWebSocket?.cancel()
-        activeWebSocket = client.newWebSocket(request, object : WebSocketListener() {
+        val socket = client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
+                if (webSocket !== activeWebSocket) return
                 Timber.i("[LinerConnect] WebSocket connected to $ip:$port")
+                connectTimeoutJob?.cancel()
                 _connectionState.value = ConnectState.CONNECTED
 
                 // Enviar saludo con el nombre exacto de este celular
@@ -323,9 +425,19 @@ class LinerConnectManager @Inject constructor(
                     })
                 }
                 webSocket.send(hello.toString())
+
+                val name = _connectedDeviceName.value ?: displayName
+                prefs.edit().putString("last_device_name", name).apply()
+                val connected = DiscoveredDevice(name = name, ip = ip, port = port, isConnected = true, isAvailable = true)
+                rememberDevice(connected)
+                _discoveredDevices.value = listOf(connected) +
+                    _discoveredDevices.value.filter { it.ip != ip }.map { it.copy(isConnected = false) }
+
+                onOpened?.invoke(webSocket)
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
+                if (webSocket !== activeWebSocket) return
                 try {
                     val msg = JSONObject(text)
                     when (msg.optString("type")) {
@@ -375,14 +487,48 @@ class LinerConnectManager @Inject constructor(
             }
 
             override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
-                _connectionState.value = ConnectState.DISCONNECTED
+                if (webSocket !== activeWebSocket) return
+                markDisconnected(error = null)
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                if (webSocket !== activeWebSocket) return
                 Timber.w(t, "[LinerConnect] WebSocket connection failed")
-                _connectionState.value = ConnectState.DISCONNECTED
+                val wasConnected = _connectionState.value == ConnectState.CONNECTED
+                markDisconnected(
+                    error = if (wasConnected) "Se perdió la conexión con $displayName"
+                    else "No se pudo conectar con $displayName"
+                )
             }
         })
+        activeWebSocket = socket
+
+        connectTimeoutJob = coroutineScope.launch {
+            delay(CONNECT_TIMEOUT_MS)
+            if (activeWebSocket === socket && _connectionState.value == ConnectState.CONNECTING) {
+                socket.cancel()
+                markDisconnected(error = "No se pudo conectar con $displayName")
+            }
+        }
+    }
+
+    /** Cancela un intento de conexión en curso; el teléfono sigue sonando. */
+    fun cancelConnect() {
+        if (_connectionState.value != ConnectState.CONNECTING) return
+        connectTimeoutJob?.cancel()
+        activeWebSocket?.cancel()
+        markDisconnected(error = null)
+    }
+
+    private fun markDisconnected(error: String?) {
+        activeWebSocket = null
+        connectTimeoutJob?.cancel()
+        _connectionState.value = ConnectState.DISCONNECTED
+        _connectedDeviceName.value = null
+        _activeDeviceIp.value = null
+        _desktopState.value = null
+        _discoveredDevices.value = _discoveredDevices.value.map { it.copy(isConnected = false) }
+        if (error != null) _lastError.value = error
     }
 
     fun sendCommand(action: String, extra: Map<String, Any> = emptyMap()) {
@@ -408,6 +554,10 @@ class LinerConnectManager @Inject constructor(
 
     fun handoffQueueToDesktop(title: String, artist: String, coverUrl: String?) {
         val ws = activeWebSocket ?: return
+        sendHandoff(ws, title, artist, coverUrl)
+    }
+
+    private fun sendHandoff(ws: WebSocket, title: String, artist: String, coverUrl: String?) {
         val json = JSONObject().apply {
             put("type", "HANDOFF_TO_DESKTOP")
             put("payload", JSONObject().apply {
@@ -423,11 +573,10 @@ class LinerConnectManager @Inject constructor(
     }
 
     fun disconnect() {
-        discoveryJob?.cancel()
-        activeWebSocket?.close(1000, "User disconnected")
+        connectTimeoutJob?.cancel()
+        val ws = activeWebSocket
         activeWebSocket = null
-        _connectionState.value = ConnectState.DISCONNECTED
-        _connectedDeviceName.value = null
-        _desktopState.value = null
+        ws?.close(1000, "User disconnected")
+        markDisconnected(error = null)
     }
 }

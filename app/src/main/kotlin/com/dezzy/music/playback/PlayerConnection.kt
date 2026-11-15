@@ -104,6 +104,14 @@ class PlayerConnection(
     fun enableVideoMode() = service.enableVideoMode()
     fun disableVideoMode() = service.disableVideoMode()
 
+    /** Alturas disponibles (p. ej. 1080, 720…), la elegida (null = automática) y la que suena. */
+    val videoQualityOptions = service.videoQualityOptions
+    val videoSelectedHeight = service.videoSelectedHeight
+    val videoPlayingHeight = service.videoPlayingHeight
+    fun setVideoQuality(height: Int?) = service.setVideoQuality(height)
+    fun retryVideoMode() = service.retryVideoMode()
+    fun downloadCurrentVideo() = service.downloadCurrentVideo()
+
     // Chromecast
     val castConnected = service.castConnected
     val castDeviceName = service.castDeviceName

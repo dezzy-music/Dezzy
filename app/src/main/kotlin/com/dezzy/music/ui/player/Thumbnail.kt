@@ -289,7 +289,7 @@ fun Thumbnail(
         canvasMode != com.dezzy.music.constants.CanvasMode.NONE
     val playerDesignStyle by rememberEnumPreference(
         key = PlayerDesignStyleKey,
-        defaultValue = PlayerDesignStyle.V4,
+        defaultValue = PlayerDesignStyle.V2,
     )
     val (maxCanvasCacheSize, _) = rememberPreference(
         key = MaxCanvasCacheSizeKey,

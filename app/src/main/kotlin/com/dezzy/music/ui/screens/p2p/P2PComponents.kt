@@ -32,6 +32,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -68,10 +73,98 @@ fun rememberP2PUser(pubkey: String): P2PUser {
 }
 
 /** Convierte `data:image/...;base64,` en bytes para Coil; deja pasar URLs normales. */
+/** Modelo para Coil de una foto P2P: URL `https://` o miniatura `data:` en base64. */
+internal fun p2pImageModel(picture: String?): Any? = avatarModel(picture)
+
 private fun avatarModel(picture: String?): Any? {
     if (picture.isNullOrBlank()) return null
     if (!picture.startsWith("data:")) return picture.takeIf { it.startsWith("https://") }
     return runCatching { Base64.getDecoder().decode(picture.substringAfter("base64,", "")) }.getOrNull()
+}
+
+// ── Portada del perfil ───────────────────────────────────────────────────────
+
+/**
+ * Degradados de portada. Son arte de marca (estilo TikTok: cian y rosa eléctrico), no colores
+ * de interfaz, por eso no salen del tema. El primero es la portada por defecto.
+ */
+enum class P2PBannerPreset(val id: String, val label: String) {
+    Neon("tiktok", "Cian y rosa sobre negro"),
+    Electric("electric", "Cian, violeta y rosa"),
+    Dusk("dusk", "Rosa, vino y cian"),
+    Wine("wine", "Vino y dorado"),
+    ;
+
+    val value: String get() = P2PSocial.BANNER_PRESET_PREFIX + id
+
+    companion object {
+        /** Preset de una portada guardada; el de por defecto si no hay o es una foto. */
+        fun of(banner: String?): P2PBannerPreset =
+            banner?.takeIf { it.startsWith(P2PSocial.BANNER_PRESET_PREFIX) }
+                ?.removePrefix(P2PSocial.BANNER_PRESET_PREFIX)
+                ?.let { id -> entries.firstOrNull { it.id == id } }
+                ?: Neon
+    }
+}
+
+private val BannerCyan = Color(0xFF25F4EE)
+private val BannerPink = Color(0xFFFE2C55)
+
+fun DrawScope.drawP2PBannerPreset(preset: P2PBannerPreset) {
+    val w = size.width
+    val h = size.height
+    when (preset) {
+        P2PBannerPreset.Neon -> {
+            drawRect(
+                Brush.linearGradient(
+                    0f to Color(0xFF0A1A1F), 0.5f to Color(0xFF050505), 1f to Color(0xFF1F0610),
+                    start = Offset.Zero, end = Offset(w, h),
+                ),
+            )
+            val r = maxOf(w, h) * 0.75f
+            drawRect(Brush.radialGradient(0f to BannerCyan.copy(alpha = 0.95f), 0.55f to BannerCyan.copy(alpha = 0f), center = Offset.Zero, radius = r))
+            drawRect(Brush.radialGradient(0f to BannerPink.copy(alpha = 0.95f), 0.55f to BannerPink.copy(alpha = 0f), center = Offset(w, h), radius = r))
+        }
+
+        P2PBannerPreset.Electric -> drawRect(
+            Brush.linearGradient(
+                0f to BannerCyan, 0.48f to Color(0xFF6A5CFF), 1f to BannerPink,
+                start = Offset.Zero, end = Offset(w, h * 0.6f),
+            ),
+        )
+
+        P2PBannerPreset.Dusk -> drawRect(
+            Brush.linearGradient(
+                0f to BannerPink, 0.35f to Color(0xFF8E1C3A), 0.7f to Color(0xFF062C33), 1f to BannerCyan,
+                start = Offset(w * 0.3f, 0f), end = Offset(w * 0.7f, h),
+            ),
+        )
+
+        P2PBannerPreset.Wine -> drawRect(
+            Brush.linearGradient(listOf(Color(0xFF7D2833), Color(0xFFE8C08E)), start = Offset.Zero, end = Offset(w, h)),
+        )
+    }
+}
+
+/** Portada: la foto subida (recortada) o el degradado elegido. Es decorativa para TalkBack. */
+@Composable
+fun P2PProfileBanner(banner: String?, modifier: Modifier = Modifier) {
+    val preset = remember(banner) { P2PBannerPreset.of(banner) }
+    val url = banner?.takeIf { it.startsWith("https://") }
+    Box(
+        modifier
+            .clipToBounds()
+            .drawBehind { drawP2PBannerPreset(preset) },
+    ) {
+        if (url != null) {
+            AsyncImage(
+                model = url,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.matchParentSize(),
+            )
+        }
+    }
 }
 
 /** Avatar con foto o iniciales sobre un color estable derivado de la clave. */

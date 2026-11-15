@@ -11,8 +11,10 @@ import android.content.SharedPreferences
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
+import kotlinx.coroutines.delay
 import timber.log.Timber
 import java.security.KeyStore
+import java.util.concurrent.ConcurrentHashMap
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -41,6 +43,14 @@ object SessionCrypto {
     }
 
     private var testFallbackKey: SecretKey? = null
+
+    /**
+     * Lo ya descifrado en este proceso. Un fallo pasajero del Keystore (pasa en algunos
+     * teléfonos con poca memoria o recién desbloqueados) ya no deja la sesión «vacía», y de paso
+     * la UI deja de descifrar la cookie en cada recomposición.
+     */
+    private val plainCache = ConcurrentHashMap<String, String>()
+    private const val PLAIN_CACHE_MAX = 64
 
     @Synchronized
     private fun getOrCreateKey(): SecretKey {
@@ -100,24 +110,49 @@ object SessionCrypto {
      * Decrypts ciphertext. If the string was not encrypted with SessionCrypto,
      * returns it as-is for transparent backwards compatibility and migration.
      */
-    fun decrypt(ciphertext: String): String {
+    fun decrypt(ciphertext: String): String = decryptOrNull(ciphertext) ?: ""
+
+    /**
+     * Como [decrypt], pero distingue «no se pudo descifrar ahora» (`null`) de «está vacío».
+     * Quien guarda o borra sesiones debe usar esta variante: un `null` nunca es motivo para
+     * cerrar la sesión.
+     */
+    fun decryptOrNull(ciphertext: String): String? {
         if (!ciphertext.startsWith(PREFIX_V1)) return ciphertext
-        return try {
-            val rawB64 = ciphertext.removePrefix(PREFIX_V1)
-            val combined = Base64.decode(rawB64, Base64.NO_WRAP)
-            if (combined.size < GCM_IV_LENGTH_BYTES) return ""
-            val iv = combined.copyOfRange(0, GCM_IV_LENGTH_BYTES)
-            val encryptedBytes = combined.copyOfRange(GCM_IV_LENGTH_BYTES, combined.size)
-            val secretKey = getOrCreateKey()
-            val cipher = Cipher.getInstance(TRANSFORMATION)
-            val spec = GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv)
-            cipher.init(Cipher.DECRYPT_MODE, secretKey, spec)
-            val decryptedBytes = cipher.doFinal(encryptedBytes)
-            String(decryptedBytes, Charsets.UTF_8)
-        } catch (e: Exception) {
-            Timber.e(e, "SessionCrypto: decryption failed")
-            ""
+        plainCache[ciphertext]?.let { return it }
+        var lastError: Exception? = null
+        repeat(2) {
+            try {
+                val plain = decryptOnce(ciphertext) ?: return ""
+                if (plainCache.size >= PLAIN_CACHE_MAX) plainCache.clear()
+                plainCache[ciphertext] = plain
+                return plain
+            } catch (e: Exception) {
+                lastError = e
+            }
         }
+        Timber.e(lastError, "SessionCrypto: decryption failed")
+        return null
+    }
+
+    /** [decryptOrNull] con reintentos espaciados, para los lectores que pueden esperar. */
+    suspend fun decryptResilient(ciphertext: String, attempts: Int = 4): String? {
+        repeat(attempts) { i ->
+            decryptOrNull(ciphertext)?.let { return it }
+            delay(400L * (i + 1))
+        }
+        return null
+    }
+
+    /** `null` = valor mal formado (no se arregla reintentando); lanza si falla el Keystore. */
+    private fun decryptOnce(ciphertext: String): String? {
+        val combined = Base64.decode(ciphertext.removePrefix(PREFIX_V1), Base64.NO_WRAP)
+        if (combined.size < GCM_IV_LENGTH_BYTES) return null
+        val iv = combined.copyOfRange(0, GCM_IV_LENGTH_BYTES)
+        val encryptedBytes = combined.copyOfRange(GCM_IV_LENGTH_BYTES, combined.size)
+        val cipher = Cipher.getInstance(TRANSFORMATION)
+        cipher.init(Cipher.DECRYPT_MODE, getOrCreateKey(), GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv))
+        return String(cipher.doFinal(encryptedBytes), Charsets.UTF_8)
     }
 
     /**

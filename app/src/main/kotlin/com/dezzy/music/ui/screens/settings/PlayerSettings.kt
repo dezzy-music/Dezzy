@@ -65,6 +65,7 @@ import com.dezzy.music.constants.PlayerStreamClientKey
 import com.dezzy.music.constants.SeekExtraSeconds
 import com.dezzy.music.constants.CastVideoKey
 import com.dezzy.music.constants.VideoKeepModeOnSongChangeKey
+import com.dezzy.music.constants.VideoPipEnabledKey
 import com.dezzy.music.constants.VideoMaxQualityKey
 import com.dezzy.music.constants.VideoQuality
 import com.dezzy.music.constants.VideoResizeMode
@@ -171,7 +172,11 @@ fun PlayerSettings(
     )
     val (videoKeepMode, onVideoKeepModeChange) = rememberPreference(
         VideoKeepModeOnSongChangeKey,
-        defaultValue = false
+        defaultValue = true
+    )
+    val (videoPipEnabled, onVideoPipEnabledChange) = rememberPreference(
+        VideoPipEnabledKey,
+        defaultValue = true
     )
     val (castVideo, onCastVideoChange) = rememberPreference(
         CastVideoKey,
@@ -450,6 +455,14 @@ fun PlayerSettings(
             icon = { Icon(painterResource(R.drawable.skip_next), null) },
             checked = videoKeepMode,
             onCheckedChange = onVideoKeepModeChange
+        )
+
+        SwitchPreference(
+            title = { Text(stringResource(R.string.video_pip)) },
+            description = stringResource(R.string.video_pip_desc),
+            icon = { Icon(painterResource(R.drawable.slow_motion_video), null) },
+            checked = videoPipEnabled,
+            onCheckedChange = onVideoPipEnabledChange
         )
 
         SwitchPreference(

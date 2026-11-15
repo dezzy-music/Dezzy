@@ -316,7 +316,7 @@ fun LyricsShareCarouselSheet(
             // Para DezzyShare: aplica a customBgColor / customTextColor directamente.
             // Para otros layouts: aplica al tinte del glassStyle activo.
             if (currentBgColors.isNotEmpty()) {
-                SheetSectionLabel("🎨  Paleta del álbum")
+                SheetSectionLabel("Paleta del álbum")
 
                 ColorSelectorRow(
                     title = "Color del fondo",

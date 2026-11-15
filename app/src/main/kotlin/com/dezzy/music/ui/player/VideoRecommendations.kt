@@ -9,6 +9,7 @@ package com.dezzy.music.ui.player
 import android.view.LayoutInflater
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -274,13 +275,17 @@ internal fun VideoSurface(
     active: Boolean,
     modifier: Modifier = Modifier,
     resizeMode: Int = AspectRatioFrameLayout.RESIZE_MODE_FIT,
+    /** La superficie de la capa de imagen en imagen: es la única activa en PiP. */
+    pipSurface: Boolean = false,
 ) {
+    val inPip by com.dezzy.music.video.VideoPipState.inPip.collectAsState()
+    val attached = active && (pipSurface || !inPip)
     AndroidView(
         factory = { ctx ->
             LayoutInflater.from(ctx).inflate(R.layout.video_player_view, null, false) as PlayerView
         },
         update = { view ->
-            val target = if (active) player else null
+            val target = if (attached) player else null
             if (view.player !== target) view.player = target
             if (view.resizeMode != resizeMode) view.resizeMode = resizeMode
         },

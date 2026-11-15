@@ -67,7 +67,7 @@ fun DezzyTheme(
 
     val fontFamilyState = rememberPreference(
         key = FontFamilyKey,
-        defaultValue = "LORA"
+        defaultValue = "MATERIAL3"
     )
     val fontFamilyVal = fontFamilyState.value
     val (enableWallpaperTheme) = rememberPreference(

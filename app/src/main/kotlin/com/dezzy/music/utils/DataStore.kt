@@ -16,11 +16,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.datastore.core.DataStore
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
 import com.dezzy.music.extensions.toEnum
+import com.dezzy.music.security.SessionBackup
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -32,8 +34,20 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.properties.ReadOnlyProperty
+import timber.log.Timber
 
-val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+/**
+ * Si el archivo se daña (la app murió a mitad de una escritura), DataStore lo recrea en lugar de
+ * fallar en cada lectura, y las sesiones se recuperan de [SessionBackup]: así un cierre brusco
+ * ya no saca al usuario de YouTube ni de Spotify.
+ */
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
+    name = "settings",
+    corruptionHandler = ReplaceFileCorruptionHandler<Preferences> { e ->
+        Timber.e(e, "DataStore «settings» dañado: se recrea y se recuperan las sesiones")
+        SessionBackup.restore()
+    },
+)
 object PreferenceStore {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val _prefs = MutableStateFlow<Preferences?>(null)

@@ -146,7 +146,7 @@ fun ExploreScreen(
                             .padding(12.dp),
                     ) {
                         Column {
-                            Text("🌐", fontSize = 28.sp)
+                            androidx.compose.material3.Icon(painter = painterResource(R.drawable.language), contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
                             Spacer(Modifier.height(4.dp))
                             Text(
                                 text = "Salas Públicas",

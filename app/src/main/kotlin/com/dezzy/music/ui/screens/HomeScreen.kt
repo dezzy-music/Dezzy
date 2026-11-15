@@ -392,10 +392,6 @@ fun HomeScreen(
                     )
                 }
 
-                item(key = "welcome_guide") {
-                    com.dezzy.music.ui.component.WelcomeGuideCard()
-                }
-
                 when (homeFilter) {
                     HomeFilter.ForYou -> {
                         // ── Accesos rápidos 2 × 3 ──
@@ -403,6 +399,7 @@ fun HomeScreen(
                             val context = LocalContext.current
                             SpotifyGreetingGrid(
                                 quickPicks = quickPicks,
+                                fallbackSongs = forgottenFavorites,
                                 pinnedPlaylist1 = pinnedPlaylist1,
                                 pinnedPlaylist2 = pinnedPlaylist2,
                                 onAddPlaylistClick = { slotIndex ->

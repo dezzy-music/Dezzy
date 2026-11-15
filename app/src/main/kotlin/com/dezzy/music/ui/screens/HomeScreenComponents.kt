@@ -1232,6 +1232,7 @@ fun LazyListScope.SimilarRecommendationsContainer(
 @Composable
 fun SpotifyGreetingGrid(
     quickPicks: List<Song>?,
+    fallbackSongs: List<Song>? = null,
     pinnedPlaylist1: Playlist?,
     pinnedPlaylist2: Playlist?,
     onAddPlaylistClick: (Int) -> Unit,
@@ -1262,16 +1263,15 @@ fun SpotifyGreetingGrid(
         // Slot 4: Pinned 2
         gridItems.add(pinnedPlaylist2 ?: "ADD_PLAYLIST_2")
 
-        // Slots 5-6: sugerencias automáticas (quickPicks)
-        val picks = (quickPicks ?: emptyList()).take(2)
+        // Slots 5-6: sugerencias automáticas (quickPicks → favoritos olvidados).
+        // Antes se rellenaban con esqueletos "EMPTY_SLOT" que nunca cargaban
+        // cuando no había historial; ahora la fila sólo aparece con contenido real.
+        val picks = ((quickPicks ?: emptyList()) + (fallbackSongs ?: emptyList()))
+            .distinctBy { it.id }
+            .take(2)
         gridItems.addAll(picks)
 
-        // Rellenar con vacíos si no hay 6 elementos (cuadrícula 2 × 3)
-        while (gridItems.size < 6) {
-            gridItems.add("EMPTY_SLOT")
-        }
-
-        val rows = 3
+        val rows = (gridItems.size + 1) / 2
         for (i in 0 until rows) {
             Row(
                 modifier = Modifier.fillMaxWidth(),

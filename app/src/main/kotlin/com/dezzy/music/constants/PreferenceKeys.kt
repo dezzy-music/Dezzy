@@ -160,6 +160,9 @@ val VideoResizeModeKey = stringPreferencesKey("videoResizeMode")
 
 val VideoKeepModeOnSongChangeKey = booleanPreferencesKey("videoKeepModeOnSongChange")
 
+/** Pasar a imagen en imagen al salir de la app con un videoclip sonando. */
+val VideoPipEnabledKey = booleanPreferencesKey("videoPipEnabled")
+
 val CastVideoKey = booleanPreferencesKey("castVideo")
 
 
@@ -1744,6 +1747,9 @@ val HomeInactivityFadeKey = booleanPreferencesKey("homeInactivityFade")
 
 
 val FirstLaunchInitializedKey = booleanPreferencesKey("firstLaunchInitialized")
+
+/** Migración única a los valores por defecto Material 3 (fuente y reproductor). */
+val MaterialDefaultsMigratedKey = booleanPreferencesKey("materialDefaultsMigrated")
 
 
 

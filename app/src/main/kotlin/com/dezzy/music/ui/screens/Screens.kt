@@ -62,8 +62,8 @@ sealed class Screens(
 
     object Social : Screens(
         titleId = R.string.social_tab,
-        iconIdInactive = R.drawable.social_friends,
-        iconIdActive = R.drawable.social_friends,
+        iconIdInactive = R.drawable.nav_messages_outlined,
+        iconIdActive = R.drawable.nav_messages_filled,
         route = "social"
     )
 

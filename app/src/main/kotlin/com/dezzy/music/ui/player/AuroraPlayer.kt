@@ -581,7 +581,12 @@ fun AuroraPlayer(
 
     if (showDevicePicker) {
         ConnectDeviceBottomSheet(
-            onDismissRequest = { showDevicePicker = false }
+            onDismissRequest = { showDevicePicker = false },
+            onOpenListenTogether = {
+                showDevicePicker = false
+                state.collapseSoft()
+                navController.navigate("settings/music_together")
+            },
         )
     }
 

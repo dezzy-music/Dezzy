@@ -35,6 +35,12 @@ object MessageTypes {
     const val SUGGEST_TRACK = "suggest_track"
     const val APPROVE_SUGGESTION = "approve_suggestion"
     const val REJECT_SUGGESTION = "reject_suggestion"
+    // v2.3: panel del anfitrión, votos y resincronización
+    const val LISTENER_REPORT = "listener_report"
+    const val VOTE_SUGGESTION = "vote_suggestion"
+    const val REQUEST_DASHBOARD = "request_dashboard"
+    const val RESYNC_ALL = "resync_all"
+    const val UPDATE_ROOM_SETTINGS = "update_room_settings"
 
     // Server -> Client
     const val ROOM_CREATED = "room_created"
@@ -57,6 +63,9 @@ object MessageTypes {
     const val SUGGESTION_RECEIVED = "suggestion_received"
     const val SUGGESTION_APPROVED = "suggestion_approved"
     const val SUGGESTION_REJECTED = "suggestion_rejected"
+    const val ROOM_DASHBOARD = "room_dashboard"
+    const val SUGGESTIONS_UPDATED = "suggestions_updated"
+    const val ROOM_SETTINGS_UPDATED = "room_settings_updated"
     const val CHAT_MESSAGE = "chat"
     const val TYPING_STATUS = "typing"
     const val MESSAGE_EDITED = "edit_message"
@@ -132,6 +141,7 @@ data class RoomState(
     @ProtoNumber(8) val volume: Float = 1f,
     @ProtoNumber(9) val queue: List<TrackInfo> = emptyList(),
     @ProtoNumber(10) @SerialName("seq_nbr") val seqNbr: Long = 0L,
+    @ProtoNumber(11) val settings: RoomSettings? = null,
     @ProtoNumber(12) @SerialName("repeat_mode") val repeatMode: Int = 0,
     @ProtoNumber(13) @SerialName("shuffle_enabled") val shuffleEnabled: Boolean = false
 )
@@ -261,6 +271,124 @@ data class SuggestionApprovedPayload(
 data class SuggestionRejectedPayload(
     @SerialName("suggestion_id") val suggestionId: String = "",
     val reason: String? = null
+)
+
+// ---------------------------------------------------------------------------
+// v2.3 — panel del anfitrión. La app habla PROTOBUF con el servidor, así que cada
+// @ProtoNumber tiene que coincidir con el tag de prost en src/protocol/messages.rs.
+// ---------------------------------------------------------------------------
+
+/**
+ * Ajustes de la sala tal y como los guarda el servidor (prost `RoomSettings`, tags 1–7).
+ * Todos los valores por defecto son los de prost (false / "" / 0): el ProtoBuf de kotlinx
+ * omite lo que vale su defecto y el servidor reemplaza los ajustes enteros, así que un
+ * defecto distinto aquí cambiaría ajustes sin querer al reenviarlos.
+ */
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+data class RoomSettings(
+    @ProtoNumber(1) @SerialName("allowGuestsToControlPlayback") val allowGuestsToControlPlayback: Boolean = false,
+    @ProtoNumber(2) @SerialName("allowGuestsToAddTracks") val allowGuestsToAddTracks: Boolean = false,
+    @ProtoNumber(3) @SerialName("requireHostApprovalToJoin") val requireHostApprovalToJoin: Boolean = false,
+    @ProtoNumber(4) @SerialName("isPublic") val isPublic: Boolean = false,
+    @ProtoNumber(5) @SerialName("djModeEnabled") val djModeEnabled: Boolean = false,
+    @ProtoNumber(6) val theme: String = "",
+    /** Votos con los que una sugerencia entra sola en la cola (0 = decide el anfitrión). */
+    @ProtoNumber(7) @SerialName("autoQueueVotes") val autoQueueVotes: Int = 0,
+)
+
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+data class UpdateRoomSettingsPayload(
+    @ProtoNumber(1) val settings: RoomSettings? = null,
+)
+
+/** Oyente → servidor, cada ~3 s: qué está sonando aquí y cómo va la red. */
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+data class ListenerReportPayload(
+    @ProtoNumber(1) @SerialName("track_id") val trackId: String = "",
+    @ProtoNumber(2) val position: Long = 0L,
+    @ProtoNumber(3) @SerialName("is_playing") val isPlaying: Boolean = false,
+    @ProtoNumber(4) val buffering: Boolean = false,
+    /** "wifi" | "cellular" | "ethernet" | "other" | "" */
+    @ProtoNumber(5) val network: String = "",
+    @ProtoNumber(6) @SerialName("rtt_ms") val rttMs: Long = 0L,
+)
+
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+data class ListenerStatus(
+    @ProtoNumber(1) @SerialName("user_id") val userId: String = "",
+    @ProtoNumber(2) val username: String = "",
+    @ProtoNumber(3) @SerialName("is_host") val isHost: Boolean = false,
+    @ProtoNumber(4) @SerialName("is_connected") val isConnected: Boolean = false,
+    @ProtoNumber(5) @SerialName("track_id") val trackId: String = "",
+    @ProtoNumber(6) val position: Long = 0L,
+    @ProtoNumber(7) @SerialName("is_playing") val isPlaying: Boolean = false,
+    @ProtoNumber(8) val buffering: Boolean = false,
+    @ProtoNumber(9) val network: String = "",
+    @ProtoNumber(10) @SerialName("rtt_ms") val rttMs: Long = 0L,
+    /** Adelanto (+) o retraso (−) respecto al anfitrión; null si ahora no se puede medir. */
+    @ProtoNumber(11) @SerialName("drift_ms") val driftMs: Long? = null,
+    /** Antigüedad del último informe; null si nunca informó. */
+    @ProtoNumber(12) @SerialName("report_age_ms") val reportAgeMs: Long? = null,
+)
+
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+data class SuggestionItem(
+    @ProtoNumber(1) @SerialName("suggestion_id") val suggestionId: String = "",
+    @ProtoNumber(2) @SerialName("from_user_id") val fromUserId: String = "",
+    @ProtoNumber(3) @SerialName("from_username") val fromUsername: String = "",
+    @ProtoNumber(4) @SerialName("track_info") val trackInfo: TrackInfo? = null,
+    @ProtoNumber(5) val votes: Int = 0,
+    @ProtoNumber(6) val voters: List<String> = emptyList(),
+    @ProtoNumber(7) @SerialName("created_at") val createdAt: Long = 0L,
+)
+
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+data class ActivityItem(
+    @ProtoNumber(1) val at: Long = 0L,
+    /** join, leave, disconnect, kick, suggest, vote, approve, auto_queue, reject, host_changed, resync, storm_cut */
+    @ProtoNumber(2) val kind: String = "",
+    @ProtoNumber(3) @SerialName("user_id") val userId: String = "",
+    @ProtoNumber(4) val username: String = "",
+    @ProtoNumber(5) val detail: String = "",
+)
+
+/** Servidor → anfitrión (máx. 1/s): foto completa de la sala. */
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+data class RoomDashboardPayload(
+    @ProtoNumber(1) @SerialName("server_time") val serverTime: Long = 0L,
+    @ProtoNumber(2) @SerialName("host_position") val hostPosition: Long = 0L,
+    @ProtoNumber(3) @SerialName("track_id") val trackId: String = "",
+    @ProtoNumber(4) @SerialName("is_playing") val isPlaying: Boolean = false,
+    @ProtoNumber(5) val listeners: List<ListenerStatus> = emptyList(),
+    @ProtoNumber(6) val suggestions: List<SuggestionItem> = emptyList(),
+    @ProtoNumber(7) val activity: List<ActivityItem> = emptyList(),
+    @ProtoNumber(8) @SerialName("opened_at") val openedAt: Long = 0L,
+    @ProtoNumber(9) @SerialName("peak_listeners") val peakListeners: Int = 0,
+    @ProtoNumber(10) @SerialName("avg_drift_ms") val avgDriftMs: Long? = null,
+)
+
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+data class SuggestionsUpdatedPayload(
+    @ProtoNumber(1) val suggestions: List<SuggestionItem> = emptyList(),
+)
+
+/**
+ * `vote` NO lleva valor por defecto a propósito: el ProtoBuf de kotlinx omite los campos
+ * que valen su valor por defecto, y entonces prost leería `false` (quitar voto).
+ */
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+data class VoteSuggestionPayload(
+    @ProtoNumber(1) @SerialName("suggestion_id") val suggestionId: String,
+    @ProtoNumber(2) val vote: Boolean,
 )
 
 // Response payloads

@@ -111,7 +111,7 @@ fun DJVoteSheet(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Surface(shape = CircleShape, color = Color(0xFFFF9800).copy(alpha = 0.15f)) {
-                    Text("🎧", modifier = Modifier.padding(8.dp), fontSize = 20.sp)
+                    androidx.compose.material3.Icon(painter = androidx.compose.ui.res.painterResource(com.dezzy.music.R.drawable.headphones), contentDescription = null, tint = Color(0xFFFF9800), modifier = Modifier.padding(8.dp).size(20.dp))
                 }
                 Spacer(Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
@@ -212,7 +212,9 @@ fun DJVoteSheet(
                         ),
                         shape = RoundedCornerShape(12.dp),
                     ) {
-                        Text("👍 Sí ($upvotes)", fontWeight = FontWeight.Bold)
+                        androidx.compose.material3.Icon(painter = androidx.compose.ui.res.painterResource(com.dezzy.music.R.drawable.thumbup), contentDescription = null, tint = androidx.compose.material3.LocalContentColor.current, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Sí ($upvotes)", fontWeight = FontWeight.Bold)
                     }
                     OutlinedButton(
                         onClick = {
@@ -222,7 +224,9 @@ fun DJVoteSheet(
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp),
                     ) {
-                        Text("👎 No ($downvotes)")
+                        androidx.compose.material3.Icon(painter = androidx.compose.ui.res.painterResource(com.dezzy.music.R.drawable.thumbdown), contentDescription = null, tint = androidx.compose.material3.LocalContentColor.current, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("No ($downvotes)")
                     }
                 }
             } else {
@@ -245,10 +249,10 @@ fun DJVoteSheet(
                 ) {
                     Text(
                         text = when {
-                            vote.resolved && vote.accepted -> "✅ ¡Canción aceptada! Se añade a la cola"
-                            vote.resolved && !vote.accepted -> "❌ La sala rechazó esta canción"
-                            selfVote == true -> "👍 Votaste a favor ($upvotes vs $downvotes)"
-                            else -> "👎 Votaste en contra ($downvotes vs $upvotes)"
+                            vote.resolved && vote.accepted -> "Canción aceptada: se añade a la cola"
+                            vote.resolved && !vote.accepted -> "La sala rechazó esta canción"
+                            selfVote == true -> "Votaste a favor ($upvotes vs $downvotes)"
+                            else -> "Votaste en contra ($downvotes vs $upvotes)"
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,

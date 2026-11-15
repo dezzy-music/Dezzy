@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dezzy · Fase 11 · Mapa musical</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fase11.css">
+<style>
+.mapfab{position:absolute;right:16px;z-index:6;width:56px;height:56px;border-radius:16px;background:var(--sc-lowest);color:var(--primary);display:grid;place-items:center;box-shadow:0 3px 6px rgba(0,0,0,.2)}
+.mapchips{position:absolute;left:0;right:0;top:100px;z-index:6}
+.mapsearch{position:absolute;left:0;right:0;top:32px;z-index:6}
+.who{display:flex;align-items:center;gap:14px;padding:4px 24px 12px}
+.who .tx{flex:1}.who b{display:block;font-size:20px;font-weight:400}.who span{font-size:14px;color:var(--on-surface-variant)}
+.np{display:flex;align-items:center;gap:12px;margin:0 16px;padding:12px;border-radius:16px;background:var(--sc-high)}
+.np .art{width:64px;height:64px}.np .tx{flex:1;min-width:0;font-size:16px}.np .tx span{display:block;font-size:14px;color:var(--on-surface-variant)}
+.np .play{width:48px;height:48px;border-radius:50%;background:var(--primary);color:#fff;display:grid;place-items:center}
+.acts{display:flex;gap:8px;padding:16px 16px 0}.acts .btn{flex:1}
+.sharebar{position:absolute;left:16px;right:16px;top:36px;z-index:6;display:flex;align-items:center;gap:10px;height:56px;border-radius:28px;background:var(--sc-lowest);
+  box-shadow:0 2px 6px rgba(0,0,0,.18);padding:0 8px 0 16px;font-size:14px}
+.sharebar .grow{flex:1;line-height:18px}.sharebar .grow span{display:block;font-size:12px;color:var(--on-surface-variant)}
+/* B */
+.maphead{position:relative;height:220px;margin:0 16px;border-radius:24px;overflow:hidden}
+.maphead .pin.country{font-size:12px}
+.maphead .exp{position:absolute;right:8px;bottom:8px;z-index:5;height:40px;border-radius:20px;background:var(--sc-lowest);display:flex;align-items:center;gap:6px;padding:0 14px 0 10px;font-size:14px;font-weight:500;color:var(--primary);box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.crow{display:flex;align-items:center;gap:12px;padding:6px 4px 6px 16px;min-height:64px}
+.crow .no{width:20px;font:500 15px 'Roboto Flex';color:var(--on-surface-variant);text-align:center}
+.crow .cc{width:44px;height:44px;border-radius:12px;background:var(--sc-highest);display:grid;place-items:center;font:700 14px 'Roboto Flex';color:var(--on-surface-variant);flex:none}
+.crow .cc.me{background:var(--primary-container);color:var(--on-primary-container)}
+.crow .tx{flex:1;min-width:0}.crow .tx b{display:block;font-size:16px;font-weight:400}
+.crow .tx span{display:block;font-size:14px;color:var(--on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hero-c{margin:0 16px;border-radius:28px;padding:20px;background:linear-gradient(160deg,#9C3F48,#C9636C 60%,#E9A6A0);color:#fff;position:relative;overflow:hidden}
+.hero-c .cc{font:800 64px/1 'Roboto Flex';opacity:.18;position:absolute;right:12px;top:6px}
+.hero-c .o{font-size:12px;letter-spacing:.5px;text-transform:uppercase;opacity:.9}
+.hero-c h2{font:500 30px/36px 'Roboto Flex';margin-top:2px}
+.hero-c p{font-size:14px;opacity:.92;margin-top:2px}
+.hero-c .bt{display:flex;gap:8px;margin-top:16px}
+.hero-c .btn.w{background:#fff;color:var(--primary)}
+.hero-c .btn.g{background:rgba(255,255,255,.2);color:#fff}
+.trend{width:28px;text-align:center;flex:none}.trend .ms{font-size:18px}
+.up{color:#2E7D4F}.dn{color:#B3261E}.eq{color:var(--outline)}
+.stack{display:flex}.stack .av{width:32px;height:32px;border:2px solid var(--sc-low);margin-left:-8px;font-size:12px}.stack .av:first-child{margin-left:0}
+/* C */
+.topdark{position:absolute;left:0;right:0;top:28px;z-index:6;display:flex;align-items:center;gap:4px;padding:8px 4px;color:#fff}
+.topdark .icon-btn{color:#fff}
+.topdark .grow{flex:1;font-size:22px}
+.chipd{height:32px;border-radius:8px;padding:0 12px;display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:500;color:#F3E5E5;border:1px solid rgba(255,255,255,.3);flex:none}
+.chipd.sel{background:var(--primary-container);color:var(--on-primary-container);border-color:transparent}
+.pcards{position:absolute;left:0;right:0;bottom:108px;z-index:6;display:flex;gap:12px;padding:0 16px;overflow:hidden}
+.pcard{width:260px;flex:none;border-radius:20px;background:var(--sc-lowest);padding:12px;display:flex;gap:12px;align-items:center}
+.pcard .art{width:56px;height:56px}
+.pcard .tx{flex:1;min-width:0}.pcard .tx b{display:block;font-size:13px;font-weight:500;color:var(--primary)}
+.pcard .tx div{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pcard .tx span{display:block;font-size:13px;color:var(--on-surface-variant)}
+.pcard .play{width:48px;height:48px;border-radius:50%;background:var(--primary-container);color:var(--on-primary-container);display:grid;place-items:center;flex:none}
+.pcard.dim{opacity:.85;width:220px}
+.countbadge{position:absolute;left:50%;transform:translateX(-50%);top:120px;z-index:6;height:32px;border-radius:16px;background:rgba(0,0,0,.45);color:#fff;font-size:13px;display:flex;align-items:center;gap:6px;padding:0 12px}
+.countbadge i{width:8px;height:8px;border-radius:50%;background:#5BD38A}
+.privmap{position:relative;height:200px;margin:0 16px;border-radius:20px;overflow:hidden}
+.radio{display:flex;align-items:center;gap:14px;padding:8px 24px 8px 16px;min-height:60px}
+.radio i{width:20px;height:20px;border-radius:50%;border:2px solid var(--on-surface-variant);flex:none;position:relative}
+.radio.on i{border-color:var(--primary)}.radio.on i::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--primary)}
+.radio .tx{flex:1;font-size:16px;line-height:22px}.radio .tx span{display:block;font-size:13px;color:var(--on-surface-variant);line-height:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div class="crumb">Fase 11 · Rediseño de experiencias · 1 de 5</div>
+  <h1>Mapa musical</h1>
+  <p class="lead">Tres maneras de ordenar la misma pantalla. Todas conservan lo que ya hace hoy: la estrella de cada país con su canción número 1, las personas que escuchan cerca (celda de ~5 km por P2P), tu punto, la búsqueda, el top del país y el interruptor de compartir ubicación.</p>
+  <div class="today">
+    <div><b>Hoy</b>Mapa oscuro a pantalla completa con estrellas, una lista de top superpuesta y un interruptor de ubicación poco visible.</div>
+    <div><b>Problema</b>Cuesta saber qué es un país y qué es una persona, y el top tapa el mapa sin una forma clara de recogerlo.</div>
+  </div>
+  <nav class="nav5"><a class="on" href="fase11-mapa.html"><span class="ms s18">public</span>Mapa musical</a><a href="fase11-wrapped.html"><span class="ms s18">auto_awesome</span>Tu año</a><a href="fase11-tiempo.html"><span class="ms s18">schedule</span>Máquina del tiempo</a><a href="fase11-dna.html"><span class="ms s18">hub</span>Song DNA</a><a href="fase11-dj.html"><span class="ms s18">graphic_eq</span>DJ</a></nav>
+</header>
+
+<!-- ═════════ BOCETO A ═════════ -->
+<section class="sketch"><div class="sk-head"><span class="sk-tag">Boceto A</span><h2>El mapa manda, la hoja acompaña</h2>
+<p>Mapa claro a pantalla completa, con una barra de búsqueda flotante y filtros. Debajo, una hoja que se arrastra con el top del país elegido. Tocar a una persona abre su tarjeta con lo que está escuchando.</p></div>
+<div class="sk-body"><div class="phones">
+<div><div class="phone"><div class="content">
+  <div class="map">
+    <span class="pin country" style="left:205px;top:170px"><span class="art a5"></span>EE. UU.</span>
+    <span class="pin country sel" style="left:128px;top:330px"><span class="art a1"></span>México</span>
+    <span class="pin country" style="left:262px;top:452px"><span class="art a6"></span>Colombia</span>
+    <span class="pin person a3" style="left:170px;top:300px"></span>
+    <span class="pin person a7" style="left:96px;top:282px"></span>
+    <span class="pin me" style="left:150px;top:362px"></span>
+  </div>
+  <div class="mapsearch"><div class="search float"><span class="ms">search</span><span class="grow">Busca un país o una canción</span><span class="icon-btn"><span class="avatar av a1" style="width:32px;height:32px;font-size:13px">D</span></span></div></div>
+  <div class="mapchips"><div class="chips"><span class="chip sel elev"><span class="ms">check</span>Países</span><span class="chip elev"><span class="ms">group</span>Personas</span><span class="chip elev"><span class="ms">near_me</span>Cerca de mí</span></div></div>
+  <span class="mapfab" style="bottom:380px"><span class="ms">my_location</span></span>
+  <div class="sheet" style="padding-bottom:104px;background:var(--surface);box-shadow:0 -2px 10px rgba(0,0,0,.12)">
+    <div class="handle"></div>
+    <div style="display:flex;align-items:center;padding:0 8px 4px 24px"><div style="flex:1"><div style="font-size:22px">Top en México</div><div style="font-size:14px;color:var(--on-surface-variant)">Hoy, actualizado hace 2 h</div></div><span class="icon-btn ton"><span class="ms f">play_arrow</span></span></div>
+    <div class="rk"><span class="no">1</span><span class="art a1"></span><div class="tx">La Diabla<span>Xavi</span></div><span class="icon-btn"><span class="ms">more_vert</span></span></div>
+    <div class="rk"><span class="no">2</span><span class="art a4"></span><div class="tx">Si Antes Te Hubiera Conocido<span>Karol G</span></div><span class="icon-btn"><span class="ms">more_vert</span></span></div>
+  </div>
+  <div data-mini></div>
+</div></div><div class="cap">Mapa con el top de México en la hoja</div></div>
+
+<div><div class="phone"><div class="content">
+  <div class="map">
+    <span class="pin person a3" style="left:170px;top:300px;outline:4px solid var(--primary);outline-offset:2px"></span>
+    <span class="pin person a7" style="left:96px;top:282px"></span>
+    <span class="pin person a2" style="left:220px;top:250px"></span>
+    <span class="pin person a5" style="left:250px;top:190px"></span>
+    <span class="pin me" style="left:150px;top:362px"></span>
+  </div>
+  <div class="sharebar"><span class="ms" style="color:var(--primary)">location_on</span><div class="grow">Compartes tu zona<span>Celda de ~5 km, nunca tu punto exacto</span></div><span class="sw on"></span></div>
+  <div class="mapchips" style="top:100px"><div class="chips"><span class="chip elev">Países</span><span class="chip sel elev"><span class="ms">check</span>Personas</span><span class="chip elev"><span class="ms">near_me</span>Cerca de mí</span></div></div>
+  <div class="scrim-modal" style="background:rgba(34,25,26,.18)"></div>
+  <div class="sheet" style="background:var(--surface)">
+    <div class="handle"></div>
+    <div class="who"><span class="av a3" style="width:56px;height:56px;font-size:20px">V</span><div class="tx"><b>Valeria</b><span>A unos 5 km, escuchando ahora</span></div><span class="icon-btn"><span class="ms">person_add</span></span></div>
+    <div class="np"><span class="art a3"></span><div class="tx">Labios Rotos<span>Zoé</span></div><span class="play"><span class="ms f">play_arrow</span></span></div>
+    <div class="acts"><span class="btn filled"><span class="ms">headphones</span>Escuchar</span><span class="btn tonal">Ver perfil</span></div>
+  </div>
+</div></div><div class="cap">Persona elegida en el mapa</div></div>
+</div>
+<div class="notes"><h3>Qué cambia</h3><ul>
+<li>Mapa claro (cartografía suave) en vez del filtro nocturno; los países son «píldoras» con portada y nombre, las personas son círculos con un punto verde de «en vivo».</li>
+<li>Búsqueda flotante arriba (la de hoy, <code>music_map_search_songs</code>) y filtros Países / Personas / Cerca de mí.</li>
+<li>El top del país vive en una <code>BottomSheetScaffold</code> con tres alturas (asomada, media, completa) y un botón para reproducirlo entero.</li>
+<li>Botón «mi ubicación» como FAB que sube con la hoja.</li>
+<li>Al tocar a alguien: hoja con su canción, «Escuchar también» y su perfil P2P.</li>
+<li>Compartir ubicación pasa a una barra visible arriba cuando estás en Personas, explicando lo de la celda de ~5 km.</li></ul>
+<h3>A tener en cuenta</h3><ul><li>Requiere un estilo de teselas claro para osmdroid (o quitar el filtro nocturno en tema claro y dejarlo en oscuro).</li><li>La hoja en tres alturas usa <code>BottomSheetScaffold</code>; el mapa sigue siendo un <code>AndroidView</code>.</li></ul>
+<div class="dials"><span class="dial">Pantallas nuevas: 0</span><span class="dial">Código reutilizado: alto</span><span class="dial">Riesgo: bajo</span></div></div>
+</div></section>
+
+<!-- ═════════ BOCETO B ═════════ -->
+<section class="sketch"><div class="sk-head"><span class="sk-tag">Boceto B</span><h2>Ranking de países, con el mapa de portada</h2>
+<p>La pantalla se lee como una lista: el mapa es una tarjeta de cabecera que se puede ampliar, y debajo va el ranking de países con su número 1. Cada país abre su propia página con el top completo y quién lo escucha.</p></div>
+<div class="sk-body"><div class="phones">
+<div><div class="phone"><div class="content pt">
+  <div class="tb-row"><span class="icon-btn"><span class="ms">arrow_back</span></span><span class="grow">Mapa musical</span><span class="icon-btn"><span class="ms">search</span></span><span class="icon-btn"><span class="ms">location_on</span></span></div>
+  <div class="maphead"><div class="map" style="position:absolute">
+    <span class="pin country" style="left:205px;top:90px"><span class="art a5"></span>EE. UU.</span>
+    <span class="pin country sel" style="left:128px;top:178px"><span class="art a1"></span>México</span>
+    <span class="pin person a3" style="left:170px;top:150px"></span>
+  </div><span class="exp"><span class="ms s20">open_in_full</span>Ver mapa</span></div>
+  <div class="seg" style="margin-top:12px"><div class="on"><span class="ms">check</span>Países</div><div>Personas</div><div>Cerca</div></div>
+  <div class="lbl" style="padding-top:8px">El número 1 de cada país, hoy</div>
+  <div class="crow"><span class="cc me">MX</span><div class="tx"><b>México</b><span>La Diabla, Xavi</span></div><span class="icon-btn"><span class="ms f" style="color:var(--primary)">play_circle</span></span></div>
+  <div class="crow"><span class="cc">CO</span><div class="tx"><b>Colombia</b><span>Si Antes Te Hubiera Conocido, Karol G</span></div><span class="icon-btn"><span class="ms">play_circle</span></span></div>
+  <div class="crow"><span class="cc">AR</span><div class="tx"><b>Argentina</b><span>Tu Vas Sin Fav, Ke Personajes</span></div><span class="icon-btn"><span class="ms">play_circle</span></span></div>
+  <div class="crow"><span class="cc">ES</span><div class="tx"><b>España</b><span>Me Gustas Tú, Manu Chao</span></div><span class="icon-btn"><span class="ms">play_circle</span></span></div>
+  <div data-mini></div>
+</div></div><div class="cap">Mapa como cabecera y ranking</div></div>
+
+<div><div class="phone lt"><div class="content">
+  <div style="background:linear-gradient(#7E2F3A,transparent);height:90px;position:absolute;left:0;right:0;top:0"></div>
+  <div class="tb-row" style="position:relative;padding-top:36px;color:#fff"><span class="icon-btn" style="color:#fff"><span class="ms">arrow_back</span></span><span class="grow"></span><span class="icon-btn" style="color:#fff"><span class="ms">share</span></span></div>
+  <div class="hero-c" style="margin-top:-6px"><span class="cc">MX</span><div class="o">Top 50 de hoy</div><h2>México</h2><p>Actualizado hace 2 h, 128 personas escuchando</p>
+    <div class="bt"><span class="btn w"><span class="ms f">play_arrow</span>Reproducir</span><span class="btn g"><span class="ms">shuffle</span>Aleatorio</span></div></div>
+  <div class="card" style="display:flex;align-items:center;gap:12px;margin-top:12px"><div class="stack"><span class="av a3">V</span><span class="av a7">L</span><span class="av a2">S</span></div><div style="flex:1;font-size:14px;line-height:19px">Valeria, Luis y 126 más escuchan en México</div><span class="ms" style="color:var(--on-surface-variant)">chevron_right</span></div>
+  <div class="rk"><span class="no">1</span><span class="trend"><span class="ms eq">remove</span></span><span class="art a1"></span><div class="tx">La Diabla<span>Xavi</span></div></div>
+  <div class="rk"><span class="no">2</span><span class="trend"><span class="ms up">arrow_upward</span></span><span class="art a4"></span><div class="tx">Si Antes Te Hubiera…<span>Karol G</span></div></div>
+  <div class="rk"><span class="no">3</span><span class="trend"><span class="ms dn">arrow_downward</span></span><span class="art a7"></span><div class="tx">Tu Boda<span>Óscar Maydon, Fuerza Regida</span></div></div>
+  <div class="rk"><span class="no">4</span><span class="trend"><span class="ms up">arrow_upward</span></span><span class="art a2"></span><div class="tx">Pájaros<span>Siddhartha</span></div></div>
+  <div data-mini></div>
+</div></div><div class="cap">Página de un país</div></div>
+</div>
+<div class="notes"><h3>Qué cambia</h3><ul>
+<li>El mapa baja a una tarjeta de 220 dp con «Ver mapa» para abrirlo a pantalla completa (el mapa de hoy, sin cambios).</li>
+<li>Botón segmentado Países / Personas / Cerca cambia la lista de abajo.</li>
+<li>Ranking de países con su código, su número 1 y reproducir directo; tu país arriba y resaltado.</li>
+<li>Página de país nueva: cabecera con Reproducir y Aleatorio, quién escucha allí (P2P) y el top con tendencia (sube, baja, igual).</li>
+<li>Compartir ubicación pasa al icono de la barra superior (abre la hoja de privacidad del boceto C).</li></ul>
+<h3>A tener en cuenta</h3><ul><li>La tendencia necesita guardar el puesto de ayer en la caché local de charts (6 h); si no hay dato, se oculta.</li><li>Es la opción más cómoda con una mano y con TalkBack: todo es lista.</li></ul>
+<div class="dials"><span class="dial">Pantallas nuevas: 1 (país)</span><span class="dial">Código reutilizado: medio</span><span class="dial">Riesgo: bajo</span></div></div>
+</div></section>
+
+<!-- ═════════ BOCETO C ═════════ -->
+<section class="sketch"><div class="sk-head"><span class="sk-tag">Boceto C</span><h2>Radar nocturno de gente escuchando</h2>
+<p>El mapa se vuelve una experiencia inmersiva centrada en personas: noche, puntos que laten y un carrusel de tarjetas que se sincroniza con el mapa al deslizar. La privacidad se explica con un dibujo de la celda que se publica.</p></div>
+<div class="sk-body"><div class="phones">
+<div><div class="phone lt"><div class="content">
+  <div class="map night">
+    <span class="pulse" style="left:170px;top:300px;width:90px;height:90px"></span>
+    <span class="pulse" style="left:170px;top:300px;width:150px;height:150px;opacity:.5"></span>
+    <span class="pin person a3" style="left:170px;top:300px;outline:3px solid var(--inverse-primary);outline-offset:3px"></span>
+    <span class="pin person a7" style="left:96px;top:282px"></span>
+    <span class="pin person a2" style="left:232px;top:236px"></span>
+    <span class="pin person a5" style="left:250px;top:440px"></span>
+    <span class="pin me" style="left:150px;top:362px"></span>
+  </div>
+  <div class="topdark"><span class="icon-btn"><span class="ms">arrow_back</span></span><span class="grow">Escuchando cerca</span><span class="icon-btn"><span class="ms">tune</span></span></div>
+  <div style="position:absolute;top:92px;left:16px;z-index:6;display:flex;gap:8px"><span class="chipd sel"><span class="ms s18">group</span>Personas</span><span class="chipd"><span class="ms s18">star</span>Países</span></div>
+  <span class="countbadge" style="top:140px"><i></i>23 personas en vivo</span>
+  <div class="pcards">
+    <div class="pcard"><span class="art a3"></span><div class="tx"><b>Valeria, a 5 km</b><div>Labios Rotos</div><span>Zoé</span></div><span class="play"><span class="ms f">play_arrow</span></span></div>
+    <div class="pcard dim"><span class="art a7"></span><div class="tx"><b>Luis, a 12 km</b><div>Persiana Americana</div><span>Soda Stereo</span></div></div>
+  </div>
+  <div data-mini></div>
+</div></div><div class="cap">Radar nocturno con tarjetas</div></div>
+
+<div><div class="phone"><div class="content pt">
+  <div class="tb-row"><span class="icon-btn"><span class="ms">close</span></span><span class="grow">Tu ubicación en el mapa</span></div>
+  <div class="privmap"><div class="map" style="position:absolute">
+    <span class="pin cell" style="left:150px;top:100px"></span><span class="pin me" style="left:132px;top:112px;box-shadow:none"></span>
+  </div></div>
+  <p style="font-size:14px;color:var(--on-surface-variant);padding:12px 16px 4px;line-height:20px">Los demás ven el cuadro rojo, nunca tu punto azul. La celda mide unos 5 km y viaja cifrada por la red P2P, sin servidores de Dezzy.</p>
+  <div class="lbl">Quién te ve</div>
+  <div class="radio"><i></i><div class="tx">Nadie<span>No apareces en el mapa</span></div></div>
+  <div class="radio on"><i></i><div class="tx">Todos, sólo tu zona<span>Celda de ~5 km mientras suena algo</span></div></div>
+  <div class="radio"><i></i><div class="tx">Sólo amigos<span>Quienes sigues y te siguen</span></div></div>
+  <div class="div"></div>
+  <div class="trow"><span class="ms">pause_circle</span><div class="tx">Ocultar al pausar<span>Desapareces cuando paras la música</span></div><span class="sw on"></span></div>
+  <div style="padding:8px 16px"><span class="btn filled wide lg">Guardar</span></div>
+</div></div><div class="cap">Privacidad explicada con la celda</div></div>
+</div>
+<div class="notes"><h3>Qué cambia</h3><ul>
+<li>Foco en personas: puntos con pulso, contador «en vivo» y carrusel de tarjetas; al deslizar una tarjeta el mapa se centra en esa persona (y viceversa).</li>
+<li>Los países quedan como segundo filtro (estrellas de hoy).</li>
+<li>Nueva pantalla de privacidad: dibuja la celda publicada frente a tu punto real, con tres niveles (Nadie, Todos, Sólo amigos) y «Ocultar al pausar».</li></ul>
+<h3>A tener en cuenta</h3><ul><li>«Sólo amigos» no existe hoy: con P2P implicaría cifrar la celda para cada amigo (NIP-44); puede dejarse para después y mostrar sólo dos opciones.</li><li>«Ocultar al pausar» ya es el comportamiento actual; el interruptor sólo lo hace visible.</li><li>Mantiene el mapa oscuro de hoy; las tarjetas y botones son claros para que contrasten.</li></ul>
+<div class="dials"><span class="dial">Pantallas nuevas: 1 (privacidad)</span><span class="dial">Código reutilizado: medio</span><span class="dial">Riesgo: medio</span></div></div>
+</div></section>
+</div>
+<script src="fase11.js"></script>
+</body>
+</html>

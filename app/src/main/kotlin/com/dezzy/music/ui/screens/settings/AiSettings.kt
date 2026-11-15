@@ -475,7 +475,7 @@ if (showProviderDialog) {
                                     Toast.makeText(
                                         context,
                                         if (result.isSuccess) {
-                                            "Modelo de $langName descargado ✓"
+                                            "Modelo de $langName descargado"
                                         } else {
                                             // En equipos con Google Play Services restringido
                                             // (p. ej. algunos POCO/Xiaomi) ML Kit no puede bajar

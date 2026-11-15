@@ -270,7 +270,7 @@ fun AppearanceSettings(
     )
     val (playerDesignStyle, onPlayerDesignStyleChange) = rememberEnumPreference(
         PlayerDesignStyleKey,
-        defaultValue = PlayerDesignStyle.V4
+        defaultValue = PlayerDesignStyle.V2
     )
     val (useNewMiniPlayerDesign, onUseNewMiniPlayerDesignChange) = rememberPreference(
         UseNewMiniPlayerDesignKey,
@@ -310,7 +310,7 @@ fun AppearanceSettings(
     val (pureBlack, onPureBlackChange) = rememberPreference(PureBlackKey, defaultValue = true)
     val (disableBlur, onDisableBlurChange) = rememberPreference(DisableBlurKey, defaultValue = false)
     val (useSystemFont, onUseSystemFontChange) = rememberPreference(UseSystemFontKey, defaultValue = false)
-    val (fontFamily, onFontFamilyChange) = rememberPreference(FontFamilyKey, defaultValue = "LORA")
+    val (fontFamily, onFontFamilyChange) = rememberPreference(FontFamilyKey, defaultValue = "MATERIAL3")
     val (enableBubble, onEnableBubbleChange) = rememberPreference(EnableBubbleKey, defaultValue = false)
     val (defaultOpenTab, onDefaultOpenTabChange) = rememberEnumPreference(
         DefaultOpenTabKey,

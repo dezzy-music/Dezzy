@@ -16,6 +16,8 @@ import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.Upsert
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -43,6 +45,7 @@ data class P2PProfileEntity(
     val picture: String?,
     val isPrivate: Boolean,
     val updatedAt: Long,
+    val banner: String? = null,
 )
 
 /** Publicaciones de cuentas privadas (llegan cifradas sólo a los seguidores aprobados). */
@@ -65,6 +68,8 @@ data class P2PPrivateReactionEntity(
     /** "like" o "comment". */
     val type: String,
     val content: String,
+    /** Comentario al que responde (sólo comentarios). */
+    val replyTo: String? = null,
 )
 
 /** Solicitudes de seguimiento a cuentas privadas: entrantes (a mí) y salientes (mías). */
@@ -188,7 +193,7 @@ interface P2PDao {
         P2PFollowRequestEntity::class,
         P2PChatStateEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = false,
 )
 abstract class P2PDatabase : RoomDatabase() {
@@ -198,9 +203,18 @@ abstract class P2PDatabase : RoomDatabase() {
         @Volatile
         private var instance: P2PDatabase? = null
 
+        /** v2: portada del perfil y respuestas a comentarios. Sólo añade columnas; los chats se conservan. */
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE p2p_profile ADD COLUMN banner TEXT")
+                db.execSQL("ALTER TABLE p2p_private_reaction ADD COLUMN replyTo TEXT")
+            }
+        }
+
         fun get(context: Context): P2PDatabase =
             instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(context.applicationContext, P2PDatabase::class.java, "dezzy_p2p.db")
+                    .addMigrations(MIGRATION_1_2)
                     .fallbackToDestructiveMigration(dropAllTables = true)
                     .build()
                     .also { instance = it }

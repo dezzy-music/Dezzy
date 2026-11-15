@@ -41,6 +41,9 @@ object P2PMessaging {
     private const val SYNC_PREFS = "dezzy_p2p_sync"
     private const val KEY_LAST_SYNC = "last_inbox_sync"
     private const val KEY_DM_RELAYS = "dm_relays_published"
+    /** Desde cuándo avisar: lo anterior (historial recuperado al restaurar la cuenta) no notifica. */
+    private const val KEY_NOTIFY_FROM = "notify_from"
+    private const val NOTIFY_MAX_AGE = 7 * 24 * 60 * 60L
     private const val JUNTOS_TAG = "dezzy_juntos"
     private const val CONTROL_TAG = P2PSocial.APP_TAG
 
@@ -84,6 +87,31 @@ object P2PMessaging {
         inboxJob = null
     }
 
+    /**
+     * Revisa el buzón una sola vez (lo usa [P2PInboxWorker] con la app cerrada).
+     * Los sobres ya guardados se descartan, así que no hay avisos repetidos.
+     */
+    suspend fun syncNow() = withContext(Dispatchers.IO) {
+        val keys = P2PSocial.keys.value ?: return@withContext
+        val lastSync = prefs().getLong(KEY_LAST_SYNC, 0L)
+        val since = if (lastSync > 0) lastSync - CLOCK_MARGIN else null
+        val filter = NostrFilter(kinds = listOf(Kinds.GIFT_WRAP), tags = mapOf("#p" to listOf(keys.publicKey)), since = since)
+        runCatching { RelayPool.query(listOf(filter.copy(limit = 500)), timeoutMs = 15_000).forEach { handle(it) } }
+            .onSuccess { prefs().edit().putLong(KEY_LAST_SYNC, NostrEvent.now()).apply() }
+            .onFailure { Timber.w(it, "Buzón P2P (segundo plano)") }
+    }
+
+    /** ¿Merece aviso algo creado en [createdAt]? Nada del historial previo a la primera sincronización. */
+    private fun shouldNotify(createdAt: Long): Boolean {
+        val prefs = prefs()
+        var from = prefs.getLong(KEY_NOTIFY_FROM, 0L)
+        if (from == 0L) {
+            from = NostrEvent.now()
+            prefs.edit().putLong(KEY_NOTIFY_FROM, from).apply()
+        }
+        return createdAt >= from && createdAt >= NostrEvent.now() - NOTIFY_MAX_AGE
+    }
+
     private suspend fun handle(wrap: NostrEvent) {
         val keys = P2PSocial.keys.value ?: return
         val rumor = withContext(Dispatchers.Default) { GiftWrap.unwrap(wrap, keys) } ?: return
@@ -103,6 +131,9 @@ object P2PMessaging {
                 if (existing?.status == "approved") return
                 dao.upsertFollowRequest(P2PFollowRequestEntity(rumor.pubkey, incoming = true, status = "pending", createdAt = rumor.createdAt))
                 P2PSocial.loadProfiles(listOf(rumor.pubkey))
+                if (existing == null && shouldNotify(rumor.createdAt)) {
+                    P2PNotifications.notifyFollowRequest(P2PSocial.context(), rumor.pubkey)
+                }
             }
             control == "follow_approved" && rumor.pubkey != me -> {
                 dao.upsertFollowRequest(P2PFollowRequestEntity(rumor.pubkey, incoming = false, status = "approved", createdAt = rumor.createdAt))
@@ -113,18 +144,25 @@ object P2PMessaging {
             control == null && rumor.kind == Kinds.CHAT_MESSAGE -> {
                 val fromMe = rumor.pubkey == me
                 val peer = if (fromMe) rumor.tagValues("p").firstOrNull { it != me } ?: return else rumor.pubkey
-                dao.insertMessage(
+                val song = P2PSong.fromTag(rumor.fullTag(P2PSong.TAG))
+                val rowId = dao.insertMessage(
                     P2PMessageEntity(
                         id = rumor.id,
                         peer = peer,
                         fromMe = fromMe,
                         content = rumor.content,
                         createdAt = rumor.createdAt,
-                        songJson = P2PSong.fromTag(rumor.fullTag(P2PSong.TAG))?.toJson(),
+                        songJson = song?.toJson(),
                         juntosLink = rumor.tag(JUNTOS_TAG),
                     ),
                 )
-                if (!fromMe) P2PSocial.loadProfiles(listOf(peer))
+                if (!fromMe) {
+                    P2PSocial.loadProfiles(listOf(peer))
+                    // -1 = ya estaba guardado (llegó por otro relé o en otra sincronización).
+                    if (rowId != -1L && shouldNotify(rumor.createdAt)) {
+                        P2PNotifications.notifyMessage(P2PSocial.context(), peer, rumor.content, song?.title, rumor.createdAt)
+                    }
+                }
             }
         }
     }
@@ -139,6 +177,7 @@ object P2PMessaging {
                 createdAt = rumor.createdAt,
                 type = if (rumor.kind == Kinds.REACTION) "like" else "comment",
                 content = rumor.content,
+                replyTo = rumor.tags.firstOrNull { it.size >= 4 && it[0] == "e" && it[3] == "reply" }?.get(1),
             ),
         )
     }
@@ -241,8 +280,8 @@ object P2PMessaging {
             last.map { m ->
                 val preview = when {
                     m.content.isNotBlank() -> m.content
-                    m.songJson != null -> "🎵 " + (P2PSong.fromJson(m.songJson)?.title ?: "Canción")
-                    m.juntosLink != null -> "🎧 Invitación a escuchar juntos"
+                    m.songJson != null -> "Canción: " + (P2PSong.fromJson(m.songJson)?.title ?: "Canción")
+                    m.juntosLink != null -> "Invitación a escuchar juntos"
                     else -> ""
                 }
                 P2PConversation(m.peer, preview, m.createdAt, m.fromMe, unreadMap[m.peer] ?: 0)
@@ -252,6 +291,7 @@ object P2PMessaging {
     val totalUnread: Flow<Int> get() = P2PSocial.dao.unreadCounts().map { list -> list.sumOf { it.unread } }
 
     suspend fun markRead(peer: String) = withContext(Dispatchers.IO) {
+        P2PNotifications.clearChat(P2PSocial.context(), peer)
         P2PSocial.dao.upsertChatState(P2PChatStateEntity(peer, NostrEvent.now()))
     }
 

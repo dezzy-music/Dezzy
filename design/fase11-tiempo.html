@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dezzy · Fase 11 · Máquina del tiempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fase11.css">
+<style>
+/* Aparatos de época (ilustraciones simples) */
+.cassette{width:220px;height:136px;border-radius:14px;background:linear-gradient(160deg,#2B2440,#3F3360);position:relative;box-shadow:0 8px 20px rgba(0,0,0,.25);margin:0 auto}
+.cassette .lab{position:absolute;left:14px;right:14px;top:12px;height:58px;border-radius:6px;background:linear-gradient(90deg,#FF7AA2,#FFB86B 50%,#7AE7FF);display:flex;align-items:center;justify-content:center}
+.cassette .win{position:absolute;left:46px;right:46px;top:30px;height:28px;border-radius:14px;background:#1B1628;display:flex;justify-content:space-between;align-items:center;padding:0 6px}
+.cassette .win i{width:20px;height:20px;border-radius:50%;border:4px dotted #EDE0E0}
+.cassette .bot{position:absolute;left:40px;right:40px;bottom:0;height:30px;background:#231D36;clip-path:polygon(10% 0,90% 0,100% 100%,0 100%)}
+.cd{width:180px;height:180px;border-radius:50%;margin:0 auto;position:relative;
+  background:radial-gradient(circle,#FFF8F7 0 13%,#D8C1C2 13.5% 15%,transparent 15.5%),conic-gradient(from 20deg,#E7E3F5,#FFD6E0,#D6F5F0,#FFF2C8,#E0E6FF,#FFD6E0,#E7E3F5);
+  box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.disc-wrap{width:250px;height:250px;border-radius:32px;margin:8px auto 0;background:linear-gradient(160deg,#C9CCD3,#8E939D);display:grid;place-items:center;box-shadow:inset 0 2px 0 rgba(255,255,255,.5),0 8px 20px rgba(0,0,0,.2)}
+/* A */
+.decs{display:flex;gap:8px;padding:4px 16px 8px;overflow:hidden}
+.year-hero{margin:8px 16px;border-radius:28px;background:linear-gradient(170deg,#3A2D5C,#18122A);color:#fff;padding:22px 16px 18px;text-align:center;position:relative;overflow:hidden}
+.year-hero::before{content:"";position:absolute;left:-40px;right:-40px;bottom:-60px;height:140px;background:repeating-linear-gradient(90deg,rgba(255,122,162,.25) 0 1px,transparent 1px 28px),repeating-linear-gradient(0deg,rgba(255,122,162,.25) 0 1px,transparent 1px 20px);transform:perspective(200px) rotateX(55deg)}
+.year-hero .ov{font-size:13px;letter-spacing:.5px;text-transform:uppercase;opacity:.85;margin-top:16px;position:relative}
+.yearpick{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:4px;position:relative}
+.yearpick b{font:800 64px/1 'Roboto Flex';letter-spacing:-1px}
+.yearpick .icon-btn{color:#fff;background:rgba(255,255,255,.14)}
+.sl{margin:12px 28px 0;position:relative}
+.sl .tr{height:16px;border-radius:8px;background:var(--secondary-container);position:relative}
+.sl .tr i{position:absolute;left:0;top:0;bottom:0;width:70%;background:var(--primary);border-radius:8px 0 0 8px}
+.sl .th{position:absolute;left:70%;top:-10px;width:4px;height:36px;border-radius:2px;background:var(--primary);margin-left:2px}
+.sl .ticks{display:flex;justify-content:space-between;font-size:12px;color:var(--on-surface-variant);margin-top:10px}
+.arrive{margin:8px 16px;border-radius:28px;background:linear-gradient(170deg,#3A2D5C,#18122A);color:#fff;padding:18px 16px}
+.arrive .meta{display:flex;align-items:center;gap:10px;margin-top:14px}
+.arrive .meta .tx{flex:1;min-width:0}.arrive .meta b{display:block;font-size:18px;font-weight:500}.arrive .meta span{font-size:14px;opacity:.85}
+.arrive .pg{height:4px;border-radius:2px;background:rgba(255,255,255,.25);margin-top:12px}.arrive .pg i{display:block;width:42%;height:100%;border-radius:2px;background:#FF9EBB}
+.arrive .ctl{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:8px}
+.arrive .ctl .icon-btn{color:#fff}
+.arrive .ctl .pl{width:64px;height:64px;border-radius:20px;background:#FF9EBB;color:#2B0A18;display:grid;place-items:center}
+/* B */
+.tl{position:relative;padding:4px 16px 0 56px}
+.tl::before{content:"";position:absolute;left:31px;top:0;bottom:0;width:2px;background:var(--outline-variant)}
+.tli{position:relative;margin-bottom:12px}
+.tli .dot{position:absolute;left:-33px;top:18px;width:16px;height:16px;border-radius:50%;background:var(--surface);border:3px solid var(--outline)}
+.tli.on .dot{background:var(--primary);border-color:var(--primary);box-shadow:0 0 0 5px var(--primary-container)}
+.tli .dc{border-radius:20px;padding:14px 14px 14px 16px;background:var(--sc-high);display:flex;align-items:center;gap:12px;min-height:72px}
+.tli .dc .tx{flex:1}.tli .dc b{display:block;font:600 22px 'Roboto Flex'}.tli .dc span{font-size:13px;color:var(--on-surface-variant)}
+.tli.on .dc{background:var(--tertiary-container);color:var(--on-tertiary-container);flex-direction:column;align-items:stretch}
+.tli.on .dc span{color:var(--on-tertiary-container)}
+.ygrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
+.ygrid div{height:40px;border-radius:12px;background:rgba(255,255,255,.6);display:grid;place-items:center;font-size:14px;font-weight:500}
+.ygrid div.on{background:var(--tertiary);color:#fff}
+.devc{margin:4px 16px;border-radius:28px;background:var(--sc-high);padding:16px 16px 12px;text-align:center}
+.devc .ov{font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:var(--on-surface-variant);font-weight:500}
+.devc .ti{font-size:20px;margin-top:12px}.devc .ar{font-size:14px;color:var(--on-surface-variant)}
+.devc .ctl{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px}
+.devc .ctl .pl{width:72px;height:56px;border-radius:28px;background:var(--primary);color:#fff;display:grid;place-items:center}
+/* C */
+.postals{display:flex;gap:8px;padding:8px 16px;overflow:hidden}
+.postal{height:360px;border-radius:28px;flex:none;position:relative;overflow:hidden;color:#fff;padding:18px;display:flex;flex-direction:column;justify-content:flex-end}
+.postal.big{width:248px}.postal.sm{width:56px;padding:0}
+.postal.p80{background:radial-gradient(70% 45% at 50% 30%,#FF7AA2 0,transparent 70%),linear-gradient(180deg,#2B1E4F,#120C24)}
+.postal.p90{background:linear-gradient(180deg,#6C7A89,#2F3A44)}
+.postal.p70{background:linear-gradient(180deg,#B5651D,#5C2E0E)}
+.postal .sun{position:absolute;left:50%;top:70px;width:130px;height:130px;margin-left:-65px;border-radius:50%;background:repeating-linear-gradient(180deg,#FFB86B 0 9px,transparent 9px 13px)}
+.postal .grid80{position:absolute;left:-60px;right:-60px;bottom:-40px;height:170px;background:repeating-linear-gradient(90deg,rgba(255,122,162,.45) 0 1px,transparent 1px 30px),repeating-linear-gradient(0deg,rgba(255,122,162,.45) 0 1px,transparent 1px 22px);transform:perspective(220px) rotateX(58deg)}
+.postal .dec{font:800 64px/1 'Roboto Flex';letter-spacing:-2px;position:relative}
+.postal .sub{font-size:14px;opacity:.9;position:relative}
+.postal .go{position:relative;margin-top:14px;display:flex;align-items:center;gap:8px}
+.postal .go .btn{background:#fff;color:#2B1E4F}
+.postal .vlab{position:absolute;left:50%;bottom:20px;transform:translateX(-50%) rotate(-90deg);transform-origin:center;font:700 20px 'Roboto Flex';white-space:nowrap}
+.portal{position:absolute;inset:0;background:radial-gradient(circle at 50% 42%,#FFB2B6 0,#9C3F48 18%,#3A0D16 46%,#12040A 75%);color:#fff;display:flex;flex-direction:column;align-items:center}
+.ring{position:absolute;left:50%;top:42%;border-radius:50%;border:2px solid rgba(255,218,219,.35);transform:translate(-50%,-50%)}
+.portal .cnt{margin-top:250px;font:800 88px/1 'Roboto Flex';letter-spacing:-2px;position:relative}
+.portal .msg{font-size:16px;opacity:.9;position:relative;margin-top:8px}
+.portal .steps{position:relative;margin-top:28px;width:260px;font-size:14px}
+.portal .steps div{display:flex;align-items:center;gap:10px;height:36px;opacity:.65}.portal .steps div.ok{opacity:1}
+.portal .cancel{position:absolute;bottom:56px;left:50%;transform:translateX(-50%);height:48px;border-radius:24px;border:1px solid rgba(255,255,255,.6);padding:0 22px;display:flex;align-items:center;font-size:14px;font-weight:500}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div class="crumb">Fase 11 · Rediseño de experiencias · 3 de 5</div>
+  <h1>Máquina del tiempo</h1>
+  <p class="lead">Lo que se mantiene: elegir década o año, el viaje con el portal que cuenta los años, la búsqueda de los éxitos de ese año y el reproductor con el aparato de cada época (cassette en los 80, Discman en los 90, MP3, móvil retro y altavoz holográfico).</p>
+  <div class="today">
+    <div><b>Hoy</b>Lista de tarjetas de década, un botón «Seleccionar año» aparte y reproductores muy distintos entre sí, con controles propios.</div>
+    <div><b>Problema</b>Elegir un año concreto lleva varios pasos y cada reproductor de época se usa de forma diferente.</div>
+  </div>
+  <nav class="nav5"><a href="fase11-mapa.html"><span class="ms s18">public</span>Mapa musical</a><a href="fase11-wrapped.html"><span class="ms s18">auto_awesome</span>Tu año</a><a class="on" href="fase11-tiempo.html"><span class="ms s18">schedule</span>Máquina del tiempo</a><a href="fase11-dna.html"><span class="ms s18">hub</span>Song DNA</a><a href="fase11-dj.html"><span class="ms s18">graphic_eq</span>DJ</a></nav>
+</header>
+
+<!-- ═════════ BOCETO A ═════════ -->
+<section class="sketch"><div class="sk-head"><span class="sk-tag">Boceto A</span><h2>Panel de mando: década, año y viajar</h2>
+<p>Una sola pantalla de control. Eliges década con chips, ajustas el año con un deslizador o con − y +, y pulsas «Viajar». Al llegar, el aparato de época es la portada del reproductor, con controles Material 3 iguales en todas las décadas.</p></div>
+<div class="sk-body"><div class="phones">
+<div><div class="phone"><div class="content pt">
+  <div class="tb-row"><span class="icon-btn"><span class="ms">arrow_back</span></span><span class="grow">Máquina del tiempo</span><span class="icon-btn"><span class="ms">casino</span></span></div>
+  <div class="decs"><span class="chip">70s</span><span class="chip sel"><span class="ms">check</span>80s</span><span class="chip">90s</span><span class="chip">00s</span><span class="chip">10s</span><span class="chip">20s</span></div>
+  <div class="year-hero"><div class="cassette"><div class="lab"></div><div class="win"><i></i><i></i></div><div class="bot"></div></div>
+    <div class="ov">Destino</div>
+    <div class="yearpick"><span class="icon-btn"><span class="ms">remove</span></span><b>1987</b><span class="icon-btn"><span class="ms">add</span></span></div>
+  </div>
+  <div class="sl"><div class="tr"><i></i></div><div class="th"></div><div class="ticks"><span>1980</span><span>1985</span><span>1989</span></div></div>
+  <div style="padding:20px 16px 0"><span class="btn filled lg wide"><span class="ms">rocket_launch</span>Viajar a 1987</span></div>
+  <p style="font-size:13px;color:var(--on-surface-variant);text-align:center;padding:10px 24px">Buscaremos los éxitos de ese año y armaremos una cola a tu gusto.</p>
+  <div data-mini></div>
+</div></div><div class="cap">Elegir destino</div></div>
+
+<div><div class="phone"><div class="content pt">
+  <div class="tb-row"><span class="icon-btn"><span class="ms">arrow_back</span></span><span class="grow">1987<small>Cassette synthwave</small></span><span class="icon-btn"><span class="ms">swap_horiz</span></span></div>
+  <div class="arrive"><div class="cassette" style="width:200px;height:124px"><div class="lab" style="height:52px"></div><div class="win"><i></i><i></i></div><div class="bot"></div></div>
+    <div class="meta"><div class="tx"><b>Persiana Americana</b><span>Soda Stereo</span></div><span class="icon-btn" style="color:#fff"><span class="ms">favorite</span></span></div>
+    <div class="pg"><i></i></div>
+    <div class="ctl"><span class="icon-btn"><span class="ms">shuffle</span></span><span class="icon-btn"><span class="ms f">skip_previous</span></span><span class="pl"><span class="ms f s32">pause</span></span><span class="icon-btn"><span class="ms f">skip_next</span></span><span class="icon-btn"><span class="ms">repeat</span></span></div></div>
+  <div class="sec" style="padding-top:12px"><h2>Sonaba en 1987</h2><span class="tb">Guardar lista</span></div>
+  <div class="rk"><span class="no">2</span><span class="art a3"></span><div class="tx">Never Gonna Give You Up<span>Rick Astley</span></div><span class="ct">3:33</span></div>
+  <div class="rk"><span class="no">3</span><span class="art a6"></span><div class="tx">With or Without You<span>U2</span></div><span class="ct">4:56</span></div>
+  <div class="rk"><span class="no">4</span><span class="art a7"></span><div class="tx">La Bamba<span>Los Lobos</span></div><span class="ct">2:54</span></div>
+</div></div><div class="cap">Llegada: reproductor de los 80</div></div>
+</div>
+<div class="notes"><h3>Qué cambia</h3><ul>
+<li>Década en chips y año con deslizador de M3 y botones − / + (accesible sin arrastrar).</li>
+<li>Un único botón principal «Viajar a 1987»; el dado de la barra elige año al azar.</li>
+<li>El portal con la cuenta de años se mantiene como transición entre las dos pantallas.</li>
+<li>Reproductor de época unificado: el aparato (cassette, Discman, MP3…) es la ilustración de portada y los controles son los mismos en todas las décadas.</li>
+<li>«Guardar lista» convierte el viaje en una playlist.</li></ul>
+<h3>A tener en cuenta</h3><ul><li>Los cinco reproductores actuales pasan a ser cinco ilustraciones de cabecera; se pierde parte de su interacción propia (girar el CD, etc.).</li><li>La búsqueda sigue siendo <code>YouTube.search("hits $year")</code>.</li></ul>
+<div class="dials"><span class="dial">Pantallas nuevas: 0</span><span class="dial">Código reutilizado: medio</span><span class="dial">Riesgo: bajo</span></div></div>
+</div></section>
+
+<!-- ═════════ BOCETO B ═════════ -->
+<section class="sketch"><div class="sk-head"><span class="sk-tag">Boceto B</span><h2>Línea de tiempo vertical</h2>
+<p>Las décadas forman una línea de tiempo que se recorre con el pulgar. La década abierta despliega sus diez años como botones. Al viajar, el reproductor conserva el aparato completo de la época en el centro, sobre una superficie clara.</p></div>
+<div class="sk-body"><div class="phones">
+<div><div class="phone"><div class="content pt">
+  <div class="tb-row"><span class="icon-btn"><span class="ms">arrow_back</span></span><span class="grow">Máquina del tiempo</span><span class="icon-btn"><span class="ms">casino</span></span></div>
+  <div class="tl">
+    <div class="tli"><span class="dot"></span><div class="dc"><div class="tx"><b>70s</b><span>Disco, rock, baladas</span></div><span class="ms" style="color:var(--on-surface-variant)">expand_more</span></div></div>
+    <div class="tli"><span class="dot"></span><div class="dc"><div class="tx"><b>80s</b><span>Synthpop, rock en español</span></div><span class="ms" style="color:var(--on-surface-variant)">expand_more</span></div></div>
+    <div class="tli on"><span class="dot"></span><div class="dc"><div style="display:flex;align-items:center"><div class="tx" style="flex:1"><b>90s</b><span>Grunge, pop latino, eurodance</span></div><span class="ms">expand_less</span></div>
+      <div class="ygrid"><div>1990</div><div>1991</div><div>1992</div><div>1993</div><div>1994</div><div>1995</div><div>1996</div><div class="on">1997</div><div>1998</div><div>1999</div></div>
+      <span class="btn filled" style="margin-top:12px;background:var(--tertiary)"><span class="ms">rocket_launch</span>Viajar a 1997</span></div></div>
+    <div class="tli"><span class="dot"></span><div class="dc"><div class="tx"><b>00s</b><span>Reguetón, pop punk, R&amp;B</span></div><span class="ms" style="color:var(--on-surface-variant)">expand_more</span></div></div>
+  </div>
+  <div data-mini></div>
+</div></div><div class="cap">Década abierta con sus años</div></div>
+
+<div><div class="phone"><div class="content pt">
+  <div class="tb-row"><span class="icon-btn"><span class="ms">expand_more</span></span><span class="grow" style="text-align:center;font-size:16px"><small>Viaje a</small>1997</span><span class="icon-btn"><span class="ms">queue_music</span></span></div>
+  <div class="devc"><div class="ov">Discman de los 90</div>
+    <div class="disc-wrap"><div class="cd"></div></div>
+    <div class="ti">Torn</div><div class="ar">Natalie Imbruglia</div>
+    <div class="progress" style="margin:14px 8px 0"><i style="width:35%"></i></div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--on-surface-variant);padding:6px 8px 0"><span>1:21</span><span>4:05</span></div>
+    <div class="ctl"><span class="icon-btn"><span class="ms">shuffle</span></span><span class="icon-btn"><span class="ms f">skip_previous</span></span><span class="pl"><span class="ms f s32">pause</span></span><span class="icon-btn"><span class="ms f">skip_next</span></span><span class="icon-btn"><span class="ms">favorite</span></span></div>
+  </div>
+  <div class="lbl">Siguiente en 1997</div>
+  <div class="rk"><span class="art a6"></span><div class="tx">Bitter Sweet Symphony<span>The Verve</span></div><span class="ct">5:58</span></div>
+  <div class="rk"><span class="art a1"></span><div class="tx">Ella No Sabe<span>Café Tacvba</span></div><span class="ct">3:42</span></div>
+</div></div><div class="cap">Reproductor de los 90</div></div>
+</div>
+<div class="notes"><h3>Qué cambia</h3><ul>
+<li>Línea de tiempo con un punto por década; sólo una abierta a la vez, con sus 10 años como botones de 40 dp de alto en filas de 48 dp.</li>
+<li>Cada década con su color de contenedor y una línea de géneros, sin imágenes externas.</li>
+<li>Reproductor de época a pantalla completa: el aparato completo arriba (aquí el Discman con su CD) y debajo progreso, controles y cola en Material 3.</li>
+<li>Se elimina el botón suelto «Seleccionar año».</li></ul>
+<h3>A tener en cuenta</h3><ul><li>Conserva más personalidad de los reproductores actuales que el boceto A: el aparato sigue siendo grande y se puede animar.</li><li>La lista de géneros por década es texto fijo en <code>strings.xml</code>.</li></ul>
+<div class="dials"><span class="dial">Pantallas nuevas: 0</span><span class="dial">Código reutilizado: alto</span><span class="dial">Riesgo: bajo</span></div></div>
+</div></section>
+
+<!-- ═════════ BOCETO C ═════════ -->
+<section class="sketch"><div class="sk-head"><span class="sk-tag">Boceto C</span><h2>Postales de época</h2>
+<p>Las décadas son postales grandes en un carrusel Material 3: la elegida ocupa casi todo el ancho y las demás asoman al lado. Es la versión más visual y la que más se parece a «viajar». El portal del viaje gana protagonismo y explica lo que está haciendo.</p></div>
+<div class="sk-body"><div class="phones">
+<div><div class="phone"><div class="content pt">
+  <div class="tb-row"><span class="icon-btn"><span class="ms">arrow_back</span></span><span class="grow">¿A dónde viajamos?</span></div>
+  <div class="postals">
+    <div class="postal sm p70"><span class="vlab">70s</span></div>
+    <div class="postal big p80"><span class="sun"></span><span class="grid80"></span><div class="dec">80s</div><div class="sub">Synthpop, cassettes y rock en español</div>
+      <div class="go"><span class="btn"><span class="ms">rocket_launch</span>Viajar</span></div></div>
+    <div class="postal sm p90"><span class="vlab">90s</span></div>
+  </div>
+  <div class="lbl">O elige un año de los 80</div>
+  <div class="chips" style="flex-wrap:nowrap"><span class="chip">1984</span><span class="chip">1985</span><span class="chip">1986</span><span class="chip sel"><span class="ms">check</span>1987</span><span class="chip">1988</span></div>
+  <div style="padding:8px 16px"><span class="btn tonal wide"><span class="ms">casino</span>Sorpréndeme</span></div>
+  <div data-mini></div>
+</div></div><div class="cap">Carrusel de décadas</div></div>
+
+<div><div class="phone lt"><div class="content">
+  <div class="portal">
+    <span class="ring" style="width:120px;height:120px"></span><span class="ring" style="width:200px;height:200px"></span><span class="ring" style="width:290px;height:290px"></span><span class="ring" style="width:400px;height:400px;opacity:.6"></span>
+    <div class="cnt">1994</div>
+    <div class="msg">Retrocediendo hasta 1987…</div>
+    <div class="steps">
+      <div class="ok"><span class="ms s20 f">check_circle</span>Buscando los éxitos de 1987</div>
+      <div class="ok"><span class="ms s20">progress_activity</span>Ordenándolos a tu gusto</div>
+      <div><span class="ms s20">radio_button_unchecked</span>Preparando el cassette</div>
+    </div>
+    <span class="cancel">Cancelar viaje</span>
+  </div>
+</div></div><div class="cap">Viaje en curso (portal)</div></div>
+</div>
+<div class="notes"><h3>Qué cambia</h3><ul>
+<li>Carrusel «héroe» de Material 3 (<code>HorizontalMultiBrowseCarousel</code>) con una postal por década dibujada en Compose (sol, rejilla, colores de la época).</li>
+<li>Debajo, los años de la década elegida en chips y «Sorpréndeme».</li>
+<li>El portal actual (cuenta de años) se queda y añade tres pasos reales de lo que está pasando, más «Cancelar viaje».</li>
+<li>Al llegar se abre el reproductor de época de hoy (sin cambios en este boceto).</li></ul>
+<h3>A tener en cuenta</h3><ul><li>Las postales son ilustraciones en Compose (sin imágenes descargadas), una por década: 6 dibujos nuevos.</li><li>Con «reducir movimiento», el portal se cambia por un fundido y la lista de pasos.</li></ul>
+<div class="dials"><span class="dial">Pantallas nuevas: 0</span><span class="dial">Código reutilizado: alto</span><span class="dial">Riesgo: medio (ilustraciones)</span></div></div>
+</div></section>
+</div>
+<script src="fase11.js"></script>
+</body>
+</html>

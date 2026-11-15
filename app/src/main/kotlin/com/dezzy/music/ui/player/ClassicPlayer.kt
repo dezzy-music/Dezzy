@@ -596,7 +596,14 @@ fun ClassicPlayer(
     }
 
     if (showDevicePicker) {
-        ConnectDeviceBottomSheet(onDismissRequest = { showDevicePicker = false })
+        ConnectDeviceBottomSheet(
+            onDismissRequest = { showDevicePicker = false },
+            onOpenListenTogether = {
+                showDevicePicker = false
+                state.collapseSoft()
+                navController.navigate("settings/music_together")
+            },
+        )
     }
 
     if (showMoreSheet) {

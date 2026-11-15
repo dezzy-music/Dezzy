@@ -552,7 +552,8 @@ class HomeViewModel @Inject constructor(
                     isProcessingAccountData = true
                     
                     try {
-                        val decryptedCookie = cookie?.let { SessionCrypto.decrypt(it) }
+                        // null = Keystore ocupado: no se pasa a «Invitado» por un fallo pasajero.
+                        val decryptedCookie = cookie?.let { SessionCrypto.decryptResilient(it) ?: return@collect }
                         val isLoggedIn = decryptedCookie?.let { "SAPISID" in parseCookieString(it) } ?: false
                         val loginTransition = isLoggedIn && !wasLoggedIn
                         wasLoggedIn = isLoggedIn

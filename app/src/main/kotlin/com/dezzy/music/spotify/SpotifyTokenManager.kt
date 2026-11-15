@@ -25,6 +25,22 @@ object SpotifyTokenManager {
     private lateinit var dataStore: DataStore<Preferences>
     private val refreshMutex = Mutex()
 
+    /*
+     * Spotify devuelve tokens «anónimos» también cuando frena por exceso de peticiones, así que un
+     * rechazo NO significa que sp_dc haya caducado. Reglas:
+     *  - Tras cada fallo se espera cada vez más antes de volver a pedir token (no se martillea).
+     *  - La cookie nunca se borra sola; sólo se avisa de volver a entrar si el rechazo se repite
+     *    durante al menos [REJECTION_WINDOW_MS]. Si era un bloqueo pasajero, se recupera sola.
+     */
+    private val BACKOFF_MS = longArrayOf(15_000L, 60_000L, 5 * 60_000L, 15 * 60_000L)
+    private const val REJECTIONS_BEFORE_RELOGIN = 3
+    private const val REJECTION_WINDOW_MS = 20 * 60_000L
+
+    @Volatile private var consecutiveFailures = 0
+    @Volatile private var retryAfterMs = 0L
+    @Volatile private var rejections = 0
+    @Volatile private var firstRejectionAtMs = 0L
+
     private val _needsReLogin = MutableStateFlow(false)
     val needsReLogin: StateFlow<Boolean> = _needsReLogin.asStateFlow()
 
@@ -67,6 +83,12 @@ object SpotifyTokenManager {
                 return@withLock true
             }
 
+            val now = System.currentTimeMillis()
+            if (now < retryAfterMs) {
+                Timber.d("SpotifyTokenManager: backing off, next refresh in %d s", (retryAfterMs - now) / 1000)
+                return@withLock false
+            }
+
             val freshSpDc = SessionCrypto.decrypt(freshSettings[SpotifySpDcKey] ?: "")
             val freshSpKey = SessionCrypto.decrypt(freshSettings[SpotifySpKeyKey] ?: "")
             if (freshSpDc.isEmpty()) {
@@ -84,24 +106,32 @@ object SpotifyTokenManager {
                         prefs[SpotifyTokenExpiryKey] = token.accessTokenExpirationTimestampMs
                     }
                     _needsReLogin.value = false
+                    consecutiveFailures = 0
+                    retryAfterMs = 0L
+                    rejections = 0
+                    firstRejectionAtMs = 0L
                     Timber.d("SpotifyTokenManager: token refreshed successfully")
                     true
                 },
                 onFailure = { e ->
                     Timber.e(e, "SpotifyTokenManager: refresh FAILED")
 
-                    val isCookieExpired = e.message?.contains("anonymous") == true ||
-                        e.message?.contains("expired") == true
-                    if (isCookieExpired) {
-                        Timber.w("SpotifyTokenManager: cookie expired, clearing session")
-                        dataStore.edit { prefs ->
-                            prefs.remove(SpotifyAccessTokenKey)
-                            prefs.remove(SpotifySpDcKey)
-                            prefs.remove(SpotifySpKeyKey)
-                            prefs.remove(SpotifyTokenExpiryKey)
+                    val failedAt = System.currentTimeMillis()
+                    consecutiveFailures++
+                    retryAfterMs = failedAt + BACKOFF_MS[(consecutiveFailures - 1).coerceAtMost(BACKOFF_MS.lastIndex)]
+
+                    val rejected = e.message?.contains("anonymous") == true ||
+                        e.message?.contains("HTTP 401") == true
+                    if (rejected) {
+                        if (firstRejectionAtMs == 0L) firstRejectionAtMs = failedAt
+                        rejections++
+                        val persistent = rejections >= REJECTIONS_BEFORE_RELOGIN &&
+                            failedAt - firstRejectionAtMs >= REJECTION_WINDOW_MS
+                        if (persistent && !_needsReLogin.value) {
+                            Timber.w("SpotifyTokenManager: sp_dc rejected repeatedly; asking to sign in again (cookie kept)")
+                            Spotify.accessToken = null
+                            _needsReLogin.value = true
                         }
-                        Spotify.accessToken = null
-                        _needsReLogin.value = true
                     }
 
                     false

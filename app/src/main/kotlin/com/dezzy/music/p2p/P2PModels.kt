@@ -72,6 +72,11 @@ data class P2PUser(
     val about: String = "",
     val picture: String? = null,
     val isPrivate: Boolean = false,
+    /**
+     * Portada del perfil: una URL `https://` (foto subida) o `preset:<id>` (degradado de Dezzy,
+     * no sube nada). Null = portada por defecto.
+     */
+    val banner: String? = null,
 ) {
     val npub: String get() = Bech32.npub(pubkey)
 
@@ -96,10 +101,34 @@ data class P2PPost(
     val imageUrl: String? = null,
     /** Llegó cifrada sólo para seguidores aprobados. */
     val isPrivate: Boolean = false,
+    /** Total de reacciones (cualquier emoji). */
     val likes: Int = 0,
     val comments: Int = 0,
     val likedByMe: Boolean = false,
-)
+    /** Reacciones por emoji (👍 ❤️ 😂 😮 😢 🔥). */
+    val reactions: Map<String, Int> = emptyMap(),
+    /** Mi reacción, si tengo una. */
+    val myReaction: String? = null,
+) {
+    /** Los emojis más usados primero (para el resumen bajo la publicación). */
+    val topReactions: List<String>
+        get() = reactions.entries.filter { it.value > 0 }.sortedByDescending { it.value }.map { it.key }
+
+    /** Copia con mi reacción cambiada (para pintarla al momento, antes de que respondan los relés). */
+    fun withMyReaction(emoji: String?): P2PPost {
+        if (emoji == myReaction) return this
+        val counts = reactions.toMutableMap()
+        myReaction?.let { old -> counts[old] = ((counts[old] ?: 0) - 1).coerceAtLeast(0) }
+        emoji?.let { new -> counts[new] = (counts[new] ?: 0) + 1 }
+        val delta = (if (emoji != null) 1 else 0) - (if (myReaction != null) 1 else 0)
+        return copy(
+            reactions = counts.filterValues { it > 0 },
+            myReaction = emoji,
+            likedByMe = emoji != null,
+            likes = (likes + delta).coerceAtLeast(0),
+        )
+    }
+}
 
 @Immutable
 data class P2PComment(
@@ -107,6 +136,8 @@ data class P2PComment(
     val author: String,
     val createdAt: Long,
     val text: String,
+    /** Comentario al que responde (siempre uno de primer nivel: sólo hay un nivel de respuestas). */
+    val replyTo: String? = null,
 )
 
 @Immutable

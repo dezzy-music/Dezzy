@@ -42,6 +42,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -66,6 +67,7 @@ import com.dezzy.music.R
 import com.dezzy.music.listentogether.ListenTogetherClient
 import com.dezzy.music.p2p.P2PMessage
 import com.dezzy.music.p2p.P2PMessaging
+import com.dezzy.music.p2p.P2PNotifications
 import com.dezzy.music.p2p.P2PSocial
 import com.dezzy.music.p2p.P2PSong
 import com.dezzy.music.p2p.crypto.CryptoUtils
@@ -104,6 +106,11 @@ fun P2PChatScreen(navController: NavController, peer: String) {
             P2PSocial.loadProfiles(listOf(peer))
             P2PMessaging.start()
         }
+    }
+    DisposableEffect(peer) {
+        P2PNotifications.activeChatPeer = peer
+        P2PNotifications.clearChat(context, peer)
+        onDispose { if (P2PNotifications.activeChatPeer == peer) P2PNotifications.activeChatPeer = null }
     }
     LaunchedEffect(messages.size) {
         if (valid) P2PMessaging.markRead(peer)

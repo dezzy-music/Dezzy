@@ -251,6 +251,8 @@ import com.dezzy.music.ui.screens.buildLoginRoute
 import com.dezzy.music.ui.screens.musicrecognition.MusicRecognitionRoute
 import com.dezzy.music.ui.screens.musicrecognition.openMusicRecognition
 import com.dezzy.music.ui.screens.navigationBuilder
+import com.dezzy.music.ui.screens.p2p.openP2PChat
+import com.dezzy.music.p2p.P2PNotifications
 import com.dezzy.music.ui.screens.WelcomeLoginDialog
 import com.dezzy.music.ui.screens.search.LocalSearchScreen
 import com.dezzy.music.ui.screens.search.OnlineSearchScreen
@@ -380,8 +382,49 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onStop() {
+        // Cerrar la ventanita de PiP (deslizarla fuera) pausa el video, como en YouTube.
+        if (android.os.SystemClock.elapsedRealtime() - leftPipAtMs < 1_500L) {
+            playerConnection?.videoPlayerInstance?.value?.pause()
+        }
         safeUnbindMusicService()
         super.onStop()
+    }
+
+    // ── Imagen en imagen (modo video) ─────────────────────────────────────
+    private var videoPipEligible = false
+    private var leftPipAtMs = 0L
+
+    private fun hasPipFeature(): Boolean =
+        packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
+
+    private fun buildVideoPipParams(): android.app.PictureInPictureParams {
+        val builder = android.app.PictureInPictureParams.Builder()
+            .setAspectRatio(android.util.Rational(16, 9))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            builder.setAutoEnterEnabled(videoPipEligible)
+            builder.setSeamlessResizeEnabled(true)
+        }
+        return builder.build()
+    }
+
+    fun setVideoPipEligible(eligible: Boolean) {
+        if (videoPipEligible == eligible) return
+        videoPipEligible = eligible
+        if (hasPipFeature()) runCatching { setPictureInPictureParams(buildVideoPipParams()) }
+    }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        // En Android 12+ entra solo (setAutoEnterEnabled); antes hay que pedirlo aquí.
+        if (videoPipEligible && Build.VERSION.SDK_INT < Build.VERSION_CODES.S && hasPipFeature()) {
+            runCatching { enterPictureInPictureMode(buildVideoPipParams()) }
+        }
+    }
+
+    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        com.dezzy.music.video.VideoPipState.inPip.value = isInPictureInPictureMode
+        if (!isInPictureInPictureMode) leftPipAtMs = android.os.SystemClock.elapsedRealtime()
     }
 
     override fun onDestroy() {
@@ -1975,11 +2018,33 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 }
+
+                // Imagen en imagen del modo video: dice a la Activity si puede entrar en PiP
+                // y, ya en PiP, tapa la interfaz con sólo el video.
+                this@MainActivity.playerConnection?.let { pc ->
+                    com.dezzy.music.ui.player.VideoPipLayer(
+                        playerConnection = pc,
+                        onEligibleChange = { setVideoPipEligible(it) },
+                    )
+                }
             }
         }
     }
 
     private fun handleDeepLinkIntent(intent: Intent, navController: NavHostController) {
+        if (intent.action == P2PNotifications.ACTION_OPEN_CHAT) {
+            val peer = intent.getStringExtra(P2PNotifications.EXTRA_PEER)
+            if (!peer.isNullOrBlank()) {
+                navController.openP2PChat(peer)
+                return
+            }
+        }
+
+        if (intent.action == P2PNotifications.ACTION_OPEN_SOCIAL) {
+            navController.navigate("social")
+            return
+        }
+
         if (intent.action == android.content.Intent.ACTION_SEARCH || intent.action == ACTION_SEARCH) {
             val query = intent.getStringExtra(android.app.SearchManager.QUERY)
             if (!query.isNullOrBlank()) {

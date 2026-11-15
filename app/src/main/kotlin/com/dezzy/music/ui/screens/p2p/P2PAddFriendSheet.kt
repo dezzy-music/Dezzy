@@ -129,7 +129,7 @@ fun P2PAddFriendSheet(onDismiss: () -> Unit, onOpenProfile: (String) -> Unit, on
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilledTonalButton(
-                            onClick = { P2PSocial.myInviteLink()?.let { shareText(context, "Agrégame en Dezzy 🎧 $it", "Compartir mi enlace") } },
+                            onClick = { P2PSocial.myInviteLink()?.let { shareText(context, "Agrégame en Dezzy: $it", "Compartir mi enlace") } },
                             modifier = Modifier.weight(1f),
                         ) {
                             Icon(painterResource(R.drawable.share), null, Modifier.size(18.dp))

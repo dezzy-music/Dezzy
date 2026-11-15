@@ -64,6 +64,20 @@ object P2PSocial {
 
     const val APP_TAG = "dezzy"
     private const val PRIVATE_MARK = "dezzy_private"
+    /** Degradado de portada de Dezzy (sólo el nombre del preset; no sube nada). */
+    const val BANNER_PRESET_MARK = "dezzy_banner"
+    const val BANNER_PRESET_PREFIX = "preset:"
+
+    /** Reacciones de Dezzy (NIP-25). El «+» de otros clientes de Nostr cuenta como ❤️. */
+    val REACTIONS = listOf("👍", "❤️", "😂", "😮", "😢", "🔥")
+    const val DEFAULT_REACTION = "❤️"
+
+    /** Emoji de una reacción; null si la retira («-») o no es nuestra. */
+    private fun reactionEmoji(content: String): String? = when {
+        content == "-" -> null
+        content in REACTIONS -> content
+        else -> DEFAULT_REACTION
+    }
     private const val SETTINGS = "dezzy_p2p_settings"
 
     /** Servidores Blossom gratuitos para fotos de publicaciones (las fotos son públicas). */
@@ -111,10 +125,13 @@ object P2PSocial {
         scope.launch { runCatching { refreshFollowing() } }
         scope.launch { me?.let { runCatching { loadProfiles(listOf(it), force = true) } } }
         P2PMessaging.start()
+        runCatching { P2PInboxWorker.schedule(appContext) }
     }
 
     suspend fun signOut() {
         P2PMessaging.stop()
+        runCatching { P2PInboxWorker.cancel(appContext) }
+        P2PNotifications.clearAll(appContext)
         withContext(Dispatchers.IO) {
             dao.clearMessages()
             dao.clearPrivatePosts()
@@ -166,6 +183,9 @@ object P2PSocial {
             about = str("about") ?: "",
             picture = str("picture"),
             isPrivate = o[PRIVATE_MARK]?.jsonPrimitive?.booleanOrNull ?: false,
+            // `banner` es el campo estándar de Nostr (URL); los degradados de Dezzy van aparte.
+            banner = str("banner")?.takeIf { it.startsWith("https://") }
+                ?: str(BANNER_PRESET_MARK)?.takeIf { it.length <= 24 }?.let { "$BANNER_PRESET_PREFIX$it" },
         )
     }.getOrNull()
 
@@ -176,7 +196,7 @@ object P2PSocial {
         val missingFromMemory = wanted.filter { !profileCache.containsKey(it) }
         if (missingFromMemory.isNotEmpty()) {
             dao.profiles(missingFromMemory).forEach {
-                remember(P2PUser(it.pubkey, it.name, it.about, it.picture, it.isPrivate))
+                remember(P2PUser(it.pubkey, it.name, it.about, it.picture, it.isPrivate, it.banner))
             }
         }
         val toFetch = if (force) wanted else wanted.filter { !profileCache.containsKey(it) }
@@ -188,14 +208,25 @@ object P2PSocial {
                 val profile = parseProfile(latest) ?: return@forEach
                 remember(profile)
                 dao.upsertProfile(
-                    P2PProfileEntity(profile.pubkey, profile.name, profile.about, profile.picture, profile.isPrivate, latest.createdAt),
+                    P2PProfileEntity(
+                        profile.pubkey, profile.name, profile.about, profile.picture, profile.isPrivate, latest.createdAt, profile.banner,
+                    ),
                 )
             }
         }
     }
 
-    /** Publica mi perfil. [picture] puede ser una URL o un `data:` con una miniatura. */
-    suspend fun updateMyProfile(name: String, about: String, picture: String?, isPrivate: Boolean): Boolean =
+    /**
+     * Publica mi perfil. [picture] puede ser una URL o un `data:` con una miniatura.
+     * [banner] es una URL `https://` o `preset:<id>`; por defecto se conserva la actual.
+     */
+    suspend fun updateMyProfile(
+        name: String,
+        about: String,
+        picture: String?,
+        isPrivate: Boolean,
+        banner: String? = myProfile?.banner,
+    ): Boolean =
         withContext(Dispatchers.IO) {
             val k = keys.value ?: return@withContext false
             val content = buildJsonObject {
@@ -204,11 +235,18 @@ object P2PSocial {
                 put("about", about.trim())
                 picture?.let { put("picture", it) }
                 put(PRIVATE_MARK, isPrivate)
+                when {
+                    banner == null -> Unit
+                    banner.startsWith(BANNER_PRESET_PREFIX) -> put(BANNER_PRESET_MARK, banner.removePrefix(BANNER_PRESET_PREFIX))
+                    banner.startsWith("https://") -> put("banner", banner)
+                }
             }.toString()
             val event = NostrEvent.sign(k, Kinds.METADATA, listOf(listOf("t", APP_TAG)), content)
-            val profile = P2PUser(k.publicKey, name.trim(), about.trim(), picture, isPrivate)
+            val profile = P2PUser(k.publicKey, name.trim(), about.trim(), picture, isPrivate, banner)
             remember(profile)
-            dao.upsertProfile(P2PProfileEntity(profile.pubkey, profile.name, profile.about, profile.picture, isPrivate, event.createdAt))
+            dao.upsertProfile(
+                P2PProfileEntity(profile.pubkey, profile.name, profile.about, profile.picture, isPrivate, event.createdAt, banner),
+            )
             RelayPool.publish(event) > 0
         }
 
@@ -451,9 +489,17 @@ object P2PSocial {
         if (posts.isEmpty()) return@withContext posts
         val myKey = me
         val publicIds = posts.filterNot { it.isPrivate }.map { it.id }
-        val likes = HashMap<String, Int>()
         val comments = HashMap<String, Int>()
-        val liked = HashSet<String>()
+        // (publicación, autor) → (fecha, emoji o null). Cuenta sólo la última de cada persona:
+        // al cambiar de emoji la anterior se borra, pero no todos los relés lo respetan.
+        val latest = HashMap<Pair<String, String>, Triple<Long, String?, String>>()
+        fun offer(postId: String, author: String, createdAt: Long, emoji: String?, eventId: String) {
+            val key = postId to author
+            val current = latest[key]
+            if (current == null || createdAt > current.first || (createdAt == current.first && eventId > current.third)) {
+                latest[key] = Triple(createdAt, emoji, eventId)
+            }
+        }
         if (publicIds.isNotEmpty()) {
             val events = publicIds.chunked(100).map { chunk ->
                 async {
@@ -466,13 +512,7 @@ object P2PSocial {
             for (event in events) {
                 val target = event.tagValues("e").lastOrNull { it in publicIds } ?: continue
                 when (event.kind) {
-                    Kinds.REACTION -> if (event.content != "-") {
-                        likes[target] = (likes[target] ?: 0) + 1
-                        if (event.pubkey == myKey) {
-                            liked += target
-                            myReactions[target] = event.id
-                        }
-                    }
+                    Kinds.REACTION -> offer(target, event.pubkey, event.createdAt, reactionEmoji(event.content), event.id)
                     Kinds.TEXT_NOTE -> comments[target] = (comments[target] ?: 0) + 1
                 }
             }
@@ -481,15 +521,33 @@ object P2PSocial {
         if (privateIds.isNotEmpty()) {
             dao.privateReactions(privateIds).forEach { r ->
                 if (r.type == "like") {
-                    likes[r.postId] = (likes[r.postId] ?: 0) + 1
-                    if (r.author == myKey) liked += r.postId
+                    offer(r.postId, r.author, r.createdAt, reactionEmoji(r.content), r.id)
                 } else {
                     comments[r.postId] = (comments[r.postId] ?: 0) + 1
                 }
             }
         }
+        val reactions = HashMap<String, HashMap<String, Int>>()
+        val mine = HashMap<String, String>()
+        for ((key, value) in latest) {
+            val (postId, author) = key
+            val emoji = value.second ?: continue
+            val counts = reactions.getOrPut(postId) { HashMap() }
+            counts[emoji] = (counts[emoji] ?: 0) + 1
+            if (author == myKey) {
+                mine[postId] = emoji
+                if (postId in publicIds) myReactions[postId] = value.third
+            }
+        }
         posts.map { p ->
-            p.copy(likes = likes[p.id] ?: 0, comments = comments[p.id] ?: 0, likedByMe = p.id in liked)
+            val counts = reactions[p.id].orEmpty()
+            p.copy(
+                likes = counts.values.sum(),
+                comments = comments[p.id] ?: 0,
+                likedByMe = p.id in mine,
+                reactions = counts,
+                myReaction = mine[p.id],
+            )
         }
     }
 
@@ -522,64 +580,108 @@ object P2PSocial {
         }
     }
 
-    /** Me gusta / quitar me gusta. Devuelve el nuevo estado. */
-    suspend fun toggleLike(post: P2PPost): Boolean = withContext(Dispatchers.IO) {
-        val k = keys.value ?: return@withContext post.likedByMe
+    /** Me gusta / quitar me gusta (❤️). Devuelve si queda con reacción. */
+    suspend fun toggleLike(post: P2PPost): Boolean =
+        react(post, if (post.myReaction != null) null else DEFAULT_REACTION) != null
+
+    /**
+     * Reacciona con [emoji] (uno de [REACTIONS]) o quita la reacción con null (NIP-25).
+     * Devuelve la reacción que queda publicada.
+     */
+    suspend fun react(post: P2PPost, emoji: String?): String? = withContext(Dispatchers.IO) {
+        val k = keys.value ?: return@withContext post.myReaction
+        val wanted = emoji?.takeIf { it in REACTIONS }
+        if (wanted == post.myReaction) return@withContext wanted
+        // ❤️ sale como «+», que todos los clientes de Nostr entienden como me gusta.
+        val content = when (wanted) {
+            null -> "-"
+            DEFAULT_REACTION -> "+"
+            else -> wanted
+        }
         if (post.isPrivate) {
-            if (post.likedByMe) return@withContext true // los privados no se pueden retirar de los otros teléfonos
+            // Privadas: no hay borrado en los relés; cuenta la última de cada persona («-» la retira).
             val rumor = NostrEvent.rumor(
                 k.publicKey,
                 Kinds.REACTION,
                 listOf(listOf("e", post.id), listOf("p", post.author), listOf(APP_TAG, "private_reaction")),
-                "+",
+                content,
             )
             P2PMessaging.storePrivateReaction(rumor)
             P2PMessaging.sendWrapped(rumor, listOf(post.author, k.publicKey).distinct())
-            return@withContext true
+            return@withContext wanted
         }
-        if (post.likedByMe) {
-            val reactionId = myReactions[post.id] ?: return@withContext false
-            val deletion = NostrEvent.sign(k, Kinds.DELETION, listOf(listOf("e", reactionId), listOf("k", "7")), "")
-            RelayPool.publish(deletion)
-            myReactions.remove(post.id)
-            false
-        } else {
-            val reaction = NostrEvent.sign(
-                k,
-                Kinds.REACTION,
-                listOf(listOf("e", post.id), listOf("p", post.author), listOf("k", "1")),
-                "+",
-            )
+        myReactions.remove(post.id)?.let { old ->
+            RelayPool.publish(NostrEvent.sign(k, Kinds.DELETION, listOf(listOf("e", old), listOf("k", "7")), ""))
+        }
+        if (wanted == null) return@withContext null
+        val reaction = NostrEvent.sign(
+            k,
+            Kinds.REACTION,
+            listOf(listOf("e", post.id), listOf("p", post.author), listOf("k", "1")),
+            content,
+        )
+        if (RelayPool.publish(reaction) > 0) {
             myReactions[post.id] = reaction.id
-            RelayPool.publish(reaction)
-            true
+            wanted
+        } else {
+            null
         }
     }
 
     suspend fun comments(post: P2PPost): List<P2PComment> = withContext(Dispatchers.IO) {
         val list = if (post.isPrivate) {
             dao.privateReactions(listOf(post.id)).filter { it.type == "comment" }
-                .map { P2PComment(it.id, it.author, it.createdAt, it.content) }
+                .map { P2PComment(it.id, it.author, it.createdAt, it.content, it.replyTo) }
         } else {
             RelayPool.query(listOf(NostrFilter(kinds = listOf(Kinds.TEXT_NOTE), tags = mapOf("#e" to listOf(post.id)), limit = 300)))
-                .map { P2PComment(it.id, it.pubkey, it.createdAt, it.content) }
+                .map { event ->
+                    // NIP-10: ["e", raíz, "", "root"] y ["e", padre, "", "reply"].
+                    val parent = event.tags.firstOrNull { it.size >= 4 && it[0] == "e" && it[3] == "reply" }?.get(1)
+                    P2PComment(event.id, event.pubkey, event.createdAt, event.content, parent?.takeIf { it != post.id })
+                }
         }
         loadProfiles(list.map { it.author })
-        list.sortedBy { it.createdAt }
+        threadComments(list)
     }
 
-    suspend fun addComment(post: P2PPost, text: String): P2PComment? = withContext(Dispatchers.IO) {
+    /**
+     * Ordena en hilos de un nivel: cada comentario seguido de sus respuestas. Una respuesta
+     * a otra respuesta cuelga del comentario de primer nivel; si el padre no está, va suelta.
+     */
+    fun threadComments(list: List<P2PComment>): List<P2PComment> {
+        val byId = list.associateBy { it.id }
+        fun rootOf(c: P2PComment): String? {
+            var parent = c.replyTo?.let { byId[it] } ?: return null
+            repeat(8) { parent = parent.replyTo?.let { byId[it] } ?: return parent.id }
+            return parent.id
+        }
+        val resolved = list.distinctBy { it.id }.map { it.copy(replyTo = rootOf(it)) }
+        val replies = resolved.filter { it.replyTo != null }.groupBy { it.replyTo }
+        return resolved.filter { it.replyTo == null }.sortedBy { it.createdAt }.flatMap { top ->
+            listOf(top) + replies[top.id].orEmpty().sortedBy { it.createdAt }
+        }
+    }
+
+    suspend fun addComment(post: P2PPost, text: String, replyTo: P2PComment? = null): P2PComment? = withContext(Dispatchers.IO) {
         val k = keys.value ?: return@withContext null
         val clean = text.trim().takeIf { it.isNotEmpty() } ?: return@withContext null
-        val tags = listOf(listOf("e", post.id, "", "root"), listOf("p", post.author), listOf("t", APP_TAG))
+        val tags = buildList {
+            add(listOf("e", post.id, "", "root"))
+            replyTo?.let { add(listOf("e", it.id, "", "reply")) }
+            add(listOf("p", post.author))
+            replyTo?.author?.takeIf { it != post.author }?.let { add(listOf("p", it)) }
+            add(listOf("t", APP_TAG))
+        }
+        // Sólo un nivel: responder a una respuesta cuelga del mismo comentario de arriba.
+        val thread = replyTo?.let { it.replyTo ?: it.id }
         if (post.isPrivate) {
             val rumor = NostrEvent.rumor(k.publicKey, Kinds.TEXT_NOTE, tags + listOf(listOf(APP_TAG, "private_comment")), clean)
             P2PMessaging.storePrivateReaction(rumor)
             P2PMessaging.sendWrapped(rumor, listOf(post.author, k.publicKey).distinct())
-            P2PComment(rumor.id, k.publicKey, rumor.createdAt, clean)
+            P2PComment(rumor.id, k.publicKey, rumor.createdAt, clean, thread)
         } else {
             val event = NostrEvent.sign(k, Kinds.TEXT_NOTE, tags, clean)
-            if (RelayPool.publish(event) > 0) P2PComment(event.id, k.publicKey, event.createdAt, clean) else null
+            if (RelayPool.publish(event) > 0) P2PComment(event.id, k.publicKey, event.createdAt, clean, thread) else null
         }
     }
 

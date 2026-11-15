@@ -34,7 +34,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -61,17 +68,21 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.dezzy.music.LocalPlayerConnection
 import com.dezzy.music.R
+import com.dezzy.music.p2p.FollowState
 import com.dezzy.music.p2p.P2PListening
 import com.dezzy.music.p2p.P2PNearby
 import com.dezzy.music.p2p.P2PNearbyPerson
 import com.dezzy.music.p2p.P2PPresence
 import com.dezzy.music.p2p.P2PSocial
+import com.dezzy.music.p2p.P2PSong
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.cos
@@ -89,6 +100,7 @@ internal fun NearbyTab(navController: NavController, bottomPadding: PaddingValue
     var visible by remember { mutableStateOf(P2PSocial.nearbyVisible) }
     var listening by remember { mutableStateOf<Map<String, P2PListening>>(emptyMap()) }
     var restartKey by remember { mutableStateOf(0) }
+    var selected by remember { mutableStateOf<String?>(null) }
 
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         restartKey++
@@ -112,7 +124,7 @@ internal fun NearbyTab(navController: NavController, bottomPadding: PaddingValue
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = bottomPadding.calculateBottomPadding() + 24.dp),
     ) {
-        item(key = "radar") { Radar(people, status) }
+        item(key = "radar") { Radar(people, status, onSelect = { selected = it }) }
 
         when (status) {
             P2PNearby.Status.NO_PERMISSION -> item(key = "perm") {
@@ -160,7 +172,7 @@ internal fun NearbyTab(navController: NavController, bottomPadding: PaddingValue
                         person = person,
                         listening = listening[person.pubkey],
                         isFollowing = person.pubkey in following,
-                        onOpen = { navController.openP2PProfile(person.pubkey) },
+                        onOpen = { selected = person.pubkey },
                         onPlay = { song -> playP2PSong(playerConnection, song) },
                         onFollow = { scope.launch { P2PSocial.setFollowing(person.pubkey, true) } },
                     )
@@ -197,10 +209,27 @@ internal fun NearbyTab(navController: NavController, bottomPadding: PaddingValue
             }
         }
     }
+
+    selected?.let { pubkey ->
+        NearbyPersonSheet(
+            pubkey = pubkey,
+            listening = listening[pubkey],
+            onDismiss = { selected = null },
+            onChat = {
+                selected = null
+                navController.openP2PChat(pubkey)
+            },
+            onProfile = {
+                selected = null
+                navController.openP2PProfile(pubkey)
+            },
+            onPlay = { song -> playP2PSong(playerConnection, song) },
+        )
+    }
 }
 
 @Composable
-private fun Radar(people: List<P2PNearbyPerson>, status: P2PNearby.Status) {
+private fun Radar(people: List<P2PNearbyPerson>, status: P2PNearby.Status, onSelect: (String) -> Unit) {
     val scheme = MaterialTheme.colorScheme
     val me = rememberP2PUser(P2PSocial.me.orEmpty())
     val transition = rememberInfiniteTransition(label = "radar")
@@ -271,7 +300,11 @@ private fun Radar(people: List<P2PNearbyPerson>, status: P2PNearby.Status) {
                 Column(
                     Modifier
                         .offset(x = x.coerceIn(0.dp, w - 72.dp), y = y.coerceIn(28.dp, h - 64.dp))
-                        .width(72.dp),
+                        .width(72.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable(onClickLabel = "Ver opciones") { onSelect(person.pubkey) }
+                        .semantics(mergeDescendants = true) { contentDescription = user.displayName }
+                        .padding(vertical = 2.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     P2PAvatar(user, size = 44.dp, ring = true)
@@ -294,7 +327,7 @@ private fun NearbyRow(
     listening: P2PListening?,
     isFollowing: Boolean,
     onOpen: () -> Unit,
-    onPlay: (com.dezzy.music.p2p.P2PSong) -> Unit,
+    onPlay: (P2PSong) -> Unit,
     onFollow: () -> Unit,
 ) {
     val user = rememberP2PUser(person.pubkey)
@@ -329,6 +362,156 @@ private fun NearbyRow(
                     .clip(RoundedCornerShape(50))
                     .padding(8.dp),
             ) { Icon(painterResource(R.drawable.check), contentDescription = "Ya la sigues", tint = scheme.primary) }
+        }
+    }
+}
+
+/**
+ * Hoja de una persona encontrada por el radar: agregarla a amigos, escribirle o ver su perfil
+ * sin salir de «Cerca».
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NearbyPersonSheet(
+    pubkey: String,
+    listening: P2PListening?,
+    onDismiss: () -> Unit,
+    onChat: () -> Unit,
+    onProfile: () -> Unit,
+    onPlay: (P2PSong) -> Unit,
+) {
+    val user = rememberP2PUser(pubkey)
+    val scheme = MaterialTheme.colorScheme
+    val scope = rememberCoroutineScope()
+    val following by P2PSocial.following.collectAsState()
+    var followState by remember(pubkey) { mutableStateOf<FollowState?>(null) }
+    var busy by remember { mutableStateOf(false) }
+    var failed by remember { mutableStateOf(false) }
+
+    LaunchedEffect(pubkey) { runCatching { P2PSocial.loadProfiles(listOf(pubkey)) } }
+    LaunchedEffect(pubkey, pubkey in following, user.isPrivate) {
+        followState = runCatching { P2PSocial.followState(pubkey) }.getOrDefault(FollowState.NONE)
+    }
+
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            P2PAvatar(user, size = 88.dp, ring = listening != null)
+            Text(
+                user.displayName,
+                style = MaterialTheme.typography.headlineSmall,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                if (user.isPrivate) "Cuenta privada · está cerca de ti" else "Está cerca de ti",
+                style = MaterialTheme.typography.bodyMedium,
+                color = scheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+            if (user.about.isNotBlank()) {
+                Text(
+                    user.about,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+
+            val song = listening?.song
+            val nowText = song?.let { "${it.title} — ${it.artist}" } ?: listening?.text
+            if (!nowText.isNullOrBlank()) {
+                Surface(shape = RoundedCornerShape(20.dp), color = scheme.surfaceContainerHigh, modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        Modifier.padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Icon(painterResource(R.drawable.graphic_eq), null, tint = scheme.primary)
+                        Column(Modifier.weight(1f)) {
+                            Text("Escuchando ahora", style = MaterialTheme.typography.labelMedium, color = scheme.primary)
+                            Text(nowText, style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        }
+                        if (song != null) {
+                            FilledTonalButton(onClick = { onPlay(song) }) { Text("Escuchar") }
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(4.dp))
+            when (followState) {
+                null -> Button(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) {
+                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                }
+
+                FollowState.NONE -> Button(
+                    onClick = {
+                        busy = true
+                        failed = false
+                        scope.launch {
+                            val ok = runCatching { P2PSocial.setFollowing(pubkey, true) }.getOrDefault(false)
+                            failed = !ok
+                            followState = runCatching { P2PSocial.followState(pubkey) }.getOrDefault(FollowState.NONE)
+                            busy = false
+                        }
+                    },
+                    enabled = !busy,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    if (busy) {
+                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                    } else {
+                        Icon(painterResource(R.drawable.person_add), null, Modifier.size(ButtonDefaults.IconSize))
+                        Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+                        Text(if (user.isPrivate) "Enviar solicitud de amistad" else "Agregar a amigos")
+                    }
+                }
+
+                FollowState.REQUESTED -> OutlinedButton(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) {
+                    Text("Solicitud enviada · esperando respuesta")
+                }
+
+                FollowState.FOLLOWING -> OutlinedButton(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) {
+                    Icon(painterResource(R.drawable.check), null, Modifier.size(ButtonDefaults.IconSize))
+                    Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+                    Text("Ya está en tus amigos")
+                }
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                FilledTonalButton(onClick = onChat, modifier = Modifier.weight(1f)) {
+                    Icon(painterResource(R.drawable.nav_messages_outlined), null, Modifier.size(ButtonDefaults.IconSize))
+                    Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+                    Text("Escribir")
+                }
+                OutlinedButton(onClick = onProfile, modifier = Modifier.weight(1f)) {
+                    Icon(painterResource(R.drawable.person), null, Modifier.size(ButtonDefaults.IconSize))
+                    Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+                    Text("Ver perfil")
+                }
+            }
+            if (failed) {
+                Text(
+                    "No hay conexión con los relés. Inténtalo de nuevo.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = scheme.error,
+                    textAlign = TextAlign.Center,
+                )
+            }
+            Text(
+                "Los mensajes van cifrados de extremo a extremo.",
+                style = MaterialTheme.typography.bodySmall,
+                color = scheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
         }
     }
 }

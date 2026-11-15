@@ -14,53 +14,86 @@ import android.graphics.Color
 import android.graphics.ColorMatrixColorFilter
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.RectF
+import android.graphics.Typeface
 import android.graphics.drawable.BitmapDrawable
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.BottomSheetScaffold
+import androidx.compose.material3.Button
+import androidx.compose.material3.ElevatedAssistChip
+import androidx.compose.material3.ElevatedFilterChip
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color as ComposeColor
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -77,18 +110,23 @@ import com.dezzy.music.LocalPlayerAwareWindowInsets
 import com.dezzy.music.LocalPlayerConnection
 import com.dezzy.music.R
 import com.dezzy.music.constants.MusicMapShareLocationKey
+import com.dezzy.music.extensions.toMediaItem
 import com.dezzy.music.extensions.togglePlayPause
 import com.dezzy.music.innertube.YouTube
-import com.dezzy.music.p2p.P2PSocial
 import com.dezzy.music.innertube.models.SongItem
 import com.dezzy.music.innertube.models.WatchEndpoint
 import com.dezzy.music.models.toMediaMetadata
 import com.dezzy.music.musicmap.MapPresence
 import com.dezzy.music.musicmap.MusicMapCharts
+import com.dezzy.music.musicmap.MusicMapGenres
 import com.dezzy.music.musicmap.MusicMapLocation
 import com.dezzy.music.musicmap.MusicMapRepository
+import com.dezzy.music.p2p.P2PSocial
 import com.dezzy.music.playback.OmegaMathIntegration
+import com.dezzy.music.playback.queues.ListQueue
 import com.dezzy.music.playback.queues.YouTubeQueue
+import com.dezzy.music.ui.component.LocalMenuState
+import com.dezzy.music.ui.menu.YouTubeSongMenu
 import com.dezzy.music.ui.utils.highRes
 import com.dezzy.music.utils.rememberPreference
 import kotlinx.coroutines.Dispatchers
@@ -99,31 +137,57 @@ import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
+import kotlin.math.asin
+import kotlin.math.cos
+import kotlin.math.pow
+import kotlin.math.roundToInt
+import kotlin.math.sin
+import kotlin.math.sqrt
+import androidx.compose.ui.graphics.Color as ComposeColor
 
-/** A country whose real YouTube Music chart we plot on the map. */
-private data class Country(
+/**
+ * Mapa musical — Fase 11, boceto A «El mapa manda, la hoja acompaña».
+ * Mapa claro a pantalla completa (filtro nocturno sólo en tema oscuro), búsqueda
+ * flotante con filtros Países / Personas / Cerca de mí, y una hoja inferior con el
+ * top del país elegido. Tocar a una persona abre su tarjeta con lo que escucha.
+ */
+
+/**
+ * A country whose real YouTube Music chart we plot on the map. [minZoom] hides the pills of
+ * small or crowded countries until the user zooms in, so they don't pile up on each other.
+ */
+internal data class Country(
     val code: String,
     val name: String,
     val latitude: Double,
     val longitude: Double,
+    val minZoom: Double = 0.0,
 )
 
 /** Real per-country chart result. */
-private data class CountryChart(
+internal data class CountryChart(
     val country: Country,
     val songs: List<SongItem>,
 )
 
+private enum class PointKind { SELF, COUNTRY, PERSON }
+
+/** Qué capa manda en el mapa: los países (con todo) o sólo las personas. */
+private enum class MapMode { COUNTRIES, PEOPLE }
+
 /** A point rendered on the map: a country's #1 song, the user, or another listener. */
 private data class MapPoint(
     val key: String,
+    val kind: PointKind,
     val latitude: Double,
     val longitude: Double,
     val label: String,
     val artworkUrl: String?,
-    val isSelf: Boolean,
     val videoId: String?,
     val countryCode: String? = null,
+    val shortLabel: String = label,
+    val userId: String? = null,
+    val minZoom: Double = 0.0,
 )
 
 private val COUNTRIES = listOf(
@@ -143,6 +207,31 @@ private val COUNTRIES = listOf(
     Country("IN", "India", 20.6, 78.9),
     Country("CA", "Canadá", 56.1, -106.3),
     Country("AU", "Australia", -25.3, 133.8),
+    // Más países con top propio en YouTube Music (VE y PR sólo devuelven el mundial).
+    Country("PE", "Perú", -9.2, -75.0),
+    Country("EC", "Ecuador", -1.8, -78.2, minZoom = 4.0),
+    Country("BO", "Bolivia", -16.3, -63.6, minZoom = 4.0),
+    Country("PY", "Paraguay", -23.4, -58.4, minZoom = 4.0),
+    Country("UY", "Uruguay", -32.5, -55.8, minZoom = 4.0),
+    Country("GT", "Guatemala", 15.8, -90.2, minZoom = 4.0),
+    Country("SV", "El Salvador", 13.8, -88.9, minZoom = 5.0),
+    Country("HN", "Honduras", 15.2, -86.2, minZoom = 5.0),
+    Country("CR", "Costa Rica", 9.7, -83.8, minZoom = 4.5),
+    Country("DO", "República Dominicana", 18.7, -70.2, minZoom = 4.0),
+    Country("PT", "Portugal", 39.4, -8.2, minZoom = 4.0),
+    Country("NL", "Países Bajos", 52.1, 5.3, minZoom = 4.0),
+    Country("SE", "Suecia", 62.0, 15.0),
+    Country("PL", "Polonia", 51.9, 19.1, minZoom = 4.0),
+    Country("UA", "Ucrania", 48.4, 31.2, minZoom = 4.0),
+    Country("RU", "Rusia", 61.5, 95.0),
+    Country("TR", "Turquía", 39.0, 35.2),
+    Country("EG", "Egipto", 26.8, 30.8),
+    Country("SA", "Arabia Saudí", 23.9, 45.1, minZoom = 3.5),
+    Country("NG", "Nigeria", 9.1, 8.7),
+    Country("ZA", "Sudáfrica", -30.6, 22.9),
+    Country("PH", "Filipinas", 12.9, 121.8),
+    Country("ID", "Indonesia", -0.8, 113.9),
+    Country("NZ", "Nueva Zelanda", -40.9, 174.9),
 )
 
 /** Fallback "worldwide" group used when per-country charts don't return anything. */
@@ -150,8 +239,8 @@ private val WORLD = Country("ZZ", "Mundial", 15.0, 0.0)
 
 /**
  * Clustering grid size (in degrees) for a given zoom level. Bigger cells at low zoom → fewer, larger
- * stars; smaller cells as you zoom in → more, smaller stars. 0 means no clustering (every point is a
- * star). This is what makes "more stars appear the more you zoom in".
+ * groups; smaller cells as you zoom in → more individual people. 0 means no clustering.
+ * Sólo se agrupan personas: los países siempre se ven como píldoras sueltas.
  */
 private fun cellSizeForZoom(zoom: Double): Double = when {
     zoom < 3.5 -> 45.0
@@ -162,55 +251,25 @@ private fun cellSizeForZoom(zoom: Double): Double = when {
     else -> 0.0
 }
 
-/** Draws a mini 5-point star marker, optionally with a count badge for clustered locations. */
-private fun starMarkerBitmap(sizePx: Int, count: Int, isSelf: Boolean): Bitmap {
-    val bmp = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(bmp)
-    val cx = sizePx / 2f
-    val cy = sizePx / 2f
-    val outer = sizePx * 0.44f
-    val inner = outer * 0.42f
-    val path = Path()
-    for (i in 0 until 10) {
-        val r = if (i % 2 == 0) outer else inner
-        val angle = -Math.PI / 2 + i * Math.PI / 5
-        val x = cx + (r * Math.cos(angle)).toFloat()
-        val y = cy + (r * Math.sin(angle)).toFloat()
-        if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
-    }
-    path.close()
-    val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = if (isSelf) Color.parseColor("#4CD964") else Color.parseColor("#FFD54A")
-        style = Paint.Style.FILL
-        setShadowLayer(sizePx * 0.10f, 0f, sizePx * 0.02f, Color.parseColor("#99000000"))
-    }
-    canvas.drawPath(path, fill)
-    val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.WHITE
-        style = Paint.Style.STROKE
-        strokeWidth = sizePx * 0.045f
-        strokeJoin = Paint.Join.ROUND
-    }
-    canvas.drawPath(path, stroke)
-    if (count > 1) {
-        val tp = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#1C1C1E")
-            textSize = sizePx * 0.30f
-            textAlign = Paint.Align.CENTER
-            isFakeBoldText = true
-        }
-        val ty = cy - (tp.descent() + tp.ascent()) / 2
-        canvas.drawText(if (count > 99) "99+" else count.toString(), cx, ty, tp)
-    }
-    return bmp
+/** Distancia aproximada en km entre dos puntos (haversine). */
+private fun distanceKm(a: Pair<Double, Double>, b: Pair<Double, Double>): Double {
+    val r = 6371.0
+    val dLat = Math.toRadians(b.first - a.first)
+    val dLng = Math.toRadians(b.second - a.second)
+    val h = sin(dLat / 2).pow(2) +
+        cos(Math.toRadians(a.first)) * cos(Math.toRadians(b.first)) * sin(dLng / 2).pow(2)
+    return 2 * r * asin(sqrt(h))
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MusicMapScreen(navController: NavController) {
+fun MusicMapScreen(navController: NavController, embedded: Boolean = false) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val coroutineScope = rememberCoroutineScope()
     val playerConnection = LocalPlayerConnection.current
+    val menuState = LocalMenuState.current
+    val localDensity = LocalDensity.current
 
     val metadataFlow = remember(playerConnection) {
         playerConnection?.mediaMetadata
@@ -225,9 +284,28 @@ fun MusicMapScreen(navController: NavController) {
     var chartsLoaded by remember { mutableStateOf(false) }
     var ownLatLng by remember { mutableStateOf<Pair<Double, Double>?>(null) }
     var query by remember { mutableStateOf("") }
-    var topExpanded by remember { mutableStateOf(true) }
-    // When a country star is tapped, the bottom list focuses on that country's top songs.
+    var mode by remember { mutableStateOf(MapMode.COUNTRIES) }
+    // Al tocar la píldora de un país, la hoja se centra en su top.
     var focusCountry by remember { mutableStateOf<String?>(null) }
+    // Al tocar a una persona, la hoja muestra su tarjeta.
+    var selectedPersonId by remember { mutableStateOf<String?>(null) }
+    // Boceto A: géneros del país abierto y buscador «dónde se escucha más».
+    val genres = remember { mutableStateMapOf<String, String>() }
+    var genresLoading by remember { mutableStateOf(false) }
+    var genreFilter by remember { mutableStateOf<String?>(null) }
+    var highlight by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var searchTab by remember { mutableStateOf<SearchTab?>(null) }
+    val keyboard = LocalSoftwareKeyboardController.current
+
+    val scheme = MaterialTheme.colorScheme
+    val darkMap = scheme.surface.luminance() < 0.5f
+    val markerColors = MarkerColors(
+        pill = scheme.surfaceContainerLowest.toArgb(),
+        onPill = scheme.onSurface.toArgb(),
+        selected = scheme.primary.toArgb(),
+        onSelected = scheme.onPrimary.toArgb(),
+        placeholder = scheme.surfaceContainerHighest.toArgb(),
+    )
 
     val mapView = remember {
         Configuration.getInstance().userAgentValue = context.packageName
@@ -240,13 +318,20 @@ fun MusicMapScreen(navController: NavController) {
             minZoomLevel = 2.5
             controller.setZoom(3.0)
             controller.setCenter(GeoPoint(20.0, 0.0))
-            overlayManager.tilesOverlay.setColorFilter(ColorMatrixColorFilter(NIGHT_MATRIX))
         }
+    }
+
+    // Cartografía clara en tema claro; el filtro nocturno queda sólo para el tema oscuro.
+    LaunchedEffect(darkMap) {
+        mapView.overlayManager.tilesOverlay.setColorFilter(
+            if (darkMap) ColorMatrixColorFilter(NIGHT_MATRIX) else null
+        )
+        mapView.invalidate()
     }
 
     // DelayedMapListener fires its callback ~180 ms AFTER the event via an internal Handler
     // that removeMapListener does NOT cancel, so a scroll right before leaving this screen
-    // used to run renderStars() against an already-detached MapView — Marker(mapView) then
+    // used to run renderMarkers() against an already-detached MapView — Marker(mapView) then
     // NPE'd on the torn-down repository and crashed the app. Track liveness and bail out.
     val mapAlive = remember { java.util.concurrent.atomic.AtomicBoolean(true) }
 
@@ -280,6 +365,19 @@ fun MusicMapScreen(navController: NavController) {
         } else {
             setShareLocation(false)
             OmegaMathIntegration.shareLocation = false
+        }
+    }
+
+    fun toggleShareLocation() {
+        if (shareLocation) {
+            setShareLocation(false)
+            OmegaMathIntegration.shareLocation = false
+            ownLatLng = null
+        } else if (MusicMapLocation.hasPermission(context)) {
+            setShareLocation(true) // LaunchedEffect(shareLocation) pide la ubicación
+            OmegaMathIntegration.shareLocation = true
+        } else {
+            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         }
     }
 
@@ -331,10 +429,13 @@ fun MusicMapScreen(navController: NavController) {
 
     val ownPoint = remember(mediaMetadata, ownLatLng) {
         val loc = ownLatLng ?: return@remember null
-        val meta = mediaMetadata ?: return@remember null
-        val artistText = meta.artists.joinToString { it.name }
-        val label = if (artistText.isBlank()) "♪ ${meta.title}" else "♪ ${meta.title} — $artistText"
-        MapPoint("self", loc.first, loc.second, label, meta.thumbnailUrl, true, null)
+        val meta = mediaMetadata
+        val label = when {
+            meta == null -> "Tú"
+            meta.artists.isEmpty() -> "Tú · ${meta.title}"
+            else -> "Tú · ${meta.title} — ${meta.artists.joinToString { it.name }}"
+        }
+        MapPoint("self", PointKind.SELF, loc.first, loc.second, label, meta?.thumbnailUrl, null)
     }
 
     val countryPoints = remember(countryCharts) {
@@ -343,13 +444,15 @@ fun MusicMapScreen(navController: NavController) {
             val top = chart.songs.firstOrNull() ?: return@mapNotNull null
             MapPoint(
                 key = "country_${chart.country.code}",
+                kind = PointKind.COUNTRY,
                 latitude = chart.country.latitude,
                 longitude = chart.country.longitude,
                 label = "${chart.country.name} · ${top.title}",
                 artworkUrl = top.thumbnail,
-                isSelf = false,
                 videoId = top.id,
                 countryCode = chart.country.code,
+                shortLabel = chart.country.name,
+                minZoom = chart.country.minZoom,
             )
         }
     }
@@ -357,35 +460,84 @@ fun MusicMapScreen(navController: NavController) {
     val myKeys by P2PSocial.keys.collectAsState()
     val myUserId = remember(myKeys) { P2PSocial.me }
 
-    val peoplePoints = remember(presences, myUserId) {
-        presences
-            // Fuera mi propia presencia: ya salgo como `ownPoint` (los relés también
-            // devuelven mi propio estado «escuchando»).
-            .filter { it.userId != "self" && it.userId != myUserId }
-            .map {
-                // La etiqueta lleva la canción REAL del amigo, no solo su nombre.
-                val song = it.title?.let { t ->
-                    if (it.artist.isNullOrBlank()) "♪ $t" else "♪ $t — ${it.artist}"
-                }
-                val label = if (song != null) "${it.displayName} · $song" else it.displayName
-                MapPoint(
-                    key = "people_${it.userId}",
-                    latitude = it.latitude,
-                    longitude = it.longitude,
-                    label = label,
-                    artworkUrl = it.artworkUrl,
-                    isSelf = false,
-                    videoId = it.videoId,
-                )
-            }
+    val people = remember(presences, myUserId) {
+        // Fuera mi propia presencia: ya salgo como `ownPoint` (los relés también
+        // devuelven mi propio estado «escuchando»).
+        presences.filter { it.userId != "self" && it.userId != myUserId }
+    }
+    val peoplePoints = remember(people) {
+        people.map {
+            // La etiqueta lleva la canción REAL de la persona, no solo su nombre.
+            val song = it.title?.let { t -> if (it.artist.isNullOrBlank()) t else "$t — ${it.artist}" }
+            MapPoint(
+                key = "people_${it.userId}",
+                kind = PointKind.PERSON,
+                latitude = it.latitude,
+                longitude = it.longitude,
+                label = if (song != null) "${it.displayName} · $song" else it.displayName,
+                artworkUrl = it.artworkUrl,
+                videoId = it.videoId,
+                userId = it.userId,
+            )
+        }
     }
 
-    val allPoints = remember(ownPoint, countryPoints, peoplePoints) {
-        listOfNotNull(ownPoint) + countryPoints + peoplePoints
+    val visiblePoints = remember(ownPoint, countryPoints, peoplePoints, mode) {
+        when (mode) {
+            MapMode.COUNTRIES -> countryPoints + peoplePoints + listOfNotNull(ownPoint)
+            MapMode.PEOPLE -> peoplePoints + listOfNotNull(ownPoint)
+        }
+    }
+
+    // Portadas de las píldoras y las personas, cargadas una vez y reutilizadas.
+    val covers = remember { mutableStateMapOf<String, Bitmap>() }
+    LaunchedEffect(visiblePoints) {
+        visiblePoints
+            .filter { it.kind != PointKind.SELF }
+            .mapNotNull { it.artworkUrl }
+            .distinct()
+            .filter { it !in covers }
+            .forEach { url -> loadCoverBitmap(context, url)?.let { covers[url] = it } }
     }
 
     val songsById = remember(countryCharts) {
         countryCharts.flatMap { it.songs }.associateBy { it.id }
+    }
+
+    fun genreOf(song: SongItem): String? =
+        song.artists.firstOrNull()?.name?.let { genres[MusicMapGenres.key(it)] }
+
+    val focusedChart = remember(countryCharts, focusCountry) {
+        countryCharts.firstOrNull { it.country.code == focusCountry }
+    }
+
+    LaunchedEffect(focusCountry) { genreFilter = null }
+
+    // Clasifica por género a los artistas del país abierto (queda guardado en el teléfono).
+    LaunchedEffect(focusedChart) {
+        val chart = focusedChart ?: return@LaunchedEffect
+        if (chart.country == WORLD) return@LaunchedEffect
+        genresLoading = true
+        try {
+            MusicMapGenres.classify(context, chart.songs.mapNotNull { it.artists.firstOrNull()?.name }) { partial ->
+                withContext(Dispatchers.Main) { genres.putAll(partial) }
+            }
+        } finally {
+            genresLoading = false
+        }
+    }
+
+    val shares by remember(focusedChart) {
+        derivedStateOf { focusedChart?.let { chart -> genreShares(chart.songs) { genreOf(it) } }.orEmpty() }
+    }
+
+    // Top de hace un día o más, para las flechas de tendencia.
+    val previousRanks = remember(countryCharts) {
+        countryCharts.associate { it.country.code to MusicMapCharts.previousRanks(context, it.country.code) }
+    }
+
+    val search = remember(query, countryCharts) {
+        if (query.isBlank()) null else searchCharts(query, countryCharts)
     }
 
     fun playSong(song: SongItem) {
@@ -401,7 +553,7 @@ fun MusicMapScreen(navController: NavController) {
         }
     }
 
-    // Reproduce la canción de un amigo del mapa: su videoId no está en las listas
+    // Reproduce la canción de una persona del mapa: su videoId no está en las listas
     // de charts, así que se resuelve en InnerTube (para precargar título/carátula)
     // y se pone a sonar. Si ya suena esa canción, alterna play/pausa.
     fun playVideoId(videoId: String) {
@@ -409,6 +561,7 @@ fun MusicMapScreen(navController: NavController) {
             playerConnection?.player?.togglePlayPause()
             return
         }
+        songsById[videoId]?.let { playSong(it); return }
         val connection = playerConnection ?: return
         coroutineScope.launch {
             val song = runCatching {
@@ -423,11 +576,36 @@ fun MusicMapScreen(navController: NavController) {
         }
     }
 
+    val scaffoldState = rememberBottomSheetScaffoldState()
+
+    // Al empezar a buscar se abre la hoja con los resultados; al borrar se quita el resaltado.
+    LaunchedEffect(query.isBlank()) {
+        if (query.isBlank()) {
+            highlight = emptySet()
+            searchTab = null
+        } else {
+            selectedPersonId = null
+            runCatching { scaffoldState.bottomSheetState.expand() }
+        }
+    }
+
+    fun centerOnMe(zoomTo: Double) {
+        val loc = ownLatLng
+        when {
+            loc != null -> {
+                mapView.controller.animateTo(GeoPoint(loc.first, loc.second))
+                mapView.controller.setZoom(zoomTo)
+            }
+            !shareLocation -> toggleShareLocation()
+            else -> coroutineScope.launch { MusicMapLocation.refresh(context)?.let { ownLatLng = it } }
+        }
+    }
+
     val density = context.resources.displayMetrics.density
 
-    // Renders every location as a mini star, grouping nearby ones into a single larger star (with a
-    // count) depending on the current zoom. Zooming in shrinks the grid → more individual stars.
-    fun renderStars() {
+    // Pinta países como píldoras (portada + nombre), personas como círculos con punto
+    // «en vivo» (agrupadas según el zoom) y tu posición encima de todo.
+    fun renderMarkers() {
         // Bail out if the map was detached (see mapAlive): late Handler callbacks from
         // DelayedMapListener must never touch a torn-down MapView.
         if (!mapAlive.get() || mapView.repository == null) return
@@ -437,11 +615,12 @@ fun MusicMapScreen(navController: NavController) {
 
         data class Cluster(val lat: Double, val lng: Double, val points: List<MapPoint>)
 
+        val personPoints = visiblePoints.filter { it.kind == PointKind.PERSON }
         val clusters: List<Cluster> = if (cell <= 0.0) {
-            allPoints.map { Cluster(it.latitude, it.longitude, listOf(it)) }
+            personPoints.map { Cluster(it.latitude, it.longitude, listOf(it)) }
         } else {
             val buckets = HashMap<Pair<Int, Int>, MutableList<MapPoint>>()
-            allPoints.forEach { p ->
+            personPoints.forEach { p ->
                 val key = Math.floor(p.latitude / cell).toInt() to Math.floor(p.longitude / cell).toInt()
                 buckets.getOrPut(key) { mutableListOf() }.add(p)
             }
@@ -450,55 +629,80 @@ fun MusicMapScreen(navController: NavController) {
             }
         }
 
+        fun addMarker(lat: Double, lng: Double, bitmap: Bitmap, title: String, onClick: (Marker) -> Unit) {
+            val marker = Marker(mapView).apply {
+                position = GeoPoint(lat, lng)
+                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                icon = BitmapDrawable(context.resources, bitmap)
+                this.title = title
+            }
+            marker.setOnMarkerClickListener { m, _ -> onClick(m); true }
+            mapView.overlays.add(marker)
+        }
+
+        // Países
+        visiblePoints.filter { it.kind == PointKind.COUNTRY }.forEach { p ->
+            val highlighted = p.countryCode in highlight
+            // Los países pequeños o muy juntos salen al acercar (salvo si los marca la búsqueda).
+            if (!highlighted && p.countryCode != focusCountry && zoom < p.minZoom) return@forEach
+            val selected = p.countryCode == focusCountry || highlighted
+            addMarker(
+                p.latitude, p.longitude,
+                countryPillBitmap(p.shortLabel, p.artworkUrl?.let { covers[it] }, selected, density, markerColors),
+                p.label,
+            ) {
+                // Alterna el foco: la hoja pasa a mostrar el top de ese país.
+                focusCountry = if (focusCountry == p.countryCode) null else p.countryCode
+                selectedPersonId = null
+                coroutineScope.launch { runCatching { scaffoldState.bottomSheetState.partialExpand() } }
+            }
+        }
+
+        // Personas (agrupadas)
         clusters.forEach { cluster ->
             val count = cluster.points.size
-            val isSelf = cluster.points.any { it.isSelf }
-            val sizeDp = 24 + minOf(count - 1, 10) * 3
-            val sizePx = (sizeDp * density).toInt().coerceAtLeast(1)
-            val marker = Marker(mapView).apply {
-                position = GeoPoint(cluster.lat, cluster.lng)
-                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                icon = BitmapDrawable(context.resources, starMarkerBitmap(sizePx, count, isSelf))
-                title = if (count == 1) cluster.points[0].label else "$count ubicaciones aquí"
-            }
-            marker.setOnMarkerClickListener { m, _ ->
-                if (count > 1) {
-                    // Zoom into the cluster so it splits into more stars.
+            if (count > 1) {
+                addMarker(
+                    cluster.lat, cluster.lng,
+                    clusterBitmap(count, density, markerColors),
+                    "$count personas aquí",
+                ) {
+                    // Acerca el zoom para separar el grupo.
                     mapView.controller.animateTo(GeoPoint(cluster.lat, cluster.lng))
                     mapView.controller.setZoom((zoom + 2.0).coerceAtMost(mapView.maxZoomLevel))
-                } else {
-                    val p = cluster.points[0]
-                    when {
-                        p.countryCode != null -> {
-                            // Toggle focus: show this country's top songs in the bottom list.
-                            focusCountry = if (focusCountry == p.countryCode) null else p.countryCode
-                            topExpanded = true
-                        }
-                        // Charts traen el SongItem completo; las estrellas de
-                        // gente solo el videoId, que se resuelve al vuelo.
-                        p.videoId != null ->
-                            songsById[p.videoId]?.let { playSong(it) } ?: playVideoId(p.videoId)
-                        else -> m.showInfoWindow()
-                    }
                 }
-                true
+            } else {
+                val p = cluster.points[0]
+                addMarker(
+                    p.latitude, p.longitude,
+                    personBitmap(p.artworkUrl?.let { covers[it] }, p.userId == selectedPersonId, density, markerColors),
+                    p.label,
+                ) {
+                    selectedPersonId = p.userId
+                    coroutineScope.launch { runCatching { scaffoldState.bottomSheetState.expand() } }
+                }
             }
-            mapView.overlays.add(marker)
+        }
+
+        // Tu punto, siempre encima
+        visiblePoints.firstOrNull { it.kind == PointKind.SELF }?.let { p ->
+            addMarker(p.latitude, p.longitude, selfBitmap(density, markerColors), p.label) { it.showInfoWindow() }
         }
         mapView.invalidate()
     }
 
-    LaunchedEffect(allPoints) { renderStars() }
+    val latestRender by rememberUpdatedState({ renderMarkers() })
 
-    // Re-cluster whenever the user zooms or pans (debounced) so star density tracks the zoom.
-    // Keyed on allPoints so the listener always renders the current set of stars.
-    DisposableEffect(mapView, allPoints) {
+    LaunchedEffect(visiblePoints, covers.size, focusCountry, selectedPersonId, markerColors, highlight) { renderMarkers() }
+
+    // Re-agrupa al hacer zoom o desplazarse (con retardo) para que la densidad siga al zoom.
+    DisposableEffect(mapView) {
         val listener = object : org.osmdroid.events.MapListener {
             override fun onScroll(event: org.osmdroid.events.ScrollEvent?): Boolean {
-                renderStars(); return false
+                latestRender(); return false
             }
             override fun onZoom(event: org.osmdroid.events.ZoomEvent?): Boolean {
-                renderStars(); return false
+                latestRender(); return false
             }
         }
         val delayed = org.osmdroid.events.DelayedMapListener(listener, 180)
@@ -506,218 +710,315 @@ fun MusicMapScreen(navController: NavController) {
         onDispose { mapView.removeMapListener(delayed) }
     }
 
-    val rows = remember(countryCharts, query, focusCountry) {
-        buildList {
-            countryCharts.filter { focusCountry == null || it.country.code == focusCountry }.forEach { chart ->
-                val matching = if (query.isBlank()) chart.songs else chart.songs.filter { s ->
-                    s.title.contains(query, true) ||
-                        s.artists.joinToString { it.name }.contains(query, true) ||
-                        chart.country.name.contains(query, true)
-                }
-                if (matching.isNotEmpty()) {
-                    add(ListRow.Header(chart.country))
-                    matching.forEachIndexed { index, song ->
-                        add(ListRow.Song(chart.country, index + 1, song))
+    // Sin país elegido: el top 5 de cada país. Con país: su top entero, filtrado por el chip de género.
+    val rows by remember(countryCharts, focusCountry, genreFilter) {
+        derivedStateOf {
+            val filter = genreFilter
+            buildList {
+                countryCharts.filter { focusCountry == null || it.country.code == focusCountry }.forEach { chart ->
+                    val ranked = chart.songs.withIndex().toList()
+                    val shown = when {
+                        focusCountry == null -> ranked.take(5)
+                        filter != null -> ranked.filter { (_, s) -> matchesGenre(genreOf(s), filter, shares) }
+                        else -> ranked
+                    }
+                    if (shown.isNotEmpty()) {
+                        add(ListRow.Header(chart.country))
+                        shown.forEach { (index, song) -> add(ListRow.Song(chart.country, index + 1, song)) }
                     }
                 }
             }
         }
     }
 
-    Box(Modifier.fillMaxSize()) {
-        AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize())
+    val selectedPerson = remember(people, selectedPersonId) { people.firstOrNull { it.userId == selectedPersonId } }
 
-        // Top bar: back + status pill (left, flexible) and the share-location button (right),
-        // laid out in one full-width Row so they can never overlap.
-        Row(
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .fillMaxWidth()
-                .windowInsetsPadding(LocalPlayerAwareWindowInsets.current)
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Surface(
-                shape = RoundedCornerShape(28.dp),
-                color = ComposeColor(0xCC1C1C1E),
-                contentColor = ComposeColor.White,
-                modifier = Modifier
-                    .weight(1f, fill = false)
-                    .height(48.dp),
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(end = 12.dp),
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.arrow_back),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .clickableNoRipple { navController.navigateUp() }
-                            .padding(11.dp),
-                    )
-                    Icon(
-                        painter = painterResource(R.drawable.location_on),
-                        contentDescription = null,
-                        tint = if (shareLocation) ComposeColor(0xFF4CD964) else ComposeColor(0xFFFF3B30),
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        text = stringResource(
-                            if (shareLocation) R.string.music_map_location_on
-                            else R.string.music_map_location_off
-                        ),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
+    BackHandler(enabled = selectedPersonId != null || focusCountry != null || query.isNotEmpty()) {
+        when {
+            selectedPersonId != null -> selectedPersonId = null
+            query.isNotEmpty() -> query = ""
+            else -> focusCountry = null
+        }
+    }
 
-            Surface(
-                shape = CircleShape,
-                color = ComposeColor(0xCC1C1C1E),
-                contentColor = ComposeColor.White,
-                modifier = Modifier
-                    .size(48.dp)
-                    .clickableNoRipple {
-                        if (shareLocation) {
-                            setShareLocation(false)
-                            OmegaMathIntegration.shareLocation = false
-                            ownLatLng = null
-                        } else if (MusicMapLocation.hasPermission(context)) {
-                            setShareLocation(true) // LaunchedEffect(shareLocation) pide la ubicación
-                            OmegaMathIntegration.shareLocation = true
-                        } else {
-                            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+    val bottomInset = with(localDensity) { LocalPlayerAwareWindowInsets.current.getBottom(this).toDp() }
+
+    BottomSheetScaffold(
+        scaffoldState = scaffoldState,
+        sheetPeekHeight = 176.dp + bottomInset,
+        sheetContainerColor = scheme.surface,
+        sheetContent = {
+            if (selectedPerson != null) {
+                PersonSheet(
+                    person = selectedPerson,
+                    distanceKm = ownLatLng?.let { distanceKm(it, selectedPerson.latitude to selectedPerson.longitude) },
+                    isPlaying = selectedPerson.videoId != null && selectedPerson.videoId == mediaMetadata?.id,
+                    onClose = { selectedPersonId = null },
+                    onListen = { selectedPerson.videoId?.let(::playVideoId) },
+                    onProfile = { navController.navigate("social/profile/${selectedPerson.userId}") },
+                    modifier = Modifier.padding(bottom = bottomInset),
+                )
+            } else if (search != null) {
+                val tab = searchTab?.takeIf {
+                    when (it) {
+                        SearchTab.ARTIST -> search.artist != null
+                        SearchTab.SONGS -> search.songs.isNotEmpty()
+                        SearchTab.COUNTRIES -> search.countries.isNotEmpty()
+                    }
+                } ?: search.firstTab()
+                MapSearchResults(
+                    query = query,
+                    search = search,
+                    tab = tab,
+                    countriesLoaded = countryCharts.count { it.country != WORLD },
+                    currentSongId = mediaMetadata?.id,
+                    onTab = { searchTab = it },
+                    onRadio = { song ->
+                        playerConnection?.playQueue(
+                            YouTubeQueue(
+                                endpoint = WatchEndpoint(videoId = song.id),
+                                preloadItem = song.toMediaMetadata(),
+                            )
+                        )
+                    },
+                    onArtist = { id -> navController.navigate("artist/$id") },
+                    onShowOnMap = { codes ->
+                        keyboard?.hide()
+                        highlight = codes
+                        focusCountry = null
+                        mode = MapMode.COUNTRIES
+                        mapView.controller.setZoom(2.6)
+                        mapView.controller.animateTo(GeoPoint(20.0, 0.0))
+                        coroutineScope.launch { runCatching { scaffoldState.bottomSheetState.partialExpand() } }
+                    },
+                    onFocusCountry = { country ->
+                        keyboard?.hide()
+                        query = ""
+                        mode = MapMode.COUNTRIES
+                        focusCountry = country.code
+                        if (country != WORLD) {
+                            mapView.controller.animateTo(GeoPoint(country.latitude, country.longitude))
+                            mapView.controller.setZoom(5.0)
                         }
                     },
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        painter = painterResource(R.drawable.location_on),
-                        contentDescription = stringResource(R.string.music_map_share_location),
-                        tint = if (shareLocation) ComposeColor(0xFF4CD964) else ComposeColor.White,
-                        modifier = Modifier.size(22.dp),
-                    )
-                }
-            }
-        }
-
-        Surface(
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-            color = ComposeColor(0xF21C1C1E),
-            contentColor = ComposeColor.White,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth(),
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(horizontal = 16.dp, vertical = 14.dp)
-                    .windowInsetsPadding(LocalPlayerAwareWindowInsets.current),
-            ) {
-                Surface(
-                    color = ComposeColor(0x55FFFFFF),
-                    shape = CircleShape,
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .width(40.dp)
-                        .height(4.dp),
-                ) {}
-                Spacer(Modifier.height(12.dp))
-
-                TextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    placeholder = { Text(stringResource(R.string.music_map_search_songs)) },
-                    leadingIcon = { Icon(painterResource(R.drawable.search), contentDescription = null) },
-                    singleLine = true,
-                    shape = RoundedCornerShape(24.dp),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = ComposeColor(0x22FFFFFF),
-                        unfocusedContainerColor = ComposeColor(0x22FFFFFF),
-                        focusedIndicatorColor = ComposeColor.Transparent,
-                        unfocusedIndicatorColor = ComposeColor.Transparent,
-                        focusedTextColor = ComposeColor.White,
-                        unfocusedTextColor = ComposeColor.White,
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
+                    onPlaySong = { playSong(it) },
+                    onSearchEverywhere = {
+                        navController.navigate("search/${java.net.URLEncoder.encode(query.trim(), "UTF-8")}")
+                    },
+                    bottomPadding = bottomInset,
                 )
-                Spacer(Modifier.height(12.dp))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickableNoRipple { topExpanded = !topExpanded }
-                        .padding(vertical = 4.dp),
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.trending_up),
-                        contentDescription = null,
-                        tint = ComposeColor(0xFF7C4DFF),
-                        modifier = Modifier.size(20.dp),
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = stringResource(R.string.music_map_top_songs),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Icon(
-                        painter = painterResource(
-                            if (topExpanded) R.drawable.expand_more else R.drawable.expand_less
-                        ),
-                        contentDescription = null,
-                    )
-                }
-
-                AnimatedVisibility(visible = topExpanded) {
-                    if (rows.isEmpty()) {
-                        Text(
-                            text = stringResource(
-                                if (chartsLoaded) R.string.music_map_no_songs
-                                else R.string.music_map_loading_songs
-                            ),
-                            color = ComposeColor(0xAAFFFFFF),
-                            fontSize = 13.sp,
-                            modifier = Modifier.padding(vertical = 12.dp),
+            } else {
+                val focus = countryCharts.firstOrNull { it.country.code == focusCountry }?.country
+                val songsShown = rows.filterIsInstance<ListRow.Song>().map { it.song }
+                TopSheetHeader(
+                    title = when {
+                        focus != null -> "${flagEmoji(focus.code)} Top en ${focus.name}"
+                        countryCharts.singleOrNull()?.country == WORLD -> "Top mundial"
+                        else -> "Top por país"
+                    },
+                    subtitle = when {
+                        !chartsLoaded && countryCharts.isEmpty() -> stringResource(R.string.music_map_loading_songs)
+                        focus != null && genreFilter != null -> "${songsShown.size} canciones de ${genreFilter}, toca una para escucharla"
+                        focus != null -> "Top de hoy, ${songsShown.size} canciones"
+                        else -> "Toca un país en el mapa para ver su top"
+                    },
+                    showClear = focus != null,
+                    canPlay = songsShown.isNotEmpty(),
+                    onClear = { focusCountry = null },
+                    onPlayAll = {
+                        playerConnection?.playQueue(
+                            ListQueue(
+                                title = focus?.let { f -> genreFilter?.let { "$it en ${f.name}" } ?: "Top en ${f.name}" } ?: "Top del mapa musical",
+                                items = songsShown.map { it.toMediaItem() },
+                            )
                         )
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier.heightIn(max = 300.dp),
-                            verticalArrangement = Arrangement.spacedBy(2.dp),
-                            contentPadding = PaddingValues(vertical = 6.dp),
-                        ) {
-                            items(
-                                count = rows.size,
-                                key = { i ->
-                                    when (val r = rows[i]) {
-                                        is ListRow.Header -> "h_${r.country.code}"
-                                        is ListRow.Song -> "s_${r.country.code}_${r.song.id}"
-                                    }
-                                },
-                            ) { i ->
+                    },
+                )
+                if (rows.isEmpty() && focus == null) {
+                    Text(
+                        text = stringResource(
+                            if (chartsLoaded) R.string.music_map_no_songs
+                            else R.string.music_map_loading_songs
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = scheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 24.dp + bottomInset),
+                    )
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.heightIn(max = 520.dp),
+                        contentPadding = PaddingValues(bottom = 16.dp + bottomInset),
+                    ) {
+                        if (focus != null && focus != WORLD) {
+                            item(key = "genres") {
+                                GenreShareSection(
+                                    shares = shares,
+                                    loading = genresLoading,
+                                    selected = genreFilter,
+                                    onSelect = { genreFilter = it },
+                                )
+                            }
+                        }
+                        items(
+                            count = rows.size,
+                            key = { i ->
                                 when (val r = rows[i]) {
-                                    is ListRow.Header -> CountryHeader(r.country.name) {
-                                        mapView.controller.animateTo(
-                                            GeoPoint(r.country.latitude, r.country.longitude)
-                                        )
-                                        mapView.controller.setZoom(5.0)
-                                    }
-                                    is ListRow.Song -> TopSongRow(r.rank, r.song) { playSong(r.song) }
+                                    is ListRow.Header -> "h_${r.country.code}"
+                                    is ListRow.Song -> "s_${r.country.code}_${r.song.id}"
                                 }
+                            },
+                        ) { i ->
+                            when (val r = rows[i]) {
+                                is ListRow.Header -> if (focusCountry == null) {
+                                    CountryHeader("${flagEmoji(r.country.code)} ${r.country.name}") {
+                                        focusCountry = r.country.code
+                                        if (r.country != WORLD) {
+                                            mapView.controller.animateTo(
+                                                GeoPoint(r.country.latitude, r.country.longitude)
+                                            )
+                                            mapView.controller.setZoom(5.0)
+                                        }
+                                    }
+                                }
+                                is ListRow.Song -> TopSongRow(
+                                    rank = r.rank,
+                                    song = r.song,
+                                    isCurrent = r.song.id == mediaMetadata?.id,
+                                    previousRanks = previousRanks[r.country.code].orEmpty(),
+                                    onClick = { playSong(r.song) },
+                                    onMore = {
+                                        menuState.show {
+                                            YouTubeSongMenu(
+                                                song = r.song,
+                                                navController = navController,
+                                                onDismiss = menuState::dismiss,
+                                            )
+                                        }
+                                    },
+                                )
                             }
                         }
                     }
                 }
+            }
+        },
+    ) {
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            val containerHeightPx = constraints.maxHeight
+            AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize())
+
+            // ── Búsqueda flotante, filtros y barra de ubicación ─────────────
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(if (embedded) Modifier else Modifier.windowInsetsPadding(WindowInsets.statusBars))
+                    .padding(top = 8.dp),
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(28.dp),
+                    color = scheme.surfaceContainerHigh,
+                    shadowElevation = 3.dp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (embedded) {
+                            Icon(
+                                painterResource(R.drawable.location_on),
+                                contentDescription = null,
+                                tint = scheme.onSurfaceVariant,
+                                modifier = Modifier.padding(start = 16.dp),
+                            )
+                        } else {
+                            IconButton(onClick = { navController.navigateUp() }) {
+                                Icon(painterResource(R.drawable.arrow_back), contentDescription = "Atrás")
+                            }
+                        }
+                        TextField(
+                            value = query,
+                            onValueChange = { query = it },
+                            placeholder = { Text("Busca un artista, canción o país") },
+                            singleLine = true,
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = ComposeColor.Transparent,
+                                unfocusedContainerColor = ComposeColor.Transparent,
+                                focusedIndicatorColor = ComposeColor.Transparent,
+                                unfocusedIndicatorColor = ComposeColor.Transparent,
+                            ),
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (query.isNotEmpty()) {
+                            IconButton(onClick = { query = "" }) {
+                                Icon(painterResource(R.drawable.close), contentDescription = "Borrar búsqueda")
+                            }
+                        } else {
+                            Icon(
+                                painterResource(R.drawable.search),
+                                contentDescription = null,
+                                tint = scheme.onSurfaceVariant,
+                                modifier = Modifier.padding(end = 16.dp),
+                            )
+                        }
+                    }
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    MapModeChip("Países", R.drawable.location_on, mode == MapMode.COUNTRIES) {
+                        mode = MapMode.COUNTRIES
+                    }
+                    MapModeChip("Personas", R.drawable.group, mode == MapMode.PEOPLE) {
+                        mode = MapMode.PEOPLE
+                        focusCountry = null
+                    }
+                    ElevatedAssistChip(
+                        onClick = {
+                            mode = MapMode.PEOPLE
+                            focusCountry = null
+                            centerOnMe(11.0)
+                        },
+                        label = { Text("Cerca de mí") },
+                        leadingIcon = {
+                            Icon(painterResource(R.drawable.near_me), contentDescription = null, modifier = Modifier.size(18.dp))
+                        },
+                    )
+                }
+
+                if (mode == MapMode.PEOPLE) {
+                    ShareLocationBar(
+                        sharing = shareLocation,
+                        onToggle = { toggleShareLocation() },
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                }
+            }
+
+            // ── «Mi ubicación»: sube y baja con la hoja ──────────────────────
+            val fabSizePx = with(localDensity) { 56.dp.roundToPx() }
+            val fabMarginPx = with(localDensity) { 16.dp.roundToPx() }
+            val peekPx = with(localDensity) { (176.dp + bottomInset).roundToPx() }
+            FloatingActionButton(
+                onClick = { centerOnMe(10.0) },
+                containerColor = scheme.surfaceContainerHigh,
+                contentColor = if (ownLatLng != null) scheme.primary else scheme.onSurfaceVariant,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset {
+                        val sheetTop = runCatching { scaffoldState.bottomSheetState.requireOffset() }
+                            .getOrNull()?.roundToInt() ?: (containerHeightPx - peekPx)
+                        IntOffset(-fabMarginPx, (sheetTop - fabSizePx - fabMarginPx).coerceAtLeast(0))
+                    },
+            ) {
+                Icon(
+                    painterResource(R.drawable.my_location),
+                    contentDescription = if (ownLatLng != null) "Centrar en mi ubicación" else stringResource(R.string.music_map_share_location),
+                )
             }
         }
     }
@@ -728,84 +1029,323 @@ private sealed interface ListRow {
     data class Song(val country: Country, val rank: Int, val song: SongItem) : ListRow
 }
 
+// ── Hoja: top del país ───────────────────────────────────────────────────────
+
+@Composable
+private fun TopSheetHeader(
+    title: String,
+    subtitle: String,
+    showClear: Boolean,
+    canPlay: Boolean,
+    onClear: () -> Unit,
+    onPlayAll: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 24.dp, end = 12.dp, bottom = 4.dp),
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.semantics { heading() },
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (showClear) {
+            IconButton(onClick = onClear) {
+                Icon(painterResource(R.drawable.close), contentDescription = "Ver todos los países")
+            }
+        }
+        FilledTonalIconButton(onClick = onPlayAll, enabled = canPlay) {
+            Icon(painterResource(R.drawable.play), contentDescription = "Reproducir el top")
+        }
+    }
+}
+
 @Composable
 private fun CountryHeader(name: String, onClick: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .clickableNoRipple(onClick)
-            .padding(top = 10.dp, bottom = 4.dp),
+            .heightIn(min = 48.dp)
+            .clickable(onClickLabel = "Ver el top de $name", onClick = onClick)
+            .padding(horizontal = 24.dp),
     ) {
         Icon(
             painter = painterResource(R.drawable.location_on),
             contentDescription = null,
-            tint = ComposeColor(0xFF7C4DFF),
-            modifier = Modifier.size(16.dp),
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(18.dp),
         )
-        Spacer(Modifier.width(6.dp))
-        Text(text = name, color = ComposeColor.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = name,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier
+                .weight(1f)
+                .semantics { heading() },
+        )
     }
 }
 
 @Composable
-private fun TopSongRow(rank: Int, song: SongItem, onClick: () -> Unit) {
+private fun TopSongRow(
+    rank: Int,
+    song: SongItem,
+    isCurrent: Boolean,
+    onClick: () -> Unit,
+    onMore: () -> Unit,
+    previousRanks: Map<String, Int> = emptyMap(),
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .clickableNoRipple(onClick)
-            .padding(vertical = 6.dp),
+            .heightIn(min = 64.dp)
+            .clickable(onClick = onClick)
+            .padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
     ) {
         Text(
             text = rank.toString(),
-            color = if (rank <= 3) ComposeColor(0xFF7C4DFF) else ComposeColor(0xAAFFFFFF),
+            style = MaterialTheme.typography.titleMedium,
+            color = if (rank <= 3 || isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.Bold,
-            fontSize = 15.sp,
-            modifier = Modifier.width(26.dp),
+            modifier = Modifier.width(32.dp),
         )
         AsyncImage(
             model = song.thumbnail.highRes(),
             contentDescription = null,
             modifier = Modifier
-                .size(44.dp)
-                .clip(RoundedCornerShape(8.dp)),
+                .size(48.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
         )
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(
                 text = song.title,
-                color = ComposeColor.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = song.artists.joinToString { it.name },
-                color = ComposeColor(0xAAFFFFFF),
-                fontSize = 12.sp,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
-        Icon(
-            painter = painterResource(R.drawable.play),
-            contentDescription = null,
-            tint = ComposeColor.White,
-            modifier = Modifier.size(22.dp),
-        )
+        TrendBadge(rank = rank, previousRanks = previousRanks, songId = song.id)
+        IconButton(onClick = onMore) {
+            Icon(painterResource(R.drawable.more_vert), contentDescription = "Más opciones de ${song.title}")
+        }
+    }
+}
+
+// ── Hoja: persona elegida ────────────────────────────────────────────────────
+
+@Composable
+private fun PersonSheet(
+    person: MapPresence,
+    distanceKm: Double?,
+    isPlaying: Boolean,
+    onClose: () -> Unit,
+    onListen: () -> Unit,
+    onProfile: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val scheme = MaterialTheme.colorScheme
+    Column(modifier.padding(horizontal = 24.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(scheme.tertiaryContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = person.displayName.trim().firstOrNull()?.uppercase() ?: "?",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = scheme.onTertiaryContainer,
+                )
+            }
+            Spacer(Modifier.width(16.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = person.displayName,
+                    style = MaterialTheme.typography.titleLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.semantics { heading() },
+                )
+                val where = distanceKm?.let { "A unos ${it.roundToInt().coerceAtLeast(1)} km" } ?: "Cerca de ti"
+                Text(
+                    text = if (person.title != null) "$where, escuchando ahora" else where,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = scheme.onSurfaceVariant,
+                )
+            }
+            IconButton(onClick = onClose) {
+                Icon(painterResource(R.drawable.close), contentDescription = "Cerrar")
+            }
+        }
+
+        if (person.title != null) {
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = scheme.surfaceContainerHigh,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    AsyncImage(
+                        model = person.artworkUrl?.highRes(),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(scheme.surfaceContainerHighest),
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            text = person.title,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        person.artist?.let {
+                            Text(
+                                text = it,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = scheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                    if (person.videoId != null) {
+                        FilledIconButton(onClick = onListen) {
+                            Icon(
+                                painterResource(if (isPlaying) R.drawable.pause else R.drawable.play),
+                                contentDescription = if (isPlaying) "Pausar" else "Reproducir ${person.title}",
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp, bottom = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Button(
+                onClick = onListen,
+                enabled = person.videoId != null,
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 48.dp),
+            ) {
+                Icon(painterResource(R.drawable.headphones), contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Escuchar")
+            }
+            FilledTonalButton(
+                onClick = onProfile,
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 48.dp),
+            ) {
+                Text("Ver perfil")
+            }
+        }
+    }
+}
+
+// ── Controles flotantes ──────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MapModeChip(label: String, icon: Int, selected: Boolean, onClick: () -> Unit) {
+    ElevatedFilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label) },
+        leadingIcon = {
+            Icon(
+                painterResource(if (selected) R.drawable.check else icon),
+                contentDescription = null,
+                modifier = Modifier.size(FilterChipDefaults.IconSize),
+            )
+        },
+    )
+}
+
+@Composable
+private fun ShareLocationBar(sharing: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
+    val scheme = MaterialTheme.colorScheme
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = scheme.surfaceContainerLowest,
+        shadowElevation = 3.dp,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier
+                .toggleable(value = sharing, role = Role.Switch, onValueChange = { onToggle() })
+                .padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                painterResource(R.drawable.location_on),
+                contentDescription = null,
+                tint = if (sharing) scheme.primary else scheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = if (sharing) "Compartes tu zona" else "No compartes tu ubicación",
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Text(
+                    text = "Zona aproximada, nunca tu punto exacto",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontSize = 13.sp,
+                    color = scheme.onSurfaceVariant,
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+            Switch(checked = sharing, onCheckedChange = null)
+        }
     }
 }
 
 // --- helpers ----------------------------------------------------------------------------------
-
-private fun Modifier.clickableNoRipple(onClick: () -> Unit): Modifier = composed {
-    clickable(
-        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-        indication = null,
-        onClick = onClick,
-    )
-}
 
 private val NIGHT_MATRIX = floatArrayOf(
     -1f, 0f, 0f, 0f, 255f,
@@ -814,6 +1354,17 @@ private val NIGHT_MATRIX = floatArrayOf(
     0f, 0f, 0f, 1f, 0f,
 )
 
+/** Colores del esquema pasados a los bitmaps de los marcadores (osmdroid no entiende Compose). */
+private data class MarkerColors(
+    val pill: Int,
+    val onPill: Int,
+    val selected: Int,
+    val onSelected: Int,
+    val placeholder: Int,
+)
+
+private const val LIVE_GREEN = "#34C759"
+
 private suspend fun loadCoverBitmap(context: Context, url: String): Bitmap? = try {
     val request = ImageRequest.Builder(context)
         .data(url.highRes())
@@ -821,33 +1372,124 @@ private suspend fun loadCoverBitmap(context: Context, url: String): Bitmap? = tr
         .allowHardware(false)
         .build()
     (context.imageLoader.execute(request) as? SuccessResult)?.image?.toBitmap()
-} catch (_: Exception) {
+} catch (e: Exception) {
+    if (e is kotlinx.coroutines.CancellationException) throw e
     null
 }
 
-private fun circularMarkerBitmap(source: Bitmap?, isSelf: Boolean): Bitmap {
-    val sizePx = 96
-    val output = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(output)
-    val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-
-    val ring = if (isSelf) Color.parseColor("#4CD964") else Color.parseColor("#7C4DFF")
-    paint.color = ring
-    canvas.drawCircle(sizePx / 2f, sizePx / 2f, sizePx / 2f, paint)
-
-    val inset = sizePx * 0.09f
-    val innerRadius = sizePx / 2f - inset
-    val path = Path().apply { addCircle(sizePx / 2f, sizePx / 2f, innerRadius, Path.Direction.CW) }
-    canvas.save()
-    canvas.clipPath(path)
+/** Dibuja `source` recortado en un círculo de radio `radius` centrado en (cx, cy). */
+private fun Canvas.drawCircularCover(source: Bitmap?, cx: Float, cy: Float, radius: Float, placeholder: Int) {
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+    save()
+    clipPath(Path().apply { addCircle(cx, cy, radius, Path.Direction.CW) })
     if (source != null) {
-        val side = (innerRadius * 2f).toInt().coerceAtLeast(1)
+        val side = (radius * 2f).toInt().coerceAtLeast(1)
         val scaled = Bitmap.createScaledBitmap(source, side, side, true)
-        canvas.drawBitmap(scaled, inset, inset, paint)
+        drawBitmap(scaled, cx - radius, cy - radius, paint)
     } else {
-        paint.color = Color.parseColor("#2C2C2E")
-        canvas.drawCircle(sizePx / 2f, sizePx / 2f, innerRadius, paint)
+        paint.color = placeholder
+        drawCircle(cx, cy, radius, paint)
     }
-    canvas.restore()
-    return output
+    restore()
+}
+
+/** Píldora de país: portada redonda y nombre. */
+private fun countryPillBitmap(
+    name: String,
+    cover: Bitmap?,
+    selected: Boolean,
+    density: Float,
+    colors: MarkerColors,
+): Bitmap {
+    val shadow = 4f * density
+    val h = 36f * density
+    val pad = 4f * density
+    val coverR = (h - 2 * pad) / 2f
+    val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = if (selected) colors.onSelected else colors.onPill
+        textSize = 13f * density
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
+    val w = pad + coverR * 2 + 8f * density + textPaint.measureText(name) + 14f * density
+    val bmp = Bitmap.createBitmap((w + shadow * 2).toInt(), (h + shadow * 2).toInt(), Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bmp)
+    val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = if (selected) colors.selected else colors.pill
+        setShadowLayer(shadow * 0.8f, 0f, density, Color.parseColor("#40000000"))
+    }
+    canvas.drawRoundRect(RectF(shadow, shadow, shadow + w, shadow + h), h / 2, h / 2, bg)
+    val cx = shadow + pad + coverR
+    val cy = shadow + h / 2
+    canvas.drawCircularCover(cover, cx, cy, coverR, colors.placeholder)
+    val ty = cy - (textPaint.descent() + textPaint.ascent()) / 2
+    canvas.drawText(name, cx + coverR + 8f * density, ty, textPaint)
+    return bmp
+}
+
+/** Persona: círculo con su portada, aro blanco y punto verde «en vivo». */
+private fun personBitmap(cover: Bitmap?, selected: Boolean, density: Float, colors: MarkerColors): Bitmap {
+    val shadow = 4f * density
+    val d = 40f * density
+    val size = (d + shadow * 2 + 4f * density).toInt()
+    val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bmp)
+    val cx = size / 2f
+    val cy = size / 2f
+    val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = if (selected) colors.selected else Color.WHITE
+        setShadowLayer(shadow * 0.8f, 0f, density, Color.parseColor("#40000000"))
+    }
+    canvas.drawCircle(cx, cy, d / 2, ring)
+    canvas.drawCircularCover(cover, cx, cy, d / 2 - 3f * density, colors.placeholder)
+    // Punto «en vivo»
+    val dotR = 6f * density
+    val dx = cx + d / 2 * 0.72f
+    val dy = cy + d / 2 * 0.72f
+    canvas.drawCircle(dx, dy, dotR, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE })
+    canvas.drawCircle(dx, dy, dotR - 2f * density, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor(LIVE_GREEN) })
+    return bmp
+}
+
+/** Grupo de personas: círculo de color primario con el número. */
+private fun clusterBitmap(count: Int, density: Float, colors: MarkerColors): Bitmap {
+    val shadow = 4f * density
+    val d = (36f + minOf(count - 1, 10) * 2f) * density
+    val size = (d + shadow * 2).toInt()
+    val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bmp)
+    val c = size / 2f
+    canvas.drawCircle(c, c, d / 2, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = colors.selected
+        setShadowLayer(shadow * 0.8f, 0f, density, Color.parseColor("#40000000"))
+    })
+    canvas.drawCircle(c, c, d / 2, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.WHITE
+        style = Paint.Style.STROKE
+        strokeWidth = 2f * density
+    })
+    val tp = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = colors.onSelected
+        textSize = 14f * density
+        textAlign = Paint.Align.CENTER
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
+    canvas.drawText(if (count > 99) "99+" else count.toString(), c, c - (tp.descent() + tp.ascent()) / 2, tp)
+    return bmp
+}
+
+/** Tu posición: punto de color primario con halo. */
+private fun selfBitmap(density: Float, colors: MarkerColors): Bitmap {
+    val size = (28f * density).toInt()
+    val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bmp)
+    val c = size / 2f
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    paint.color = colors.selected
+    paint.alpha = 64
+    canvas.drawCircle(c, c, c, paint)
+    paint.color = Color.WHITE
+    canvas.drawCircle(c, c, 9f * density, paint)
+    paint.color = colors.selected
+    canvas.drawCircle(c, c, 6.5f * density, paint)
+    return bmp
 }

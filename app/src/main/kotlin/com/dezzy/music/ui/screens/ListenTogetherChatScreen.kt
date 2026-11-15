@@ -694,9 +694,9 @@ private fun ChatInputArea(
                     }
                     
                     IconButton(onClick = onToggleEmojiPicker) {
-                        Text(
-                            text = "😀",
-                            fontSize = 20.sp
+                        androidx.compose.material3.Icon(
+                            painter = androidx.compose.ui.res.painterResource(com.dezzy.music.R.drawable.mood),
+                            contentDescription = "Emojis",
                         )
                     }
 

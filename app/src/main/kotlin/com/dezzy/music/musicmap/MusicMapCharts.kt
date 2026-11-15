@@ -47,7 +47,9 @@ object MusicMapCharts {
     private const val PREFS = "music_map_charts"
     private const val LOCAL_TTL_MS = 6L * 60 * 60 * 1000
     private const val PLAYLIST_ID_TTL_MS = 7L * 24 * 60 * 60 * 1000
-    private const val SONGS_PER_COUNTRY = 10
+    private const val SONGS_PER_COUNTRY = 50
+    /** Una foto del top al día como mucho: sirve para las flechas de tendencia. */
+    private const val SNAPSHOT_MIN_AGE_MS = 20L * 60 * 60 * 1000
     private const val BROWSE_URL = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false"
     private const val CHARTS_PARAMS = "ggMGCgQIgAQ%3D"
 
@@ -125,10 +127,29 @@ object MusicMapCharts {
     }
 
     private fun writeLocal(prefs: SharedPreferences, code: String, songs: List<SongItem>) {
-        prefs.edit()
+        val now = System.currentTimeMillis()
+        val edit = prefs.edit()
             .putString("songs_$code", songsToJson(songs).toString())
-            .putLong("at_$code", System.currentTimeMillis())
-            .apply()
+            .putLong("at_$code", now)
+        // Guarda una foto del top como mucho una vez al día; la anterior queda para comparar.
+        if (now - prefs.getLong("snap_at_$code", 0L) >= SNAPSHOT_MIN_AGE_MS) {
+            prefs.getString("snap_ids_$code", null)?.let { edit.putString("prev_ids_$code", it) }
+            edit.putString("snap_ids_$code", songs.joinToString(",") { it.id })
+                .putLong("snap_at_$code", now)
+        }
+        edit.apply()
+    }
+
+    /**
+     * Posiciones del top anterior (de hace un día o más): id de canción → puesto (1 = primero).
+     * Vacío si aún no hay foto anterior.
+     */
+    fun previousRanks(context: Context, code: String): Map<String, Int> {
+        val raw = prefs(context).getString("prev_ids_$code", null) ?: return emptyMap()
+        return raw.split(',')
+            .filter { it.isNotBlank() }
+            .withIndex()
+            .associate { (index, id) -> id to index + 1 }
     }
 
     // ---- 2. Descarga en el dispositivo ----
@@ -191,6 +212,9 @@ object MusicMapCharts {
                 if (id.isNotBlank()) playlists += title.lowercase() to id
             }
         }
+
+        // Si YouTube no tiene top de ese país devuelve el mundial: eso no vale para el país.
+        if (code != GLOBAL) playlists.removeAll { it.first.contains("global") }
 
         // Preferencia: top diario → tendencias → top 100. Nunca directos ni géneros.
         val chosen = listOf(

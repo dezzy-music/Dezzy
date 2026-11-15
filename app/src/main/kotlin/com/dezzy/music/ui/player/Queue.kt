@@ -164,7 +164,7 @@ fun Queue(
 
     val playerDesignStyle by rememberEnumPreference(
         key = PlayerDesignStyleKey,
-        defaultValue = PlayerDesignStyle.SPOTIFY
+        defaultValue = PlayerDesignStyle.V2
     )
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -460,7 +460,12 @@ fun Queue(
 
             if (showDevicePicker) {
                 com.dezzy.music.ui.component.ConnectDeviceBottomSheet(
-                    onDismissRequest = { showDevicePicker = false }
+                    onDismissRequest = { showDevicePicker = false },
+                    onOpenListenTogether = {
+                        showDevicePicker = false
+                        state.collapseSoft(); playerBottomSheetState.collapseSoft()
+                        navController.navigate("settings/music_together")
+                    },
                 )
             }
         },

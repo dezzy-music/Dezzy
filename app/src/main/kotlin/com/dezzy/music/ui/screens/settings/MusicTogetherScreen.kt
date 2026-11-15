@@ -357,6 +357,17 @@ fun MusicTogetherScreen(
         )
     }
 
+    // Sala online (servidor WS): el panel/votación sólo existe ahí, no en salas LAN.
+    val ltClient = remember(sessionState) { com.dezzy.music.listentogether.ListenTogetherClient.getInstance() }
+    val ltRoomFlow = remember(ltClient) {
+        ltClient?.roomState ?: kotlinx.coroutines.flow.MutableStateFlow<com.dezzy.music.listentogether.RoomState?>(null)
+    }
+    val ltRoleFlow = remember(ltClient) {
+        ltClient?.role ?: kotlinx.coroutines.flow.MutableStateFlow(com.dezzy.music.listentogether.RoomRole.NONE)
+    }
+    val ltRoom by ltRoomFlow.collectAsState()
+    val ltRole by ltRoleFlow.collectAsState()
+
     // ── Screen content ────────────────────────────────────────────────────────
 
     Column(
@@ -395,6 +406,10 @@ fun MusicTogetherScreen(
             },
             onLeave = { playerConnection?.service?.leaveTogether() },
             onOpenChat = { navController.navigate("listen_together_chat") },
+            dashboardIsHost = ltRole == com.dezzy.music.listentogether.RoomRole.HOST,
+            onOpenDashboard = if (ltRoom != null) {
+                { navController.navigate("listen_together_dashboard") }
+            } else null,
             modifier = Modifier
                 .padding(horizontal = 16.dp)
                 .padding(top = 4.dp, bottom = 12.dp),
@@ -1043,6 +1058,8 @@ private fun StatusCard(
     onLeave: () -> Unit,
     onOpenChat: () -> Unit,
     modifier: Modifier = Modifier,
+    dashboardIsHost: Boolean = false,
+    onOpenDashboard: (() -> Unit)? = null,
 ) {
     val isActive = state !is TogetherSessionState.Idle
     val isError  = state is TogetherSessionState.Error
@@ -1195,6 +1212,24 @@ private fun StatusCard(
                         }
                     }
                     else -> Unit
+                }
+
+                if (isActive && onOpenDashboard != null) {
+                    FilledTonalButton(
+                        onClick = onOpenDashboard,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(
+                            painterResource(if (dashboardIsHost) R.drawable.group else R.drawable.thumbup),
+                            null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            stringResource(if (dashboardIsHost) R.string.lt_dash_open_button else R.string.lt_dash_vote_button),
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
                 }
 
                 if (isActive) {

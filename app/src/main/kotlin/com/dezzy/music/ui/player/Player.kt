@@ -206,7 +206,7 @@ fun BottomSheetPlayer(
 
     val playerDesignStyle by rememberEnumPreference(
         key = PlayerDesignStyleKey,
-        defaultValue = PlayerDesignStyle.SPOTIFY
+        defaultValue = PlayerDesignStyle.V2
     )
 
     val playerBackground by rememberEnumPreference(

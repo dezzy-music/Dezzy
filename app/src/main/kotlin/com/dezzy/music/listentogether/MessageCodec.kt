@@ -212,6 +212,9 @@ class MessageCodec(
                 MessageTypes.TYPING_STATUS -> if (isJson) json.decodeFromString<TypingPayload>(payloadString) else ProtoBuf.decodeFromByteArray(serializer<TypingPayload>(), payloadBytes)
                 MessageTypes.MESSAGE_EDITED -> if (isJson) json.decodeFromString<ChatMessagePayload>(payloadString) else ProtoBuf.decodeFromByteArray(serializer<ChatMessagePayload>(), payloadBytes)
                 MessageTypes.CHAT_ACK -> if (isJson) json.decodeFromString<ChatAckPayload>(payloadString) else ProtoBuf.decodeFromByteArray(serializer<ChatAckPayload>(), payloadBytes)
+                MessageTypes.ROOM_DASHBOARD -> if (isJson) json.decodeFromString<RoomDashboardPayload>(payloadString) else ProtoBuf.decodeFromByteArray(serializer<RoomDashboardPayload>(), payloadBytes)
+                MessageTypes.ROOM_SETTINGS_UPDATED -> if (isJson) json.decodeFromString<UpdateRoomSettingsPayload>(payloadString) else ProtoBuf.decodeFromByteArray(serializer<UpdateRoomSettingsPayload>(), payloadBytes)
+                MessageTypes.SUGGESTIONS_UPDATED -> if (isJson) json.decodeFromString<SuggestionsUpdatedPayload>(payloadString) else ProtoBuf.decodeFromByteArray(serializer<SuggestionsUpdatedPayload>(), payloadBytes)
                 else -> null
             }
         } catch (e: Exception) {
@@ -241,6 +244,9 @@ class MessageCodec(
             is EditMessagePayload -> EditMessagePayload.serializer()
             is ChatAckPayload -> ChatAckPayload.serializer()
             is ErrorPayload -> ErrorPayload.serializer()
+            is ListenerReportPayload -> ListenerReportPayload.serializer()
+            is VoteSuggestionPayload -> VoteSuggestionPayload.serializer()
+            is UpdateRoomSettingsPayload -> UpdateRoomSettingsPayload.serializer()
             else -> throw IllegalArgumentException("Unknown type: ${value!!::class.simpleName}")
         } as kotlinx.serialization.KSerializer<T>
     }

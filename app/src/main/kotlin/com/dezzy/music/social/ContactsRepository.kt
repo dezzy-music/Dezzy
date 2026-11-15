@@ -92,7 +92,7 @@ object ContactsRepository {
     /** Builds the personalized share intent with the referral link for a non-app contact. */
     fun buildInviteIntent(contactName: String, inviterId: String?): Intent {
         val link = if (inviterId.isNullOrBlank()) DOWNLOAD_URL else "$DOWNLOAD_URL/?ref=$inviterId"
-        val text = "$contactName, te invito a unirte al ecosistema Dezzy 🎵\n" +
+        val text = "$contactName, te invito a unirte al ecosistema Dezzy\n" +
             "Descúbrela aquí: $link"
         return Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"

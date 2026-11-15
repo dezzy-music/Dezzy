@@ -107,6 +107,23 @@ constructor(
         songs.sumOf { stat -> stat.songCountListened.toLong() }
     }.stateIn(viewModelScope, SharingStarted.Lazily, 0L)
 
+    /** Tiempo escuchado (ms) en cada mes del año elegido; alimenta las barras de «Minutos». */
+    val monthlyListening = selectedYear.flatMapLatest { year ->
+        database.eventPlayTimes(getYearStartTimestamp(year), getYearEndTimestamp(year))
+            .map { events ->
+                val months = LongArray(12)
+                events.forEach { months[it.timestamp.monthValue - 1] += it.playTime }
+                months.toList()
+            }
+    }.catch { e ->
+        reportException(e)
+        emit(List(12) { 0L })
+    }.stateIn(viewModelScope, SharingStarted.Lazily, List(12) { 0L })
+
+    /** Tiempo total escuchado en el año (todas las canciones, no sólo el top 5). */
+    val yearListeningTime = monthlyListening.map { it.sum() }
+        .stateIn(viewModelScope, SharingStarted.Lazily, 0L)
+
     init {
         viewModelScope.launch {
             topArtists.collect { artists ->

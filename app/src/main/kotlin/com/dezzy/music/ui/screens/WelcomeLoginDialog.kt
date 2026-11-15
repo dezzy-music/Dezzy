@@ -38,7 +38,7 @@ fun WelcomeLoginDialog(
         onDismissRequest = { /* Require explicit choice */ },
         title = {
             Text(
-                text = "Bienvenido a Dezzy",
+                text = "Conecta tus cuentas",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
@@ -52,7 +52,7 @@ fun WelcomeLoginDialog(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "Para disfrutar de la mejor experiencia musical, puedes iniciar sesión en tus plataformas favoritas.",
+                    text = "Inicia sesión en tus plataformas para sincronizar tu biblioteca. Puedes hacerlo más tarde en Ajustes.",
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center
                 )

@@ -452,7 +452,7 @@ fun Lyrics(
     val lyricsTextSize by rememberPreference(LyricsTextSizeKey, 26f)
     val lyricsLineSpacing by rememberPreference(LyricsLineSpacingKey, 1.3f)
     val useSystemFont by rememberPreference(UseSystemFontKey, false)
-    val appFontName by rememberPreference(com.dezzy.music.constants.FontFamilyKey, "LORA")
+    val appFontName by rememberPreference(com.dezzy.music.constants.FontFamilyKey, "MATERIAL3")
     val shareFontName = if (useSystemFont) "SYSTEM" else appFontName
     val lyricsFontFamily = androidx.compose.material3.MaterialTheme.typography.headlineMedium.fontFamily
 

@@ -204,7 +204,7 @@ fun LyricsV2(
     val (romanizeJapanese) = rememberPreference(LyricsRomanizeJapaneseKey, defaultValue = true)
     val (romanizeKorean) = rememberPreference(LyricsRomanizeKoreanKey, defaultValue = true)
     val (useSystemFont) = rememberPreference(UseSystemFontKey, defaultValue = false)
-    val (appFontName) = rememberPreference(com.dezzy.music.constants.FontFamilyKey, defaultValue = "LORA")
+    val (appFontName) = rememberPreference(com.dezzy.music.constants.FontFamilyKey, defaultValue = "MATERIAL3")
     val shareFontName = if (useSystemFont) "SYSTEM" else appFontName
     val lyricsFontFamily = androidx.compose.material3.MaterialTheme.typography.headlineMedium.fontFamily
     val playerBackground by rememberEnumPreference(PlayerBackgroundStyleKey, PlayerBackgroundStyle.DEFAULT)

@@ -65,6 +65,18 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -154,6 +166,7 @@ private fun ProfileContent(navController: NavController, target: String, isMe: B
     var menu by remember { mutableStateOf(false) }
     var busyFollow by remember { mutableStateOf(false) }
     var words by remember { mutableStateOf<List<String>?>(null) }
+    var photoViewer by remember { mutableStateOf<Pair<List<String>, Int>?>(null) }
 
     LaunchedEffect(target, version, user.isPrivate, following.contains(target)) {
         runCatching { P2PSocial.loadProfiles(listOf(target), force = version == 0) }
@@ -216,7 +229,7 @@ private fun ProfileContent(navController: NavController, target: String, isMe: B
                                     leadingIcon = { Icon(painterResource(R.drawable.share), null) },
                                     onClick = {
                                         menu = false
-                                        shareText(context, "${user.displayName} en Dezzy 🎧 https://dezzy.space/?npub=${user.npub}", "Compartir perfil")
+                                        shareText(context, "${user.displayName} en Dezzy: https://dezzy.space/?npub=${user.npub}", "Compartir perfil")
                                     },
                                 )
                                 DropdownMenuItem(
@@ -251,7 +264,21 @@ private fun ProfileContent(navController: NavController, target: String, isMe: B
             contentPadding = PaddingValues(bottom = bottomInset.calculateBottomPadding() + 96.dp),
         ) {
             item(key = "header") {
-                ProfileHeader(user = user, posts = posts?.size, counts = counts)
+                ProfileHeader(
+                    user = user,
+                    posts = posts?.size,
+                    counts = counts,
+                    onEdit = if (isMe) {
+                        { editing = true }
+                    } else null,
+                    onOpenPhoto = user.picture?.let {
+                        {
+                            val photos = listOfNotNull(user.picture, user.banner?.takeIf { b -> b.startsWith("https://") }) +
+                                posts.orEmpty().mapNotNull { p -> p.imageUrl }
+                            photoViewer = photos.distinct() to 0
+                        }
+                    },
+                )
             }
             listening?.song?.let { song ->
                 item(key = "listening") {
@@ -275,7 +302,7 @@ private fun ProfileContent(navController: NavController, target: String, isMe: B
                     if (isMe) {
                         FilledTonalButton(onClick = { editing = true }, modifier = Modifier.weight(1f)) { Text("Editar perfil") }
                         OutlinedButton(
-                            onClick = { P2PSocial.myInviteLink()?.let { shareText(context, "Agrégame en Dezzy 🎧 $it", "Compartir mi enlace") } },
+                            onClick = { P2PSocial.myInviteLink()?.let { shareText(context, "Agrégame en Dezzy: $it", "Compartir mi enlace") } },
                             modifier = Modifier.weight(1f),
                         ) { Text("Compartir") }
                     } else {
@@ -353,15 +380,11 @@ private fun ProfileContent(navController: NavController, target: String, isMe: B
                         P2PPostCard(
                             post = post,
                             onOpenProfile = { if (it != target) navController.openP2PProfile(it) },
-                            onToggleLike = {
-                                val optimistic = post.copy(
-                                    likedByMe = !post.likedByMe,
-                                    likes = (post.likes + if (post.likedByMe) -1 else 1).coerceAtLeast(0),
-                                )
-                                replace(optimistic)
+                            onReact = { emoji ->
+                                replace(post.withMyReaction(emoji))
                                 scope.launch {
-                                    val liked = runCatching { P2PSocial.toggleLike(post) }.getOrDefault(post.likedByMe)
-                                    if (liked != optimistic.likedByMe) replace(post)
+                                    val result = runCatching { P2PSocial.react(post, emoji) }.getOrDefault(post.myReaction)
+                                    if (result != emoji) replace(post.withMyReaction(result))
                                 }
                             },
                             onComments = { commentsFor = post },
@@ -403,6 +426,9 @@ private fun ProfileContent(navController: NavController, target: String, isMe: B
             },
         )
     }
+    photoViewer?.let { (photos, start) ->
+        P2PPhotoViewer(photos = photos, initialPage = start, onDismiss = { photoViewer = null }, title = user.displayName)
+    }
     if (editing && isMe) {
         EditProfileSheet(
             user = user,
@@ -432,17 +458,85 @@ private fun ProfileContent(navController: NavController, target: String, isMe: B
     }
 }
 
+private val BannerHeight = 168.dp
+private val HeaderAvatarSize = 112.dp
+
+/**
+ * Cabecera estilo Facebook: portada grande con degradado (o foto) y la foto de perfil
+ * montada encima. En mi perfil, la portada y la foto llevan botón para editarlas.
+ */
 @Composable
-private fun ProfileHeader(user: P2PUser, posts: Int?, counts: Pair<Int, Int>?) {
-    Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            P2PAvatar(user, size = 88.dp, ring = true)
-            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.SpaceEvenly) {
-                ProfileCount(posts?.let { if (it >= 30) "30+" else it.toString() } ?: "–", "Publicaciones")
-                ProfileCount(counts?.first?.let { if (it >= 500) "500+" else it.toString() } ?: "–", "Seguidores")
-                ProfileCount(counts?.second?.toString() ?: "–", "Siguiendo")
+private fun ProfileHeader(
+    user: P2PUser,
+    posts: Int?,
+    counts: Pair<Int, Int>?,
+    onEdit: (() -> Unit)?,
+    onOpenPhoto: (() -> Unit)? = null,
+) {
+    val scheme = MaterialTheme.colorScheme
+    Column {
+        Box(Modifier.fillMaxWidth()) {
+            P2PProfileBanner(
+                user.banner,
+                Modifier
+                    .fillMaxWidth()
+                    .height(BannerHeight),
+            )
+            if (onEdit != null) {
+                // Sobre la portada siempre hay fondo oscuro detrás: blanco sobre negro al 55 %.
+                Surface(
+                    onClick = onEdit,
+                    shape = RoundedCornerShape(50),
+                    color = Color.Black.copy(alpha = 0.55f),
+                    contentColor = Color.White,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = BannerHeight - 48.dp, end = 12.dp),
+                ) {
+                    Row(
+                        Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Icon(painterResource(R.drawable.image), contentDescription = null, modifier = Modifier.size(18.dp))
+                        Text("Editar portada", style = MaterialTheme.typography.labelLarge)
+                    }
+                }
+            }
+            Box(Modifier.padding(start = 16.dp, top = BannerHeight - HeaderAvatarSize / 2)) {
+                Box(
+                    Modifier
+                        .size(HeaderAvatarSize)
+                        .clip(CircleShape)
+                        .background(scheme.surface)
+                        .then(
+                            if (onOpenPhoto != null) {
+                                Modifier.clickable(onClickLabel = "Ver foto de perfil", onClick = onOpenPhoto)
+                            } else {
+                                Modifier
+                            },
+                        )
+                        .padding(4.dp),
+                ) {
+                    P2PAvatar(user, size = HeaderAvatarSize - 8.dp, ring = true)
+                }
+                if (onEdit != null) {
+                    Surface(
+                        onClick = onEdit,
+                        shape = CircleShape,
+                        color = scheme.secondaryContainer,
+                        contentColor = scheme.onSecondaryContainer,
+                        border = androidx.compose.foundation.BorderStroke(2.dp, scheme.surface),
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .semantics { contentDescription = "Cambiar foto de perfil" },
+                    ) {
+                        Icon(painterResource(R.drawable.edit), contentDescription = null, modifier = Modifier.padding(8.dp).size(18.dp))
+                    }
+                }
             }
         }
+    Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 user.displayName,
@@ -460,6 +554,12 @@ private fun ProfileHeader(user: P2PUser, posts: Int?, counts: Pair<Int, Int>?) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+            ProfileCount(posts?.let { if (it >= 30) "30+" else it.toString() } ?: "–", "Publicaciones")
+            ProfileCount(counts?.first?.let { if (it >= 500) "500+" else it.toString() } ?: "–", "Seguidores")
+            ProfileCount(counts?.second?.toString() ?: "–", "Siguiendo")
+        }
+    }
     }
 }
 
@@ -518,7 +618,23 @@ private fun EditProfileSheet(user: P2PUser, onDismiss: () -> Unit, onSaved: (Boo
     var about by rememberSaveable { mutableStateOf(user.about) }
     var picture by remember { mutableStateOf(user.picture) }
     var isPrivate by rememberSaveable { mutableStateOf(user.isPrivate) }
+    var banner by rememberSaveable { mutableStateOf(user.banner) }
+    var bannerBusy by remember { mutableStateOf(false) }
+    var bannerError by remember { mutableStateOf<String?>(null) }
     var saving by remember { mutableStateOf(false) }
+    // La foto de portada se comprime y se sube a Blossom (como las fotos de las publicaciones).
+    val bannerPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri: Uri? ->
+        if (uri != null) {
+            bannerBusy = true
+            bannerError = null
+            scope.launch {
+                val bytes = withContext(Dispatchers.IO) { P2PSocial.compressPhoto(context, uri, maxSide = 1600) }
+                val url = bytes?.let { runCatching { P2PSocial.uploadPhoto(it) }.getOrNull() }
+                if (url != null) banner = url else bannerError = "No se pudo subir la foto. Revisa la conexión e inténtalo otra vez."
+                bannerBusy = false
+            }
+        }
+    }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri: Uri? ->
         if (uri != null) {
             scope.launch {
@@ -538,6 +654,65 @@ private fun EditProfileSheet(user: P2PUser, onDismiss: () -> Unit, onSaved: (Boo
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text("Editar perfil", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                P2PProfileBanner(
+                    banner,
+                    Modifier
+                        .fillMaxWidth()
+                        .height(112.dp)
+                        .clip(RoundedCornerShape(16.dp)),
+                )
+                if (bannerBusy) CircularProgressIndicator(color = Color.White)
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Portada", style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+                Text(
+                    "Elige un degradado o sube una foto. Los degradados no suben nada.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                val selectedPreset = if (banner?.startsWith("https://") == true) null else P2PBannerPreset.of(banner)
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .selectableGroup(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    P2PBannerPreset.entries.forEach { preset ->
+                        val selected = preset == selectedPreset
+                        val shape = RoundedCornerShape(12.dp)
+                        Box(
+                            Modifier
+                                .weight(1f)
+                                .height(48.dp)
+                                .clip(shape)
+                                .drawBehind { drawP2PBannerPreset(preset) }
+                                .then(if (selected) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, shape) else Modifier)
+                                .selectable(
+                                    selected = selected,
+                                    enabled = !bannerBusy,
+                                    role = Role.RadioButton,
+                                    onClick = { banner = preset.value },
+                                )
+                                .semantics { contentDescription = preset.label },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (selected) Icon(painterResource(R.drawable.check), contentDescription = null, tint = Color.White)
+                        }
+                    }
+                }
+                OutlinedButton(
+                    onClick = { bannerPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                    enabled = !bannerBusy,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(painterResource(R.drawable.image), contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text("  Subir foto de portada")
+                }
+                bannerError?.let {
+                    Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+                }
+            }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 P2PAvatar(user.copy(name = name, picture = picture), size = 72.dp)
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -577,12 +752,12 @@ private fun EditProfileSheet(user: P2PUser, onDismiss: () -> Unit, onSaved: (Boo
                 onClick = {
                     saving = true
                     scope.launch {
-                        val ok = runCatching { P2PSocial.updateMyProfile(name, about, picture, isPrivate) }.getOrDefault(false)
+                        val ok = runCatching { P2PSocial.updateMyProfile(name, about, picture, isPrivate, banner) }.getOrDefault(false)
                         saving = false
                         onSaved(ok)
                     }
                 },
-                enabled = !saving && name.isNotBlank(),
+                enabled = !saving && !bannerBusy && name.isNotBlank(),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 if (saving) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp) else Text("Guardar")
@@ -670,7 +845,7 @@ private fun AccountSettingsSheet(user: P2PUser, onDismiss: () -> Unit, onShowWor
             P2PSettingRow(
                 icon = R.drawable.share,
                 title = "Compartir mi enlace",
-                onClick = { P2PSocial.myInviteLink()?.let { shareText(context, "Agrégame en Dezzy 🎧 $it", "Compartir mi enlace") } },
+                onClick = { P2PSocial.myInviteLink()?.let { shareText(context, "Agrégame en Dezzy: $it", "Compartir mi enlace") } },
             )
             P2PSectionTitle("Sesión", Modifier.padding(top = 8.dp))
             P2PSettingRow(

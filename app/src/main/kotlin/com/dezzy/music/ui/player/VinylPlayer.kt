@@ -335,7 +335,7 @@ fun VinylPlayer(
             val saved = saveVinylToGallery(context, spec, seed, thumb, songTitle)
             Toast.makeText(
                 context,
-                if (saved) "Vinilo guardado en Imágenes/Dezzy Vinyl ✓" else "No se pudo guardar el vinilo",
+                if (saved) "Vinilo guardado en Imágenes/Dezzy Vinyl" else "No se pudo guardar el vinilo",
                 Toast.LENGTH_SHORT,
             ).show()
         }

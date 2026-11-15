@@ -176,6 +176,9 @@ fun NavGraphBuilder.navigationBuilder(
     composable("social") {
         com.dezzy.music.ui.screens.p2p.SocialHubScreen(navController)
     }
+    composable("social/map") {
+        com.dezzy.music.ui.screens.p2p.SocialHubScreen(navController, com.dezzy.music.ui.screens.p2p.SocialTab.MAP)
+    }
     composable("social/nearby") {
         com.dezzy.music.ui.screens.p2p.SocialHubScreen(navController, com.dezzy.music.ui.screens.p2p.SocialTab.NEARBY)
     }
@@ -493,6 +496,17 @@ fun NavGraphBuilder.navigationBuilder(
         ListenTogetherChatScreen(
             manager = togetherClient,
             onDismiss = { navController.navigateUp() }
+        )
+    }
+    composable("listen_together_dashboard") {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val togetherClient = remember(context) {
+            com.dezzy.music.listentogether.ListenTogetherClient.getInstance()
+                ?: com.dezzy.music.listentogether.ListenTogetherClient(context.applicationContext)
+        }
+        ListenTogetherDashboardScreen(
+            manager = togetherClient,
+            onBack = { navController.navigateUp() }
         )
     }
     composable("settings/lastfm") {

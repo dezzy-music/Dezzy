@@ -7,29 +7,81 @@
 package com.dezzy.music.ui.screens
 
 import android.content.Intent
+import android.os.Build
 import android.view.View
 import android.view.ViewTreeObserver
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.Canvas
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.*
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.*
-import androidx.compose.ui.graphics.drawscope.*
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -39,8 +91,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -64,99 +122,65 @@ import com.dezzy.music.ui.component.LocalMenuState
 import com.dezzy.music.ui.menu.ArtistMenu
 import com.dezzy.music.ui.menu.SongMenu
 import com.dezzy.music.ui.utils.backToMain
+import com.dezzy.music.ui.utils.rememberReduceMotion
 import com.dezzy.music.utils.ComposeToImage
-import com.dezzy.music.utils.joinByBullet
 import com.dezzy.music.utils.makeTimeString
 import com.dezzy.music.viewmodels.YearInMusicViewModel
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.text.NumberFormat
+import java.time.Month
+import java.time.format.TextStyle
+import java.util.Locale
 import kotlin.coroutines.resume
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
-import kotlin.random.Random
+import androidx.compose.material3.IconButton as M3IconButton
+
+/**
+ * Tu año en música — Fase 11, boceto A «Historias con ritmo».
+ * Mismo pase de páginas (8 como máximo), ahora con barra por segmentos, avance
+ * automático con pausa, toques a izquierda y derecha, un color de la paleta por
+ * página y «Compartir» en cada una. El resumen es una tarjeta clara lista para
+ * compartir o guardar como imagen.
+ */
+
+/** Tiempo que dura cada página con el avance automático. */
+private const val StoryDurationMs = 8_000
+
+private val EsLocale: Locale = Locale.forLanguageTag("es-ES")
+
+private fun Long.formatEs(): String = NumberFormat.getIntegerInstance(EsLocale).format(this)
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Design tokens
-// ─────────────────────────────────────────────────────────────────────────────
-
-private val Ink      = Color(0xFF040406)
-private val Snow     = Color(0xFFFDFDFD)
-private val SnowMid  = Color(0xB3FDFDFD)
-private val SnowDim  = Color(0x55FDFDFD)
-private val GlassHi  = Color(0x28FFFFFF)
-private val GlassBorder = Color(0x18FFFFFF)
-
-// Per-card gradient palettes ─ each card has its own visual identity
-private val WelcomeA  = Color(0xFF110024)
-private val WelcomeB  = Color(0xFF8A1FFF)
-private val WelcomeC  = Color(0xFFFB3E7E)
-
-private val MinutesA  = Color(0xFF000E30)
-private val MinutesB  = Color(0xFF1560FF)
-private val MinutesC  = Color(0xFF00CFFF)
-
-private val SongsA    = Color(0xFF001409)
-private val SongsB    = Color(0xFF1DB954)
-private val SongsC    = Color(0xFFB3FF6E)
-
-private val SpotA     = Color(0xFF200028)
-private val SpotB     = Color(0xFFFF2D78)
-
-private val ArtistA   = Color(0xFF0F001E)
-private val ArtistB   = Color(0xFFBF00FF)
-private val ArtistC   = Color(0xFF5500CC)
-
-private val AlbumA    = Color(0xFF170900)
-private val AlbumB    = Color(0xFFFF7A00)
-private val AlbumC    = Color(0xFFFFD000)
-
-private val PersonA   = Color(0xFF001918)
-private val PersonB   = Color(0xFF00E5C3)
-
-private val SummaryA  = Color(0xFF0E0018)
-private val SummaryB  = Color(0xFF6A0DAD)
-private val SummaryC  = Color(0xFF1560FF)
-private val SummaryD  = Color(0xFF1DB954)
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Listening Personality
+// Perfil de oyente
 // ─────────────────────────────────────────────────────────────────────────────
 
 private data class InsightPersonality(
-    val emoji: String,
+    val icon: Int,
     val title: String,
     val description: String,
-    val gradTop: Color,
-    val gradBot: Color,
-    val accent: Color,
 )
 
 private val PersonalityDevoted = InsightPersonality(
-    emoji = "🎯",
-    title = "Devoted Fan",
-    description = "When you find a song you love, you play it on repeat. Your loyalty to your favourites is unmatched — and that's your superpower.",
-    gradTop = PersonA, gradBot = PersonB, accent = PersonB,
+    icon = R.drawable.favorite,
+    title = "Fan fiel",
+    description = "Cuando una canción te atrapa, la pones una y otra vez. Tu lealtad a tus favoritas no tiene rival.",
 )
 private val PersonalityExplorer = InsightPersonality(
-    emoji = "🧭",
-    title = "Music Explorer",
-    description = "Always discovering, never settling. Your taste spans worlds, and your playlist never sounds the same twice.",
-    gradTop = WelcomeA, gradBot = WelcomeB, accent = WelcomeB,
+    icon = R.drawable.auto_awesome,
+    title = "Explorador",
+    description = "Siempre descubriendo, nunca conformándote. Tu gusto abarca mundos y tu cola nunca suena igual dos veces.",
 )
 private val PersonalityAudiophile = InsightPersonality(
-    emoji = "🎧",
-    title = "True Audiophile",
-    description = "Hours melt away when you're in the zone. Music isn't background noise for you — it's everything.",
-    gradTop = MinutesA, gradBot = MinutesB, accent = MinutesC,
+    icon = R.drawable.headphones,
+    title = "Audiófilo",
+    description = "Las horas se te pasan volando cuando estás en tu zona. La música no es ruido de fondo para ti: lo es todo.",
 )
 private val PersonalityCasual = InsightPersonality(
-    emoji = "🌊",
-    title = "Laid-Back Listener",
-    description = "Music moves effortlessly with your life. It's always there when you need it, easy and perfectly in tune.",
-    gradTop = SongsA, gradBot = SongsB, accent = SongsC,
+    icon = R.drawable.waves,
+    title = "Oyente relajado",
+    description = "La música fluye con tu vida. Siempre está ahí cuando la necesitas, fácil y en sintonía.",
 )
 
 private fun computePersonality(
@@ -175,17 +199,62 @@ private fun computePersonality(
     }
 }
 
+private fun timesLabel(count: Int): String = if (count == 1) "1 vez" else "$count veces"
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Page enum
+// Páginas y colores
 // ─────────────────────────────────────────────────────────────────────────────
 
-private enum class InsightPage {
-    Welcome, Minutes, TopSongsList, SongSpotlight,
-    ArtistSpotlight, TopAlbumsList, Personality, Summary,
+private enum class InsightPage(val label: String) {
+    Welcome("Bienvenida"),
+    Minutes("Minutos"),
+    TopSongsList("Top canciones"),
+    SongSpotlight("Canción del año"),
+    ArtistSpotlight("Artista del año"),
+    TopAlbumsList("Top álbumes"),
+    Personality("Personalidad"),
+    Summary("Resumen"),
+}
+
+/** Fondo y color de contenido de cada página, sacados del esquema de color de Dezzy. */
+@Immutable
+private data class StoryTone(
+    val top: Color,
+    val bottom: Color,
+    val glow: Color,
+    val content: Color,
+    val isLight: Boolean = false,
+)
+
+@Composable
+private fun storyToneFor(page: InsightPage): StoryTone {
+    val scheme = MaterialTheme.colorScheme
+    fun dark(base: Color) = StoryTone(
+        top = lerp(base, Color.Black, 0.36f),
+        bottom = lerp(base, Color.Black, 0.68f),
+        glow = lerp(base, Color.White, 0.12f).copy(alpha = 0.55f),
+        content = Color.White,
+    )
+    return when (page) {
+        InsightPage.Welcome,
+        InsightPage.Minutes,
+        InsightPage.Personality -> dark(scheme.primary)
+        InsightPage.TopSongsList,
+        InsightPage.ArtistSpotlight -> dark(scheme.tertiary)
+        InsightPage.SongSpotlight,
+        InsightPage.TopAlbumsList -> dark(scheme.secondary)
+        InsightPage.Summary -> StoryTone(
+            top = scheme.tertiaryContainer,
+            bottom = scheme.primaryContainer,
+            glow = Color.Transparent,
+            content = scheme.onSurface,
+            isLight = true,
+        )
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Main screen
+// Pantalla principal
 // ─────────────────────────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -197,9 +266,11 @@ fun YearInMusicScreen(
     val context           = LocalContext.current
     val menuState         = LocalMenuState.current
     val haptic            = LocalHapticFeedback.current
-    val playerConnection  = LocalPlayerConnection.current ?: return
+    LocalPlayerConnection.current ?: return
     val coroutineScope    = rememberCoroutineScope()
     val view              = LocalView.current
+    val reduceMotion      = rememberReduceMotion()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val availableYears      by viewModel.availableYears.collectAsState()
     val selectedYear        by viewModel.selectedYear.collectAsState()
@@ -209,19 +280,25 @@ fun YearInMusicScreen(
     val topAlbums           by viewModel.topAlbums.collectAsState()
     val totalListeningTime  by viewModel.totalListeningTime.collectAsState()
     val totalSongsPlayed    by viewModel.totalSongsPlayed.collectAsState()
+    val monthlyListening    by viewModel.monthlyListening.collectAsState()
+    val yearListeningTime   by viewModel.yearListeningTime.collectAsState()
+
+    // El total del año sale de todos los eventos; si aún no hay, el del top 5.
+    val listeningTime = if (yearListeningTime > 0) yearListeningTime else totalListeningTime
 
     var isGeneratingImage   by remember { mutableStateOf(false) }
     var isShareCaptureMode  by remember { mutableStateOf(false) }
-    var shareBounds         by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+    var shareBounds         by remember { mutableStateOf<Rect?>(null) }
     var isYearPickerOpen    by remember { mutableStateOf(false) }
+    var isPaused            by rememberSaveable { mutableStateOf(false) }
 
-    val shareArgb = Ink.toArgb()
+    // Con «reducir movimiento» no hay avance automático: sólo toques y botones.
+    val autoAdvance = !reduceMotion
 
-    // Build page list dynamically based on available data
-    val pages = remember(topSongsStats, topArtists, topAlbums, totalListeningTime, totalSongsPlayed) {
+    val pages = remember(topSongsStats, topArtists, topAlbums, listeningTime, totalSongsPlayed) {
         buildList {
             add(InsightPage.Welcome)
-            if (totalListeningTime > 0 || totalSongsPlayed > 0) add(InsightPage.Minutes)
+            if (listeningTime > 0 || totalSongsPlayed > 0) add(InsightPage.Minutes)
             if (topSongsStats.isNotEmpty()) {
                 add(InsightPage.TopSongsList)
                 add(InsightPage.SongSpotlight)
@@ -232,204 +309,288 @@ fun YearInMusicScreen(
             add(InsightPage.Summary)
         }
     }
+    val personality = remember(topSongsStats, totalSongsPlayed, listeningTime) {
+        computePersonality(topSongsStats, totalSongsPlayed, listeningTime)
+    }
 
-    val pagerState = rememberPagerState { pages.size }
+    val pagerState  = rememberPagerState { pages.size }
     val currentPage = pagerState.currentPage
     val isLastPage  = currentPage == pages.lastIndex
-    val hasData     = topSongsStats.isNotEmpty() || topArtists.isNotEmpty() || topAlbums.isNotEmpty()
+    val page        = pages.getOrNull(currentPage) ?: InsightPage.Summary
+    val tone        = storyToneFor(page)
 
-    // Jump to summary when capturing share screenshot
-    LaunchedEffect(isShareCaptureMode) {
-        if (isShareCaptureMode) pagerState.scrollToPage(pages.lastIndex)
+    fun goTo(index: Int) {
+        if (index in pages.indices) coroutineScope.launch { pagerState.animateScrollToPage(index) }
+    }
+
+    // Avance automático por segmentos; se detiene en pausa, al compartir y en el resumen.
+    var segmentProgress by remember { mutableFloatStateOf(0f) }
+    var progressPage    by remember { mutableIntStateOf(-1) }
+    LaunchedEffect(currentPage, isPaused, autoAdvance, isShareCaptureMode, pages.size) {
+        if (progressPage != currentPage) {
+            progressPage = currentPage
+            segmentProgress = 0f
+        }
+        if (!autoAdvance || isPaused || isShareCaptureMode || currentPage >= pages.lastIndex) return@LaunchedEffect
+        var last = withFrameMillis { it }
+        while (segmentProgress < 1f) {
+            val now = withFrameMillis { it }
+            segmentProgress = (segmentProgress + (now - last) / StoryDurationMs.toFloat()).coerceAtMost(1f)
+            last = now
+        }
+        pagerState.animateScrollToPage(currentPage + 1)
+    }
+
+    /** Captura la página visible sin controles y la comparte o la guarda en Imágenes. */
+    fun exportCurrentPage(share: Boolean) {
+        if (isGeneratingImage) return
+        isGeneratingImage = true
+        val bgArgb = tone.bottom.toArgb()
+        coroutineScope.launch {
+            try {
+                isShareCaptureMode = true
+                awaitNextPreDraw(view)
+                awaitNextPreDraw(view)
+                val raw = ComposeToImage.captureViewBitmap(view = view, backgroundColor = bgArgb)
+                val bounds = shareBounds
+                val cropped = if (bounds != null) {
+                    ComposeToImage.cropBitmap(
+                        raw,
+                        bounds.left.toInt(), bounds.top.toInt(),
+                        bounds.width.toInt(), bounds.height.toInt()
+                    )
+                } else raw
+                val fitted = ComposeToImage.fitBitmap(cropped, 1080, 1920, bgArgb)
+                val uri = ComposeToImage.saveBitmapAsFile(
+                    context, fitted, "Dezzy_TuAno_${selectedYear}_${page.name}"
+                )
+                isShareCaptureMode = false
+                if (share) {
+                    context.startActivity(
+                        Intent.createChooser(
+                            Intent(Intent.ACTION_SEND).apply {
+                                type = "image/png"
+                                putExtra(Intent.EXTRA_STREAM, uri)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            },
+                            context.getString(R.string.share_summary)
+                        )
+                    )
+                } else {
+                    snackbarHostState.showSnackbar(
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) "Guardada en Imágenes/Dezzy"
+                        else "Imagen lista para compartir"
+                    )
+                }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                isShareCaptureMode = false
+                snackbarHostState.showSnackbar("No se pudo crear la imagen")
+            } finally {
+                isShareCaptureMode = false
+                isGeneratingImage  = false
+            }
+        }
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Ink)
+            .background(tone.bottom)
             .onGloballyPositioned { shareBounds = it.boundsInRoot() }
+            .semantics {
+                customActions = listOf(
+                    CustomAccessibilityAction("Anterior") { goTo(currentPage - 1); currentPage > 0 },
+                    CustomAccessibilityAction("Siguiente") { goTo(currentPage + 1); currentPage < pages.lastIndex },
+                )
+            }
     ) {
-
-        // ── Story pager ────────────────────────────────────────────────────
+        // ── Páginas ─────────────────────────────────────────────────────────
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
             userScrollEnabled = !isShareCaptureMode,
             beyondViewportPageCount = 1,
         ) { pageIndex ->
-            InsightPageContent(
-                page               = pages.getOrNull(pageIndex) ?: InsightPage.Summary,
-                year               = selectedYear,
-                totalListeningTime = totalListeningTime,
-                totalSongsPlayed   = totalSongsPlayed,
-                topSongsStats      = topSongsStats,
-                topSongs           = topSongs,
-                topArtists         = topArtists,
-                topAlbums          = topAlbums,
-                menuState          = menuState,
-                haptic             = haptic,
-                navController      = navController,
-                coroutineScope     = coroutineScope,
-                modifier           = Modifier.fillMaxSize(),
-            )
-        }
-
-        // ── Instagram-style tap zones (left = back, right = forward) ───────
-        if (!isShareCaptureMode) {
-            Row(
+            val pageItem = pages.getOrNull(pageIndex) ?: InsightPage.Summary
+            val pageTone = storyToneFor(pageItem)
+            StoryBackground(
+                tone = pageTone,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(top = 110.dp) // below top chrome
-                    .windowInsetsPadding(LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Bottom))
-                    .padding(bottom = 56.dp) // above bottom edge
+                    // Toque a la izquierda vuelve, a la derecha avanza (los botones lo consumen antes).
+                    .pointerInput(pageIndex, pages.size) {
+                        detectTapGestures { offset ->
+                            if (offset.x < size.width * 0.3f) goTo(pageIndex - 1) else goTo(pageIndex + 1)
+                        }
+                    },
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .weight(0.28f)
-                        .pointerInput(currentPage) {
-                            detectTapGestures {
-                                if (currentPage > 0) {
-                                    coroutineScope.launch { pagerState.animateScrollToPage(currentPage - 1) }
-                                }
+                InsightPageContent(
+                    page            = pageItem,
+                    tone            = pageTone,
+                    year            = selectedYear,
+                    listeningTime   = listeningTime,
+                    monthly         = monthlyListening,
+                    totalSongsPlayed = totalSongsPlayed,
+                    topSongsStats   = topSongsStats,
+                    topSongs        = topSongs,
+                    topArtists      = topArtists,
+                    topAlbums       = topAlbums,
+                    personality     = personality,
+                    animateNumbers  = !reduceMotion,
+                    onSongOptions   = {
+                        topSongs.firstOrNull()?.let { entity ->
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            menuState.show {
+                                SongMenu(
+                                    originalSong = entity,
+                                    navController = navController,
+                                    onDismiss = menuState::dismiss,
+                                )
                             }
                         }
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .weight(0.72f)
-                        .pointerInput(currentPage) {
-                            detectTapGestures {
-                                if (currentPage < pages.lastIndex) {
-                                    coroutineScope.launch { pagerState.animateScrollToPage(currentPage + 1) }
-                                }
+                    },
+                    onArtistOptions = {
+                        topArtists.firstOrNull()?.let { artist ->
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            menuState.show {
+                                ArtistMenu(
+                                    originalArtist = artist,
+                                    coroutineScope = coroutineScope,
+                                    onDismiss = menuState::dismiss,
+                                )
                             }
                         }
+                    },
                 )
             }
         }
 
-        // ── Top chrome: progress bar + nav ─────────────────────────────────
+        // ── Barra de segmentos, año, pausa y cerrar ─────────────────────────
         if (!isShareCaptureMode) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .zIndex(3f)
-                    .background(
-                        Brush.verticalGradient(
-                            0f to Color.Black.copy(alpha = 0.55f),
-                            1f to Color.Transparent
-                        )
-                    )
-                    .windowInsetsPadding(LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Top))
-                    .padding(top = 6.dp)
+                    .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top))
+                    .padding(start = 16.dp, end = 8.dp, top = 8.dp)
             ) {
-                // Story-style progress segments
-                InsightProgressBar(
-                    totalPages  = pages.size,
-                    currentPage = currentPage,
-                    modifier    = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 14.dp)
-                )
-                Spacer(Modifier.height(4.dp))
-                Row(
+                StorySegments(
+                    total    = pages.size,
+                    current  = currentPage,
+                    progress = if (autoAdvance && !isLastPage) segmentProgress else 1f,
+                    tone     = tone,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    IconButton(
-                        onClick   = navController::navigateUp,
-                        onLongClick = navController::backToMain,
-                    ) {
-                        Icon(painterResource(R.drawable.arrow_back), null, tint = Snow)
-                    }
-                    Spacer(Modifier.weight(1f))
-                    // Brand label — centered
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text       = "Dezzy",
-                            style      = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color      = SnowDim,
-                            letterSpacing = 1.5.sp,
-                        )
-                        Text(
-                            text       = "Insight",
-                            style      = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.ExtraBold,
-                            color      = Snow,
-                            letterSpacing = 0.5.sp,
-                        )
-                    }
-                    Spacer(Modifier.weight(1f))
-                    InsightYearChip(
+                        .padding(end = 8.dp)
+                        .semantics { contentDescription = "Página ${currentPage + 1} de ${pages.size}: ${page.label}" },
+                )
+                Spacer(Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    YearChip(
                         year    = selectedYear,
+                        tone    = tone,
+                        enabled = availableYears.size > 1,
                         onClick = { isYearPickerOpen = true },
                     )
+                    Spacer(Modifier.weight(1f))
+                    if (isLastPage) {
+                        M3IconButton(onClick = { goTo(0) }) {
+                            Icon(painterResource(R.drawable.replay), contentDescription = "Ver desde el principio", tint = tone.content)
+                        }
+                    } else if (autoAdvance) {
+                        M3IconButton(onClick = { isPaused = !isPaused }) {
+                            Icon(
+                                painterResource(if (isPaused) R.drawable.play else R.drawable.pause),
+                                contentDescription = if (isPaused) "Reanudar" else "Pausar",
+                                tint = tone.content,
+                            )
+                        }
+                    }
+                    IconButton(
+                        onClick     = navController::navigateUp,
+                        onLongClick = navController::backToMain,
+                    ) {
+                        Icon(painterResource(R.drawable.close), contentDescription = "Cerrar", tint = tone.content)
+                    }
                 }
             }
         }
 
-        // ── Share FAB ───────────────────────────────────────────────────────
-        if (!isShareCaptureMode && isLastPage && hasData) {
-            InsightShareFab(
-                isGenerating = isGeneratingImage,
-                onClick = {
-                    if (!isGeneratingImage) {
-                        isGeneratingImage = true
-                        coroutineScope.launch {
-                            try {
-                                isShareCaptureMode = true
-                                awaitNextPreDraw(view)
-                                awaitNextPreDraw(view)
-                                val raw = ComposeToImage.captureViewBitmap(
-                                    view = view, backgroundColor = shareArgb
-                                )
-                                val bounds  = shareBounds
-                                val cropped = if (bounds != null) {
-                                    ComposeToImage.cropBitmap(
-                                        raw,
-                                        bounds.left.toInt(), bounds.top.toInt(),
-                                        bounds.width.toInt(), bounds.height.toInt()
-                                    )
-                                } else raw
-                                val fitted = ComposeToImage.fitBitmap(cropped, 1080, 1920, shareArgb)
-                                val uri    = ComposeToImage.saveBitmapAsFile(
-                                    context, fitted, "Dezzy_Insight_$selectedYear"
-                                )
-                                context.startActivity(
-                                    Intent.createChooser(
-                                        Intent(Intent.ACTION_SEND).apply {
-                                            type = "image/png"
-                                            putExtra(Intent.EXTRA_STREAM, uri)
-                                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                        },
-                                        context.getString(R.string.share_summary)
-                                    )
-                                )
-                            } finally {
-                                isShareCaptureMode = false
-                                isGeneratingImage  = false
-                            }
-                        }
-                    }
-                },
+        // ── Acciones de la página ───────────────────────────────────────────
+        if (!isShareCaptureMode) {
+            Row(
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(24.dp)
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
                     .windowInsetsPadding(LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Bottom))
-            )
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (tone.isLight) {
+                    Button(
+                        onClick = { exportCurrentPage(share = true) },
+                        enabled = !isGeneratingImage,
+                        modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+                    ) {
+                        ShareLabel(isGeneratingImage, tint = MaterialTheme.colorScheme.onPrimary)
+                    }
+                    OutlinedButton(
+                        onClick = { exportCurrentPage(share = false) },
+                        enabled = !isGeneratingImage,
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
+                        modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+                    ) {
+                        Icon(painterResource(R.drawable.download), contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Guardar")
+                    }
+                } else {
+                    Button(
+                        onClick = { exportCurrentPage(share = true) },
+                        enabled = !isGeneratingImage,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White,
+                            contentColor = tone.top,
+                        ),
+                        modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+                    ) {
+                        ShareLabel(isGeneratingImage, tint = tone.top)
+                    }
+                    Button(
+                        onClick = { goTo(currentPage + 1) },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White.copy(alpha = 0.18f),
+                            contentColor = Color.White,
+                        ),
+                        modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+                    ) {
+                        Text("Siguiente")
+                        Spacer(Modifier.width(8.dp))
+                        Icon(painterResource(R.drawable.arrow_forward), contentDescription = null, modifier = Modifier.size(18.dp))
+                    }
+                }
+            }
         }
 
-        // ── Year picker dialog ──────────────────────────────────────────────
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .windowInsetsPadding(LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Bottom))
+                .padding(bottom = 80.dp),
+        )
+
+        // ── Selector de año ─────────────────────────────────────────────────
         if (!isShareCaptureMode && isYearPickerOpen) {
             InsightYearPickerDialog(
                 availableYears = availableYears,
                 selectedYear   = selectedYear,
-                onSelectYear   = { y -> viewModel.selectedYear.value = y; isYearPickerOpen = false },
+                onSelectYear   = { y ->
+                    viewModel.selectedYear.value = y
+                    isYearPickerOpen = false
+                    goTo(0)
+                },
                 onDismiss      = { isYearPickerOpen = false },
             )
         }
@@ -455,818 +616,262 @@ private suspend fun awaitNextPreDraw(view: View) = suspendCancellableCoroutine<U
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Page content router
+// Router de páginas
 // ─────────────────────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun InsightPageContent(
     page: InsightPage,
+    tone: StoryTone,
     year: Int,
-    totalListeningTime: Long,
+    listeningTime: Long,
+    monthly: List<Long>,
     totalSongsPlayed: Long,
     topSongsStats: List<SongWithStats>,
     topSongs: List<Song>,
     topArtists: List<Artist>,
     topAlbums: List<Album>,
-    menuState: com.dezzy.music.ui.component.MenuState,
-    haptic: androidx.compose.ui.hapticfeedback.HapticFeedback,
-    navController: NavController,
-    coroutineScope: CoroutineScope,
-    modifier: Modifier = Modifier,
+    personality: InsightPersonality,
+    animateNumbers: Boolean,
+    onSongOptions: () -> Unit,
+    onArtistOptions: () -> Unit,
 ) {
     when (page) {
-        InsightPage.Welcome ->
-            WelcomePage(year = year, modifier = modifier)
-
-        InsightPage.Minutes ->
-            MinutesPage(
-                totalListeningTimeMs = totalListeningTime,
-                totalSongsPlayed     = totalSongsPlayed,
-                modifier             = modifier,
-            )
-
-        InsightPage.TopSongsList ->
-            TopSongsListPage(songs = topSongsStats, modifier = modifier)
-
-        InsightPage.SongSpotlight ->
-            SongSpotlightPage(
-                song     = topSongsStats.firstOrNull(),
-                modifier = modifier,
-                onLongClick = {
-                    topSongs.firstOrNull()?.let { entity ->
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        menuState.show {
-                            SongMenu(
-                                originalSong = entity,
-                                navController = navController,
-                                onDismiss = menuState::dismiss,
-                            )
-                        }
-                    }
-                },
-            )
-
-        InsightPage.ArtistSpotlight ->
-            ArtistSpotlightPage(
-                artist   = topArtists.firstOrNull(),
-                modifier = modifier,
-                onLongClick = {
-                    topArtists.firstOrNull()?.let { artist ->
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        menuState.show {
-                            ArtistMenu(
-                                originalArtist = artist,
-                                coroutineScope = coroutineScope,
-                                onDismiss = menuState::dismiss,
-                            )
-                        }
-                    }
-                },
-            )
-
-        InsightPage.TopAlbumsList ->
-            TopAlbumsPage(albums = topAlbums, modifier = modifier)
-
-        InsightPage.Personality ->
-            PersonalityPage(
-                personality = computePersonality(topSongsStats, totalSongsPlayed, totalListeningTime),
-                topSong     = topSongsStats.firstOrNull(),
-                modifier    = modifier,
-            )
-
-        InsightPage.Summary ->
-            SummaryPage(
-                year               = year,
-                totalListeningTime = totalListeningTime,
-                totalSongsPlayed   = totalSongsPlayed,
-                topSong            = topSongsStats.firstOrNull(),
-                topArtist          = topArtists.firstOrNull(),
-                topAlbum           = topAlbums.firstOrNull(),
-                modifier           = modifier,
-            )
+        InsightPage.Welcome -> WelcomePage(year)
+        InsightPage.Minutes -> MinutesPage(listeningTime, totalSongsPlayed, monthly, animateNumbers)
+        InsightPage.TopSongsList -> RankingPage(
+            overline = "Tus canciones más escuchadas",
+            title = "Top canciones",
+            rows = topSongsStats.take(5).map { RankRow(it.thumbnailUrl, it.title, timesLabel(it.songCountListened)) },
+            tone = tone,
+        )
+        InsightPage.SongSpotlight -> SongSpotlightPage(
+            song = topSongsStats.firstOrNull(),
+            artistNames = topSongs.firstOrNull()?.artists?.joinToString { it.name }.orEmpty(),
+            onOptions = onSongOptions,
+        )
+        InsightPage.ArtistSpotlight -> ArtistSpotlightPage(topArtists.firstOrNull(), onArtistOptions)
+        InsightPage.TopAlbumsList -> RankingPage(
+            overline = "Los discos que no soltaste",
+            title = "Top álbumes",
+            rows = topAlbums.take(5).map { album ->
+                RankRow(album.thumbnailUrl, album.album.title, album.artists.take(2).joinToString { it.name })
+            },
+            tone = tone,
+        )
+        InsightPage.Personality -> PersonalityPage(personality, topSongsStats.firstOrNull())
+        InsightPage.Summary -> SummaryPage(
+            year             = year,
+            listeningTime    = listeningTime,
+            topSongsStats    = topSongsStats,
+            topSongArtists   = topSongs.firstOrNull()?.artists?.joinToString { it.name }.orEmpty(),
+            topArtists       = topArtists,
+            personality      = personality.takeIf { topSongsStats.isNotEmpty() },
+        )
     }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 1. Welcome page
+// Estructura común de una historia
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun WelcomePage(year: Int, modifier: Modifier = Modifier) {
-    val infiniteTransition = rememberInfiniteTransition(label = "welcomeGlow")
-    val glowPhase by infiniteTransition.animateFloat(
-        0f, 1f,
-        infiniteRepeatable(tween(6000, easing = LinearEasing)),
-        label = "glowPhase",
-    )
-    val pulseScale by infiniteTransition.animateFloat(
-        0.95f, 1.05f,
-        infiniteRepeatable(tween(2000, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "pulse",
-    )
-
+private fun StoryBackground(
+    tone: StoryTone,
+    modifier: Modifier = Modifier,
+    content: @Composable BoxScope.() -> Unit,
+) {
     Box(
-        modifier = modifier.background(
-            Brush.verticalGradient(listOf(WelcomeA, WelcomeB, WelcomeC.copy(alpha = 0.6f), WelcomeA))
+        modifier = modifier
+            .background(Brush.verticalGradient(listOf(tone.top, tone.bottom)))
+            .background(
+                Brush.radialGradient(
+                    colors = listOf(tone.glow, Color.Transparent),
+                    center = Offset(Float.POSITIVE_INFINITY, 0f),
+                    radius = 900f,
+                )
+            ),
+        content = content,
+    )
+}
+
+/** Columna con el hueco de la barra superior y de los botones inferiores. */
+@Composable
+private fun StoryColumn(
+    scrollable: Boolean = false,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.systemBars)
+            .windowInsetsPadding(LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Bottom))
+            .then(if (scrollable) Modifier.verticalScroll(rememberScrollState()) else Modifier)
+            .padding(start = 20.dp, end = 20.dp, top = 84.dp, bottom = 88.dp),
+        content = content,
+    )
+}
+
+@Composable
+private fun StoryOverline(text: String, color: Color = Color.White) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        fontSize = 14.sp,
+        letterSpacing = 0.4.sp,
+        color = color.copy(alpha = 0.9f),
+    )
+}
+
+@Composable
+private fun StoryHero(text: String, color: Color = Color.White) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.displayLarge,
+        fontSize = 76.sp,
+        lineHeight = 80.sp,
+        fontWeight = FontWeight.ExtraBold,
+        letterSpacing = (-2).sp,
+        color = color,
+        maxLines = 1,
+        modifier = Modifier
+            .padding(top = 6.dp)
+            .semantics { heading() },
+    )
+}
+
+@Composable
+private fun StoryBody(text: String, color: Color = Color.White) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyLarge,
+        lineHeight = 23.sp,
+        color = color.copy(alpha = 0.92f),
+        modifier = Modifier.padding(top = 14.dp),
+    )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 1. Bienvenida
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun WelcomePage(year: Int) {
+    StoryColumn {
+        StoryOverline("Dezzy Insight")
+        StoryHero(year.toString())
+        Text(
+            text = "Tu año en música",
+            style = MaterialTheme.typography.headlineSmall,
+            color = Color.White,
+            modifier = Modifier.padding(top = 4.dp),
         )
-    ) {
-        // Animated glow orb
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val cx = size.width * (0.5f + 0.15f * cos(glowPhase * 2 * PI.toFloat()).toFloat())
-            val cy = size.height * (0.35f + 0.08f * sin(glowPhase * 2 * PI.toFloat()).toFloat())
-            drawCircle(
-                brush = Brush.radialGradient(
-                    listOf(WelcomeC.copy(alpha = 0.45f), WelcomeB.copy(alpha = 0.15f), Color.Transparent),
-                    center = Offset(cx, cy),
-                    radius = size.width * 0.7f,
-                )
+        StoryBody("Todo lo que escuchaste este año, en un solo lugar.")
+        Spacer(Modifier.weight(1f))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Image(
+                painter = painterResource(R.drawable.dezzymusic_monochrome),
+                contentDescription = null,
+                colorFilter = ColorFilter.tint(Color.White),
+                modifier = Modifier.size(20.dp),
             )
-        }
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 32.dp)
-                .windowInsetsPadding(WindowInsets.systemBars),
-            verticalArrangement = Arrangement.Center,
-        ) {
-            // "Your" label
+            Spacer(Modifier.width(8.dp))
             Text(
-                text       = "your",
-                style      = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Light,
-                color      = SnowMid,
-                letterSpacing = 2.sp,
+                text = "Toca a la derecha para avanzar",
+                style = MaterialTheme.typography.bodyMedium,
+                fontSize = 13.sp,
+                color = Color.White.copy(alpha = 0.85f),
             )
-            Spacer(Modifier.height(4.dp))
-
-            // "Insight" wordmark
-            Text(
-                text       = "Insight",
-                style      = MaterialTheme.typography.displayLarge.copy(fontSize = 72.sp),
-                fontWeight = FontWeight.ExtraBold,
-                color      = Snow,
-                letterSpacing = (-2).sp,
-            )
-
-            Spacer(Modifier.height(12.dp))
-
-            // Year badge
-            Box(
-                modifier = Modifier
-                    .scale(pulseScale)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(
-                        Brush.linearGradient(listOf(WelcomeC.copy(alpha = 0.9f), WelcomeB))
-                    )
-                    .padding(horizontal = 20.dp, vertical = 10.dp)
-            ) {
-                Text(
-                    text       = year.toString(),
-                    style      = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Black,
-                    color      = Snow,
-                )
-            }
-
-            Spacer(Modifier.height(40.dp))
-
-            // Tagline
-            Text(
-                text       = "Everything you listened to\nthis year, in one place.",
-                style      = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                color      = SnowMid,
-                lineHeight = 28.sp,
-            )
-
-            Spacer(Modifier.height(48.dp))
-
-            // Swipe hint
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                repeat(3) {
-                    val dotAlpha by rememberInfiniteTransition(label = "dot$it").animateFloat(
-                        0.2f, 0.9f,
-                        infiniteRepeatable(
-                            tween(600, delayMillis = it * 200, easing = FastOutSlowInEasing),
-                            RepeatMode.Reverse
-                        ),
-                        label = "dotA$it",
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .background(Snow.copy(alpha = dotAlpha), CircleShape)
-                    )
-                }
-                Spacer(Modifier.width(4.dp))
-                Text(
-                    text  = "Swipe to explore",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = SnowDim,
-                )
-            }
         }
     }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. Minutes page  (animated counter)
+// 2. Minutos con barras por mes
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 private fun MinutesPage(
-    totalListeningTimeMs: Long,
+    listeningTimeMs: Long,
     totalSongsPlayed: Long,
-    modifier: Modifier = Modifier,
+    monthly: List<Long>,
+    animate: Boolean,
 ) {
-    val totalMinutes  = totalListeningTimeMs / 60_000L
-    val totalHours    = totalMinutes / 60L
-    val displayValue  = if (totalHours > 0) totalHours else totalMinutes
-    val displayLabel  = if (totalHours > 0) "hours" else "minutes"
+    val totalMinutes = listeningTimeMs / 60_000L
+    val shown = if (animate) rememberAnimatedLong(totalMinutes, durationMs = 1600) else totalMinutes
+    val peakIndex = monthly.indices.maxByOrNull { monthly[it] }?.takeIf { monthly[it] > 0 }
+    val peakMax = monthly.maxOrNull()?.coerceAtLeast(1L) ?: 1L
 
-    val animatedValue = rememberAnimatedLong(displayValue, durationMs = 1800)
-
-    Box(
-        modifier = modifier.background(
-            Brush.verticalGradient(listOf(MinutesA, MinutesB, MinutesC.copy(alpha = 0.3f), MinutesA))
-        )
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            drawCircle(
-                brush = Brush.radialGradient(
-                    listOf(MinutesC.copy(alpha = 0.3f), Color.Transparent),
-                    center = Offset(size.width * 0.85f, size.height * 0.2f),
-                    radius = size.width * 0.6f,
-                )
-            )
+    val body = buildString {
+        val days = totalMinutes / 1440L
+        val hours = totalMinutes / 60L
+        when {
+            days >= 1 -> append("Son ${days.formatEs()} ${if (days == 1L) "día" else "días"} seguidos sin parar.")
+            hours >= 1 -> append("Son ${hours.formatEs()} ${if (hours == 1L) "hora" else "horas"} de música.")
+            else -> append("Y esto acaba de empezar.")
         }
+        if (peakIndex != null) {
+            val month = Month.of(peakIndex + 1).getDisplayName(TextStyle.FULL, EsLocale)
+            append(" Tu mes más intenso fue $month, con ${(monthly[peakIndex] / 60_000L).formatEs()} minutos.")
+        } else if (totalSongsPlayed > 0) {
+            append(" En ${totalSongsPlayed.formatEs()} reproducciones de tus favoritas.")
+        }
+    }
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 32.dp)
-                .windowInsetsPadding(WindowInsets.systemBars),
-            verticalArrangement = Arrangement.Center,
-        ) {
-            // Icon
-            Box(
+    StoryColumn {
+        StoryOverline("Este año escuchaste")
+        StoryHero(shown.formatEs())
+        Text(
+            text = "minutos de música",
+            style = MaterialTheme.typography.headlineSmall,
+            color = Color.White,
+            modifier = Modifier.padding(top = 4.dp),
+        )
+        StoryBody(body)
+        Spacer(Modifier.weight(1f))
+        if (monthly.any { it > 0 }) {
+            Row(
                 modifier = Modifier
-                    .size(64.dp)
-                    .clip(CircleShape)
-                    .background(GlassHi),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painterResource(R.drawable.headphones),
-                    contentDescription = null,
-                    tint = Snow,
-                    modifier = Modifier.size(32.dp),
-                )
-            }
-
-            Spacer(Modifier.height(32.dp))
-
-            Text(
-                text       = "You listened to",
-                style      = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Light,
-                color      = SnowMid,
-            )
-            Spacer(Modifier.height(8.dp))
-
-            // Giant animated number
-            Text(
-                text       = animatedValue.toString(),
-                style      = MaterialTheme.typography.displayLarge.copy(fontSize = 96.sp),
-                fontWeight = FontWeight.Black,
-                color      = Snow,
-                letterSpacing = (-3).sp,
-                lineHeight = 96.sp,
-            )
-
-            Text(
-                text       = displayLabel,
-                style      = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.ExtraBold,
-                color      = MinutesC,
-                letterSpacing = 1.sp,
-            )
-
-            Text(
-                text  = "of music",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Light,
-                color = SnowMid,
-            )
-
-            Spacer(Modifier.height(40.dp))
-
-            // Fun comparison
-            if (totalHours > 0) {
-                val movieCount = totalHours / 2
-                InsightGlassCard {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Text("🎬", fontSize = 28.sp)
-                        Text(
-                            text = "That's like watching $movieCount full movies back-to-back.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = SnowMid,
-                            lineHeight = 22.sp,
-                        )
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            InsightGlassCard {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Text("🎵", fontSize = 28.sp)
-                    Text(
-                        text  = "Across $totalSongsPlayed plays of your top songs.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = SnowMid,
-                    )
-                }
-            }
-        }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 3. Top Songs list page
-// ─────────────────────────────────────────────────────────────────────────────
-
-@Composable
-private fun TopSongsListPage(songs: List<SongWithStats>, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier.background(
-            Brush.verticalGradient(listOf(SongsA, SongsB.copy(alpha = 0.85f), SongsA))
-        )
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            drawCircle(
-                brush = Brush.radialGradient(
-                    listOf(SongsC.copy(alpha = 0.15f), Color.Transparent),
-                    center = Offset(0f, size.height),
-                    radius = size.width * 0.8f,
-                )
-            )
-        }
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp)
-                .windowInsetsPadding(WindowInsets.systemBars),
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Text(
-                text       = "Your Top",
-                style      = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Light,
-                color      = SnowMid,
-            )
-            Text(
-                text       = "Songs",
-                style      = MaterialTheme.typography.displayMedium,
-                fontWeight = FontWeight.Black,
-                color      = SongsB,
-                letterSpacing = (-1).sp,
-            )
-
-            Spacer(Modifier.height(28.dp))
-
-            songs.take(5).forEachIndexed { index, song ->
-                val imageModel = rememberSafeImageRequest(song.thumbnailUrl)
-                val revealDelay = index * 80
-
-                var visible by remember { mutableStateOf(false) }
-                LaunchedEffect(Unit) {
-                    delay(revealDelay.toLong())
-                    visible = true
-                }
-                val animAlpha by animateFloatAsState(
-                    if (visible) 1f else 0f,
-                    tween(350),
-                    label = "songAlpha$index",
-                )
-                val animOffset by animateFloatAsState(
-                    if (visible) 0f else 40f,
-                    tween(350, easing = FastOutSlowInEasing),
-                    label = "songOffset$index",
-                )
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .alpha(animAlpha)
-                        .offset(x = animOffset.dp)
-                        .padding(vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                ) {
-                    // Rank number
-                    Text(
-                        text       = "${index + 1}",
-                        style      = MaterialTheme.typography.headlineLarge.copy(fontSize = 40.sp),
-                        fontWeight = FontWeight.Black,
-                        color      = if (index == 0) SongsB else SnowDim,
-                        modifier   = Modifier.width(46.dp),
-                        textAlign  = TextAlign.End,
-                    )
-
-                    // Album art
-                    AsyncImage(
-                        model             = imageModel,
-                        contentDescription = null,
-                        contentScale      = ContentScale.Crop,
-                        modifier          = Modifier
-                            .size(52.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .border(
-                                width  = if (index == 0) 2.dp else 0.dp,
-                                color  = SongsB,
-                                shape  = RoundedCornerShape(10.dp),
-                            )
-                    )
-
-                    // Title + play count
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text      = song.title,
-                            style     = MaterialTheme.typography.titleMedium,
-                            fontWeight = if (index == 0) FontWeight.ExtraBold else FontWeight.SemiBold,
-                            color     = Snow,
-                            maxLines  = 1,
-                            overflow  = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            text  = pluralStringResource(R.plurals.n_time, song.songCountListened, song.songCountListened),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = SnowDim,
-                        )
-                    }
-
-                    // #1 crown badge
-                    if (index == 0) {
-                        Text("👑", fontSize = 20.sp)
-                    }
-                }
-
-                if (index < songs.size - 1 && index < 4) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 116.dp),
-                        color    = GlassBorder,
-                    )
-                }
-            }
-        }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 4. Song spotlight (#1 song full-screen)
-// ─────────────────────────────────────────────────────────────────────────────
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun SongSpotlightPage(
-    song: SongWithStats?,
-    modifier: Modifier = Modifier,
-    onLongClick: () -> Unit = {},
-) {
-    if (song == null) return
-
-    val imageModel = rememberSafeImageRequest(song.thumbnailUrl)
-
-    Box(
-        modifier = modifier.combinedClickable(onClick = {}, onLongClick = onLongClick)
-    ) {
-        // Blurred album art full-screen background
-        AsyncImage(
-            model             = imageModel,
-            contentDescription = null,
-            contentScale      = ContentScale.Crop,
-            modifier          = Modifier.fillMaxSize().blur(20.dp),
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            SpotA.copy(alpha = 0.4f),
-                            SpotA.copy(alpha = 0.75f),
-                            SpotA.copy(alpha = 0.95f),
-                        )
-                    )
-                )
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 32.dp)
-                .windowInsetsPadding(WindowInsets.systemBars),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Spacer(Modifier.weight(0.25f))
-
-            // Badge
-            InsightBadge(
-                text       = "#1 Song this year",
-                background = Brush.linearGradient(listOf(SpotB, SpotA.copy(alpha = 0.6f))),
-            )
-
-            // Album art
-            AsyncImage(
-                model             = imageModel,
-                contentDescription = null,
-                contentScale      = ContentScale.Crop,
-                modifier          = Modifier
-                    .size(220.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .border(
-                        width  = 2.dp,
-                        brush  = Brush.linearGradient(listOf(SpotB, SpotA.copy(alpha = 0.3f))),
-                        shape  = RoundedCornerShape(20.dp),
-                    )
-            )
-
-            // Title
-            Text(
-                text       = song.title,
-                style      = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Black,
-                color      = Snow,
-                maxLines   = 2,
-                overflow   = TextOverflow.Ellipsis,
-                letterSpacing = (-0.5).sp,
-            )
-
-            // Stat chips
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                InsightStatChip(
-                    emoji  = "▶",
-                    value  = pluralStringResource(R.plurals.n_time, song.songCountListened, song.songCountListened),
-                    accent = SpotB,
-                )
-                InsightStatChip(
-                    emoji  = "⏱",
-                    value  = makeTimeString(song.timeListened),
-                    accent = MinutesC,
-                )
-            }
-
-            Spacer(Modifier.weight(0.5f))
-
-            Text(
-                text  = "Hold to see song options",
-                style = MaterialTheme.typography.labelSmall,
-                color = SnowDim,
-            )
-        }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 5. Artist spotlight
-// ─────────────────────────────────────────────────────────────────────────────
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun ArtistSpotlightPage(
-    artist: Artist?,
-    modifier: Modifier = Modifier,
-    onLongClick: () -> Unit = {},
-) {
-    if (artist == null) return
-
-    val imageModel = rememberSafeImageRequest(artist.artist.thumbnailUrl)
-    val infiniteTransition = rememberInfiniteTransition(label = "artistRing")
-    val ringRotation by infiniteTransition.animateFloat(
-        0f, 360f,
-        infiniteRepeatable(tween(8000, easing = LinearEasing)),
-        label = "ringRot",
-    )
-
-    Box(
-        modifier = modifier.combinedClickable(onClick = {}, onLongClick = onLongClick)
-    ) {
-        // Blurred artist photo background
-        AsyncImage(
-            model             = imageModel,
-            contentDescription = null,
-            contentScale      = ContentScale.Crop,
-            modifier          = Modifier.fillMaxSize().blur(24.dp),
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.radialGradient(
-                        listOf(ArtistC.copy(alpha = 0.4f), ArtistA.copy(alpha = 0.9f))
-                    )
-                )
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 32.dp)
-                .windowInsetsPadding(WindowInsets.systemBars),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            InsightBadge(
-                text       = "#1 Artist",
-                background = Brush.linearGradient(listOf(ArtistB, ArtistC)),
-            )
-
-            Spacer(Modifier.height(28.dp))
-
-            // Rotating gradient ring + artist photo
-            Box(
-                modifier = Modifier
-                    .size(200.dp)
-                    .drawBehind {
-                        rotate(ringRotation) {
-                            drawCircle(
-                                brush = Brush.sweepGradient(
-                                    listOf(ArtistB, ArtistC, MinutesC, ArtistB)
-                                ),
-                                radius = size.minDimension / 2f + 5.dp.toPx(),
-                                style  = Stroke(width = 4.dp.toPx()),
-                            )
-                        }
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .clearAndSetSemantics {
+                        contentDescription = "Minutos por mes" + (peakIndex?.let {
+                            ", el más alto es " + Month.of(it + 1).getDisplayName(TextStyle.FULL, EsLocale)
+                        } ?: "")
                     },
-                contentAlignment = Alignment.Center,
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                verticalAlignment = Alignment.Bottom,
             ) {
-                AsyncImage(
-                    model             = imageModel,
-                    contentDescription = null,
-                    contentScale      = ContentScale.Crop,
-                    modifier          = Modifier
-                        .size(188.dp)
-                        .clip(CircleShape)
-                )
-            }
-
-            Spacer(Modifier.height(28.dp))
-
-            Text(
-                text       = artist.artist.name,
-                style      = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Black,
-                color      = Snow,
-                textAlign  = TextAlign.Center,
-                maxLines   = 2,
-                overflow   = TextOverflow.Ellipsis,
-                letterSpacing = (-0.5).sp,
-            )
-
-            Spacer(Modifier.height(20.dp))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                InsightStatChip(
-                    emoji  = "▶",
-                    value  = pluralStringResource(R.plurals.n_time, artist.songCount, artist.songCount),
-                    accent = ArtistB,
-                )
-                artist.timeListened?.let { t ->
-                    InsightStatChip(
-                        emoji  = "⏱",
-                        value  = makeTimeString(t.toLong()),
-                        accent = PersonB,
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text  = "Hold to see artist options",
-                style = MaterialTheme.typography.labelSmall,
-                color = SnowDim,
-            )
-        }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 6. Top Albums page
-// ─────────────────────────────────────────────────────────────────────────────
-
-@Composable
-private fun TopAlbumsPage(albums: List<Album>, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier.background(
-            Brush.verticalGradient(listOf(AlbumA, AlbumB.copy(alpha = 0.8f), AlbumA))
-        )
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            drawCircle(
-                brush = Brush.radialGradient(
-                    listOf(AlbumC.copy(alpha = 0.2f), Color.Transparent),
-                    center = Offset(size.width, 0f),
-                    radius = size.width * 0.7f,
-                )
-            )
-        }
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp)
-                .windowInsetsPadding(WindowInsets.systemBars),
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Text(
-                text       = "Your Top",
-                style      = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Light,
-                color      = SnowMid,
-            )
-            Text(
-                text       = "Albums",
-                style      = MaterialTheme.typography.displayMedium,
-                fontWeight = FontWeight.Black,
-                color      = AlbumB,
-                letterSpacing = (-1).sp,
-            )
-
-            Spacer(Modifier.height(28.dp))
-
-            albums.take(5).forEachIndexed { index, album ->
-                val imageModel = rememberSafeImageRequest(album.thumbnailUrl)
-                val artistNames = album.artists.take(2).joinToString(" · ") { it.name }
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 7.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                ) {
-                    Text(
-                        text       = "${index + 1}",
-                        style      = MaterialTheme.typography.headlineLarge.copy(fontSize = 36.sp),
-                        fontWeight = FontWeight.Black,
-                        color      = if (index == 0) AlbumB else SnowDim,
-                        modifier   = Modifier.width(40.dp),
-                        textAlign  = TextAlign.End,
-                    )
-                    AsyncImage(
-                        model             = imageModel,
-                        contentDescription = null,
-                        contentScale      = ContentScale.Crop,
-                        modifier          = Modifier
-                            .size(58.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .border(
-                                width = if (index == 0) 2.dp else 0.dp,
-                                color = AlbumB,
-                                shape = RoundedCornerShape(10.dp),
-                            )
-                    )
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text       = album.album.title,
-                            style      = MaterialTheme.typography.titleMedium,
-                            fontWeight = if (index == 0) FontWeight.ExtraBold else FontWeight.SemiBold,
-                            color      = Snow,
-                            maxLines   = 1,
-                            overflow   = TextOverflow.Ellipsis,
-                        )
-                        if (artistNames.isNotBlank()) {
-                            Text(
-                                text     = artistNames,
-                                style    = MaterialTheme.typography.labelMedium,
-                                color    = SnowDim,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
+                monthly.forEachIndexed { index, value ->
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Bottom,
+                    ) {
+                        val fraction = (value.toFloat() / peakMax).coerceIn(0.04f, 1f)
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth(),
+                            contentAlignment = Alignment.BottomCenter,
+                        ) {
+                            Box(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .fillMaxHeight(fraction)
+                                    .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 2.dp, bottomEnd = 2.dp))
+                                    .background(if (index == peakIndex) Color.White else Color.White.copy(alpha = 0.32f)),
                             )
                         }
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = Month.of(index + 1).getDisplayName(TextStyle.NARROW, EsLocale).uppercase(EsLocale),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.9f),
+                        )
                     }
-                    if (index == 0) Text("🏆", fontSize = 20.sp)
-                }
-
-                if (index < albums.size - 1 && index < 4) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 116.dp),
-                        color    = GlassBorder,
-                    )
                 }
             }
         }
@@ -1274,97 +879,66 @@ private fun TopAlbumsPage(albums: List<Album>, modifier: Modifier = Modifier) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 7. Listening Personality page
+// 3 y 6. Listas de canciones y álbumes
 // ─────────────────────────────────────────────────────────────────────────────
 
+private data class RankRow(val image: String?, val title: String, val subtitle: String)
+
 @Composable
-private fun PersonalityPage(
-    personality: InsightPersonality,
-    topSong: SongWithStats?,
-    modifier: Modifier = Modifier,
-) {
-    val emojiScale by rememberInfiniteTransition(label = "emojiPulse").animateFloat(
-        0.92f, 1.08f,
-        infiniteRepeatable(tween(1200, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "emojiS",
-    )
-
-    Box(
-        modifier = modifier.background(
-            Brush.verticalGradient(
-                listOf(personality.gradTop, personality.gradBot.copy(alpha = 0.9f), personality.gradTop)
-            )
-        )
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            drawCircle(
-                brush = Brush.radialGradient(
-                    listOf(personality.accent.copy(alpha = 0.25f), Color.Transparent),
-                    center = Offset(size.width / 2f, size.height * 0.35f),
-                    radius = size.width * 0.75f,
-                )
-            )
-        }
-
-        Column(
+private fun RankingPage(overline: String, title: String, rows: List<RankRow>, tone: StoryTone) {
+    StoryColumn(scrollable = true) {
+        StoryOverline(overline)
+        Text(
+            text = title,
+            style = MaterialTheme.typography.displaySmall,
+            fontWeight = FontWeight.ExtraBold,
+            color = Color.White,
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 32.dp)
-                .windowInsetsPadding(WindowInsets.systemBars),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.Start,
-        ) {
-            Text(
-                text  = "Your listening\npersonality",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Light,
-                color = SnowMid,
-                lineHeight = 32.sp,
-            )
-
-            Spacer(Modifier.height(32.dp))
-
-            // Giant emoji
-            Text(
-                text     = personality.emoji,
-                fontSize = 88.sp,
-                modifier = Modifier.scale(emojiScale),
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            Text(
-                text       = personality.title,
-                style      = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Black,
-                color      = personality.accent,
-                letterSpacing = (-1).sp,
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            InsightGlassCard {
+                .padding(top = 6.dp, bottom = 16.dp)
+                .semantics { heading() },
+        )
+        rows.forEachIndexed { index, row ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp)
+                    .semantics(mergeDescendants = true) { },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
-                    text       = personality.description,
-                    style      = MaterialTheme.typography.bodyLarge,
-                    color      = SnowMid,
-                    lineHeight = 26.sp,
+                    text = "${index + 1}",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = if (index == 0) Color.White else Color.White.copy(alpha = 0.7f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.width(36.dp),
                 )
-            }
-
-            topSong?.let { song ->
-                Spacer(Modifier.height(12.dp))
-                InsightGlassCard {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        Text("🎵", fontSize = 20.sp)
+                Spacer(Modifier.width(10.dp))
+                AsyncImage(
+                    model = rememberSafeImageRequest(row.image),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(if (index == 0) 64.dp else 52.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(tone.glow),
+                )
+                Spacer(Modifier.width(14.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = row.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = if (index == 0) FontWeight.Bold else FontWeight.Medium,
+                        color = Color.White,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (row.subtitle.isNotBlank()) {
                         Text(
-                            text  = "Your anthem this year: ${song.title}",
+                            text = row.subtitle,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = SnowMid,
-                            maxLines = 2,
+                            color = Color.White.copy(alpha = 0.8f),
+                            maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
@@ -1375,246 +949,360 @@ private fun PersonalityPage(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 8. Summary / Share page
+// 4. Canción del año
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun SongSpotlightPage(song: SongWithStats?, artistNames: String, onOptions: () -> Unit) {
+    if (song == null) return
+    StoryColumn(scrollable = true) {
+        StoryOverline("Tu canción del año")
+        Spacer(Modifier.height(20.dp))
+        AsyncImage(
+            model = rememberSafeImageRequest(song.thumbnailUrl),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .size(240.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(Color.White.copy(alpha = 0.12f)),
+        )
+        Spacer(Modifier.height(24.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = song.title,
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.semantics { heading() },
+                )
+                if (artistNames.isNotBlank()) {
+                    Text(
+                        text = artistNames,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White.copy(alpha = 0.85f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            M3IconButton(onClick = onOptions) {
+                Icon(painterResource(R.drawable.more_vert), contentDescription = "Opciones de la canción", tint = Color.White)
+            }
+        }
+        StoryBody(
+            buildString {
+                append("La pusiste ${timesLabel(song.songCountListened)}")
+                makeTimeString(song.timeListened).takeIf { it.isNotBlank() }?.let { append(", $it en total") }
+                append(".")
+            }
+        )
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. Artista del año
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun ArtistSpotlightPage(artist: Artist?, onOptions: () -> Unit) {
+    if (artist == null) return
+    StoryColumn(scrollable = true) {
+        StoryOverline("Tu artista del año")
+        Spacer(Modifier.height(20.dp))
+        AsyncImage(
+            model = rememberSafeImageRequest(artist.artist.thumbnailUrl),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .size(220.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.12f)),
+        )
+        Spacer(Modifier.height(24.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = artist.artist.name,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics { heading() },
+            )
+            M3IconButton(onClick = onOptions) {
+                Icon(painterResource(R.drawable.more_vert), contentDescription = "Opciones del artista", tint = Color.White)
+            }
+        }
+        StoryBody(
+            buildString {
+                append("Sonó ${timesLabel(artist.songCount)}")
+                artist.timeListened?.toLong()?.let(::makeTimeString)?.takeIf { it.isNotBlank() }?.let { append(", $it en total") }
+                append(". Nadie te acompañó tanto este año.")
+            }
+        )
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 7. Perfil de oyente
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun PersonalityPage(personality: InsightPersonality, topSong: SongWithStats?) {
+    StoryColumn(scrollable = true) {
+        StoryOverline("Tu perfil de oyente")
+        Spacer(Modifier.height(20.dp))
+        Box(
+            modifier = Modifier
+                .size(88.dp)
+                .clip(RoundedCornerShape(28.dp))
+                .background(Color.White.copy(alpha = 0.18f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(painterResource(personality.icon), contentDescription = null, tint = Color.White, modifier = Modifier.size(44.dp))
+        }
+        Text(
+            text = personality.title,
+            style = MaterialTheme.typography.displaySmall,
+            fontWeight = FontWeight.ExtraBold,
+            color = Color.White,
+            modifier = Modifier
+                .padding(top = 20.dp)
+                .semantics { heading() },
+        )
+        StoryBody(personality.description)
+        topSong?.let {
+            Spacer(Modifier.height(20.dp))
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = Color.White.copy(alpha = 0.14f),
+                contentColor = Color.White,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(painterResource(R.drawable.music_note), contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        text = "Tu himno del año: ${it.title}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 8. Resumen en tarjeta clara
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 private fun SummaryPage(
     year: Int,
-    totalListeningTime: Long,
-    totalSongsPlayed: Long,
-    topSong: SongWithStats?,
-    topArtist: Artist?,
-    topAlbum: Album?,
-    modifier: Modifier = Modifier,
+    listeningTime: Long,
+    topSongsStats: List<SongWithStats>,
+    topSongArtists: String,
+    topArtists: List<Artist>,
+    personality: InsightPersonality?,
 ) {
-    val confettiParticles = remember {
-        List(30) {
-            Triple(
-                Random.nextFloat(),  // x
-                Random.nextFloat(),  // y
-                listOf(WelcomeB, WelcomeC, MinutesC, SongsB, AlbumB, PersonB).random()
-            )
-        }
-    }
-    val infiniteTransition = rememberInfiniteTransition(label = "confetti")
-    val confettiTime by infiniteTransition.animateFloat(
-        0f, 1000f,
-        infiniteRepeatable(tween(20000, easing = LinearEasing)),
-        label = "confettiT",
-    )
-
-    Box(
-        modifier = modifier.background(
-            Brush.verticalGradient(
-                listOf(SummaryA, SummaryB.copy(alpha = 0.7f), SummaryC.copy(alpha = 0.5f), SummaryD.copy(alpha = 0.3f), SummaryA)
-            )
-        )
-    ) {
-        // Confetti
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            confettiParticles.forEach { (x, y, color) ->
-                val px = ((x + confettiTime * 0.00003f) % 1f) * size.width
-                val py = ((y + confettiTime * 0.00008f) % 1f) * size.height
-                drawCircle(color = color.copy(alpha = 0.6f), radius = 4f, center = Offset(px, py))
-                drawRect(
-                    color    = color.copy(alpha = 0.4f),
-                    topLeft  = Offset(px + 8f, py - 4f),
-                    size     = androidx.compose.ui.geometry.Size(8f, 4f),
-                )
-            }
-        }
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp)
-                .windowInsetsPadding(WindowInsets.systemBars),
-            verticalArrangement = Arrangement.SpaceBetween,
+    val scheme = MaterialTheme.colorScheme
+    val topSong = topSongsStats.firstOrNull()
+    StoryColumn(scrollable = true) {
+        Surface(
+            shape = RoundedCornerShape(28.dp),
+            color = scheme.surfaceContainerLowest,
+            contentColor = scheme.onSurface,
+            shadowElevation = 4.dp,
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            Spacer(Modifier.height(4.dp))
-
-            // Header
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                // Dezzy branding row
+            Column(Modifier.padding(18.dp)) {
+                if (topSong == null && topArtists.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.no_listening_data),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = scheme.onSurfaceVariant,
+                    )
+                } else {
+                    topSong?.let { song ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            AsyncImage(
+                                model = rememberSafeImageRequest(song.thumbnailUrl),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(84.dp)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(scheme.surfaceContainerHigh),
+                            )
+                            Spacer(Modifier.width(14.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    text = "TU CANCIÓN DEL AÑO",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontSize = 13.sp,
+                                    letterSpacing = 0.4.sp,
+                                    color = scheme.primary,
+                                )
+                                Text(
+                                    text = song.title,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                Text(
+                                    text = listOf(topSongArtists, timesLabel(song.songCountListened))
+                                        .filter { it.isNotBlank() }
+                                        .joinToString(", "),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = scheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
+                    }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        SummaryList("Canciones", topSongsStats.take(5).map { it.title }, Modifier.weight(1f))
+                        SummaryList("Artistas", topArtists.take(5).map { it.artist.name }, Modifier.weight(1f))
+                    }
+                }
+                HorizontalDivider(Modifier.padding(top = 14.dp), color = scheme.outlineVariant)
                 Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    SummaryStat((listeningTime / 60_000L).formatEs(), "minutos", Modifier.weight(1f))
+                    SummaryStat(personality?.title ?: "—", "tu perfil de oyente", Modifier.weight(1f))
+                }
+                Row(
+                    modifier = Modifier.padding(top = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(GlassHi),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        androidx.compose.foundation.Image(
-                            painter = painterResource(R.drawable.dezzymusic_monochrome),
-                            contentDescription = null,
-                            modifier = Modifier.size(22.dp),
-                        )
-                    }
-                    Column {
-                        Text(
-                            "Dezzy Insight",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = Snow,
-                        )
-                        Text(
-                            year.toString(),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = SnowDim,
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(8.dp))
-
-                Text(
-                    text       = "Your year\nwrapped up.",
-                    style      = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.Black,
-                    color      = Snow,
-                    letterSpacing = (-1).sp,
-                    lineHeight = 44.sp,
-                )
-            }
-
-            // Stats grid
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    SummaryStatBox(
-                        emoji = "⏱",
-                        label = "Time listened",
-                        value = makeTimeString(totalListeningTime),
-                        accent = MinutesC,
-                        modifier = Modifier.weight(1f),
+                            .size(16.dp)
+                            .clip(RoundedCornerShape(5.dp))
+                            .background(scheme.primary),
                     )
-                    SummaryStatBox(
-                        emoji = "▶",
-                        label = "Total plays",
-                        value = totalSongsPlayed.toString(),
-                        accent = SongsB,
-                        modifier = Modifier.weight(1f),
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = "Dezzy, Tu año $year",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontSize = 13.sp,
+                        color = scheme.onSurfaceVariant,
                     )
                 }
-
-                // Highlights card
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(GlassHi)
-                        .border(1.dp, GlassBorder, RoundedCornerShape(20.dp))
-                        .padding(18.dp)
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        Text(
-                            text  = "Highlights",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = SnowMid,
-                        )
-                        topSong?.let {
-                            SummaryHighlight(
-                                emoji  = "🎵",
-                                label  = "Top Song",
-                                value  = it.title,
-                                accent = SpotB,
-                            )
-                        }
-                        topArtist?.let {
-                            SummaryHighlight(
-                                emoji  = "🎤",
-                                label  = "Top Artist",
-                                value  = it.artist.name,
-                                accent = ArtistB,
-                            )
-                        }
-                        topAlbum?.let {
-                            SummaryHighlight(
-                                emoji  = "💿",
-                                label  = "Top Album",
-                                value  = it.album.title,
-                                accent = AlbumB,
-                            )
-                        }
-                        if (topSong == null && topArtist == null && topAlbum == null) {
-                            Text(
-                                text  = stringResource(R.string.no_listening_data),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = SnowDim,
-                            )
-                        }
-                    }
-                }
             }
+        }
+    }
+}
 
-            // Footer
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+@Composable
+private fun SummaryList(title: String, items: List<String>, modifier: Modifier = Modifier) {
+    Column(modifier) {
+        Text(
+            text = title.uppercase(EsLocale),
+            style = MaterialTheme.typography.labelMedium,
+            letterSpacing = 0.4.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .padding(bottom = 4.dp)
+                .semantics { heading() },
+        )
+        items.forEachIndexed { index, item ->
+            Row {
                 Text(
-                    joinByBullet("Dezzy", year.toString()),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = SnowDim,
+                    text = "${index + 1}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(end = 6.dp),
                 )
                 Text(
-                    "Dezzy Insight",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = SnowDim,
+                    text = item,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
     }
 }
 
+@Composable
+private fun SummaryStat(value: String, label: String, modifier: Modifier = Modifier) {
+    Column(modifier.semantics(mergeDescendants = true) { }) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Reusable small composables
+// Controles
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun InsightProgressBar(
-    totalPages: Int,
-    currentPage: Int,
+private fun StorySegments(
+    total: Int,
+    current: Int,
+    progress: Float,
+    tone: StoryTone,
     modifier: Modifier = Modifier,
 ) {
+    val on = tone.content
+    val off = if (tone.isLight) on.copy(alpha = 0.18f) else on.copy(alpha = 0.35f)
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        repeat(totalPages) { index ->
-            val fillFraction by animateFloatAsState(
-                targetValue = when {
-                    index < currentPage -> 1f
-                    index == currentPage -> 1f
-                    else -> 0f
-                },
-                animationSpec = tween(250),
-                label = "segFill$index",
-            )
+        repeat(total) { index ->
+            val fill = when {
+                index < current -> 1f
+                index == current -> progress.coerceIn(0f, 1f)
+                else -> 0f
+            }
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .height(3.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(Snow.copy(alpha = 0.2f))
+                    .background(off)
             ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(fillFraction)
+                        .fillMaxWidth(fill)
                         .fillMaxHeight()
-                        .clip(RoundedCornerShape(2.dp))
-                        .background(Snow)
+                        .background(on)
                 )
             }
         }
@@ -1622,80 +1310,55 @@ private fun InsightProgressBar(
 }
 
 @Composable
-private fun InsightYearChip(year: Int, onClick: () -> Unit) {
-    Box(
+private fun YearChip(year: Int, tone: StoryTone, enabled: Boolean, onClick: () -> Unit) {
+    val container = if (tone.isLight) tone.content.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.18f)
+    Row(
         modifier = Modifier
-            .padding(end = 6.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(GlassHi)
-            .border(1.dp, GlassBorder, RoundedCornerShape(20.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .heightIn(min = 48.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(enabled = enabled, role = Role.Button, onClickLabel = "Cambiar año", onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
+            modifier = Modifier
+                .height(32.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(container)
+                .padding(start = 12.dp, end = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(5.dp),
         ) {
             Text(
-                text       = year.toString(),
-                style      = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color      = Snow,
+                text = year.toString(),
+                style = MaterialTheme.typography.labelLarge,
+                fontSize = 14.sp,
+                color = tone.content,
             )
-            Icon(
-                painterResource(R.drawable.expand_more),
-                contentDescription = null,
-                tint     = SnowMid,
-                modifier = Modifier.size(14.dp),
-            )
+            if (enabled) {
+                Spacer(Modifier.width(4.dp))
+                Icon(
+                    painterResource(R.drawable.expand_more),
+                    contentDescription = null,
+                    tint = tone.content,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun InsightShareFab(
-    isGenerating: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val rotationDeg by rememberInfiniteTransition(label = "fabRing").animateFloat(
-        0f, 360f,
-        infiniteRepeatable(tween(2500, easing = LinearEasing)),
-        label = "fabRingRot",
-    )
-    Box(
-        modifier = modifier
-            .size(60.dp)
-            .drawBehind {
-                rotate(rotationDeg) {
-                    drawCircle(
-                        brush = Brush.sweepGradient(
-                            listOf(WelcomeC, WelcomeB, MinutesC, SongsB, AlbumB, WelcomeC)
-                        ),
-                        radius = size.minDimension / 2f + 3.dp.toPx(),
-                        style  = Stroke(width = 3.dp.toPx()),
-                    )
-                }
-            }
-    ) {
-        FloatingActionButton(
-            onClick      = onClick,
-            modifier     = Modifier.fillMaxSize(),
-            shape        = CircleShape,
-            containerColor = Color(0xFF111111),
-            contentColor = Snow,
-        ) {
-            if (isGenerating) {
-                CircularProgressIndicator(
-                    modifier    = Modifier.size(22.dp),
-                    strokeWidth = 2.dp,
-                    color       = WelcomeC,
-                )
-            } else {
-                Icon(painterResource(R.drawable.share), contentDescription = null)
-            }
-        }
+private fun ShareLabel(isGenerating: Boolean, tint: Color) {
+    if (isGenerating) {
+        CircularProgressIndicator(
+            modifier = Modifier.size(18.dp),
+            strokeWidth = 2.dp,
+            color = tint,
+        )
+    } else {
+        Icon(painterResource(R.drawable.share), contentDescription = null, modifier = Modifier.size(18.dp))
     }
+    Spacer(Modifier.width(8.dp))
+    Text("Compartir")
 }
 
 @Composable
@@ -1706,183 +1369,38 @@ private fun InsightYearPickerDialog(
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
-        onDismissRequest  = onDismiss,
-        containerColor    = Color(0xFF111118),
-        titleContentColor = Snow,
-        title = {
-            Text(
-                "Select year",
-                fontWeight = FontWeight.ExtraBold,
-                color      = Snow,
-            )
-        },
+        onDismissRequest = onDismiss,
+        title = { Text("Elige un año") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
                 availableYears.forEach { year ->
                     val isSelected = year == selectedYear
-                    Box(
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(
-                                if (isSelected)
-                                    Brush.linearGradient(listOf(WelcomeB, WelcomeC))
-                                else
-                                    Brush.linearGradient(listOf(GlassHi, GlassHi))
-                            )
-                            .border(
-                                width = if (isSelected) 0.dp else 1.dp,
-                                color = GlassBorder,
-                                shape = RoundedCornerShape(14.dp),
-                            )
-                            .clickable { onSelectYear(year) }
-                            .padding(horizontal = 20.dp, vertical = 14.dp)
+                            .heightIn(min = 48.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .selectable(selected = isSelected, role = Role.RadioButton) { onSelectYear(year) }
+                            .padding(horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(
-                            text       = year.toString(),
-                            fontWeight = if (isSelected) FontWeight.Black else FontWeight.Medium,
-                            color      = Snow,
-                            fontSize   = 16.sp,
-                        )
+                        RadioButton(selected = isSelected, onClick = null)
+                        Spacer(Modifier.width(12.dp))
+                        Text(year.toString(), style = MaterialTheme.typography.bodyLarge)
                     }
                 }
             }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.dismiss), color = WelcomeB)
+                Text("Cerrar")
             }
         }
     )
 }
 
-@Composable
-private fun InsightGlassCard(content: @Composable () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(GlassHi)
-            .border(1.dp, GlassBorder, RoundedCornerShape(16.dp))
-            .padding(16.dp)
-    ) {
-        content()
-    }
-}
-
-@Composable
-private fun InsightBadge(text: String, background: Brush) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(background)
-            .padding(horizontal = 14.dp, vertical = 6.dp)
-    ) {
-        Text(
-            text       = text,
-            style      = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold,
-            color      = Snow,
-        )
-    }
-}
-
-@Composable
-private fun InsightStatChip(emoji: String, value: String, accent: Color) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(accent.copy(alpha = 0.15f))
-            .border(1.dp, accent.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-            .padding(horizontal = 14.dp, vertical = 8.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            Text(emoji, fontSize = 13.sp)
-            Text(
-                text       = value,
-                style      = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color      = Snow,
-            )
-        }
-    }
-}
-
-@Composable
-private fun SummaryStatBox(
-    emoji: String,
-    label: String,
-    value: String,
-    accent: Color,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(18.dp))
-            .background(GlassHi)
-            .border(1.dp, GlassBorder, RoundedCornerShape(18.dp))
-            .padding(14.dp)
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(emoji, fontSize = 22.sp)
-            Text(
-                text       = value,
-                style      = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Black,
-                color      = accent,
-                maxLines   = 1,
-                overflow   = TextOverflow.Ellipsis,
-            )
-            Text(
-                text  = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = SnowDim,
-            )
-        }
-    }
-}
-
-@Composable
-private fun SummaryHighlight(emoji: String, label: String, value: String, accent: Color) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(accent.copy(alpha = 0.2f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(emoji, fontSize = 18.sp)
-        }
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            Text(
-                text  = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = SnowDim,
-            )
-            Text(
-                text       = value,
-                style      = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
-                color      = Snow,
-                maxLines   = 1,
-                overflow   = TextOverflow.Ellipsis,
-            )
-        }
-    }
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
-// Animated counter
+// Contador animado
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
@@ -1903,7 +1421,7 @@ private fun rememberAnimatedLong(target: Long, durationMs: Int = 1400): Long {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Safe image request (no hardware bitmap — required for share capture)
+// Imagen sin bitmap de hardware (necesario para capturar al compartir)
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable

@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dezzy · Fase 11 · Tu año en música</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fase11.css">
+<style>
+/* A · historias */
+.story{position:absolute;inset:0;color:#fff;padding:36px 20px 28px;display:flex;flex-direction:column}
+.story.min{background:radial-gradient(120% 70% at 80% 10%,#D86A73 0,transparent 60%),linear-gradient(170deg,#9C3F48,#5C1A24)}
+.story.sum{background:linear-gradient(170deg,#FFDDAF,#FFDADB);color:var(--on-surface)}
+.segs{display:flex;gap:4px}.segs i{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.35)}.segs i.on{background:#fff}
+.story.sum .segs i{background:rgba(34,25,26,.18)}.story.sum .segs i.on{background:var(--on-surface)}
+.stop{display:flex;align-items:center;gap:4px;margin-top:6px}
+.stop .yr{height:32px;border-radius:16px;background:rgba(255,255,255,.18);display:flex;align-items:center;gap:4px;padding:0 8px 0 12px;font-size:14px;font-weight:500}
+.stop .grow{flex:1}.stop .icon-btn{color:inherit}
+.story .ov{font-size:14px;letter-spacing:.4px;margin-top:28px;opacity:.9}
+.story .hn{font:800 76px/1 'Roboto Flex';letter-spacing:-2px;margin-top:6px}
+.story .hs{font-size:22px;margin-top:4px}
+.story p.b{font-size:16px;line-height:23px;opacity:.92;margin-top:14px;max-width:290px}
+.months{display:flex;align-items:flex-end;gap:5px;height:120px;margin-top:auto}
+.months div{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;opacity:.9;height:100%;justify-content:flex-end}
+.months i{width:100%;border-radius:4px 4px 2px 2px;background:rgba(255,255,255,.32)}.months i.on{background:#fff}
+.sact{display:flex;gap:8px;margin-top:20px}
+.sact .btn{flex:1}.btn.white{background:#fff;color:var(--primary)}.btn.ghost{background:rgba(255,255,255,.18);color:#fff}
+.sumcard{margin-top:16px;background:var(--sc-lowest);border-radius:28px;padding:18px;box-shadow:0 4px 18px rgba(0,0,0,.12)}
+.sumcard .top{display:flex;gap:14px;align-items:center}
+.sumcard .top .art{width:84px;height:84px;border-radius:14px}
+.sumcard .top b{display:block;font:500 13px Roboto;color:var(--primary);letter-spacing:.4px;text-transform:uppercase}
+.sumcard .top div div{font:500 22px/28px 'Roboto Flex'}
+.sumcols{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.sumcols h4{font-size:12px;font-weight:500;color:var(--on-surface-variant);letter-spacing:.4px;text-transform:uppercase;margin-bottom:4px}
+.sumcols ol{list-style:none;font-size:14px;line-height:22px}
+.sumcols ol li{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sumcols ol li b{color:var(--primary);margin-right:6px;font-weight:500}
+.sumfoot{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;padding-top:12px;border-top:1px solid var(--outline-variant)}
+.sumfoot b{display:block;font:600 24px 'Roboto Flex'}.sumfoot span{font-size:12px;color:var(--on-surface-variant)}
+.logo{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--on-surface-variant);margin-top:12px}
+.logo i{width:16px;height:16px;border-radius:5px;background:var(--brand)}
+/* B · informe */
+.herob{margin:4px 16px 0;border-radius:28px;background:var(--primary-container);color:var(--on-primary-container);padding:20px}
+.herob .n{font:700 52px/1 'Roboto Flex';letter-spacing:-1px;margin-top:6px}
+.herob .n small{font-size:20px;font-weight:500;letter-spacing:0;margin-left:6px}
+.herob p{font-size:14px;margin-top:6px}
+.herob .mini3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+.herob .mini3 div{background:rgba(255,255,255,.55);border-radius:14px;padding:10px}
+.herob .mini3 b{display:block;font:600 18px 'Roboto Flex'}.herob .mini3 span{font-size:12px}
+.spot{margin:8px 16px;border-radius:24px;background:var(--sc-high);overflow:hidden}
+.spot .art{width:100%;height:150px;border-radius:0;display:block}
+.spot .in{padding:14px 16px 16px;display:flex;align-items:center;gap:12px}
+.spot .in .tx{flex:1}.spot .in b{display:block;font-size:20px;font-weight:400}.spot .in span{font-size:14px;color:var(--on-surface-variant)}
+.artist{margin:8px 16px;border-radius:24px;background:var(--tertiary-container);color:var(--on-tertiary-container);padding:18px;display:flex;gap:16px;align-items:center}
+.artist .art{width:88px;height:88px}
+.artist .o{font-size:12px;letter-spacing:.4px;text-transform:uppercase;font-weight:500}
+.artist b{display:block;font:500 22px/28px 'Roboto Flex'}.artist span{font-size:14px}
+.persona{margin:8px 16px;border-radius:24px;background:var(--sc-low);border:1px solid var(--outline-variant);padding:16px}
+.persona .h{display:flex;align-items:center;gap:12px}
+.persona .ic{width:48px;height:48px;border-radius:14px;background:var(--secondary-container);color:var(--on-secondary-container);display:grid;place-items:center}
+.persona b{font-size:18px;font-weight:500}.persona p{font-size:14px;color:var(--on-surface-variant);margin-top:8px;line-height:20px}
+.fabpos{position:absolute;right:16px;bottom:108px;z-index:11}
+/* C · bento */
+.bento{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:4px 16px}
+.bx{border-radius:22px;padding:14px;min-height:132px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;background:var(--sc-high)}
+.bx.w{grid-column:span 2}
+.bx .o{font-size:12px;font-weight:500;letter-spacing:.4px;text-transform:uppercase;opacity:.85}
+.bx b{font:600 30px/1.05 'Roboto Flex';letter-spacing:-.5px}
+.bx .s{font-size:13px;line-height:17px}
+.bx.p{background:var(--primary);color:#fff}
+.bx.t{background:var(--tertiary-container);color:var(--on-tertiary-container)}
+.bx.s2{background:var(--secondary-container);color:var(--on-secondary-container)}
+.bx .corner{position:absolute;right:10px;top:10px;opacity:.7}
+.bx .art{width:56px;height:56px}
+.bx.lock{background:var(--sc);border:1px dashed var(--outline);color:var(--on-surface-variant)}
+.bars2{display:flex;gap:3px;align-items:flex-end;height:44px}.bars2 i{flex:1;background:rgba(255,255,255,.4);border-radius:3px}.bars2 i.on{background:#fff}
+.prev{width:150px;height:266px;margin:0 auto;border-radius:18px;background:radial-gradient(120% 70% at 80% 10%,#D86A73 0,transparent 60%),linear-gradient(170deg,#9C3F48,#5C1A24);color:#fff;padding:16px 14px;display:flex;flex-direction:column;box-shadow:0 6px 18px rgba(0,0,0,.2)}
+.prev .o{font-size:10px;letter-spacing:.4px;opacity:.9}.prev b{font:800 34px/1 'Roboto Flex';margin-top:6px}.prev span{font-size:12px}
+.prev .bars2{margin-top:auto;height:50px}
+.dests{display:flex;justify-content:space-around;padding:16px 8px 0}
+.dests div{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;color:var(--on-surface-variant);width:72px;text-align:center}
+.dests i{width:56px;height:56px;border-radius:18px;background:var(--sc-highest);display:grid;place-items:center;color:var(--on-surface);font-style:normal}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div class="crumb">Fase 11 · Rediseño de experiencias · 2 de 5</div>
+  <h1>Tu año en música</h1>
+  <p class="lead">Las ocho páginas de hoy (Bienvenida, Minutos, Top canciones, Canción del año, Artista del año, Top álbumes, Personalidad y Resumen), el selector de año y compartir como imagen se mantienen en las tres propuestas. Cambia cómo se recorren.</p>
+  <div class="today">
+    <div><b>Hoy</b>Pager horizontal sobre fondo oscuro con emojis, sin indicador de progreso ni pausa, y el selector de año escondido.</div>
+    <div><b>Problema</b>No se sabe cuántas páginas quedan, la tipografía cambia de una a otra y compartir sólo existe al final.</div>
+  </div>
+  <nav class="nav5"><a href="fase11-mapa.html"><span class="ms s18">public</span>Mapa musical</a><a class="on" href="fase11-wrapped.html"><span class="ms s18">auto_awesome</span>Tu año</a><a href="fase11-tiempo.html"><span class="ms s18">schedule</span>Máquina del tiempo</a><a href="fase11-dna.html"><span class="ms s18">hub</span>Song DNA</a><a href="fase11-dj.html"><span class="ms s18">graphic_eq</span>DJ</a></nav>
+</header>
+
+<!-- ═════════ BOCETO A ═════════ -->
+<section class="sketch"><div class="sk-head"><span class="sk-tag">Boceto A</span><h2>Historias con ritmo</h2>
+<p>Sigue siendo un pase de páginas, pero con barra de progreso por segmentos, pausa, toques a izquierda y derecha, y un color propio por página sacado de la paleta de Dezzy. Cada página tiene su botón Compartir.</p></div>
+<div class="sk-body"><div class="phones">
+<div><div class="phone lt"><div class="content">
+  <div class="story min">
+    <div class="segs"><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="stop"><span class="yr">2026<span class="ms s20">arrow_drop_down</span></span><span class="grow"></span><span class="icon-btn"><span class="ms">pause</span></span><span class="icon-btn"><span class="ms">close</span></span></div>
+    <div class="ov">Este año escuchaste</div>
+    <div class="hn">68.420</div>
+    <div class="hs">minutos de música</div>
+    <p class="b">Son 47 días seguidos sin parar. Tu mes más intenso fue agosto, con 9.870 minutos.</p>
+    <div class="months"><div><i style="height:40%"></i>E</div><div><i style="height:48%"></i>F</div><div><i style="height:36%"></i>M</div><div><i style="height:55%"></i>A</div><div><i style="height:62%"></i>M</div><div><i style="height:70%"></i>J</div><div><i style="height:78%"></i>J</div><div><i class="on" style="height:100%"></i>A</div><div><i style="height:66%"></i>S</div><div><i style="height:58%"></i>O</div><div><i style="height:30%"></i>N</div><div><i style="height:8%"></i>D</div></div>
+    <div class="sact"><span class="btn white"><span class="ms">share</span>Compartir</span><span class="btn ghost">Siguiente<span class="ms">arrow_forward</span></span></div>
+  </div>
+</div></div><div class="cap">Página 2 de 8: Minutos</div></div>
+
+<div><div class="phone"><div class="content">
+  <div class="story sum">
+    <div class="segs"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+    <div class="stop"><span class="yr" style="background:rgba(34,25,26,.08)">2026<span class="ms s20">arrow_drop_down</span></span><span class="grow"></span><span class="icon-btn"><span class="ms">replay</span></span><span class="icon-btn"><span class="ms">close</span></span></div>
+    <div class="sumcard">
+      <div class="top"><span class="art a5"></span><div><b>Tu canción del año</b><div>Puente</div><span style="font-size:14px;color:var(--on-surface-variant)">Gustavo Cerati, 214 veces</span></div></div>
+      <div class="sumcols"><div><h4>Canciones</h4><ol><li><b>1</b>Puente</li><li><b>2</b>De Música Ligera</li><li><b>3</b>Tusa</li><li><b>4</b>Labios Rotos</li><li><b>5</b>Pájaros</li></ol></div>
+      <div><h4>Artistas</h4><ol><li><b>1</b>Gustavo Cerati</li><li><b>2</b>Soda Stereo</li><li><b>3</b>Karol G</li><li><b>4</b>Zoé</li><li><b>5</b>Siddhartha</li></ol></div></div>
+      <div class="sumfoot"><div><b>68.420</b><span>minutos</span></div><div><b>Explorador</b><span>tu perfil de oyente</span></div></div>
+      <div class="logo"><i></i>Dezzy, Tu año 2026</div>
+    </div>
+    <div class="sact" style="margin-top:auto"><span class="btn filled"><span class="ms">share</span>Compartir</span><span class="btn out" style="background:var(--sc-lowest)"><span class="ms">download</span>Guardar</span></div>
+  </div>
+</div></div><div class="cap">Página 8 de 8: Resumen</div></div>
+</div>
+<div class="notes"><h3>Qué cambia</h3><ul>
+<li>Barra de 8 segmentos arriba, avance automático con pausa, toque a la izquierda para volver y a la derecha para seguir.</li>
+<li>Año como chip desplegable siempre visible (<code>availableYears</code>).</li>
+<li>Cada página con un fondo distinto de la paleta (primario, terciario, secundario), sin emojis; cifras en Roboto Flex a 76 sp.</li>
+<li>Minutos con barras por mes y el mes más intenso resaltado.</li>
+<li>El resumen es una tarjeta clara lista para compartir o guardar como imagen (el modo captura de hoy).</li></ul>
+<h3>A tener en cuenta</h3><ul><li>Los minutos por mes salen de los eventos de reproducción del año; hay que añadir esa consulta al ViewModel.</li><li>Con «reducir movimiento» el avance automático se desactiva y queda sólo el toque.</li><li>TalkBack: los toques laterales se exponen como acciones «Anterior» y «Siguiente».</li></ul>
+<div class="dials"><span class="dial">Pantallas nuevas: 0</span><span class="dial">Código reutilizado: alto</span><span class="dial">Riesgo: bajo</span></div></div>
+</div></section>
+
+<!-- ═════════ BOCETO B ═════════ -->
+<section class="sketch"><div class="sk-head"><span class="sk-tag">Boceto B</span><h2>Un informe que se lee de arriba abajo</h2>
+<p>Se acaba el pase de páginas: todo el año en una sola pantalla con desplazamiento, como un artículo. Más fácil de releer, de comparar años y de usar con TalkBack. Compartir es un botón flotante que exporta la tarjeta resumen.</p></div>
+<div class="sk-body"><div class="phones">
+<div><div class="phone"><div class="content pt">
+  <div class="tb-row"><span class="icon-btn"><span class="ms">arrow_back</span></span><span class="grow"></span><span class="icon-btn"><span class="ms">share</span></span></div>
+  <div class="lg-title" style="padding-top:0"><h1>Tu año en música</h1></div>
+  <div class="chips"><span class="chip sel"><span class="ms">check</span>2026</span><span class="chip">2025</span><span class="chip">2024</span><span class="chip">2023</span></div>
+  <div class="herob"><div class="overline" style="color:inherit">Escuchaste</div><div class="n">68.420<small>minutos</small></div><p>Son 47 días seguidos. 12 % más que en 2025.</p>
+    <div class="mini3"><div><b>1.940</b><span>canciones</span></div><div><b>312</b><span>artistas</span></div><div><b>48</b><span>géneros</span></div></div></div>
+  <div class="sec"><h2>Tu canción del año</h2></div>
+  <div class="spot"><span class="art a5"></span><div class="in"><div class="tx"><b>Puente</b><span>Gustavo Cerati, 214 veces</span></div><span class="icon-btn ton" style="width:48px;height:48px"><span class="ms f">play_arrow</span></span></div></div>
+  <div data-mini></div>
+</div></div><div class="cap">Arriba: cifras del año</div></div>
+
+<div><div class="phone"><div class="content pt">
+  <div class="tb-row"><span class="icon-btn"><span class="ms">arrow_back</span></span><span class="grow" style="font-size:20px">Tu año en música 2026</span><span class="icon-btn"><span class="ms">share</span></span></div>
+  <div class="artist"><span class="art a2 rnd"></span><div><div class="o">Artista del año</div><b>Gustavo Cerati</b><span>112 horas, en tu top 1 % de oyentes</span></div></div>
+  <div class="sec"><h2>Top álbumes</h2><span class="tb">Ver 10</span></div>
+  <div class="carousel"><div class="tile"><span class="art a5"></span><b>Bocanada</b><span>Gustavo Cerati</span></div><div class="tile"><span class="art a4"></span><b>Canción Animal</b><span>Soda Stereo</span></div><div class="tile"><span class="art a1"></span><b>Mañana Será Bonito</b><span>Karol G</span></div></div>
+  <div class="sec"><h2>Tu perfil de oyente</h2></div>
+  <div class="persona"><div class="h"><span class="ic"><span class="ms s28">explore</span></span><b>Explorador musical</b></div><p>Escuchaste 312 artistas distintos y 86 eran nuevos para ti. Pocas veces repites el mismo disco dos días seguidos.</p></div>
+  <span class="efab fabpos"><span class="ms">ios_share</span>Compartir mi año</span>
+  <div data-mini></div>
+</div></div><div class="cap">Más abajo: artista, álbumes y perfil</div></div>
+</div>
+<div class="notes"><h3>Qué cambia</h3><ul>
+<li>Una sola <code>LazyColumn</code> con barra superior grande que se pliega; años en chips para saltar entre ellos.</li>
+<li>Tarjeta héroe con minutos y comparación con el año anterior, y tres cifras (canciones, artistas, géneros).</li>
+<li>Canción del año, Artista del año, Top álbumes y Perfil como secciones con su propio color de contenedor.</li>
+<li>Botón flotante «Compartir mi año» que genera la tarjeta resumen del boceto A.</li></ul>
+<h3>A tener en cuenta</h3><ul><li>Pierde el efecto «sorpresa» de ir revelando datos; a cambio es la versión más legible y accesible.</li><li>La comparación con el año anterior sólo aparece si hay datos de ese año.</li><li>Elimina el <code>HorizontalPager</code> y gran parte de las 1.900 líneas actuales; es la que más simplifica el código.</li></ul>
+<div class="dials"><span class="dial">Pantallas nuevas: 0</span><span class="dial">Código reutilizado: medio</span><span class="dial">Riesgo: bajo</span></div></div>
+</div></section>
+
+<!-- ═════════ BOCETO C ═════════ -->
+<section class="sketch"><div class="sk-head"><span class="sk-tag">Boceto C</span><h2>Mosaico de tarjetas para compartir</h2>
+<p>Tu año como un mosaico: cada dato es una tarjeta que se toca para verla a pantalla completa y compartirla sola. Las que aún no tienen datos suficientes aparecen como «por desbloquear», lo que invita a volver durante el año.</p></div>
+<div class="sk-body"><div class="phones">
+<div><div class="phone"><div class="content pt">
+  <div class="tb-row"><span class="icon-btn"><span class="ms">arrow_back</span></span><span class="grow">Tu 2026<small>Actualizado hoy</small></span><span class="chip" style="margin-right:8px">2026<span class="ms">arrow_drop_down</span></span></div>
+  <div class="bento">
+    <div class="bx p w"><span class="ms corner">schedule</span><div class="o">Minutos</div><div style="display:flex;align-items:flex-end;gap:16px"><div><b style="font-size:40px">68.420</b><div class="s">47 días seguidos</div></div><div class="bars2" style="flex:1"><i style="height:40%"></i><i style="height:48%"></i><i style="height:36%"></i><i style="height:55%"></i><i style="height:70%"></i><i style="height:78%"></i><i class="on" style="height:100%"></i><i style="height:62%"></i><i style="height:30%"></i></div></div></div>
+    <div class="bx t"><span class="art a5"></span><div><div class="o">Canción del año</div><div style="font-size:16px;font-weight:500;margin-top:2px">Puente</div><div class="s">214 veces</div></div></div>
+    <div class="bx s2"><span class="art a2 rnd"></span><div><div class="o">Artista</div><div style="font-size:16px;font-weight:500;margin-top:2px">G. Cerati</div><div class="s">112 horas</div></div></div>
+    <div class="bx"><span class="ms corner">explore</span><div class="o">Perfil</div><div><b style="font-size:22px">Explorador</b><div class="s">312 artistas</div></div></div>
+    <div class="bx"><span class="ms corner">album</span><div class="o">Álbum</div><div><div style="font-size:16px;font-weight:500">Bocanada</div><div class="s">38 escuchas completas</div></div></div>
+    <div class="bx lock w" style="min-height:76px;flex-direction:row;align-items:center;gap:12px;justify-content:flex-start"><span class="ms">lock</span><div><div style="font-size:15px;font-weight:500;color:var(--on-surface)">Tu década favorita</div><div class="s">Se desbloquea con 20 viajes en la Máquina del tiempo</div></div></div>
+  </div>
+  <div data-mini></div>
+</div></div><div class="cap">Mosaico del año</div></div>
+
+<div><div class="phone"><div class="content">
+  <div class="pt" style="opacity:.35"><div class="tb-row"><span class="icon-btn"><span class="ms">arrow_back</span></span><span class="grow">Tu 2026</span></div></div>
+  <div class="scrim-modal"></div>
+  <div class="sheet" style="padding-bottom:32px">
+    <div class="handle"></div>
+    <h3>Compartir «Minutos»</h3>
+    <div class="seg" style="margin:4px 24px 16px"><div class="on"><span class="ms">check</span>Historia 9:16</div><div>Cuadrado</div></div>
+    <div class="prev"><span class="o">TU AÑO EN DEZZY</span><b>68.420</b><span>minutos de música</span><div class="bars2"><i style="height:40%"></i><i style="height:55%"></i><i style="height:70%"></i><i class="on" style="height:100%"></i><i style="height:62%"></i><i style="height:30%"></i></div></div>
+    <div class="dests"><div><i><span class="ms">auto_stories</span></i>Historias</div><div><i><span class="ms">chat</span></i>Mensajes</div><div><i><span class="ms">download</span></i>Guardar</div><div><i><span class="ms">more_horiz</span></i>Más</div></div>
+  </div>
+</div></div><div class="cap">Compartir una sola tarjeta</div></div>
+</div>
+<div class="notes"><h3>Qué cambia</h3><ul>
+<li>Mosaico en <code>LazyVerticalGrid</code>: Minutos ancho, Canción, Artista, Perfil y Álbum; cada tarjeta abre su página a pantalla completa (las de hoy).</li>
+<li>Tarjetas «por desbloquear» como gancho para usar Máquina del tiempo, Song DNA o el DJ.</li>
+<li>Hoja de compartir por tarjeta con formato Historia 9:16 o Cuadrado y vista previa real; usa el selector de compartir de Android.</li>
+<li>Año en un menú desplegable en la barra; se actualiza durante todo el año, no sólo en diciembre.</li></ul>
+<h3>A tener en cuenta</h3><ul><li>«Tu década favorita» y otras tarjetas bloqueadas son nuevas; se pueden omitir en la primera versión.</li><li>La imagen se genera con el modo captura que ya existe, ahora en dos tamaños.</li></ul>
+<div class="dials"><span class="dial">Pantallas nuevas: 1 (mosaico)</span><span class="dial">Código reutilizado: medio</span><span class="dial">Riesgo: medio</span></div></div>
+</div></section>
+</div>
+<script src="fase11.js"></script>
+</body>
+</html>

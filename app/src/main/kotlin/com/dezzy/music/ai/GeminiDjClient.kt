@@ -9,6 +9,9 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 
+/** Alias que Google actualiza solo; los nombres con versión (p. ej. 1.5-flash-8b) se retiran. */
+private const val MODEL_ID = "gemini-flash-lite-latest"
+
 class GeminiDjClient(private val client: OkHttpClient) {
 
     // Tu API Key de Google Gemini
@@ -26,7 +29,7 @@ class GeminiDjClient(private val client: OkHttpClient) {
         customRequest: String? = null
     ): Result<String> = withContext(Dispatchers.IO) {
         try {
-            val modelId = "gemini-1.5-flash-8b"
+            val modelId = MODEL_ID
             
             val languageInstruction = when (djLanguage) {
                 "es" -> "Responde en Español."
@@ -98,7 +101,7 @@ class GeminiDjClient(private val client: OkHttpClient) {
 
     suspend fun generatePlaylistRecommendationsQuery(contextSongs: List<String>): Result<String> = withContext(Dispatchers.IO) {
         try {
-            val modelId = "gemini-1.5-flash-8b"
+            val modelId = MODEL_ID
             val songsList = contextSongs.joinToString(", ")
             val prompt = "Eres un experto musical. El usuario quiere añadir nuevas canciones a su playlist. La playlist actualmente contiene las siguientes canciones: [$songsList]. Tu tarea es devolver ÚNICAMENTE una consulta de búsqueda (query) ideal para buscar en YouTube Music canciones similares que encajen perfectamente en este estilo, pero que sean diferentes a las de la lista. Por ejemplo, podrías devolver un subgénero, o 'canciones estilo [Artista 1] y [Artista 2]'. Devuelve SOLO la consulta de búsqueda, sin comillas ni explicaciones."
             
@@ -145,7 +148,7 @@ class GeminiDjClient(private val client: OkHttpClient) {
 
     suspend fun generateSearchQuery(userRequest: String, sentiment: String): Result<String> = withContext(Dispatchers.IO) {
         try {
-            val modelId = "gemini-1.5-flash-8b"
+            val modelId = MODEL_ID
             val prompt = "El usuario de una app de música ha introducido la siguiente petición textual: '$userRequest'. El análisis de sentimiento detectó que su estado de ánimo es: '$sentiment'. Tu tarea es devolver ÚNICAMENTE los términos de búsqueda ideales (nombre de género, artista o mood) para buscar en YouTube Music. Por ejemplo, si dice 'acabo de terminar con mi novia', devuelve 'sad breakup songs' o 'canciones tristes de desamor'. Si dice 'vamos a entrenar', devuelve 'workout hype music'. Devuelve SOLO la consulta de búsqueda, sin comillas, ni explicaciones adicionales."
             
             val jsonBody = JSONObject().apply {
@@ -198,7 +201,7 @@ class GeminiDjClient(private val client: OkHttpClient) {
 
     suspend fun executeAgentTask(userRequest: String, sentiment: String, djName: String): Result<AgentResponse> = withContext(Dispatchers.IO) {
         try {
-            val modelId = "gemini-1.5-flash-8b"
+            val modelId = MODEL_ID
             val prompt = """
                 Eres $djName, un DJ y asistente musical inteligente con pensamiento crítico. 
                 El usuario te ha dicho: '$userRequest'. (Su estado de ánimo es: $sentiment).
@@ -275,7 +278,7 @@ class GeminiDjClient(private val client: OkHttpClient) {
             "Éxitos de trap y reggaetón para motivar"
         )
         try {
-            val modelId = "gemini-1.5-flash-8b"
+            val modelId = MODEL_ID
             val prompt = """
                 Basándote en estos gustos musicales del usuario: "$topContext", genera exactamente 4 sugerencias breves de vibras o estados de ánimo musicales en español, idénticas al estilo de Spotify AI DJ (por ejemplo: "Ritmos de power pop para relajarme esta noche", "Canciones de lo-fi house atmosférico", "Alternativo intenso que tienes en tu playlist", "Éxitos de trap para entrenar").
                 Devuelve un JSON con el campo "vibes": array de 4 strings de máximo 8 palabras cada uno.

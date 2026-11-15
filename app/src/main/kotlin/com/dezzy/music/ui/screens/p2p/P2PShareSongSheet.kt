@@ -105,7 +105,7 @@ fun P2PShareSongSheet(song: P2PSong, onDismiss: () -> Unit) {
                     "Añade a alguien desde Social con su enlace, su nombre o el radar «Cerca».",
                     Modifier.fillMaxWidth(),
                 ) {
-                    FilledTonalButton(onClick = { shareText(context, "🎵 ${song.title} · ${song.artist}\n${song.url}", "Compartir canción") }) {
+                    FilledTonalButton(onClick = { shareText(context, "${song.title} · ${song.artist}\n${song.url}", "Compartir canción") }) {
                         Text("Compartir fuera de Dezzy")
                     }
                 }

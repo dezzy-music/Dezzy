@@ -23,6 +23,7 @@ import coil3.disk.directory
 import coil3.request.CachePolicy
 import coil3.request.allowHardware
 import coil3.request.crossfade
+import com.dezzy.music.security.SessionBackup
 import com.dezzy.music.security.SessionCrypto
 import com.dezzy.music.constants.*
 import com.dezzy.music.extensions.*
@@ -90,6 +91,8 @@ class App : Application(), SingletonImageLoader.Factory {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        // Antes de cualquier lectura de DataStore: si «settings» está dañado, de aquí salen las sesiones.
+        SessionBackup.init(this)
         if (currentProcessName()?.endsWith(":crash") == true) {
             Timber.plant(Timber.DebugTree())
             return
@@ -151,11 +154,11 @@ class App : Application(), SingletonImageLoader.Factory {
                         settings[FirstLaunchInitializedKey] = true
                         settings[DarkModeKey] = DarkMode.ON.name
                         settings[PureBlackKey] = true
-                        settings[FontFamilyKey] = "LORA"
+                        settings[FontFamilyKey] = "MATERIAL3"
                         settings[KeepPlayerScreenAwakeKey] = true
                         settings[UseNewMiniPlayerDesignKey] = true
                         settings[DynamicMiniPlayerColorKey] = true
-                        settings[PlayerDesignStyleKey] = PlayerDesignStyle.SPOTIFY.name
+                        settings[PlayerDesignStyleKey] = PlayerDesignStyle.V2.name
                         settings[PlayerBackgroundStyleKey] = PlayerBackgroundStyle.GLOW_ANIMATED.name
                         settings[MiniPlayerBackgroundStyleKey] = "LIVE_MESH"
                         settings[CanvasModeKey] = CanvasMode.APPLE_WITH_FALLBACK.name
@@ -170,6 +173,23 @@ class App : Application(), SingletonImageLoader.Factory {
                         settings[ShowArtistVideoKey] = true
                         settings[AudioQualityKey] = AudioQuality.HIGHEST.name
                         settings[AutoDownloadOnLikeKey] = true
+                        settings[MaterialDefaultsMigratedKey] = true
+                    }
+                } else if (prefs[MaterialDefaultsMigratedKey] != true) {
+                    // Una sola vez en instalaciones previas: el primer arranque antiguo dejaba
+                    // la fuente serif «Lora» y el reproductor Spotify. Se pasan a los valores
+                    // Material 3 (fuente Roboto, reproductor «Moderno»); si el usuario los
+                    // cambia después, se respeta su elección.
+                    dataStore.edit { settings ->
+                        if (settings[FontFamilyKey] == null || settings[FontFamilyKey] == "LORA") {
+                            settings[FontFamilyKey] = "MATERIAL3"
+                        }
+                        if (settings[PlayerDesignStyleKey] == null ||
+                            settings[PlayerDesignStyleKey] == PlayerDesignStyle.SPOTIFY.name
+                        ) {
+                            settings[PlayerDesignStyleKey] = PlayerDesignStyle.V2.name
+                        }
+                        settings[MaterialDefaultsMigratedKey] = true
                     }
                 }
 
@@ -292,14 +312,21 @@ class App : Application(), SingletonImageLoader.Factory {
                 .map { it[InnerTubeCookieKey] }
                 .distinctUntilChanged()
                 .collect { cookie ->
-                    try {
-                        YouTube.cookie = cookie?.let { SessionCrypto.decrypt(it) }
-                    } catch (e: Exception) {
-                        Timber.e("Could not parse cookie. Clearing existing cookie. %s", e.message)
-                        forgetAccount(this@App)
+                    if (cookie.isNullOrEmpty()) {
+                        YouTube.cookie = cookie
+                        return@collect
                     }
+                    // Un fallo del Keystore es pasajero: se reintenta y, si sigue, se deja la sesión
+                    // guardada intacta. Antes se ponía la cookie vacía (sesión «muerta» hasta reiniciar).
+                    val plain = SessionCrypto.decryptResilient(cookie, attempts = 6)
+                    if (plain == null) {
+                        Timber.w("YouTube cookie temporarily unreadable; keeping the stored session")
+                        return@collect
+                    }
+                    YouTube.cookie = plain
                 }
         }
+        SessionBackup.startMirroring(applicationScope, dataStore)
         applicationScope.launch(Dispatchers.IO) {
             dataStore.data
                 .map { it[WebClientPoTokenEnabledKey] ?: false }

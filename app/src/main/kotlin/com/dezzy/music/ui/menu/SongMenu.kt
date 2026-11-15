@@ -204,7 +204,7 @@ fun SongMenu(
         if (uri != null) {
             coroutineScope.launch {
                 com.dezzy.music.utils.SongMods.setCover(context, database, song, uri)
-                    .onSuccess { Toast.makeText(context, "Carátula personalizada ✓", Toast.LENGTH_SHORT).show() }
+                    .onSuccess { Toast.makeText(context, "Carátula personalizada", Toast.LENGTH_SHORT).show() }
                     .onFailure { Toast.makeText(context, "No se pudo cambiar la carátula", Toast.LENGTH_SHORT).show() }
             }
         }

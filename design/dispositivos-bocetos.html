@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dezzy · Conectar dispositivos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Página de documentación (clara, igual que las fases anteriores) */
+  --page:#F4EFEF; --ink:#22191A; --muted:#5E5051; --outline-variant:#D8C1C2; --primary-doc:#9C3F48; --sc-doc:#F8EBEB;
+  /* Reproductor oscuro con color dinámico de la carátula */
+  --album:#1F5C66;           /* color vibrante extraído de la portada */
+  --album-deep:#0E2B31;
+  --bg:#121212;
+  --sheet:#1E2324;           /* superficie de la hoja: tono de la portada muy oscuro */
+  --sheet-high:#283032;
+  --sheet-highest:#323B3D;
+  --on:#F2F4F4; --on-var:#AEB8BA; --on-dim:#7C8789;
+  --live:#5EE0B4;            /* «dispositivo activo»: derivado de la paleta, no un verde fijo */
+  --live-container:#163C35;
+  --warn:#F2B66B; --error:#FF8A80;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--page);color:var(--ink);font-family:Roboto,system-ui,sans-serif;line-height:1.45}
+.ms{font-family:'Material Symbols Outlined';font-weight:400;font-style:normal;font-size:24px;line-height:1;display:inline-block;
+  letter-spacing:normal;text-transform:none;white-space:nowrap;direction:ltr;-webkit-font-smoothing:antialiased;
+  font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;user-select:none}
+.ms.f{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+.s16{font-size:16px!important}.s18{font-size:18px!important}.s20{font-size:20px!important}.s28{font-size:28px!important}.s32{font-size:32px!important}.s40{font-size:40px!important}
+
+.wrap{max-width:1240px;margin:0 auto;padding:40px 16px 80px}
+header.top h1{font-family:'Roboto Flex',Roboto;font-size:36px;font-weight:700;letter-spacing:-.5px}
+header.top p.lead{font-size:16px;color:var(--muted);max-width:860px;margin-top:8px}
+.today{margin-top:20px;background:#fff;border:1px solid var(--outline-variant);border-radius:20px;padding:18px 20px;font-size:14px;max-width:980px}
+.today h4{font-size:15px;margin-bottom:6px}
+.today ul{padding-left:18px}.today li{margin:3px 0}
+section.sketch{margin-top:56px;padding-top:28px;border-top:3px solid var(--primary-doc)}
+.sk-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.sk-tag{font:700 13px Roboto;letter-spacing:1px;background:var(--primary-doc);color:#fff;border-radius:8px;padding:4px 10px}
+.sk-head h3{font-family:'Roboto Flex',Roboto;font-size:28px;font-weight:700}
+.sk-head p{flex-basis:100%;color:var(--muted);font-size:15px;max-width:880px}
+.sk-body{display:flex;gap:28px;flex-wrap:wrap;margin-top:24px;align-items:flex-start}
+.phones{display:flex;gap:28px;flex-wrap:wrap}
+.cap{font-size:13px;color:var(--muted);text-align:center;margin-top:12px;max-width:360px}
+.notes{flex:1 1 300px;min-width:280px;background:#fff;border:1px solid var(--outline-variant);border-radius:20px;padding:20px;font-size:14px}
+.notes h4{font-size:15px;margin:14px 0 6px}.notes h4:first-child{margin-top:0}
+.notes ul{padding-left:18px}.notes li{margin:3px 0}
+.notes code,.today code{font-size:12.5px;background:var(--sc-doc);border-radius:4px;padding:1px 4px}
+.pro{color:#2E6B3A}.con{color:#9C3F48}
+table.cmp{border-collapse:collapse;width:100%;font-size:13.5px;margin-top:6px}
+table.cmp td,table.cmp th{border-top:1px solid var(--outline-variant);padding:6px 6px;text-align:left;vertical-align:top}
+table.cmp th{font-weight:500;color:var(--muted)}
+
+/* ── Teléfono oscuro: 1px = 1dp ─────────────────────────────────────────── */
+.phone{width:360px;height:780px;border-radius:32px;background:var(--bg);overflow:hidden;position:relative;
+  box-shadow:0 0 0 10px #1d1b1b,0 18px 40px rgba(0,0,0,.25);display:flex;flex-direction:column;color:var(--on)}
+.statusbar{height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-size:13px;font-weight:500;z-index:5;color:#fff}
+.statusbar .ic{display:flex;gap:4px}
+.gesture{height:20px;flex:none;display:flex;align-items:center;justify-content:center;z-index:5;position:relative}
+.gesture i{width:108px;height:4px;border-radius:2px;background:rgba(255,255,255,.85)}
+.content{flex:1;overflow:hidden;position:relative;display:flex;flex-direction:column}
+
+/* Reproductor de fondo (atenuado bajo la hoja) */
+.player-bg{position:absolute;inset:0;background:linear-gradient(180deg,var(--album) 0%,var(--album-deep) 55%,var(--bg) 100%)}
+.pb-head{display:flex;align-items:center;justify-content:space-between;padding:56px 8px 0}
+.pb-head .ctx{text-align:center;font-size:11px;letter-spacing:.8px;color:var(--on-var)}
+.pb-head .ctx b{display:block;font-size:13px;letter-spacing:0;color:var(--on);font-weight:500}
+.pb-art{width:312px;height:312px;margin:28px auto 0;border-radius:8px;box-shadow:0 14px 34px rgba(0,0,0,.45)}
+.pb-title{padding:28px 24px 0;font-size:22px;font-weight:700}
+.pb-artist{padding:2px 24px 0;font-size:15px;color:var(--on-var)}
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:2}
+
+.art-a{background:
+  radial-gradient(circle at 30% 30%,#7FE3D0 0 14%,transparent 15%),
+  radial-gradient(circle at 70% 65%,#F7C873 0 20%,transparent 21%),
+  linear-gradient(135deg,#1F5C66,#3B8C8C 50%,#0E2B31)}
+.art-b{background:radial-gradient(circle at 60% 40%,#F4A6B8 0 22%,transparent 23%),linear-gradient(160deg,#5B2440,#B5487A)}
+.art-c{background:radial-gradient(circle at 40% 60%,#C9D86B 0 18%,transparent 19%),linear-gradient(140deg,#2F3A12,#6F8A2A)}
+.art-d{background:radial-gradient(circle at 50% 50%,#9FB6FF 0 16%,transparent 17%),linear-gradient(135deg,#1B2552,#4A5FB0)}
+
+/* Hoja inferior */
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--sheet);border-radius:28px 28px 0 0;z-index:3;display:flex;flex-direction:column;overflow:hidden}
+.handle{width:32px;height:4px;border-radius:2px;background:var(--on-dim);margin:10px auto 4px;flex:none}
+.sh-head{display:flex;align-items:center;gap:8px;padding:6px 8px 4px 20px;flex:none}
+.sh-head h2{flex:1;font-size:20px;font-weight:700;line-height:26px}
+.icon-btn{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;color:var(--on-var);flex:none;position:relative}
+.scan{display:flex;align-items:center;gap:8px;margin:0 20px 10px;font-size:13px;color:var(--on-var);flex:none}
+.radar{width:16px;height:16px;border-radius:50%;background:var(--live);position:relative;flex:none}
+.radar::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--live);opacity:.45;animation:ping 1.6s ease-out infinite}
+@keyframes ping{from{transform:scale(.4);opacity:.7}to{transform:scale(1.3);opacity:0}}
+@media (prefers-reduced-motion:reduce){.radar::after,.spin{animation:none!important}}
+
+.now{margin:0 16px 8px;border-radius:20px;background:var(--live-container);padding:14px 16px 10px;flex:none}
+.now .lbl{font-size:12px;font-weight:500;letter-spacing:.4px;color:var(--live);display:flex;align-items:center;gap:6px}
+.now .dev{display:flex;align-items:center;gap:12px;margin-top:8px}
+.now .dev .ic{width:48px;height:48px;border-radius:14px;background:rgba(94,224,180,.16);display:grid;place-items:center;color:var(--live);flex:none}
+.now .dev .tx{flex:1;min-width:0}
+.now .dev b{display:block;font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.now .dev span{font-size:13px;color:var(--on-var);display:flex;align-items:center;gap:4px}
+.out{display:flex;align-items:center;gap:6px;margin-top:10px;height:40px;border-radius:12px;background:rgba(255,255,255,.06);padding:0 6px 0 12px;font-size:13px;color:var(--on)}
+.out .t{flex:1}
+.vol{display:flex;align-items:center;gap:10px;margin-top:6px;color:var(--on-var)}
+.track{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.22);position:relative}
+.track i{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:var(--on)}
+.track i::after{content:"";position:absolute;right:-6px;top:-4px;width:12px;height:12px;border-radius:50%;background:var(--on)}
+
+.sec{display:flex;align-items:center;gap:8px;padding:12px 20px 4px;font-size:13px;font-weight:500;color:var(--on-var);flex:none;letter-spacing:.2px}
+.sec .ms{font-size:18px}
+.sec .sp{flex:1}
+.dev-row{display:flex;align-items:center;gap:14px;min-height:64px;padding:6px 8px 6px 20px;flex:none;position:relative}
+.dev-row .ic{width:40px;height:40px;border-radius:12px;background:var(--sheet-high);display:grid;place-items:center;color:var(--on);flex:none}
+.dev-row .tx{flex:1;min-width:0}
+.dev-row b{display:block;font-size:16px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dev-row span{font-size:13px;color:var(--on-var);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dev-row.off{opacity:.45}
+.dev-row.active b,.dev-row.active span{color:var(--live)}
+.dev-row.active .ic{background:rgba(94,224,180,.16);color:var(--live)}
+.dev-row.busy{background:rgba(255,255,255,.04)}
+.badge{font-size:11px;font-weight:700;letter-spacing:.3px;border-radius:6px;padding:2px 6px;background:var(--sheet-highest);color:var(--on-var);flex:none}
+.spin{width:22px;height:22px;border-radius:50%;border:2.5px solid rgba(255,255,255,.18);border-top-color:var(--live);animation:rot 1s linear infinite;margin-right:13px;flex:none}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+.together{margin:8px 16px 0;border-radius:20px;background:var(--sheet-high);display:flex;align-items:center;gap:14px;padding:12px 8px 12px 16px;flex:none}
+.together .ic{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#F7C873,#E3708E);display:grid;place-items:center;color:#2a1020;flex:none}
+.together .tx{flex:1;min-width:0}
+.together b{display:block;font-size:16px;font-weight:500}
+.together span{font-size:13px;color:var(--on-var)}
+
+.btn{height:40px;border-radius:20px;padding:0 20px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:500;flex:none;white-space:nowrap}
+.btn .ms{font-size:18px}
+.btn.filled{background:var(--on);color:#111}
+.btn.tonal{background:var(--sheet-highest);color:var(--on)}
+.btn.outlined{border:1px solid var(--on-dim);color:var(--on)}
+.btn.text{color:var(--live);padding:0 12px}
+.btn.live{background:var(--live);color:#06231B}
+
+.snack{position:absolute;left:12px;right:12px;bottom:12px;background:#E8ECEC;color:#16201F;border-radius:8px;min-height:48px;
+  display:flex;align-items:center;padding:0 8px 0 16px;font-size:14px;z-index:4;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.snack .t{flex:1}.snack b{color:#1F6E58;font-weight:500;padding:0 8px}
+.hl{box-shadow:0 0 0 3px #F6A04D;border-radius:inherit}
+.callout{position:absolute;background:#F6A04D;color:#2b1a00;font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px;z-index:6;letter-spacing:.3px}
+
+/* Vacío / error */
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;padding:12px 24px 0;flex:none}
+.empty .big{width:88px;height:88px;border-radius:50%;background:var(--sheet-high);display:grid;place-items:center;color:var(--on-var);margin-bottom:14px}
+.empty h3{font-size:18px;font-weight:700}
+.empty p{font-size:14px;color:var(--on-var);margin-top:4px}
+.checks{margin:14px 20px 0;border-radius:16px;background:var(--sheet-high);padding:6px 0;flex:none}
+.checks div{display:flex;align-items:center;gap:12px;padding:8px 16px;font-size:14px}
+.checks .ms{font-size:20px;color:var(--on-var)}
+
+/* Escuchar juntos */
+.seg{display:flex;margin:4px 16px 12px;border:1px solid var(--on-dim);border-radius:20px;overflow:hidden;flex:none}
+.seg div{flex:1;height:40px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:14px;font-weight:500;color:var(--on)}
+.seg div.on{background:var(--live-container);color:var(--live)}
+.seg .ms{font-size:18px}
+.code{display:flex;gap:8px;justify-content:center;margin:6px 16px 0;flex:none}
+.code i{width:44px;height:56px;border-radius:12px;background:var(--sheet-high);display:grid;place-items:center;font:700 24px 'Roboto Flex',Roboto;font-style:normal;color:var(--on)}
+.code i.cur{box-shadow:inset 0 0 0 2px var(--live)}
+.code i.cur::after{content:"";width:2px;height:24px;background:var(--live)}
+.hint{font-size:13px;color:var(--on-var);text-align:center;margin-top:8px;flex:none}
+.room{display:flex;align-items:center;gap:12px;min-height:64px;padding:6px 12px 6px 20px;flex:none}
+.room .art{width:48px;height:48px;border-radius:8px;flex:none}
+.room .tx{flex:1;min-width:0}
+.room b{display:block;font-size:15px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.room span{font-size:13px;color:var(--on-var);display:flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden}
+.room .ppl{font-size:12px;color:var(--on-var);display:flex;align-items:center;gap:2px;flex:none}
+
+/* Sala activa */
+.roomhead{margin:0 16px 6px;border-radius:20px;background:var(--sheet-high);padding:12px 12px 12px 16px;display:flex;align-items:center;gap:12px;flex:none}
+.roomhead .tx{flex:1}
+.roomhead b{font:700 20px 'Roboto Flex',Roboto;letter-spacing:2px}
+.roomhead span{display:block;font-size:13px;color:var(--on-var)}
+.qr{width:56px;height:56px;border-radius:10px;background:
+  conic-gradient(from 90deg at 25% 25%,#fff 0 25%,#111 0 50%,#fff 0 75%,#111 0) 0 0/14px 14px;flex:none;border:4px solid #fff}
+.req{margin:4px 16px 4px;border-radius:16px;background:rgba(242,182,107,.12);border:1px solid rgba(242,182,107,.35);padding:10px 10px 10px 14px;flex:none}
+.req .top{display:flex;align-items:center;gap:10px;font-size:14px}
+.req .top b{font-weight:500}
+.req .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+.av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:15px;color:#111;flex:none;position:relative}
+.av .dot{position:absolute;right:-1px;bottom:-1px;width:12px;height:12px;border-radius:50%;border:2px solid var(--sheet)}
+.p-row{display:flex;align-items:center;gap:12px;min-height:60px;padding:4px 4px 4px 20px;flex:none}
+.p-row .tx{flex:1;min-width:0}
+.p-row b{display:block;font-size:15px;font-weight:500}
+.p-row span{font-size:13px;color:var(--on-var)}
+.menu{position:absolute;right:16px;background:var(--sheet-highest);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.45);z-index:5;padding:6px 0;min-width:208px}
+.menu div{display:flex;align-items:center;gap:12px;height:48px;padding:0 16px;font-size:14px}
+.menu .ms{font-size:20px;color:var(--on-var)}
+.menu .danger,.menu .danger .ms{color:var(--error)}
+.toggle-row{display:flex;align-items:center;gap:12px;min-height:56px;padding:4px 20px;flex:none}
+.toggle-row .tx{flex:1}
+.toggle-row b{display:block;font-size:15px;font-weight:500}
+.toggle-row span{font-size:13px;color:var(--on-var)}
+.sw{width:52px;height:32px;border-radius:16px;background:var(--live);position:relative;flex:none}
+.sw::after{content:"";position:absolute;right:4px;top:4px;width:24px;height:24px;border-radius:50%;background:#06231B}
+
+/* Barra de dispositivo activo en el reproductor y el minirreproductor */
+.connected-bar{height:40px;display:flex;align-items:center;gap:8px;padding:0 16px;font-size:13px;font-weight:500;color:#06231B;background:var(--live);flex:none}
+.mini{height:64px;flex:none;background:#2A3436;display:flex;align-items:center;gap:12px;padding:0 8px 0 12px;border-radius:12px 12px 0 0;margin:0 8px}
+.mini .art{width:44px;height:44px;border-radius:6px;flex:none}
+.mini .tx{flex:1;min-width:0;font-size:14px}
+.mini .tx b{font-weight:500;display:block}
+.mini .tx span{color:var(--live);font-size:12px;display:flex;align-items:center;gap:4px}
+.navbar{height:72px;flex:none;background:#151818;display:flex;justify-content:space-around;align-items:center;font-size:12px;font-weight:500;color:var(--on-var)}
+.navbar div{display:flex;flex-direction:column;align-items:center;gap:4px}
+.navbar .pillc{width:56px;height:32px;border-radius:16px;display:grid;place-items:center}
+.navbar .on .pillc{background:#2E3A3B;color:var(--on)}
+.navbar .on{color:var(--on)}
+.ctrls{display:flex;align-items:center;justify-content:space-between;padding:6px 16px 0}
+.ctrls .play{width:64px;height:64px;border-radius:50%;background:#fff;color:#111;display:grid;place-items:center}
+.seek{padding:18px 24px 0}
+.seek .times{display:flex;justify-content:space-between;font-size:11px;color:var(--on-var);margin-top:8px}
+.bottom-acts{display:flex;align-items:center;padding:10px 12px 0 16px;gap:4px}
+.devchip{display:flex;align-items:center;gap:6px;color:var(--live);font-size:13px;font-weight:500;height:48px;padding-right:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>Conectar dispositivos · rediseño</h1>
+  <p class="lead">La hoja que se abre desde el botón de dispositivos del reproductor. Hoy mezcla tres cosas por separado (Dezzy para PC, Google Cast y Bluetooth) y deja fuera «Escuchar juntos». La propuesta las reúne en una sola lista, tipo «Connect»: <b>dónde suena ahora</b> arriba, <b>a dónde lo puedo mandar</b> debajo y <b>escuchar con otros</b> al final.</p>
+  <div class="today">
+    <h4>Qué encontré en el módulo actual (<code>ConnectDeviceBottomSheet.kt</code> + <code>LinerConnectManager.kt</code>)</h4>
+    <ul>
+      <li><b>Pausa antes de conectar.</b> Al tocar la PC se llama a <code>player.pause()</code> y a <code>handoffQueueToDesktop</code> enseguida; si la conexión falla, la música del teléfono se queda pausada y nadie la reanuda.</li>
+      <li><b>Búsqueda limitada.</b> El sondeo UDP solo va a <code>255.255.255.255</code>, <code>192.168.1.255</code> y <code>192.168.0.255</code>. En redes <code>10.x</code>, <code>192.168.100.x</code> o con aislamiento de broadcast no aparece nada. No hay NSD/mDNS.</li>
+      <li><b>Sin estado vacío útil.</b> Si no encuentra nada muestra «Buscando…» y luego una fila fija con el último nombre conocido, que no explica qué revisar.</li>
+      <li><b>Cast y Bluetooth no son destinos.</b> Cast es un botón suelto con otro diálogo, y Bluetooth solo abre los ajustes del sistema. No se ve <b>por dónde sale el audio ahora</b> (por ejemplo, unos audífonos).</li>
+      <li><b>«Escuchar juntos» vive en Ajustes</b> (<code>MusicTogetherScreen</code>), lejos del reproductor, y la hoja no sabe si hay una sala activa.</li>
+      <li><b>Color fijo</b> <code>Color(0xFF1DB954)</code> para «activo»: no sigue la paleta de la carátula ni el tema.</li>
+      <li>El control remoto duplica el reproductor dentro de la hoja (anterior, play y siguiente). Con el reproductor ya detrás, basta con el volumen del dispositivo.</li>
+    </ul>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════ A ═══════════════════════════════════ -->
+<section class="sketch">
+  <div class="sk-head">
+    <span class="sk-tag">A</span><h3>La hoja nueva: una sola lista</h3>
+    <p>Arriba, una tarjeta fija con el dispositivo donde suena la música, su salida de audio y su volumen. Debajo, los destinos agrupados por cómo se conectan. Al final, la entrada a «Escuchar juntos».</p>
+  </div>
+  <div class="sk-body">
+    <div class="phones">
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">wifi</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content">
+            <div class="player-bg">
+              <div class="pb-head"><span class="ms">keyboard_arrow_down</span><div class="ctx">REPRODUCIENDO DESDE LISTA<b>Mix de la noche</b></div><span class="ms">more_vert</span></div>
+              <div class="pb-art art-a"></div>
+              <div class="pb-title">Ciudad de cristal</div><div class="pb-artist">Luna Vega</div>
+            </div>
+            <div class="scrim"></div>
+            <div class="sheet" style="top:88px">
+              <div class="handle"></div>
+              <div class="sh-head"><h2>Conectar a un dispositivo</h2><div class="icon-btn"><span class="ms">help</span></div></div>
+              <div class="scan"><span class="radar"></span>Buscando en la Wi‑Fi «Casa»…</div>
+
+              <div class="now">
+                <div class="lbl"><span class="ms f s16">graphic_eq</span>ESCUCHANDO EN</div>
+                <div class="dev">
+                  <div class="ic"><span class="ms f">smartphone</span></div>
+                  <div class="tx"><b>Galaxy S24 de Dezzy</b><span>Este teléfono</span></div>
+                </div>
+                <div class="out"><span class="ms s20">headphones</span><span class="t">Salida: Galaxy Buds2 Pro</span><span class="ms s20">chevron_right</span></div>
+                <div class="vol"><span class="ms s20">volume_down</span><div class="track"><i style="width:62%"></i></div><span class="ms s20">volume_up</span></div>
+              </div>
+
+              <div class="sec"><span class="ms">lan</span>En tu red<span class="sp"></span></div>
+              <div class="dev-row"><div class="ic"><span class="ms">desktop_windows</span></div><div class="tx"><b>DESKTOP-DEZZY</b><span>Dezzy para PC</span></div><span class="badge">PC</span><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+              <div class="dev-row"><div class="ic"><span class="ms">tv</span></div><div class="tx"><b>Tele de la sala</b><span>Google Cast</span></div><span class="badge">CAST</span><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+              <div class="dev-row"><div class="ic"><span class="ms">smartphone</span></div><div class="tx"><b>Pixel de Ana</b><span>Dezzy · como altavoz</span></div><span class="badge">DEZZY</span><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+
+              <div class="sec"><span class="ms">bluetooth</span>Bluetooth<span class="sp"></span></div>
+              <div class="dev-row"><div class="ic"><span class="ms">speaker</span></div><div class="tx"><b>JBL Flip 6</b><span>Vinculado · fuera de alcance</span></div><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+
+              <div class="together"><div class="ic"><span class="ms f">group</span></div><div class="tx"><b>Escuchar juntos</b><span>Crea una sala o únete con un código</span></div><span class="ms" style="color:var(--on-var);margin-right:8px">chevron_right</span></div>
+            </div>
+          </div>
+          <div class="gesture" style="background:var(--sheet)"><i></i></div>
+        </div>
+        <p class="cap">A1 · Hoja abierta desde el reproductor. Se ve primero dónde suena y por qué salida.</p>
+      </div>
+
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">wifi</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content">
+            <div class="player-bg">
+              <div class="pb-head"><span class="ms">keyboard_arrow_down</span><div class="ctx">REPRODUCIENDO DESDE LISTA<b>Mix de la noche</b></div><span class="ms">more_vert</span></div>
+              <div class="pb-art art-a"></div>
+            </div>
+            <div class="scrim"></div>
+            <div class="sheet" style="top:88px">
+              <div class="handle"></div>
+              <div class="sh-head"><h2>Conectar a un dispositivo</h2><div class="icon-btn"><span class="ms">help</span></div></div>
+              <div class="scan"><span class="ms s18" style="color:var(--live)">sync</span>Conectando con DESKTOP-DEZZY…</div>
+
+              <div class="now">
+                <div class="lbl"><span class="ms f s16">graphic_eq</span>ESCUCHANDO EN</div>
+                <div class="dev">
+                  <div class="ic"><span class="ms f">smartphone</span></div>
+                  <div class="tx"><b>Galaxy S24 de Dezzy</b><span>Este teléfono · sigue sonando aquí</span></div>
+                </div>
+                <div class="vol"><span class="ms s20">volume_down</span><div class="track"><i style="width:62%"></i></div><span class="ms s20">volume_up</span></div>
+              </div>
+
+              <div class="sec"><span class="ms">lan</span>En tu red<span class="sp"></span></div>
+              <div class="dev-row busy" style="position:relative"><div class="ic"><span class="ms">desktop_windows</span></div><div class="tx"><b>DESKTOP-DEZZY</b><span>Conectando… (2 s)</span></div><div class="spin"></div><span class="callout" style="right:12px;top:-8px">SIN PAUSAR TODAVÍA</span></div>
+              <div class="dev-row off"><div class="ic"><span class="ms">tv</span></div><div class="tx"><b>Tele de la sala</b><span>Google Cast</span></div><span class="badge">CAST</span><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+              <div class="dev-row off"><div class="ic"><span class="ms">smartphone</span></div><div class="tx"><b>Pixel de Ana</b><span>Dezzy · como altavoz</span></div><span class="badge">DEZZY</span><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+              <div class="together" style="opacity:.45"><div class="ic"><span class="ms f">group</span></div><div class="tx"><b>Escuchar juntos</b><span>Crea una sala o únete con un código</span></div><span class="ms" style="color:var(--on-var);margin-right:8px">chevron_right</span></div>
+              <div style="display:flex;justify-content:center;margin-top:10px"><span class="btn text">Cancelar</span></div>
+            </div>
+          </div>
+          <div class="gesture" style="background:var(--sheet)"><i></i></div>
+        </div>
+        <p class="cap">A2 · Conectando. El teléfono sigue sonando y la cola se manda solo cuando la PC confirma.</p>
+      </div>
+
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:42</span><span class="ic"><span class="ms s16">wifi</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content">
+            <div class="player-bg">
+              <div class="pb-head"><span class="ms">keyboard_arrow_down</span><div class="ctx">REPRODUCIENDO DESDE LISTA<b>Mix de la noche</b></div><span class="ms">more_vert</span></div>
+              <div class="pb-art art-a"></div>
+            </div>
+            <div class="scrim"></div>
+            <div class="sheet" style="top:88px">
+              <div class="handle"></div>
+              <div class="sh-head"><h2>Conectar a un dispositivo</h2><div class="icon-btn"><span class="ms">help</span></div></div>
+              <div class="scan"><span class="ms f s18" style="color:var(--live)">check_circle</span>Conectado · misma red · 12 ms</div>
+
+              <div class="now">
+                <div class="lbl"><span class="ms f s16">graphic_eq</span>ESCUCHANDO EN</div>
+                <div class="dev">
+                  <div class="ic"><span class="ms f">desktop_windows</span></div>
+                  <div class="tx"><b>DESKTOP-DEZZY</b><span>Dezzy para PC · controlas desde aquí</span></div>
+                  <div class="icon-btn" style="color:var(--on)"><span class="ms">link_off</span></div>
+                </div>
+                <div class="vol"><span class="ms s20">volume_down</span><div class="track"><i style="width:40%"></i></div><span class="ms s20">volume_up</span></div>
+              </div>
+
+              <div class="sec"><span class="ms">smartphone</span>Este teléfono<span class="sp"></span></div>
+              <div class="dev-row"><div class="ic"><span class="ms">smartphone</span></div><div class="tx"><b>Galaxy S24 de Dezzy</b><span>Toca para traer la música aquí</span></div><span class="ms" style="color:var(--on-var);margin-right:14px">south_west</span></div>
+
+              <div class="sec"><span class="ms">lan</span>En tu red<span class="sp"></span></div>
+              <div class="dev-row"><div class="ic"><span class="ms">tv</span></div><div class="tx"><b>Tele de la sala</b><span>Google Cast</span></div><span class="badge">CAST</span><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+              <div class="dev-row"><div class="ic"><span class="ms">smartphone</span></div><div class="tx"><b>Pixel de Ana</b><span>Dezzy · como altavoz</span></div><span class="badge">DEZZY</span><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+
+              <div class="together"><div class="ic"><span class="ms f">group</span></div><div class="tx"><b>Escuchar juntos</b><span>Crea una sala o únete con un código</span></div><span class="ms" style="color:var(--on-var);margin-right:8px">chevron_right</span></div>
+            </div>
+          </div>
+          <div class="gesture" style="background:var(--sheet)"><i></i></div>
+        </div>
+        <p class="cap">A3 · Conectado. La tarjeta superior pasa a ser la PC, con su volumen; el teléfono queda como «traer aquí».</p>
+      </div>
+    </div>
+
+    <div class="notes">
+      <h4>Orden de la hoja</h4>
+      <ul>
+        <li><b>Escuchando en</b>: siempre visible, con la salida de audio real (<code>AudioManager.getDevices(GET_DEVICES_OUTPUTS)</code>, sin permisos) y el volumen de ese dispositivo.</li>
+        <li><b>En tu red</b>: PC con Dezzy, Google Cast y otros teléfonos o teles con Dezzy en modo altavoz, en una sola lista ordenada por último uso.</li>
+        <li><b>Bluetooth</b>: solo los vinculados de audio. Tocar uno abre el selector de salida del sistema (<code>MediaRouter2.showSystemOutputSwitcher()</code> en Android 14+, ajustes de Bluetooth en versiones anteriores).</li>
+        <li><b>Escuchar juntos</b>: entrada fija al final (ver C).</li>
+      </ul>
+      <h4>Comportamiento</h4>
+      <ul>
+        <li class="pro">La música del teléfono <b>no se pausa</b> hasta que llega <code>onOpen</code> y la PC confirma la cola. Si falla en 8 s, aviso: «No se pudo conectar con DESKTOP‑DEZZY · Reintentar».</li>
+        <li class="pro">La insignia (PC, CAST, DEZZY) dice <b>cómo</b> se conecta cada uno, sin tecnicismos en el subtítulo.</li>
+        <li class="pro">El color «activo» sale de la paleta de la carátula (token <code>live</code>), no de un verde fijo.</li>
+        <li>Menú ⋮ de cada fila: «Olvidar», «Renombrar», «Conectar automáticamente».</li>
+      </ul>
+      <h4>Compose</h4>
+      <ul>
+        <li><code>ModalBottomSheet</code> + <code>LazyColumn</code> con <code>key = device.id</code> y <code>animateItem()</code> para que las filas entren al ser descubiertas.</li>
+        <li>Fila: <code>Modifier.semantics(mergeDescendants = true)</code> con <code>stateDescription</code> = «Conectado», «Conectando» o «Disponible».</li>
+        <li>Animación del radar: se desactiva si el sistema pide reducir el movimiento.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ B ═══════════════════════════════════ -->
+<section class="sketch">
+  <div class="sk-head">
+    <span class="sk-tag">B</span><h3>Cuando no aparece nada · y cómo se ve conectado</h3>
+    <p>Un estado vacío que explica qué revisar y da alternativas que no dependen del broadcast. Y fuera de la hoja, el reproductor y el minirreproductor avisan en qué dispositivo suena.</p>
+  </div>
+  <div class="sk-body">
+    <div class="phones">
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">wifi</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content">
+            <div class="player-bg"><div class="pb-head"><span class="ms">keyboard_arrow_down</span><div class="ctx">REPRODUCIENDO DESDE LISTA<b>Mix de la noche</b></div><span class="ms">more_vert</span></div><div class="pb-art art-a"></div></div>
+            <div class="scrim"></div>
+            <div class="sheet" style="top:88px">
+              <div class="handle"></div>
+              <div class="sh-head"><h2>Conectar a un dispositivo</h2><div class="icon-btn"><span class="ms">refresh</span></div></div>
+              <div class="now" style="padding-bottom:12px">
+                <div class="lbl"><span class="ms f s16">graphic_eq</span>ESCUCHANDO EN</div>
+                <div class="dev"><div class="ic"><span class="ms f">smartphone</span></div><div class="tx"><b>Galaxy S24 de Dezzy</b><span>Este teléfono · altavoz</span></div></div>
+              </div>
+              <div class="empty">
+                <div class="big"><span class="ms s40">wifi_find</span></div>
+                <h3>No vemos dispositivos en «Casa»</h3>
+                <p>Buscamos durante 6 segundos. Revisa esto y vuelve a intentarlo:</p>
+              </div>
+              <div class="checks">
+                <div><span class="ms">wifi</span>Los dos en la misma red Wi‑Fi</div>
+                <div><span class="ms">desktop_windows</span>Dezzy abierto en la PC o la tele</div>
+                <div><span class="ms">shield</span>Las redes de invitados suelen bloquearlo</div>
+              </div>
+              <div style="display:flex;gap:8px;justify-content:center;margin-top:16px;flex-wrap:wrap;padding:0 16px">
+                <span class="btn filled"><span class="ms">refresh</span>Buscar de nuevo</span>
+                <span class="btn outlined"><span class="ms">qr_code_scanner</span>Escanear QR</span>
+              </div>
+              <div style="display:flex;justify-content:center;margin-top:6px"><span class="btn text">Conectar con la IP</span></div>
+            </div>
+          </div>
+          <div class="gesture" style="background:var(--sheet)"><i></i></div>
+        </div>
+        <p class="cap">B1 · Estado vacío con causas probables y dos salidas que no dependen de la búsqueda.</p>
+      </div>
+
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:42</span><span class="ic"><span class="ms s16">wifi</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content">
+            <div class="player-bg">
+              <div class="pb-head"><span class="ms">keyboard_arrow_down</span><div class="ctx">REPRODUCIENDO DESDE LISTA<b>Mix de la noche</b></div><span class="ms">more_vert</span></div>
+              <div class="pb-art art-a" style="position:relative;opacity:.92"></div>
+              <div class="pb-title">Ciudad de cristal</div><div class="pb-artist">Luna Vega</div>
+              <div class="seek"><div class="track"><i style="width:38%"></i></div><div class="times"><span>1:24</span><span>3:41</span></div></div>
+              <div class="ctrls"><span class="ms">shuffle</span><span class="ms f s40">skip_previous</span><span class="play"><span class="ms f s40">pause</span></span><span class="ms f s40">skip_next</span><span class="ms">repeat</span></div>
+              <div class="bottom-acts" style="position:relative">
+                <span class="devchip hl" style="border-radius:24px;padding:0 12px"><span class="ms f s20">desktop_windows</span>DESKTOP-DEZZY</span>
+                <span style="flex:1"></span><span class="icon-btn" style="color:var(--on)"><span class="ms">share</span></span><span class="icon-btn" style="color:var(--on)"><span class="ms">queue_music</span></span>
+              </div>
+            </div>
+          </div>
+          <div class="connected-bar"><span class="ms f s20">volume_up</span>Reproduciendo en DESKTOP-DEZZY</div>
+          <div class="gesture" style="background:var(--live)"><i style="background:#06231B"></i></div>
+        </div>
+        <p class="cap">B2 · Reproductor conectado: el botón de dispositivos muestra el nombre y aparece una franja abajo.</p>
+      </div>
+
+      <div>
+        <div class="phone">
+          <div class="statusbar" style="background:#121212"><span>9:43</span><span class="ic"><span class="ms s16">wifi</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content" style="background:#121212">
+            <div style="padding:20px 16px 0;font:700 24px 'Roboto Flex',Roboto">Buenas noches, Dezzy</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:16px">
+              <div style="display:flex;align-items:center;gap:8px;background:#232828;border-radius:6px;overflow:hidden;height:56px;font-size:13px;font-weight:500"><i class="art-b" style="width:56px;height:56px;flex:none"></i>Favoritas</div>
+              <div style="display:flex;align-items:center;gap:8px;background:#232828;border-radius:6px;overflow:hidden;height:56px;font-size:13px;font-weight:500"><i class="art-c" style="width:56px;height:56px;flex:none"></i>Mix diario 2</div>
+              <div style="display:flex;align-items:center;gap:8px;background:#232828;border-radius:6px;overflow:hidden;height:56px;font-size:13px;font-weight:500"><i class="art-d" style="width:56px;height:56px;flex:none"></i>Radar</div>
+              <div style="display:flex;align-items:center;gap:8px;background:#232828;border-radius:6px;overflow:hidden;height:56px;font-size:13px;font-weight:500"><i class="art-a" style="width:56px;height:56px;flex:none"></i>Mix de la noche</div>
+            </div>
+            <div style="flex:1"></div>
+            <div class="mini" style="position:relative">
+              <i class="art art-a"></i>
+              <div class="tx"><b>Ciudad de cristal · Luna Vega</b><span><span class="ms f s16">desktop_windows</span>DESKTOP-DEZZY</span></div>
+              <span class="icon-btn" style="color:var(--live)"><span class="ms f">devices</span></span>
+              <span class="icon-btn" style="color:var(--on)"><span class="ms f">pause</span></span>
+              <span class="callout" style="left:68px;top:-10px">EL DISPOSITIVO EN VEZ DEL ARTISTA</span>
+            </div>
+          </div>
+          <div class="navbar"><div class="on"><span class="pillc"><span class="ms f">home</span></span>Inicio</div><div><span class="pillc"><span class="ms">search</span></span>Buscar</div><div><span class="pillc"><span class="ms">library_music</span></span>Biblioteca</div></div>
+          <div class="gesture" style="background:#151818"><i></i></div>
+        </div>
+        <p class="cap">B3 · Minirreproductor: la segunda línea dice dónde suena y el icono de dispositivos abre la hoja.</p>
+      </div>
+    </div>
+
+    <div class="notes">
+      <h4>Encontrar más y mejor</h4>
+      <ul>
+        <li><b>NSD/mDNS</b> (<code>NsdManager</code>, servicio <code>_dezzy._tcp</code>) como vía principal; el UDP queda de respaldo, pero calculando el broadcast real de la red a partir de <code>LinkProperties</code> (dirección + prefijo), no con direcciones fijas.</li>
+        <li><code>WifiManager.MulticastLock</code> mientras la hoja está abierta, y liberarlo al cerrar.</li>
+        <li>Descubrimiento acotado (6 s) y repetible. Los dispositivos ya conocidos aparecen al instante desde caché y se marcan «no disponible» si no responden.</li>
+        <li><b>QR</b>: la PC muestra un QR con <code>dezzy://connect?ip=…&amp;port=…&amp;key=…</code>. Funciona aunque la red bloquee el broadcast.</li>
+      </ul>
+      <h4>Fuera de la hoja</h4>
+      <ul>
+        <li>Franja <code>live</code> en el reproductor y nombre del dispositivo en el minirreproductor mientras se controla otro equipo; las dos se van al desconectar.</li>
+        <li>Notificación multimedia: título «Reproduciendo en DESKTOP‑DEZZY» con botón «Desconectar».</li>
+        <li class="con">Hoy el control remoto duplica botones dentro de la hoja; con esta franja ya no hace falta.</li>
+      </ul>
+      <h4>Textos</h4>
+      <ul>
+        <li>Estado vacío en 14 sp, consejos en 14 sp y subtítulos de fila en 13 sp (nada por debajo de 12 sp).</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ C ═══════════════════════════════════ -->
+<section class="sketch">
+  <div class="sk-head">
+    <span class="sk-tag">C</span><h3>Escuchar juntos, desde la misma hoja</h3>
+    <p>Crear sala, unirse con código o QR y ver salas públicas sin ir a Ajustes. Con el servidor v2.1 ya desplegado, el anfitrión puede aprobar solicitudes, pasar el control y sacar a alguien, y quien pierde la conexión aparece como «reconectando» en lugar de desaparecer.</p>
+  </div>
+  <div class="sk-body">
+    <div class="phones">
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:44</span><span class="ic"><span class="ms s16">wifi</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content">
+            <div class="player-bg"><div class="pb-head"><span class="ms">keyboard_arrow_down</span><div class="ctx">REPRODUCIENDO DESDE LISTA<b>Mix de la noche</b></div><span class="ms">more_vert</span></div><div class="pb-art art-a"></div></div>
+            <div class="scrim"></div>
+            <div class="sheet" style="top:88px">
+              <div class="handle"></div>
+              <div class="sh-head"><div class="icon-btn" style="margin-left:-12px;color:var(--on)"><span class="ms">arrow_back</span></div><h2>Escuchar juntos</h2><div class="icon-btn"><span class="ms">settings</span></div></div>
+              <div class="seg"><div><span class="ms">add</span>Crear sala</div><div class="on"><span class="ms">login</span>Unirme</div></div>
+              <div class="code"><i>R</i><i>7</i><i>M</i><i class="cur"></i><i></i><i></i></div>
+              <div class="hint">Escribe el código de 6 letras que te pasaron</div>
+              <div style="display:flex;gap:8px;justify-content:center;margin-top:14px">
+                <span class="btn live" style="opacity:.5">Unirme</span>
+                <span class="btn outlined"><span class="ms">qr_code_scanner</span>Escanear</span>
+              </div>
+              <div class="sec" style="margin-top:8px"><span class="ms">public</span>Salas públicas<span class="sp"></span><span style="color:var(--live)">Ver todas</span></div>
+              <div class="room"><i class="art art-b"></i><div class="tx"><b>Viernes de pop latino</b><span><span class="ms s16">graphic_eq</span>Ojos de neón · Vera Sol</span></div><span class="ppl"><span class="ms s16">group</span>12</span></div>
+              <div class="room"><i class="art art-c"></i><div class="tx"><b>Lo‑fi para estudiar</b><span><span class="ms s16">graphic_eq</span>Hojas de té · Kumo</span></div><span class="ppl"><span class="ms s16">group</span>34</span></div>
+              <div class="room"><i class="art art-d"></i><div class="tx"><b>Rock de los 2000</b><span><span class="ms s16">graphic_eq</span>Carretera azul · Los Faros</span></div><span class="ppl"><span class="ms s16">group</span>7</span></div>
+            </div>
+          </div>
+          <div class="gesture" style="background:var(--sheet)"><i></i></div>
+        </div>
+        <p class="cap">C1 · Unirse: código de 6 casillas, escaneo de QR y salas públicas con lo que suena en cada una.</p>
+      </div>
+
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:45</span><span class="ic"><span class="ms s16">wifi</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content">
+            <div class="player-bg"><div class="pb-head"><span class="ms">keyboard_arrow_down</span><div class="ctx">SALA R7MQ2P<b>Mix de la noche</b></div><span class="ms">more_vert</span></div><div class="pb-art art-a"></div></div>
+            <div class="scrim"></div>
+            <div class="sheet" style="top:88px">
+              <div class="handle"></div>
+              <div class="sh-head"><div class="icon-btn" style="margin-left:-12px;color:var(--on)"><span class="ms">arrow_back</span></div><h2>Tu sala</h2><span class="btn text" style="color:var(--error)">Cerrar sala</span></div>
+              <div class="roomhead"><div class="tx"><b>R7MQ2P</b><span>Privada · 3 personas · tú controlas</span></div><span class="icon-btn" style="color:var(--on)"><span class="ms">share</span></span><div class="qr"></div></div>
+              <div class="req">
+                <div class="top"><div class="av" style="background:#F7C873;width:32px;height:32px;font-size:13px">M</div><div style="flex:1"><b>Marta</b> quiere entrar</div><span style="font-size:12px;color:var(--on-var)">hace 5 s</span></div>
+                <div class="acts"><span class="btn text" style="color:var(--on-var)">Rechazar</span><span class="btn live">Aprobar</span></div>
+              </div>
+              <div class="sec"><span class="ms">group</span>En la sala<span class="sp"></span></div>
+              <div class="p-row"><div class="av" style="background:#5EE0B4">D<span class="dot" style="background:#5EE0B4"></span></div><div class="tx"><b>Tú</b><span>Anfitrión</span></div><span class="ms" style="color:var(--live);margin-right:16px">star</span></div>
+              <div class="p-row"><div class="av" style="background:#E3708E">A<span class="dot" style="background:#5EE0B4"></span></div><div class="tx"><b>Ana</b><span>Conectada · en sincronía</span></div><div class="icon-btn hl" style="border-radius:50%"><span class="ms">more_vert</span></div></div>
+              <div class="p-row"><div class="av" style="background:#9FB6FF;opacity:.7">L<span class="dot" style="background:var(--warn)"></span></div><div class="tx"><b>Leo</b><span style="color:var(--warn)">Reconectando… guardamos su lugar 0:58</span></div><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+              <div class="menu" style="top:392px">
+                <div><span class="ms">star</span>Pasarle el control</div>
+                <div><span class="ms">volume_off</span>Silenciar su chat</div>
+                <div class="danger"><span class="ms">person_remove</span>Sacar de la sala</div>
+              </div>
+              <div class="toggle-row" style="margin-top:2px"><div class="tx"><b>Pedir aprobación para entrar</b><span>Tú decides quién entra</span></div><span class="sw"></span></div>
+            </div>
+          </div>
+          <div class="gesture" style="background:var(--sheet)"><i></i></div>
+        </div>
+        <p class="cap">C2 · Sala como anfitrión: solicitud pendiente, presencia en vivo y acciones por persona.</p>
+      </div>
+
+      <div>
+        <div class="phone">
+          <div class="statusbar"><span>9:45</span><span class="ic"><span class="ms s16">wifi</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content">
+            <div class="player-bg"><div class="pb-head"><span class="ms">keyboard_arrow_down</span><div class="ctx">SALA R7MQ2P<b>Mix de la noche</b></div><span class="ms">more_vert</span></div><div class="pb-art art-a"></div></div>
+            <div class="scrim"></div>
+            <div class="sheet" style="top:320px">
+              <div class="handle"></div>
+              <div class="empty" style="padding-top:18px">
+                <div class="big" style="background:var(--live-container);color:var(--live)"><span class="ms s40">hourglass_top</span></div>
+                <h3>Esperando a que te acepten</h3>
+                <p>Le avisamos a <b style="color:var(--on)">Dezzy</b>, el anfitrión de R7MQ2P. Si no responde en 2 minutos, la solicitud se cancela sola.</p>
+              </div>
+              <div style="display:flex;justify-content:center;margin-top:20px"><span class="btn outlined">Cancelar solicitud</span></div>
+            </div>
+            <div class="snack" style="bottom:auto;top:250px"><span class="t">Ya puedes escuchar con Ana</span><b>Ver sala</b></div>
+          </div>
+          <div class="gesture" style="background:var(--sheet)"><i></i></div>
+        </div>
+        <p class="cap">C3 · Invitado esperando aprobación (ahora el servidor sí lo respeta) y aviso al entrar.</p>
+      </div>
+    </div>
+
+    <div class="notes">
+      <h4>Qué cambia</h4>
+      <ul>
+        <li>«Escuchar juntos» deja de estar escondido en Ajustes: se entra desde la hoja de dispositivos, y Ajustes guarda solo las preferencias.</li>
+        <li>Con una sala activa, la entrada de la hoja se convierte en «Tu sala · 3 personas» y abre C2 directamente.</li>
+        <li>Unirse acepta código, QR y enlace <code>dezzy://join/R7MQ2P</code>.</li>
+      </ul>
+      <h4>Lo que ya soporta el servidor v2.1</h4>
+      <table class="cmp">
+        <tr><th>En pantalla</th><th>Mensaje</th></tr>
+        <tr><td>Solicitud de Marta</td><td><code>join_request</code> → <code>approve_join</code> / <code>reject_join</code></td></tr>
+        <tr><td>«Reconectando… 0:58»</td><td><code>user_disconnected</code>, con 90 s de gracia</td></tr>
+        <tr><td>Pasarle el control</td><td><code>transfer_host</code> → <code>host_changed</code></td></tr>
+        <tr><td>Sacar de la sala</td><td><code>kick_user</code> → <code>kicked</code></td></tr>
+        <tr><td>Solicitud caducada</td><td><code>join_rejected</code> a los 2 min</td></tr>
+      </table>
+      <h4>Pendiente en la app</h4>
+      <ul>
+        <li>Pintar el estado «reconectando» con <code>USER_DISCONNECTED</code> (el cliente ya lo recibe).</li>
+        <li>Pantalla de espera del invitado (C3): hoy no existe y la app se queda sin respuesta visible.</li>
+        <li class="con">El modo «Together» por internet usa otro protocolo y otro servidor (<code>DezzyServer.txt</code>). Para C hay que unificarlo con Listen Together; está en la auditoría, fase A.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+</div>
+</body>
+</html>

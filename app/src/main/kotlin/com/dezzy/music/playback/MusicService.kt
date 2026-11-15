@@ -407,6 +407,32 @@ class MusicService :
     val videoModeError = MutableStateFlow<String?>(null)
     val videoPlayerInstance = MutableStateFlow<ExoPlayer?>(null)
 
+    /** Selector de pistas del reproductor de video actual (para la calidad manual). */
+    private var videoTrackSelector: androidx.media3.exoplayer.trackselection.DefaultTrackSelector? = null
+    /** Videoclip resuelto que suena ahora (para descargar o cambiar de calidad). */
+    private var currentResolvedVideo: com.dezzy.music.video.MusicVideoResolver.ResolvedVideo? = null
+    private var currentVideoIsHls = false
+    /** Alturas disponibles en el stream actual (p. ej. 1080, 720, 480...), de mayor a menor. */
+    val videoQualityOptions = MutableStateFlow<List<Int>>(emptyList())
+    /** Altura elegida a mano; null = automática. */
+    val videoSelectedHeight = MutableStateFlow<Int?>(null)
+    /** Altura que se está reproduciendo realmente. */
+    val videoPlayingHeight = MutableStateFlow<Int?>(null)
+
+    // Punto de anclaje para volver al audio: el videoclip puede tener intro o escenas extra,
+    // así que al cerrar el video la canción avanza lo que se ha visto desde que se abrió,
+    // en vez de saltar a la posición absoluta del video.
+    private var videoAnchorAudioMs = 0L
+    private var videoAnchorVideoMs = 0L
+
+    // Oyentes de la sesión multimedia (notificación, pantalla de bloqueo, Bluetooth): en modo
+    // video se les notifica el estado del reproductor de VIDEO, que es el que suena.
+    private val sessionListeners = java.util.concurrent.CopyOnWriteArraySet<Player.Listener>()
+    private var sessionPlayerRef: Player? = null
+
+    /** Procesador del ecualizador del video: uno solo, reutilizado entre reproductores. */
+    private val videoEqProcessor by lazy { com.dezzy.music.audio.DezzyBiquadAudioProcessor() }
+
     /** Resolves a muxed video stream for the current song and starts the standalone video player. */
     fun enableVideoMode() {
         val mediaId = player.currentMediaItem?.mediaId ?: return
@@ -430,7 +456,13 @@ class MusicService :
                     videoModeLoading.value = false
                     val finalPositionMs = player.currentPosition
                     val finalWasPlaying = player.playWhenReady
-                    startVideoPlayer(android.net.Uri.fromFile(file).toString(), null, finalPositionMs, finalWasPlaying)
+                    videoAnchorAudioMs = finalPositionMs
+                    videoAnchorVideoMs = finalPositionMs
+                    currentResolvedVideo = null
+                    startVideoPlayer(
+                        android.net.Uri.fromFile(file).toString(), null, finalPositionMs, finalWasPlaying,
+                        songMediaId = mediaId,
+                    )
                 } else {
                     videoModeLoading.value = false
                     videoModeError.value = "Esta canción importada no tiene pista de video"
@@ -468,6 +500,9 @@ class MusicService :
                 val finalWasPlaying = player.playWhenReady
                 videoModeMediaId = mediaId
                 videoModeActive.value = true
+                videoAnchorAudioMs = finalPositionMs
+                videoAnchorVideoMs = finalPositionMs
+                videoSelectedHeight.value = null
                 startResolvedVideo(video, finalPositionMs, finalWasPlaying, maxHeight)
             }.onFailure { e ->
                 videoModeError.value = com.dezzy.music.video.MusicVideoResolver.userMessageFor(e)
@@ -548,10 +583,18 @@ class MusicService :
     }
 
     /** Stops the video player and resumes normal audio playback at the same position. */
+    /** «Reintentar» del aviso de error: vuelve a resolver el videoclip sin la caché que falló. */
+    fun retryVideoMode() {
+        currentResolvedVideo?.videoId?.let { com.dezzy.music.video.MusicVideoResolver.invalidate(it) }
+        videoModeError.value = null
+        if (videoModeActive.value) disableVideoMode()
+        enableVideoMode()
+    }
+
     fun disableVideoMode() {
         if (!videoModeActive.value && videoPlayer == null) return
         val vp = videoPlayer
-        val positionMs = vp?.currentPosition ?: player.currentPosition
+        val positionMs = vp?.let { audioPositionForVideo(it.currentPosition) } ?: player.currentPosition
         val wasPlaying = vp?.playWhenReady ?: player.playWhenReady
         stopVideoPlayerInternal()
         videoModeActive.value = false
@@ -560,6 +603,157 @@ class MusicService :
             player.seekTo(positionMs)
             player.playWhenReady = wasPlaying
         }
+        notifySessionStateChanged()
+    }
+
+    /**
+     * Posición de la CANCIÓN equivalente a [videoPositionMs]: lo que se ha visto desde que se
+     * abrió el video, sumado a donde iba la canción. Si los dos duran lo mismo (±3 s) el video
+     * está alineado y se usa su posición tal cual.
+     */
+    private fun audioPositionForVideo(videoPositionMs: Long): Long {
+        val audioDuration = player.duration.takeIf { it > 0 && it != C.TIME_UNSET }
+        val videoDuration = videoPlayer?.duration?.takeIf { it > 0 && it != C.TIME_UNSET }
+        val aligned = audioDuration != null && videoDuration != null &&
+            kotlin.math.abs(audioDuration - videoDuration) <= 3_000L
+        val raw = if (aligned) videoPositionMs else videoAnchorAudioMs + (videoPositionMs - videoAnchorVideoMs)
+        val max = audioDuration?.let { (it - 1_000L).coerceAtLeast(0L) } ?: Long.MAX_VALUE
+        return raw.coerceIn(0L, max)
+    }
+
+    /** Fin del videoclip: sigue la cola como lo haría la canción. */
+    private fun onVideoEnded() {
+        if (!videoModeActive.value) return
+        when {
+            player.repeatMode == Player.REPEAT_MODE_ONE -> videoPlayer?.let {
+                it.seekTo(0L)
+                it.playWhenReady = true
+            }
+            player.hasNextMediaItem() -> {
+                // onMediaItemTransition cierra este video y, con "Mantener el modo video",
+                // abre el de la siguiente canción.
+                skipToNextManual()
+            }
+            else -> {
+                stopVideoPlayerInternal()
+                videoModeActive.value = false
+                videoModeMediaId = null
+                player.seekTo(0L)
+                player.playWhenReady = false
+                notifySessionStateChanged()
+            }
+        }
+    }
+
+    /** El video es el que suena: la sesión multimedia tiene que reflejar su estado. */
+    private fun isVideoDrivingSession(): Boolean = videoModeActive.value && videoPlayer != null
+
+    /** Avisa a la notificación/pantalla de bloqueo/Bluetooth de que el estado cambió. */
+    private fun notifySessionStateChanged() {
+        val sp = sessionPlayerRef ?: return
+        val isPlaying = sp.isPlaying
+        val playWhenReady = sp.playWhenReady
+        val state = sp.playbackState
+        val events = Player.Events(
+            androidx.media3.common.FlagSet.Builder()
+                .addAll(
+                    Player.EVENT_IS_PLAYING_CHANGED,
+                    Player.EVENT_PLAY_WHEN_READY_CHANGED,
+                    Player.EVENT_PLAYBACK_STATE_CHANGED,
+                ).build(),
+        )
+        for (listener in sessionListeners) {
+            runCatching {
+                listener.onPlaybackStateChanged(state)
+                listener.onPlayWhenReadyChanged(playWhenReady, Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST)
+                listener.onIsPlayingChanged(isPlaying)
+                listener.onEvents(sp, events)
+            }
+        }
+    }
+
+    /**
+     * Calidad del video: null = automática. En HLS se elige la pista directamente; en los
+     * streams progresivos (una sola calidad) se vuelve a resolver con ese tope.
+     */
+    fun setVideoQuality(height: Int?) {
+        val vp = videoPlayer ?: return
+        val selector = videoTrackSelector ?: return
+        videoSelectedHeight.value = height
+        if (currentVideoIsHls) {
+            val params = selector.buildUponParameters()
+                .clearOverridesOfType(C.TRACK_TYPE_VIDEO)
+                .setMaxVideoSize(Int.MAX_VALUE, Int.MAX_VALUE)
+            if (height != null) {
+                val group = vp.currentTracks.groups.firstOrNull { it.type == C.TRACK_TYPE_VIDEO }
+                val index = group?.let { g ->
+                    (0 until g.length).filter { g.isTrackSupported(it) }
+                        .minByOrNull { kotlin.math.abs(g.getTrackFormat(it).height - height) }
+                }
+                if (group != null && index != null) {
+                    params.addOverride(androidx.media3.common.TrackSelectionOverride(group.mediaTrackGroup, index))
+                }
+            }
+            selector.setParameters(params)
+            return
+        }
+        // Progresivo: re-resolver con el nuevo tope y seguir en el mismo punto.
+        val mediaId = videoModeMediaId ?: return
+        if (com.dezzy.music.utils.LocalMusicImporter.isLocalId(mediaId)) return
+        val resumeAt = vp.currentPosition
+        val resumePlay = vp.playWhenReady
+        val maxHeight = height ?: Int.MAX_VALUE
+        videoModeLoading.value = true
+        scope.launch {
+            val result = com.dezzy.music.video.MusicVideoResolver.resolveForSong(
+                context = this@MusicService,
+                mediaId = mediaId,
+                title = player.mediaMetadata.title?.toString(),
+                artist = player.mediaMetadata.artist?.toString(),
+                durationSec = player.duration.takeIf { it > 0 }?.let { (it / 1000L).toInt() },
+                maxHeight = maxHeight,
+            )
+            videoModeLoading.value = false
+            if (videoModeMediaId != mediaId || !videoModeActive.value) return@launch
+            result.onSuccess { video -> startResolvedVideo(video, resumeAt, resumePlay, maxHeight) }
+                .onFailure { e -> videoModeError.value = com.dezzy.music.video.MusicVideoResolver.userMessageFor(e) }
+        }
+    }
+
+    /** Descarga el videoclip actual (con su audio) a Películas/Dezzy. */
+    fun downloadCurrentVideo() {
+        val video = currentResolvedVideo
+        if (video == null) {
+            com.dezzy.music.video.MusicVideoDownloader.reportUnavailable(
+                if (videoModeMediaId?.let { com.dezzy.music.utils.LocalMusicImporter.isLocalId(it) } == true) {
+                    "Este video ya está guardado en tu dispositivo"
+                } else {
+                    "El video aún no está listo"
+                },
+            )
+            return
+        }
+        val title = player.mediaMetadata.title?.toString()
+        val artist = player.mediaMetadata.artist?.toString()
+        scope.launch {
+            com.dezzy.music.video.MusicVideoDownloader.download(this@MusicService, video, title, artist)
+        }
+    }
+
+    private fun refreshVideoQualityState(vp: ExoPlayer) {
+        val group = vp.currentTracks.groups.firstOrNull { it.type == C.TRACK_TYPE_VIDEO }
+        val heights = group?.let { g ->
+            (0 until g.length).filter { g.isTrackSupported(it) }
+                .map { g.getTrackFormat(it).height }
+                .filter { it > 0 }
+        }.orEmpty().distinct().sortedDescending()
+        videoQualityOptions.value = if (currentVideoIsHls || heights.size > 1) {
+            heights
+        } else {
+            // Progresivo: las calidades estándar (se re-resuelve al elegir).
+            com.dezzy.music.constants.VideoQuality.entries.map { it.maxHeight }.sortedDescending()
+        }
+        videoPlayingHeight.value = vp.videoFormat?.height?.takeIf { it > 0 }
     }
 
     /** Reproduce un videoclip resuelto: HLS primero y, si falla, los streams progresivos. */
@@ -578,6 +772,7 @@ class MusicService :
             return
         }
         val audioUrl = if (!useHls && url == video.videoUrl) video.audioUrl else null
+        currentResolvedVideo = video
         val retryProgressive: (Long, Boolean) -> Unit = { resumeAt, resumePlay ->
             if (videoModeActive.value) {
                 startResolvedVideo(video, resumeAt, resumePlay, maxHeight, skipHls = true)
@@ -592,6 +787,7 @@ class MusicService :
             maxHeight = maxHeight,
             resolvedVideoId = video.videoId,
             onFatalError = retryProgressive.takeIf { useHls && progressiveUrl != null },
+            songMediaId = videoModeMediaId,
         )
     }
 
@@ -604,9 +800,11 @@ class MusicService :
         maxHeight: Int = Int.MAX_VALUE,
         resolvedVideoId: String? = null,
         onFatalError: ((Long, Boolean) -> Unit)? = null,
+        songMediaId: String? = null,
     ) {
         stopVideoPlayerInternal()
         player.pause()
+        currentVideoIsHls = isHls
 
         // Caché propia del modo video (filesDir/video_cache): nunca toca las cachés de audio.
         val dataSourceFactory: DataSource.Factory = if (videoUrl.startsWith("http")) {
@@ -615,15 +813,67 @@ class MusicService :
             DefaultDataSource.Factory(this)
         }
         val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
+        val manualHeight = videoSelectedHeight.value
         val trackSelector = androidx.media3.exoplayer.trackselection.DefaultTrackSelector(this).apply {
-            setParameters(buildUponParameters().setMaxVideoSize(Int.MAX_VALUE, maxHeight))
+            // Con calidad manual en HLS el tope se quita y la pista se fija al conocerse las pistas.
+            val cap = if (isHls && manualHeight != null) Int.MAX_VALUE else maxHeight
+            setParameters(buildUponParameters().setMaxVideoSize(Int.MAX_VALUE, cap))
         }
+        videoTrackSelector = trackSelector
+        var manualOverrideApplied = false
 
         videoPlayer = ExoPlayer.Builder(this)
             .setMediaSourceFactory(mediaSourceFactory)
             .setTrackSelector(trackSelector)
+            .setRenderersFactory(createVideoRenderersFactory())
+            // Foco de audio propio (llamadas, otras apps) y pausa al desconectar auriculares.
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(C.USAGE_MEDIA)
+                    .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+                    .build(),
+                true,
+            )
+            .setHandleAudioBecomingNoisy(true)
+            .setWakeMode(C.WAKE_MODE_NETWORK)
             .build().apply {
+                // Mismo audio session que la canción: el ecualizador del sistema, el refuerzo
+                // de graves, el virtualizador y la ganancia también se aplican al video.
+                runCatching { player.audioSessionId.takeIf { it > 0 }?.let { setAudioSessionId(it) } }
+                volume = if (castController.isConnected.value) 0f else playerVolume.value
+                addAnalyticsListener(
+                    PlaybackStatsListener(false) { eventTime, stats ->
+                        handlePlaybackStats(eventTime, stats, fromVideo = true)
+                    },
+                )
                 addListener(object : Player.Listener {
+                    override fun onPlaybackStateChanged(playbackState: Int) {
+                        if (playbackState == Player.STATE_ENDED) {
+                            // Diferido: no se libera un reproductor dentro de su propio callback.
+                            scope.launch { onVideoEnded() }
+                        }
+                        if (isVideoDrivingSession()) notifySessionStateChanged()
+                    }
+
+                    override fun onIsPlayingChanged(isPlaying: Boolean) {
+                        if (isVideoDrivingSession()) notifySessionStateChanged()
+                    }
+
+                    override fun onTracksChanged(tracks: androidx.media3.common.Tracks) {
+                        val self = videoPlayer ?: return
+                        if (isHls && manualHeight != null && !manualOverrideApplied &&
+                            tracks.groups.any { it.type == C.TRACK_TYPE_VIDEO }
+                        ) {
+                            manualOverrideApplied = true
+                            setVideoQuality(manualHeight)
+                        }
+                        refreshVideoQualityState(self)
+                    }
+
+                    override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
+                        if (videoSize.height > 0) videoPlayingHeight.value = videoSize.height
+                    }
+
                     override fun onPlayerError(error: PlaybackException) {
                         resolvedVideoId?.let { com.dezzy.music.video.MusicVideoResolver.invalidate(it) }
                         if (onFatalError != null) {
@@ -637,14 +887,13 @@ class MusicService :
                     }
                 })
 
-                val videoItem = if (isHls) {
-                    MediaItem.Builder()
-                        .setUri(videoUrl)
-                        .setMimeType(androidx.media3.common.MimeTypes.APPLICATION_M3U8)
-                        .build()
-                } else {
-                    MediaItem.fromUri(videoUrl)
-                }
+                // El mediaId de la canción viaja en el item para que el historial y las
+                // estadísticas cuenten el tiempo visto en modo video.
+                val videoItem = MediaItem.Builder()
+                    .setUri(videoUrl)
+                    .apply { songMediaId?.let { setMediaId(it) } }
+                    .apply { if (isHls) setMimeType(androidx.media3.common.MimeTypes.APPLICATION_M3U8) }
+                    .build()
                 if (audioUrl != null) {
                     setMediaSource(
                         androidx.media3.exoplayer.source.MergingMediaSource(
@@ -662,16 +911,45 @@ class MusicService :
                 playWhenReady = autoPlay
             }
         videoPlayerInstance.value = videoPlayer
+        notifySessionStateChanged()
     }
 
     private fun stopVideoPlayerInternal() {
-        videoPlayer?.let {
+        val vp = videoPlayer
+        // Primero se suelta la referencia: así los callbacks que dispara stop() ya no
+        // creen que el video sigue llevando la sesión multimedia.
+        videoPlayer = null
+        videoTrackSelector = null
+        videoPlayerInstance.value = null
+        videoQualityOptions.value = emptyList()
+        videoPlayingHeight.value = null
+        vp?.let {
             it.stop()
             it.release()
         }
-        videoPlayer = null
-        videoPlayerInstance.value = null
     }
+
+    /**
+     * Renderers del video con el mismo ecualizador paramétrico que la canción (sin el
+     * salto de silencios, que desincronizaría imagen y sonido).
+     */
+    private fun createVideoRenderersFactory(): DefaultRenderersFactory =
+        object : DefaultRenderersFactory(this) {
+            override fun buildAudioSink(
+                context: Context,
+                enableFloatOutput: Boolean,
+                enableAudioTrackPlaybackParams: Boolean,
+            ) = DefaultAudioSink
+                .Builder(this@MusicService)
+                .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
+                .setAudioProcessorChain(
+                    DefaultAudioSink.DefaultAudioProcessorChain(
+                        arrayOf<androidx.media3.common.audio.AudioProcessor>(videoEqProcessor),
+                        SilenceSkippingAudioProcessor(),
+                        SonicAudioProcessor(),
+                    ),
+                ).build()
+        }.setEnableDecoderFallback(true)
 
     private fun isAppInForeground(): Boolean {
         val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
@@ -908,6 +1186,8 @@ class MusicService :
     private var togetherOnlineConnectJob: Job? = null
     private var togetherClientEventsJob: Job? = null
     private var togetherHeartbeatJob: Job? = null
+    /** Listen Together v2.3: informe periódico de este móvil para el panel del anfitrión. */
+    private var listenTogetherReportJob: Job? = null
     private var togetherClock: com.dezzy.music.together.TogetherClock? = null
     private var togetherSelfParticipantId: String? = null
     private var togetherLastAppliedQueueHash: String? = null
@@ -936,6 +1216,8 @@ class MusicService :
     private var togetherLastSentControlAction: com.dezzy.music.together.ControlAction? = null
     @Volatile
     private var togetherPendingGuestControl: TogetherPendingGuestControl? = null
+    /** Anfitrión de Listen Together: acción → cuándo la publicó (elapsedRealtime). */
+    private val listenTogetherHostSentAt = java.util.concurrent.ConcurrentHashMap<String, Long>()
 
     private fun isTogetherApplyingRemote(): Boolean = togetherApplyingRemote
     private val togetherHostId: String = "host"
@@ -1198,7 +1480,137 @@ class MusicService :
                  * el botón de reanudar queda "bloqueado" para siempre. La UI interna no lo
                  * sufría porque usa `togglePlayPause()`, que sí re-prepara.
                  */
+                // ── Modo video: la notificación, la pantalla de bloqueo y el Bluetooth
+                // controlan el VIDEO (el que suena), no la canción pausada debajo. ──
+                override fun addListener(listener: Player.Listener) {
+                    super.addListener(listener)
+                    sessionListeners.add(listener)
+                }
+
+                override fun removeListener(listener: Player.Listener) {
+                    super.removeListener(listener)
+                    sessionListeners.remove(listener)
+                }
+
+                override fun pause() {
+                    val vp = videoPlayer
+                    if (isVideoDrivingSession() && vp != null) {
+                        vp.pause()
+                        return
+                    }
+                    super.pause()
+                }
+
+                override fun isPlaying(): Boolean {
+                    val vp = videoPlayer
+                    return if (isVideoDrivingSession() && vp != null) vp.isPlaying else super.isPlaying()
+                }
+
+                override fun getPlayWhenReady(): Boolean {
+                    val vp = videoPlayer
+                    return if (isVideoDrivingSession() && vp != null) vp.playWhenReady else super.getPlayWhenReady()
+                }
+
+                override fun getPlaybackState(): Int {
+                    val vp = videoPlayer
+                    if (isVideoDrivingSession() && vp != null) {
+                        // IDLE/ENDED del video no deben mostrarse como "sin nada que reproducir".
+                        return when (vp.playbackState) {
+                            Player.STATE_IDLE -> Player.STATE_BUFFERING
+                            else -> vp.playbackState
+                        }
+                    }
+                    return super.getPlaybackState()
+                }
+
+                override fun getCurrentPosition(): Long {
+                    val vp = videoPlayer
+                    return if (isVideoDrivingSession() && vp != null) vp.currentPosition else super.getCurrentPosition()
+                }
+
+                override fun getContentPosition(): Long {
+                    val vp = videoPlayer
+                    return if (isVideoDrivingSession() && vp != null) vp.contentPosition else super.getContentPosition()
+                }
+
+                override fun getBufferedPosition(): Long {
+                    val vp = videoPlayer
+                    return if (isVideoDrivingSession() && vp != null) vp.bufferedPosition else super.getBufferedPosition()
+                }
+
+                override fun getContentBufferedPosition(): Long {
+                    val vp = videoPlayer
+                    return if (isVideoDrivingSession() && vp != null) vp.contentBufferedPosition else super.getContentBufferedPosition()
+                }
+
+                override fun getTotalBufferedDuration(): Long {
+                    val vp = videoPlayer
+                    return if (isVideoDrivingSession() && vp != null) vp.totalBufferedDuration else super.getTotalBufferedDuration()
+                }
+
+                override fun getDuration(): Long {
+                    val vp = videoPlayer
+                    if (isVideoDrivingSession() && vp != null) {
+                        val d = vp.duration
+                        if (d != C.TIME_UNSET && d > 0) return d
+                    }
+                    return super.getDuration()
+                }
+
+                override fun getContentDuration(): Long {
+                    val vp = videoPlayer
+                    if (isVideoDrivingSession() && vp != null) {
+                        val d = vp.contentDuration
+                        if (d != C.TIME_UNSET && d > 0) return d
+                    }
+                    return super.getContentDuration()
+                }
+
+                override fun seekTo(positionMs: Long) {
+                    val vp = videoPlayer
+                    if (isVideoDrivingSession() && vp != null) {
+                        vp.seekTo(positionMs)
+                        return
+                    }
+                    super.seekTo(positionMs)
+                }
+
+                override fun seekTo(mediaItemIndex: Int, positionMs: Long) {
+                    val vp = videoPlayer
+                    if (isVideoDrivingSession() && vp != null && mediaItemIndex == player.currentMediaItemIndex) {
+                        vp.seekTo(positionMs)
+                        return
+                    }
+                    super.seekTo(mediaItemIndex, positionMs)
+                }
+
+                override fun seekBack() {
+                    val vp = videoPlayer
+                    if (isVideoDrivingSession() && vp != null) {
+                        vp.seekTo((vp.currentPosition - seekBackIncrement).coerceAtLeast(0L))
+                        return
+                    }
+                    super.seekBack()
+                }
+
+                override fun seekForward() {
+                    val vp = videoPlayer
+                    if (isVideoDrivingSession() && vp != null) {
+                        val target = vp.currentPosition + seekForwardIncrement
+                        val d = vp.duration
+                        vp.seekTo(if (d != C.TIME_UNSET && d > 0) target.coerceAtMost(d) else target)
+                        return
+                    }
+                    super.seekForward()
+                }
+
                 override fun play() {
+                    val vp = videoPlayer
+                    if (isVideoDrivingSession() && vp != null) {
+                        if (vp.playbackState == Player.STATE_IDLE) vp.prepare()
+                        vp.play()
+                        return
+                    }
                     if (player.mediaItemCount == 0) {
                         scope.launch(Dispatchers.Main) {
                             if (!queueRestoreCompleted.value) {
@@ -1216,6 +1628,12 @@ class MusicService :
                 }
 
                 override fun setPlayWhenReady(playWhenReady: Boolean) {
+                    val vp = videoPlayer
+                    if (isVideoDrivingSession() && vp != null) {
+                        if (playWhenReady && vp.playbackState == Player.STATE_IDLE) vp.prepare()
+                        vp.playWhenReady = playWhenReady
+                        return
+                    }
                     if (playWhenReady && player.mediaItemCount == 0) {
                         scope.launch(Dispatchers.Main) {
                             if (!queueRestoreCompleted.value) {
@@ -1246,6 +1664,7 @@ class MusicService :
 
                 override fun seekToPreviousMediaItem() = skipToPreviousManual()
             }
+        sessionPlayerRef = sessionPlayer
         mediaSession =
             MediaLibrarySession
                 .Builder(this, sessionPlayer, mediaLibrarySessionCallback)
@@ -1312,6 +1731,14 @@ class MusicService :
             if (casting) 0f else playerVolume * normalizeFactor * audioFocusVolumeFactor * playbackFadeFactor
         }.collectLatest(scope) { finalVolume ->
             player.volume = finalVolume
+        }
+
+        // El video sigue el volumen de la app (y el foco/atenuado lo gestiona su propio ExoPlayer).
+        // La normalización no aplica: el audio del videoclip no trae datos de sonoridad.
+        combine(playerVolume, videoPlayerInstance, castController.isConnected) { volume, vp, casting ->
+            Triple(volume, vp, casting)
+        }.collectLatest(scope) { (volume, vp, casting) ->
+            vp?.volume = if (casting) 0f else volume
         }
 
         playerVolume.debounce(1000).collect(ioScope) { volume ->
@@ -2964,6 +3391,7 @@ class MusicService :
                 isPublic = settings.isPublic,
                 theme = settings.customTheme?.ifBlank { null } ?: settings.theme.name
             )
+            startListenTogetherReportJob(client)
             
             togetherClientEventsJob?.cancel()
             togetherClientEventsJob = ioScope.launch(SilentHandler) {
@@ -3041,7 +3469,9 @@ class MusicService :
                                     roomSettings.allowGuestsToControlPlayback
                                 else -> false
                             }
-                            if (permitted) applyListenTogetherSync(event.action)
+                            if (permitted && !isListenTogetherHostEcho(event.action)) {
+                                applyListenTogetherSync(event.action)
+                            }
                         }
                         // Handle other ListenTogetherEvent as needed
                         else -> {}
@@ -3248,6 +3678,7 @@ class MusicService :
                 }
                 
             client.joinRoom(trimmedCode, displayName.trim().ifBlank { getString(R.string.together_role_guest) })
+            startListenTogetherReportJob(client)
             
             togetherClientEventsJob?.cancel()
             togetherClientEventsJob = ioScope.launch(SilentHandler) {
@@ -3991,6 +4422,50 @@ class MusicService :
             }
     }
 
+    /**
+     * Cada 3 s, mientras estemos en una sala, cuenta al servidor qué suena aquí (pista, posición,
+     * si carga) y por qué red. Con eso el servidor calcula el desfase de cada oyente para el
+     * panel del anfitrión. Los servidores anteriores a v2.3 ignoran el mensaje sin más.
+     * Corre en `scope` (Main) porque el player sólo se puede leer desde ese hilo.
+     */
+    private fun startListenTogetherReportJob(client: com.dezzy.music.listentogether.ListenTogetherClient) {
+        listenTogetherReportJob?.cancel()
+        listenTogetherReportJob = scope.launch(SilentHandler) {
+            while (isActive) {
+                delay(3_000L)
+                if (!client.isInRoom) continue
+                val item = player.currentMediaItem ?: continue
+                val trackId = item.mediaId
+                val buffering = player.playbackState == Player.STATE_BUFFERING
+                val position = player.currentPosition
+                val playing = player.playWhenReady && !buffering
+                val net = listenTogetherNetworkLabel()
+                ioScope.launch(SilentHandler) {
+                    client.sendListenerReport(
+                        trackId = trackId,
+                        position = position,
+                        isPlaying = playing,
+                        buffering = buffering,
+                        network = net,
+                    )
+                }
+            }
+        }
+    }
+
+    private fun listenTogetherNetworkLabel(): String = try {
+        val caps = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
+        when {
+            caps == null -> ""
+            caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) -> "wifi"
+            caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_ETHERNET) -> "ethernet"
+            caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR) -> "cellular"
+            else -> "other"
+        }
+    } catch (_: Exception) {
+        ""
+    }
+
     private suspend fun stopTogetherInternal() {
         togetherBroadcastJob?.cancel()
         togetherBroadcastJob = null
@@ -4003,6 +4478,9 @@ class MusicService :
 
         togetherHeartbeatJob?.cancel()
         togetherHeartbeatJob = null
+
+        listenTogetherReportJob?.cancel()
+        listenTogetherReportJob = null
 
         togetherClock = null
         togetherSelfParticipantId = null
@@ -4060,6 +4538,25 @@ class MusicService :
         com.dezzy.music.listentogether.ListenTogetherClient.getInstance()
             ?.takeIf { it.isInRoom && it.isHost }
 
+    /**
+     * ¿Este SYNC_PLAYBACK que recibe el anfitrión es su propio eco o algo que ya se cumple?
+     * - Eco: misma acción que publicó hace menos de 3 s (los servidores anteriores a v2.2 se
+     *   la devolvían; aplicarla tarde deshacía el siguiente toque y arrancaba el bucle).
+     * - Ya cumplido: PLAY sonando / PAUSE en pausa, sin salto de posición relevante.
+     */
+    private fun isListenTogetherHostEcho(payload: com.dezzy.music.listentogether.PlaybackActionPayload): Boolean {
+        val now = android.os.SystemClock.elapsedRealtime()
+        val sentAt = listenTogetherHostSentAt[payload.action]
+        if (sentAt != null && now - sentAt < 3_000L && payload.playAt == null) return true
+        val posOk = payload.position?.let { kotlin.math.abs(player.currentPosition - it) < 1_500L } ?: true
+        return when (payload.action) {
+            com.dezzy.music.listentogether.PlaybackActions.PLAY -> player.playWhenReady && posOk
+            com.dezzy.music.listentogether.PlaybackActions.PAUSE -> !player.playWhenReady && posOk
+            com.dezzy.music.listentogether.PlaybackActions.SEEK -> posOk
+            else -> false
+        }
+    }
+
     /** Host → room: publish a local playback change so guests can mirror it. */
     private fun relayListenTogetherPlayback(
         action: String,
@@ -4070,6 +4567,7 @@ class MusicService :
         shuffleEnabled: Boolean? = null,
     ) {
         val client = listenTogetherHostClient() ?: return
+        listenTogetherHostSentAt[action] = android.os.SystemClock.elapsedRealtime()
         client.sendPlaybackAction(
             action = action,
             trackId = trackId,
@@ -5017,16 +5515,26 @@ class MusicService :
         }
     }
     // Listen Together host: publish play/pause and seeks so guests stay in sync.
+    // onEvents llega después de que applyListenTogetherSync haya terminado, así que la bandera
+    // togetherApplyingRemote ya está a false: sin esta ventana, el anfitrión volvía a publicar
+    // cada cambio que le llegaba de la sala y el play/pause rebotaba entre móviles sin fin.
     if (listenTogetherHostClient() != null) {
+        val nowLt = android.os.SystemClock.elapsedRealtime()
+        val inRemoteWindow = isTogetherApplyingRemote() || nowLt < togetherSuppressEchoUntilElapsedMs
         if (events.contains(Player.EVENT_PLAY_WHEN_READY_CHANGED)) {
-            relayListenTogetherPlayback(
-                if (this.player.playWhenReady) com.dezzy.music.listentogether.PlaybackActions.PLAY
-                else com.dezzy.music.listentogether.PlaybackActions.PAUSE,
-                position = this.player.currentPosition,
-            )
+            val pwr = this.player.playWhenReady
+            val isRemoteEcho = inRemoteWindow && togetherLastRemoteAppliedPlayWhenReady == pwr
+            if (!isRemoteEcho) {
+                relayListenTogetherPlayback(
+                    if (pwr) com.dezzy.music.listentogether.PlaybackActions.PLAY
+                    else com.dezzy.music.listentogether.PlaybackActions.PAUSE,
+                    position = this.player.currentPosition,
+                )
+            }
         }
         if (events.contains(Player.EVENT_POSITION_DISCONTINUITY) &&
-            !events.contains(Player.EVENT_MEDIA_ITEM_TRANSITION)
+            !events.contains(Player.EVENT_MEDIA_ITEM_TRANSITION) &&
+            !inRemoteWindow
         ) {
             relayListenTogetherPlayback(
                 com.dezzy.music.listentogether.PlaybackActions.SEEK,
@@ -5959,8 +6467,20 @@ class MusicService :
     override fun onPlaybackStatsReady(
         eventTime: AnalyticsListener.EventTime,
         playbackStats: PlaybackStats,
+    ) = handlePlaybackStats(eventTime, playbackStats, fromVideo = false)
+
+    // Último evento de historial guardado: evita contar dos reproducciones cuando una misma
+    // escucha se reparte entre la canción y su videoclip.
+    private var lastHistoryInsert: Triple<String, Long, Boolean>? = null
+
+    private fun handlePlaybackStats(
+        eventTime: AnalyticsListener.EventTime,
+        playbackStats: PlaybackStats,
+        fromVideo: Boolean,
     ) {
+        if (eventTime.timeline.isEmpty) return
         val mediaItem = eventTime.timeline.getWindow(eventTime.windowIndex, Timeline.Window()).mediaItem
+        if (mediaItem.mediaId.isBlank()) return
 
         if (playbackStats.totalPlayTimeMs >= (
                 dataStore[HistoryDuration]?.times(1000f)
@@ -5968,19 +6488,27 @@ class MusicService :
             ) &&
             !dataStore.get(PauseListenHistoryKey, false)
         ) {
+            val now = System.currentTimeMillis()
+            val last = lastHistoryInsert
+            val sameListen = last != null && last.first == mediaItem.mediaId &&
+                (fromVideo || last.third) && now - last.second < 15 * 60_000L
+            lastHistoryInsert = Triple(mediaItem.mediaId, now, fromVideo)
             database.query {
                 incrementTotalPlayTime(mediaItem.mediaId, playbackStats.totalPlayTimeMs)
-                try {
-                    insert(
-                        Event(
-                            songId = mediaItem.mediaId,
-                            timestamp = LocalDateTime.now(),
-                            playTime = playbackStats.totalPlayTimeMs,
-                        ),
-                    )
-                } catch (_: SQLException) {
+                if (!sameListen) {
+                    try {
+                        insert(
+                            Event(
+                                songId = mediaItem.mediaId,
+                                timestamp = LocalDateTime.now(),
+                                playTime = playbackStats.totalPlayTimeMs,
+                            ),
+                        )
+                    } catch (_: SQLException) {
+                    }
                 }
             }
+            if (sameListen) return
 
             CoroutineScope(Dispatchers.IO).launch {
                 try {

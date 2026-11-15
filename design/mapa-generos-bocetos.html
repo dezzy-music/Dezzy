@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mapa por géneros</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<style>
+:root{
+  --page:#F4EFEF; --ink:#22191A; --muted:#5E5051; --doc-line:#D8C1C2; --doc-accent:#9C3F48;
+  --primary:#FFB2B9; --on-primary:#5F1320; --pc:#7D2833; --on-pc:#FFDADC;
+  --sc2:#5C3F41; --on-sc2:#FFDADC; --tertiary:#E8C08E; --tc:#5D4219; --on-tc:#FFDDB3;
+  --surface:#1A1112; --s-low:#22191A; --s:#261D1E; --s-high:#312828; --s-highest:#3C3233;
+  --on-s:#F0DEDF; --on-sv:#D7C1C2; --outline:#A08C8D; --ov:#524344;
+  --ok:#9BD3A6; --okc:#1F4A2A; --err:#FFB4AB;
+  /* Colores de género (los mismos en mapa, chips y gráficas) */
+  --g1:#FFB2B9; --g2:#9BD3C9; --g3:#E8C08E; --g4:#C8B6FF; --g5:#B5E0A3; --g6:#FF8A80;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--page);color:var(--ink);font-family:Roboto,system-ui,sans-serif;line-height:1.45}
+.ms{font-family:'Material Symbols Outlined';font-weight:400;font-style:normal;font-size:24px;line-height:1;display:inline-block;
+  white-space:nowrap;direction:ltr;-webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;user-select:none}
+.ms.f{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+.s16{font-size:16px!important}.s18{font-size:18px!important}.s20{font-size:20px!important}
+
+.wrap{max-width:1240px;margin:0 auto;padding:40px 16px 80px}
+header h1{font-family:'Roboto Flex',Roboto;font-size:36px;font-weight:700;letter-spacing:-.5px}
+header p{font-size:16px;color:var(--muted);max-width:880px;margin-top:8px}
+.today{margin-top:20px;background:#fff;border:1px solid var(--doc-line);border-radius:20px;padding:18px 20px;font-size:14px;max-width:980px}
+.today h4{font-size:15px;margin:10px 0 6px}.today h4:first-child{margin-top:0}.today ul{padding-left:18px}.today li{margin:3px 0}
+section{margin-top:56px;padding-top:28px;border-top:3px solid var(--doc-accent)}
+.head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.tag{font:700 13px Roboto;letter-spacing:1px;background:var(--doc-accent);color:#fff;border-radius:8px;padding:4px 10px}
+.head h3{font-family:'Roboto Flex',Roboto;font-size:28px;font-weight:700}
+.head p{flex-basis:100%;color:var(--muted);font-size:15px;max-width:900px}
+.row{display:flex;gap:28px;flex-wrap:wrap;margin-top:22px;align-items:flex-start}
+.cap{font-size:13px;color:var(--muted);margin-top:10px;max-width:360px;text-align:center}
+.notes{flex:1;min-width:260px;max-width:380px;background:#fff;border:1px solid var(--doc-line);border-radius:20px;padding:18px 20px;font-size:14px}
+.notes h4{font-size:15px;margin:10px 0 4px}.notes h4:first-child{margin-top:0}.notes ul{padding-left:18px}.notes li{margin:3px 0}
+
+/* Teléfono */
+.phone{width:360px;height:760px;border-radius:36px;background:var(--surface);color:var(--on-s);overflow:hidden;position:relative;
+  box-shadow:0 24px 50px rgba(0,0,0,.25);border:8px solid #0B0809;display:flex;flex-direction:column}
+.sb{height:28px;display:flex;justify-content:space-between;align-items:center;padding:0 20px;font-size:12px;color:var(--on-sv);flex-shrink:0;position:relative;z-index:3}
+.tb{display:flex;align-items:center;height:56px;padding:0 4px;flex-shrink:0;position:relative;z-index:3}
+.ib{width:48px;height:48px;border-radius:24px;display:grid;place-items:center;color:var(--on-sv);flex-shrink:0}
+.tb .t{flex:1;padding-left:4px}
+.tb .t small{display:block;font-size:12px;color:var(--on-sv)}
+.tb .t b{font-size:18px;font-weight:500}
+.scroll{flex:1;overflow:hidden}
+.lbl{font-size:14px;font-weight:500;color:var(--on-sv);padding:0 16px;margin:16px 0 8px;display:flex;align-items:center;gap:8px}
+.lbl .sp{flex:1}.lbl a{color:var(--primary);font-size:14px;text-decoration:none}
+.chips{display:flex;gap:8px;padding:0 16px;overflow:hidden}
+.chip{display:inline-flex;align-items:center;gap:6px;height:32px;border-radius:8px;border:1px solid var(--ov);padding:0 12px;font-size:14px;font-weight:500;color:var(--on-sv);white-space:nowrap;flex-shrink:0}
+.chip.sel{background:var(--sc2);border-color:transparent;color:var(--on-sc2)}
+.chip i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.search{margin:4px 16px 0;height:56px;border-radius:28px;background:var(--s-high);display:flex;align-items:center;gap:8px;padding:0 6px 0 16px;color:var(--on-sv);font-size:16px}
+.search .q{flex:1;color:var(--on-s)}
+.search .q.ph{color:var(--on-sv)}
+.art{border-radius:10px;flex-shrink:0;background:linear-gradient(135deg,#7D2833,#E8C08E)}
+.art.b{background:linear-gradient(135deg,#1F5C66,#9BD3C9)}.art.c{background:linear-gradient(135deg,#3B2E6E,#C8B6FF)}
+.art.d{background:linear-gradient(135deg,#5D4219,#FFDDB3)}.art.e{background:linear-gradient(135deg,#2E4A1F,#B5E0A3)}
+.art.r{border-radius:50%}
+.song{display:flex;align-items:center;gap:12px;padding:6px 16px;min-height:64px}
+.song .n{width:22px;font:700 15px 'Roboto Flex';color:var(--on-sv);text-align:center;flex-shrink:0}
+.song .tx{flex:1;min-width:0}
+.song .tx b{display:block;font-size:15px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.song .tx span{font-size:13px;color:var(--on-sv);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.trend{font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:2px;flex-shrink:0}
+.trend.up{color:var(--ok)}.trend.dn{color:var(--err)}.trend.eq{color:var(--on-sv)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;border-radius:24px;padding:0 20px;font-size:15px;font-weight:500;white-space:nowrap}
+.btn.fill{background:var(--primary);color:var(--on-primary)}
+.btn.ton{background:var(--sc2);color:var(--on-sc2)}
+.btn.sm{height:40px;border-radius:20px;padding:0 16px;font-size:14px}
+.note{font-size:12px;color:var(--on-sv);padding:0 16px;margin-top:10px;display:flex;gap:6px;align-items:flex-start}
+
+/* Mapa de fondo (SVG simplificado) */
+.map{position:absolute;inset:0;background:#141010}
+.map svg{width:100%;height:100%}
+.pill{position:absolute;display:flex;align-items:center;gap:6px;background:var(--s-highest);border-radius:18px;padding:4px 10px 4px 4px;font-size:12px;font-weight:500;color:var(--on-s);box-shadow:0 4px 10px rgba(0,0,0,.4)}
+.pill .art{width:26px;height:26px;border-radius:50%}
+.pill.sel{outline:2px solid var(--primary)}
+
+/* Hoja inferior */
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--s-low);border-radius:28px 28px 0 0;z-index:4;padding-bottom:12px}
+.grab{width:32px;height:4px;border-radius:2px;background:var(--outline);margin:10px auto 6px}
+.sheet h5{font-family:'Roboto Flex';font-size:22px;font-weight:700;padding:0 16px;display:flex;align-items:center;gap:8px}
+.sheet h5 small{font:400 13px Roboto;color:var(--on-sv)}
+
+/* Barra de reparto de géneros */
+.share{display:flex;height:12px;border-radius:6px;overflow:hidden;margin:10px 16px 0;gap:2px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;padding:8px 16px 0;font-size:12px;color:var(--on-sv)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:10px;height:10px;border-radius:50%}
+
+/* Listas de países */
+.ctry{display:flex;align-items:center;gap:12px;padding:8px 16px;min-height:60px}
+.flag{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:20px;background:var(--s-high);flex-shrink:0}
+.ctry .tx{flex:1;min-width:0}
+.ctry .tx b{display:block;font-size:15px;font-weight:500}
+.ctry .tx span{font-size:13px;color:var(--on-sv)}
+.bar{height:6px;border-radius:3px;background:var(--s-highest);margin-top:6px;position:relative;overflow:hidden}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--primary)}
+.pos{font:700 18px 'Roboto Flex';min-width:40px;text-align:right}
+.pos small{display:block;font:400 11px Roboto;color:var(--on-sv)}
+
+/* Tarjetas de estadística */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px}
+.tile{background:var(--s-high);border-radius:20px;padding:12px 14px}
+.tile b{display:block;font:700 26px 'Roboto Flex';color:var(--on-s)}
+.tile span{font-size:12px;color:var(--on-sv)}
+.tile.hero{grid-column:1/3;background:var(--pc);color:var(--on-pc)}
+.tile.hero b{color:var(--on-pc);font-size:30px}.tile.hero span{color:var(--on-pc);opacity:.9}
+
+/* Bento de géneros */
+.bento{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px}
+.gt{border-radius:20px;padding:12px;min-height:118px;color:#1A1112;display:flex;flex-direction:column;justify-content:space-between}
+.gt b{font:700 17px 'Roboto Flex'}
+.gt span{font-size:12px;opacity:.85}
+.gt .covers{display:flex;margin-top:8px}
+.gt .covers .art{width:30px;height:30px;border-radius:50%;border:2px solid rgba(0,0,0,.25);margin-right:-8px}
+.gt.wide{grid-column:1/3;min-height:96px}
+
+/* Tabla de posiciones */
+.tbl{margin:0 16px;background:var(--s-high);border-radius:20px;overflow:hidden}
+.tr{display:flex;align-items:center;gap:10px;padding:10px 12px;font-size:14px;min-height:52px}
+.tr+.tr{border-top:1px solid var(--ov)}
+.tr .c{flex:1;display:flex;align-items:center;gap:8px;min-width:0}
+.tr .c em{font-style:normal;font-size:18px}
+.spark{width:64px;height:24px;flex-shrink:0}
+.tr .p{font:700 16px 'Roboto Flex';width:34px;text-align:right}
+.seg{display:flex;margin:0 16px;border:1px solid var(--outline);border-radius:20px;overflow:hidden;height:40px}
+.seg div{flex:1;display:grid;place-items:center;font-size:14px;font-weight:500;color:var(--on-sv)}
+.seg div+div{border-left:1px solid var(--outline)}
+.seg .on{background:var(--sc2);color:var(--on-sc2)}
+.nowdz{margin:12px 16px 0;background:var(--s-high);border-radius:20px;padding:12px 14px;display:flex;gap:12px;align-items:center}
+.nowdz .dot{width:10px;height:10px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px rgba(155,211,166,.2);flex-shrink:0}
+.nowdz .tx{flex:1;font-size:13px;color:var(--on-sv)}.nowdz .tx b{display:block;font-size:15px;color:var(--on-s);font-weight:500}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Mapa musical: géneros y buscador</h1>
+  <p>Tres formas de mostrar <b>qué géneros suenan en cada país</b> y de <b>buscar un artista o canción</b> para ver dónde se escucha más, con listas y estadísticas. Elige una (o mezcla partes).</p>
+  <div class="today">
+    <h4>De dónde salen los datos (igual en las tres)</h4>
+    <ul>
+      <li><b>Géneros por país:</b> los tops por país de YouTube Music (lo que ya usa el mapa) más el top por país de Last.fm (<code>geo.getTopTracks</code>). Cada canción se etiqueta con los géneros de su artista en Last.fm, y se suman por país. Así sale «En México: 34 % regional mexicano, 22 % reggaetón…».</li>
+      <li><b>¿Dónde se escucha más?:</b> se busca el artista o la canción en los tops de unos 60 países y se ordena por su mejor posición. Se guarda una foto al día, y así salen las flechas de sube/baja.</li>
+      <li><b>Oyentes de Dezzy ahora:</b> sale del «escuchando ahora» P2P que ya existe, por ciudad aproximada (unos 5 km). Solo cuenta a quien comparte su ubicación.</li>
+      <li><b>Honestidad:</b> no son reproducciones exactas como las de Spotify (nadie las publica gratis). En pantalla dirá «Posición en los tops» y no «oyentes». Sin servidor propio: cada teléfono descarga lo suyo y lo guarda 6 h.</li>
+    </ul>
+  </div>
+</header>
+
+<!-- ═════════════ A ═════════════ -->
+<section>
+  <div class="head">
+    <span class="tag">BOCETO A</span><h3>Hoja del país con géneros</h3>
+    <p>El mapa no cambia. Al tocar un país, la hoja de abajo enseña cuánto pesa cada género y unos chips para ver el top de cada uno. Arriba se busca cualquier artista o canción, y el resultado es una lista de países ordenada.</p>
+  </div>
+  <div class="row">
+    <div>
+      <div class="phone">
+        <div class="map">
+          <svg viewBox="0 0 360 760" aria-hidden="true">
+            <path d="M40 150 C90 120 150 130 190 160 C230 190 250 230 240 270 C230 300 200 310 180 330 C160 350 150 380 120 370 C90 360 70 320 60 290 C45 250 25 190 40 150Z" fill="#2A2021" stroke="#3C3233"/>
+            <path d="M150 300 C175 300 195 320 200 345 C190 360 170 362 150 350Z" fill="#5C3F41" stroke="#FFB2B9" stroke-width="2"/>
+            <path d="M210 360 C250 370 290 420 300 480 C305 540 270 600 240 620 C220 600 205 540 200 480 C195 430 195 390 210 360Z" fill="#2A2021" stroke="#3C3233"/>
+          </svg>
+          <div class="pill" style="left:70px;top:190px"><span class="art b"></span>EE. UU.</div>
+          <div class="pill sel" style="left:118px;top:300px"><span class="art"></span>México</div>
+          <div class="pill" style="left:220px;top:420px"><span class="art c"></span>Colombia</div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="ms s16">signal_cellular_alt</span></div>
+        <div class="search" style="position:relative;z-index:3"><span class="ms">search</span><span class="q ph">Busca un artista, canción o país</span><span class="ib"><span class="ms">my_location</span></span></div>
+        <div class="sheet" style="top:330px">
+          <div class="grab"></div>
+          <h5>🇲🇽 México <small>· Top de hoy</small></h5>
+          <div class="share" role="img" aria-label="Regional mexicano 34 %, reggaetón 22 %, corridos tumbados 18 %, pop latino 14 %, cumbia 7 %, otros 5 %">
+            <i style="flex:34;background:var(--g1)"></i><i style="flex:22;background:var(--g2)"></i><i style="flex:18;background:var(--g3)"></i><i style="flex:14;background:var(--g4)"></i><i style="flex:7;background:var(--g5)"></i><i style="flex:5;background:var(--ov)"></i>
+          </div>
+          <div class="legend"><span><i style="background:var(--g1)"></i>Regional 34 %</span><span><i style="background:var(--g2)"></i>Reggaetón 22 %</span><span><i style="background:var(--g3)"></i>Corridos 18 %</span><span><i style="background:var(--g4)"></i>Pop latino 14 %</span></div>
+          <div class="chips" style="margin-top:12px"><span class="chip">Todo</span><span class="chip sel"><span class="ms s18">check</span>Regional mexicano</span><span class="chip">Reggaetón</span><span class="chip">Corridos</span></div>
+          <div class="song" style="margin-top:6px"><span class="n">1</span><span class="art" style="width:48px;height:48px"></span><div class="tx"><b>Si No Es Contigo</b><span>Cartel de Santa, Grupo Frontera</span></div><span class="trend up"><span class="ms s16">arrow_upward</span>3</span></div>
+          <div class="song"><span class="n">2</span><span class="art d" style="width:48px;height:48px"></span><div class="tx"><b>Tu Sancho</b><span>Fuerza Regida</span></div><span class="trend eq">—</span></div>
+          <div class="song"><span class="n">3</span><span class="art e" style="width:48px;height:48px"></span><div class="tx"><b>La Diabla</b><span>Xavi</span></div><span class="trend dn"><span class="ms s16">arrow_downward</span>1</span></div>
+        </div>
+      </div>
+      <p class="cap">Tocas México: barra de géneros con su leyenda y, debajo, chips para ver el top de cada género.</p>
+    </div>
+    <div>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="ms s16">signal_cellular_alt</span></div>
+        <div class="search"><span class="ms">arrow_back</span><span class="q">Peso Pluma</span><span class="ib"><span class="ms">close</span></span></div>
+        <div class="chips" style="margin-top:12px"><span class="chip sel">Artista</span><span class="chip">Canciones</span><span class="chip">Países</span></div>
+        <div class="song" style="margin-top:8px"><span class="art r" style="width:56px;height:56px"></span><div class="tx"><b style="font-size:18px">Peso Pluma</b><span>En el top de 14 países hoy</span></div><span class="btn ton sm"><span class="ms s18">play_arrow</span>Radio</span></div>
+        <div class="lbl">Dónde se escucha más<span class="sp"></span><a href="#">Ver en el mapa</a></div>
+        <div class="ctry"><span class="flag">🇲🇽</span><div class="tx"><b>México</b><span>3 canciones en el top · mejor: Tu Sancho</span><div class="bar"><i style="width:96%"></i></div></div><div class="pos">#2<small>mejor</small></div></div>
+        <div class="ctry"><span class="flag">🇺🇸</span><div class="tx"><b>Estados Unidos</b><span>2 canciones en el top</span><div class="bar"><i style="width:70%"></i></div></div><div class="pos">#9<small>mejor</small></div></div>
+        <div class="ctry"><span class="flag">🇬🇹</span><div class="tx"><b>Guatemala</b><span>2 canciones en el top</span><div class="bar"><i style="width:62%"></i></div></div><div class="pos">#12<small>mejor</small></div></div>
+        <div class="ctry"><span class="flag">🇨🇴</span><div class="tx"><b>Colombia</b><span>1 canción en el top</span><div class="bar"><i style="width:40%"></i></div></div><div class="pos">#27<small>mejor</small></div></div>
+        <div class="ctry"><span class="flag">🇪🇸</span><div class="tx"><b>España</b><span>1 canción en el top</span><div class="bar"><i style="width:22%"></i></div></div><div class="pos">#44<small>mejor</small></div></div>
+        <div class="note"><span class="ms s16">info</span>Posición en los tops de YouTube Music y Last.fm de 60 países. No son reproducciones exactas.</div>
+      </div>
+      <p class="cap">Buscas un artista: países ordenados por su mejor posición, cuántas canciones tiene en cada top y un botón para verlo en el mapa.</p>
+    </div>
+    <div class="notes">
+      <h4>A favor</h4>
+      <ul><li>Es lo más fácil de entender y lo que menos cambia el mapa actual.</li><li>Los chips de género sirven igual en cualquier país.</li><li>Es el más rápido de programar.</li></ul>
+      <h4>En contra</h4>
+      <ul><li>El mapa en sí no enseña los géneros: hay que tocar país por país.</li><li>Las estadísticas son pocas: una lista y poco más.</li></ul>
+      <h4>Accesibilidad</h4>
+      <ul><li>La barra de géneros lleva su texto («Regional mexicano 34 %…») para TalkBack, y la leyenda repite los números: no depende solo del color.</li><li>Las flechas de tendencia llevan texto («sube 3»), no solo verde y rojo.</li></ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ B ═════════════ -->
+<section>
+  <div class="head">
+    <span class="tag">BOCETO B</span><h3>Mapa pintado por género + huella del artista</h3>
+    <p>Arriba hay un selector «Ver: Canciones / Géneros». En Géneros, cada país se pinta con su género número 1; al tocar un género, el mapa ilumina los países donde manda. El artista buscado abre su «Huella global» con estadísticas.</p>
+  </div>
+  <div class="row">
+    <div>
+      <div class="phone">
+        <div class="map">
+          <svg viewBox="0 0 360 760" aria-hidden="true">
+            <path d="M40 170 C90 140 150 150 190 180 C230 210 250 250 240 290 C230 320 200 330 180 350 C160 370 150 400 120 390 C90 380 70 340 60 310 C45 270 25 210 40 170Z" fill="#3B2E6E" opacity=".85"/>
+            <path d="M150 320 C175 320 195 340 200 365 C190 380 170 382 150 370Z" fill="#FFB2B9"/>
+            <path d="M205 385 C230 380 245 395 240 410 C225 415 210 405 205 385Z" fill="#FFB2B9" opacity=".9"/>
+            <path d="M210 420 C250 430 290 480 300 540 C305 600 270 660 240 680 C220 660 205 600 200 540 C195 490 195 450 210 420Z" fill="#9BD3C9" opacity=".9"/>
+          </svg>
+        </div>
+        <div class="sb"><span>9:41</span><span class="ms s16">signal_cellular_alt</span></div>
+        <div class="search" style="position:relative;z-index:3"><span class="ms">search</span><span class="q ph">Busca un artista o canción</span></div>
+        <div class="seg" style="position:relative;z-index:3;margin-top:10px;background:var(--surface)"><div>Canciones</div><div class="on">Géneros</div><div>Cerca</div></div>
+        <div class="chips" style="position:relative;z-index:3;margin-top:10px"><span class="chip" style="background:var(--surface)"><i style="background:var(--g1)"></i>Regional</span><span class="chip sel"><i style="background:var(--g2)"></i>Reggaetón</span><span class="chip" style="background:var(--surface)"><i style="background:var(--g4)"></i>Pop</span><span class="chip" style="background:var(--surface)"><i style="background:var(--g3)"></i>Hip hop</span></div>
+        <div class="sheet" style="top:520px">
+          <div class="grab"></div>
+          <h5>Reggaetón <small>· número 1 en 9 países</small></h5>
+          <div class="ctry"><span class="flag">🇨🇴</span><div class="tx"><b>Colombia</b><span>41 % de su top</span></div><span class="trend up"><span class="ms s16">arrow_upward</span>4 %</span></div>
+          <div class="ctry"><span class="flag">🇵🇷</span><div class="tx"><b>Puerto Rico</b><span>39 % de su top</span></div><span class="trend eq">—</span></div>
+          <div class="ctry"><span class="flag">🇲🇽</span><div class="tx"><b>México</b><span>22 % · 2.º género</span></div><span class="trend dn"><span class="ms s16">arrow_downward</span>2 %</span></div>
+        </div>
+      </div>
+      <p class="cap">Vista «Géneros»: cada país del color de su género número 1. Al elegir un género, abajo salen los países donde más pesa.</p>
+    </div>
+    <div>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="ms s16">signal_cellular_alt</span></div>
+        <div class="tb"><span class="ib"><span class="ms">arrow_back</span></span><div class="t"><small>Huella global</small><b>Bad Bunny</b></div><span class="ib"><span class="ms">share</span></span></div>
+        <div class="tiles">
+          <div class="tile hero"><b>23 países</b><span>con al menos una canción suya en el top de hoy</span></div>
+          <div class="tile"><b>#1</b><span>Puerto Rico y Colombia</span></div>
+          <div class="tile"><b>+3</b><span>países más que la semana pasada</span></div>
+          <div class="tile"><b>7</b><span>canciones suyas en algún top</span></div>
+          <div class="tile"><b>58</b><span>personas en Dezzy lo escuchan ahora</span></div>
+        </div>
+        <div class="lbl">Por país</div>
+        <div class="ctry"><span class="flag">🇵🇷</span><div class="tx"><b>Puerto Rico</b><div class="bar"><i style="width:100%"></i></div></div><div class="pos">#1</div></div>
+        <div class="ctry"><span class="flag">🇨🇴</span><div class="tx"><b>Colombia</b><div class="bar"><i style="width:100%"></i></div></div><div class="pos">#1</div></div>
+        <div class="ctry"><span class="flag">🇲🇽</span><div class="tx"><b>México</b><div class="bar"><i style="width:88%"></i></div></div><div class="pos">#4</div></div>
+        <div class="lbl">Ciudades con más oyentes en Dezzy</div>
+        <div class="chips"><span class="chip">CDMX · 14</span><span class="chip">Bogotá · 9</span><span class="chip">Madrid · 6</span></div>
+      </div>
+      <p class="cap">Huella global: cifras grandes arriba, países con su posición y ciudades con oyentes de Dezzy ahora mismo.</p>
+    </div>
+    <div class="notes">
+      <h4>A favor</h4>
+      <ul><li>El mapa «cuenta» algo de un vistazo: se ve qué se escucha en cada zona del mundo.</li><li>Tiene las estadísticas más completas (países, mejor puesto, cambios en la semana, oyentes en Dezzy).</li><li>La huella se puede compartir como imagen.</li></ul>
+      <h4>En contra</h4>
+      <ul><li>Pintar los países necesita sus contornos (unos 300 KB de datos de mapa).</li><li>Con 6 colores el mapa puede verse cargado: por eso el chip elegido ilumina y el resto se apaga.</li></ul>
+      <h4>Accesibilidad</h4>
+      <ul><li>Los colores de género son los mismos en el mapa, los chips y las barras, y siempre van con su nombre. La lista de abajo da la misma información sin mirar el mapa.</li></ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ C ═════════════ -->
+<section>
+  <div class="head">
+    <span class="tag">BOCETO C</span><h3>Pantalla «Explorar país» + ranking de la canción</h3>
+    <p>Al tocar un país se abre una pantalla entera con un bento de géneros (cada tarjeta con su top 3), como Spotify Explorar. Al buscar una canción sale una tabla por país con una mini gráfica de sus últimos 7 días.</p>
+  </div>
+  <div class="row">
+    <div>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="ms s16">signal_cellular_alt</span></div>
+        <div class="tb"><span class="ib"><span class="ms">arrow_back</span></span><div class="t"><small>Explorar</small><b>🇲🇽 México</b></div><span class="ib"><span class="ms">search</span></span></div>
+        <div class="chips"><span class="chip sel">Hoy</span><span class="chip">Esta semana</span><span class="chip">Mi ciudad</span></div>
+        <div class="lbl">Lo que suena por género</div>
+        <div class="bento">
+          <div class="gt wide" style="background:var(--g1)"><div><b>Regional mexicano</b><br><span>34 % del top · Grupo Frontera, Fuerza Regida…</span></div><div class="covers"><span class="art"></span><span class="art d"></span><span class="art e"></span></div></div>
+          <div class="gt" style="background:var(--g2)"><div><b>Reggaetón</b><br><span>22 % · Bad Bunny…</span></div><div class="covers"><span class="art b"></span><span class="art c"></span></div></div>
+          <div class="gt" style="background:var(--g3)"><div><b>Corridos tumbados</b><br><span>18 % · Peso Pluma…</span></div><div class="covers"><span class="art d"></span><span class="art"></span></div></div>
+          <div class="gt" style="background:var(--g4)"><div><b>Pop latino</b><br><span>14 % · Kenia OS…</span></div><div class="covers"><span class="art c"></span><span class="art b"></span></div></div>
+          <div class="gt" style="background:var(--g5)"><div><b>Cumbia</b><br><span>7 % · Los Ángeles Azules…</span></div><div class="covers"><span class="art e"></span><span class="art d"></span></div></div>
+        </div>
+        <div class="nowdz"><span class="dot"></span><div class="tx"><b>312 personas en Dezzy escuchan en México</b>El más sonado ahora: «Tu Sancho»</div><span class="ms">chevron_right</span></div>
+      </div>
+      <p class="cap">Explorar México: una tarjeta grande por género (porcentaje, artistas y portadas) y quién escucha en Dezzy ahora mismo.</p>
+    </div>
+    <div>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="ms s16">signal_cellular_alt</span></div>
+        <div class="tb"><span class="ib"><span class="ms">arrow_back</span></span><div class="t"><small>Canción</small><b>Tu Sancho</b></div><span class="ib"><span class="ms">play_circle</span></span></div>
+        <div class="song" style="padding-top:0"><span class="art d" style="width:64px;height:64px"></span><div class="tx"><b>Tu Sancho</b><span>Fuerza Regida · Corridos tumbados</span></div></div>
+        <div class="seg" style="margin-top:6px"><div class="on">Por país</div><div>Por ciudad</div><div>Parecidas</div></div>
+        <div class="lbl">En el top de 9 países · últimos 7 días</div>
+        <div class="tbl">
+          <div class="tr"><div class="c"><em>🇲🇽</em>México</div><svg class="spark" viewBox="0 0 64 24" role="img" aria-label="Subió del 6 al 2"><polyline points="0,18 12,16 24,14 36,10 48,8 64,4" fill="none" stroke="#9BD3A6" stroke-width="2"/></svg><span class="p">#2</span></div>
+          <div class="tr"><div class="c"><em>🇺🇸</em>EE. UU.</div><svg class="spark" viewBox="0 0 64 24" role="img" aria-label="Estable alrededor del 11"><polyline points="0,12 12,13 24,11 36,12 48,12 64,11" fill="none" stroke="#D7C1C2" stroke-width="2"/></svg><span class="p">#11</span></div>
+          <div class="tr"><div class="c"><em>🇬🇹</em>Guatemala</div><svg class="spark" viewBox="0 0 64 24" role="img" aria-label="Bajó del 8 al 15"><polyline points="0,6 12,8 24,10 36,13 48,16 64,19" fill="none" stroke="#FFB4AB" stroke-width="2"/></svg><span class="p">#15</span></div>
+          <div class="tr"><div class="c"><em>🇸🇻</em>El Salvador</div><svg class="spark" viewBox="0 0 64 24" role="img" aria-label="Nueva en el top"><polyline points="40,20 52,14 64,12" fill="none" stroke="#9BD3A6" stroke-width="2"/></svg><span class="p">#18</span></div>
+        </div>
+        <div class="note"><span class="ms s16">info</span>Dezzy guarda una foto diaria de los tops para dibujar estas gráficas.</div>
+        <div style="display:flex;gap:8px;padding:12px 16px 0"><span class="btn fill" style="flex:1"><span class="ms s20">map</span>Ver en el mapa</span><span class="btn ton"><span class="ms s20">radio</span>Radio</span></div>
+      </div>
+      <p class="cap">Canción buscada: tabla por país con su gráfica de 7 días (sube, baja o es nueva) y pestañas por ciudad o canciones parecidas.</p>
+    </div>
+    <div class="notes">
+      <h4>A favor</h4>
+      <ul><li>Es el más vistoso y «tipo Spotify»: cada país parece una revista.</li><li>Las gráficas de 7 días dan sensación de datos vivos.</li><li>«Por ciudad» aprovecha a los oyentes P2P de Dezzy.</li></ul>
+      <h4>En contra</h4>
+      <ul><li>Las gráficas solo salen tras unos días de uso (Dezzy tiene que ir guardando las fotos diarias).</li><li>Es una pantalla más que mantener.</li></ul>
+      <h4>Accesibilidad</h4>
+      <ul><li>Cada mini gráfica lleva su texto («Subió del 6 al 2») y el color de la línea no es la única pista.</li><li>Las tarjetas del bento llevan texto oscuro sobre color claro, con contraste por encima de 7:1.</li></ul>
+    </div>
+  </div>
+</section>
+</div>
+</body>
+</html>

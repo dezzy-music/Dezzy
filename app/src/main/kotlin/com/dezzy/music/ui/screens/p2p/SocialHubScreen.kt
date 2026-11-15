@@ -85,6 +85,7 @@ import kotlinx.coroutines.launch
 
 enum class SocialTab(val label: String, val icon: Int) {
     FRIENDS("Amigos", R.drawable.social_friends),
+    MAP("Mapa", R.drawable.location_on),
     NEARBY("Cerca", R.drawable.bluetooth),
     COMMUNITY("Comunidad", R.drawable.resource_public),
 }
@@ -154,15 +155,17 @@ private fun SocialHubContent(navController: NavController, initialTab: SocialTab
                         selected = tab == item,
                         onClick = { tab = item },
                         shape = SegmentedButtonDefaults.itemShape(index, SocialTab.entries.size),
-                        icon = { Icon(painterResource(item.icon), null, Modifier.size(18.dp)) },
+                        // Con cuatro pestañas sólo la elegida lleva icono, para que quepan los nombres.
+                        icon = { if (tab == item) Icon(painterResource(item.icon), null, Modifier.size(18.dp)) },
                     ) {
-                        Text(item.label, maxLines = 1)
+                        Text(item.label, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
                     }
                 }
             }
             val bottomPadding = playerInsets.only(WindowInsetsSides.Bottom).asPaddingValues()
             when (tab) {
                 SocialTab.FRIENDS -> FriendsTab(navController, bottomPadding, onAddFriend = { showAddFriend = true })
+                SocialTab.MAP -> com.dezzy.music.ui.screens.musicmap.MusicMapScreen(navController, embedded = true)
                 SocialTab.NEARBY -> NearbyTab(navController, bottomPadding)
                 SocialTab.COMMUNITY -> CommunityTab(navController, bottomPadding, feedVersion, onCompose = { showComposer = true })
             }
@@ -181,7 +184,7 @@ private fun SocialHubContent(navController: NavController, initialTab: SocialTab
             SocialTab.COMMUNITY -> FloatingActionButton(onClick = { showComposer = true }, modifier = fabModifier) {
                 Icon(painterResource(R.drawable.edit), contentDescription = "Publicar")
             }
-            SocialTab.NEARBY -> Unit
+            SocialTab.NEARBY, SocialTab.MAP -> Unit
         }
     }
 
@@ -531,15 +534,11 @@ private fun CommunityTab(navController: NavController, bottomPadding: PaddingVal
                             P2PPostCard(
                                 post = post,
                                 onOpenProfile = { navController.openP2PProfile(it) },
-                                onToggleLike = {
-                                    val optimistic = post.copy(
-                                        likedByMe = !post.likedByMe,
-                                        likes = (post.likes + if (post.likedByMe) -1 else 1).coerceAtLeast(0),
-                                    )
-                                    replace(optimistic)
+                                onReact = { emoji ->
+                                    replace(post.withMyReaction(emoji))
                                     scope.launch {
-                                        val liked = runCatching { P2PSocial.toggleLike(post) }.getOrDefault(post.likedByMe)
-                                        if (liked != optimistic.likedByMe) replace(post)
+                                        val result = runCatching { P2PSocial.react(post, emoji) }.getOrDefault(post.myReaction)
+                                        if (result != emoji) replace(post.withMyReaction(result))
                                     }
                                 },
                                 onComments = { commentsFor = post },
