@@ -143,6 +143,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
 import kotlin.math.PI
 import kotlin.math.sin
 import kotlin.random.Random
@@ -363,6 +368,13 @@ private fun playIcon(isPlaying: Boolean, playbackState: Int): Int = when {
     playbackState == Player.STATE_ENDED -> R.drawable.replay
     isPlaying -> R.drawable.pause
     else -> R.drawable.play
+}
+
+/** Igual que [playIcon] pero con los iconos de trazo fino del estilo Mínimo. */
+private fun thinPlayIcon(isPlaying: Boolean, playbackState: Int): Int = when {
+    playbackState == Player.STATE_ENDED -> R.drawable.thin_replay
+    isPlaying -> R.drawable.thin_pause
+    else -> R.drawable.thin_play
 }
 
 private fun repeatIcon(repeatMode: Int): Int =
@@ -1232,6 +1244,19 @@ private fun ModernGlassPlayer(
     val canBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val canvas = rememberCanvasUrls(metadata, seek.duration)
     val artShape = RoundedCornerShape(24.dp)
+    val pageColor = if (dark) Color(0xFF0D0D12) else Color(0xFFF3F2F6)
+    // El fondo es la fuente de Haze; el panel lo desenfoca de verdad (Android 12+).
+    // En versiones anteriores Haze no desenfoca y usa el tinte de respaldo, más opaco.
+    val hazeState = remember { HazeState() }
+    val glassStyle = remember(dark, glass) {
+        HazeStyle(
+            backgroundColor = pageColor,
+            tint = HazeTint(glass),
+            blurRadius = 28.dp,
+            noiseFactor = 0.04f,
+            fallbackTint = HazeTint(if (dark) Color(0xFF26252C).copy(alpha = 0.92f) else Color.White.copy(alpha = 0.88f)),
+        )
+    }
 
     val artwork: @Composable (Modifier) -> Unit = { boxModifier ->
         Box(boxModifier, contentAlignment = Alignment.Center) {
@@ -1283,7 +1308,7 @@ private fun ModernGlassPlayer(
         Column(
             modifier = panelModifier
                 .clip(shape)
-                .background(glass)
+                .hazeEffect(state = hazeState, style = glassStyle)
                 .border(1.dp, glassBorder, shape)
                 .padding(start = 18.dp, end = 18.dp, top = 18.dp, bottom = 10.dp),
         ) {
@@ -1389,34 +1414,41 @@ private fun ModernGlassPlayer(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(if (dark) Color(0xFF0D0D12) else Color(0xFFF3F2F6)),
+            .background(pageColor),
     ) {
         // Fondo: la carátula muy desenfocada (Android 12+). Antes, un velo con su color.
-        AsyncImage(
-            model = metadata?.thumbnailUrl,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer {
-                    scaleX = 1.3f
-                    scaleY = 1.3f
-                }
-                .then(if (canBlur) Modifier.blur(60.dp) else Modifier)
-                .alpha(if (canBlur) 0.7f else 0.3f),
-        )
-        if (!canBlur) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Brush.verticalGradient(listOf(tones.vibrant.copy(alpha = 0.45f), Color.Transparent))),
-            )
-        }
+        // Todo el fondo va en una capa aparte para que el panel de cristal lo desenfoque.
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(if (dark) Color(0xFF0A080E).copy(alpha = 0.35f) else Color.White.copy(alpha = 0.4f)),
-        )
+                .hazeSource(hazeState),
+        ) {
+            AsyncImage(
+                model = metadata?.thumbnailUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        scaleX = 1.3f
+                        scaleY = 1.3f
+                    }
+                    .then(if (canBlur) Modifier.blur(60.dp) else Modifier)
+                    .alpha(if (canBlur) 0.7f else 0.3f),
+            )
+            if (!canBlur) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Brush.verticalGradient(listOf(tones.vibrant.copy(alpha = 0.45f), Color.Transparent))),
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(if (dark) Color(0xFF0A080E).copy(alpha = 0.35f) else Color.White.copy(alpha = 0.4f)),
+            )
+        }
 
         if (isLandscape) {
             LandscapeSplit(art = artwork) {
@@ -1524,8 +1556,6 @@ private fun MinimalPaperPlayer(
     // Claro = crema; oscuro = gris casi negro. Sin degradados ni sombras.
     val paper = if (dark) Color(0xFF161616) else Color(0xFFF6F3EE)
     val ink = if (dark) Color(0xFFECE9E4) else Color(0xFF141414)
-    // Los iconos de control se dibujan algo más claros para acercarse al peso fino del boceto.
-    val controlInk = ink.copy(alpha = 0.85f)
     val canvas = rememberCanvasUrls(metadata, seek.duration)
 
     // Los iconos secundarios están atenuados y se encienden unos segundos al tocar la pantalla.
@@ -1551,11 +1581,16 @@ private fun MinimalPaperPlayer(
                 .padding(horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            StyledIcon(R.drawable.expand_more, "Contraer reproductor", controlInk, actions::collapse)
+            StyledIcon(R.drawable.thin_expand_more, "Contraer reproductor", ink, actions::collapse)
             Spacer(Modifier.weight(1f))
-            VideoToggle(tint = controlInk, activeTint = ink)
-            DevicesButton(tint = controlInk, activeTint = ink, onOpenListenTogether = actions::openListenTogether)
-            StyledIcon(R.drawable.more_vert, "Más opciones", controlInk, actions.onMenuClick)
+            VideoToggle(tint = ink, activeTint = ink)
+            DevicesButton(
+                tint = ink,
+                activeTint = ink,
+                onOpenListenTogether = actions::openListenTogether,
+                idleIcon = R.drawable.thin_devices,
+            )
+            StyledIcon(R.drawable.thin_more_vert, "Más opciones", ink, actions.onMenuClick)
         }
     }
 
@@ -1620,20 +1655,20 @@ private fun MinimalPaperPlayer(
             horizontalArrangement = Arrangement.spacedBy(32.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            StyledIcon(R.drawable.skip_previous, "Anterior", controlInk, playerConnection::seekToPrevious, Modifier.size(52.dp), 28.dp)
+            StyledIcon(R.drawable.thin_skip_previous, "Anterior", ink, playerConnection::seekToPrevious, Modifier.size(52.dp), 28.dp)
             IconButton(onClick = { playerConnection.playOrReplay() }, modifier = Modifier.size(72.dp)) {
                 if (playbackState == Player.STATE_BUFFERING) {
-                    CircularProgressIndicator(modifier = Modifier.size(32.dp), color = controlInk, strokeWidth = 1.5.dp)
+                    CircularProgressIndicator(modifier = Modifier.size(32.dp), color = ink, strokeWidth = 1.5.dp)
                 } else {
                     Icon(
-                        painter = painterResource(playIcon(isPlaying, playbackState)),
+                        painter = painterResource(thinPlayIcon(isPlaying, playbackState)),
                         contentDescription = if (isPlaying) "Pausar" else "Reproducir",
-                        tint = controlInk,
+                        tint = ink,
                         modifier = Modifier.size(44.dp),
                     )
                 }
             }
-            StyledIcon(R.drawable.skip_next, "Siguiente", controlInk, playerConnection::seekToNext, Modifier.size(52.dp), 28.dp)
+            StyledIcon(R.drawable.thin_skip_next, "Siguiente", ink, playerConnection::seekToNext, Modifier.size(52.dp), 28.dp)
         }
     }
 

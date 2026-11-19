@@ -1,16 +1,16 @@
 # Graph Report - OpenTune  (2026-11-19)
 
 ## Corpus Check
-- 761 files · ~1,337,900 words
+- 761 files · ~1,338,054 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 6418 nodes · 12387 edges · 543 communities (299 shown, 244 thin omitted)
+- 6419 nodes · 12389 edges · 530 communities (290 shown, 240 thin omitted)
 - Extraction: 76% EXTRACTED · 24% INFERRED · 0% AMBIGUOUS · INFERRED: 3009 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `5ed773a1`
+- Built from commit: `dae232db`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -231,8 +231,6 @@
 - [[_COMMUNITY_Community 213|Community 213]]
 - [[_COMMUNITY_Community 214|Community 214]]
 - [[_COMMUNITY_Community 215|Community 215]]
-- [[_COMMUNITY_Community 216|Community 216]]
-- [[_COMMUNITY_Community 217|Community 217]]
 - [[_COMMUNITY_Community 218|Community 218]]
 - [[_COMMUNITY_Community 219|Community 219]]
 - [[_COMMUNITY_Community 220|Community 220]]
@@ -258,11 +256,10 @@
 - [[_COMMUNITY_Community 240|Community 240]]
 - [[_COMMUNITY_Community 241|Community 241]]
 - [[_COMMUNITY_Community 242|Community 242]]
-- [[_COMMUNITY_Community 245|Community 245]]
-- [[_COMMUNITY_Community 246|Community 246]]
 - [[_COMMUNITY_Community 247|Community 247]]
 - [[_COMMUNITY_Community 248|Community 248]]
 - [[_COMMUNITY_Community 249|Community 249]]
+- [[_COMMUNITY_Community 250|Community 250]]
 - [[_COMMUNITY_Community 251|Community 251]]
 - [[_COMMUNITY_Community 252|Community 252]]
 - [[_COMMUNITY_Community 253|Community 253]]
@@ -276,6 +273,8 @@
 - [[_COMMUNITY_Community 261|Community 261]]
 - [[_COMMUNITY_Community 262|Community 262]]
 - [[_COMMUNITY_Community 263|Community 263]]
+- [[_COMMUNITY_Community 264|Community 264]]
+- [[_COMMUNITY_Community 266|Community 266]]
 - [[_COMMUNITY_Community 267|Community 267]]
 - [[_COMMUNITY_Community 268|Community 268]]
 - [[_COMMUNITY_Community 269|Community 269]]
@@ -293,6 +292,7 @@
 - [[_COMMUNITY_Community 281|Community 281]]
 - [[_COMMUNITY_Community 282|Community 282]]
 - [[_COMMUNITY_Community 283|Community 283]]
+- [[_COMMUNITY_Community 284|Community 284]]
 - [[_COMMUNITY_Community 285|Community 285]]
 - [[_COMMUNITY_Community 286|Community 286]]
 - [[_COMMUNITY_Community 287|Community 287]]
@@ -302,17 +302,15 @@
 - [[_COMMUNITY_Community 291|Community 291]]
 - [[_COMMUNITY_Community 292|Community 292]]
 - [[_COMMUNITY_Community 293|Community 293]]
-- [[_COMMUNITY_Community 294|Community 294]]
 - [[_COMMUNITY_Community 295|Community 295]]
 - [[_COMMUNITY_Community 296|Community 296]]
 - [[_COMMUNITY_Community 297|Community 297]]
 - [[_COMMUNITY_Community 298|Community 298]]
-- [[_COMMUNITY_Community 299|Community 299]]
-- [[_COMMUNITY_Community 300|Community 300]]
 - [[_COMMUNITY_Community 301|Community 301]]
 - [[_COMMUNITY_Community 302|Community 302]]
 - [[_COMMUNITY_Community 303|Community 303]]
 - [[_COMMUNITY_Community 304|Community 304]]
+- [[_COMMUNITY_Community 305|Community 305]]
 - [[_COMMUNITY_Community 306|Community 306]]
 - [[_COMMUNITY_Community 307|Community 307]]
 - [[_COMMUNITY_Community 308|Community 308]]
@@ -341,6 +339,8 @@
 - [[_COMMUNITY_Community 331|Community 331]]
 - [[_COMMUNITY_Community 332|Community 332]]
 - [[_COMMUNITY_Community 333|Community 333]]
+- [[_COMMUNITY_Community 334|Community 334]]
+- [[_COMMUNITY_Community 335|Community 335]]
 - [[_COMMUNITY_Community 336|Community 336]]
 - [[_COMMUNITY_Community 337|Community 337]]
 - [[_COMMUNITY_Community 338|Community 338]]
@@ -353,21 +353,19 @@
 - [[_COMMUNITY_Community 345|Community 345]]
 - [[_COMMUNITY_Community 346|Community 346]]
 - [[_COMMUNITY_Community 347|Community 347]]
-- [[_COMMUNITY_Community 348|Community 348]]
 - [[_COMMUNITY_Community 349|Community 349]]
 - [[_COMMUNITY_Community 350|Community 350]]
 - [[_COMMUNITY_Community 351|Community 351]]
-- [[_COMMUNITY_Community 352|Community 352]]
 - [[_COMMUNITY_Community 353|Community 353]]
 - [[_COMMUNITY_Community 354|Community 354]]
 - [[_COMMUNITY_Community 355|Community 355]]
 - [[_COMMUNITY_Community 356|Community 356]]
 - [[_COMMUNITY_Community 357|Community 357]]
+- [[_COMMUNITY_Community 358|Community 358]]
 - [[_COMMUNITY_Community 359|Community 359]]
 - [[_COMMUNITY_Community 360|Community 360]]
 - [[_COMMUNITY_Community 361|Community 361]]
 - [[_COMMUNITY_Community 362|Community 362]]
-- [[_COMMUNITY_Community 363|Community 363]]
 - [[_COMMUNITY_Community 364|Community 364]]
 - [[_COMMUNITY_Community 365|Community 365]]
 - [[_COMMUNITY_Community 366|Community 366]]
@@ -375,8 +373,10 @@
 - [[_COMMUNITY_Community 368|Community 368]]
 - [[_COMMUNITY_Community 369|Community 369]]
 - [[_COMMUNITY_Community 370|Community 370]]
+- [[_COMMUNITY_Community 371|Community 371]]
 - [[_COMMUNITY_Community 372|Community 372]]
 - [[_COMMUNITY_Community 373|Community 373]]
+- [[_COMMUNITY_Community 374|Community 374]]
 - [[_COMMUNITY_Community 375|Community 375]]
 - [[_COMMUNITY_Community 376|Community 376]]
 - [[_COMMUNITY_Community 377|Community 377]]
@@ -384,7 +384,6 @@
 - [[_COMMUNITY_Community 379|Community 379]]
 - [[_COMMUNITY_Community 380|Community 380]]
 - [[_COMMUNITY_Community 381|Community 381]]
-- [[_COMMUNITY_Community 382|Community 382]]
 - [[_COMMUNITY_Community 383|Community 383]]
 - [[_COMMUNITY_Community 384|Community 384]]
 - [[_COMMUNITY_Community 385|Community 385]]
@@ -396,15 +395,13 @@
 - [[_COMMUNITY_Community 391|Community 391]]
 - [[_COMMUNITY_Community 392|Community 392]]
 - [[_COMMUNITY_Community 394|Community 394]]
-- [[_COMMUNITY_Community 395|Community 395]]
 - [[_COMMUNITY_Community 396|Community 396]]
 - [[_COMMUNITY_Community 397|Community 397]]
 - [[_COMMUNITY_Community 398|Community 398]]
 - [[_COMMUNITY_Community 399|Community 399]]
 - [[_COMMUNITY_Community 400|Community 400]]
-- [[_COMMUNITY_Community 401|Community 401]]
-- [[_COMMUNITY_Community 402|Community 402]]
 - [[_COMMUNITY_Community 403|Community 403]]
+- [[_COMMUNITY_Community 404|Community 404]]
 - [[_COMMUNITY_Community 405|Community 405]]
 - [[_COMMUNITY_Community 406|Community 406]]
 - [[_COMMUNITY_Community 407|Community 407]]
@@ -415,6 +412,8 @@
 - [[_COMMUNITY_Community 412|Community 412]]
 - [[_COMMUNITY_Community 413|Community 413]]
 - [[_COMMUNITY_Community 414|Community 414]]
+- [[_COMMUNITY_Community 415|Community 415]]
+- [[_COMMUNITY_Community 416|Community 416]]
 - [[_COMMUNITY_Community 417|Community 417]]
 - [[_COMMUNITY_Community 418|Community 418]]
 - [[_COMMUNITY_Community 419|Community 419]]
@@ -451,11 +450,6 @@
 - [[_COMMUNITY_Community 450|Community 450]]
 - [[_COMMUNITY_Community 451|Community 451]]
 - [[_COMMUNITY_Community 452|Community 452]]
-- [[_COMMUNITY_Community 453|Community 453]]
-- [[_COMMUNITY_Community 454|Community 454]]
-- [[_COMMUNITY_Community 455|Community 455]]
-- [[_COMMUNITY_Community 456|Community 456]]
-- [[_COMMUNITY_Community 457|Community 457]]
 - [[_COMMUNITY_Community 458|Community 458]]
 - [[_COMMUNITY_Community 459|Community 459]]
 - [[_COMMUNITY_Community 460|Community 460]]
@@ -463,15 +457,20 @@
 - [[_COMMUNITY_Community 462|Community 462]]
 - [[_COMMUNITY_Community 463|Community 463]]
 - [[_COMMUNITY_Community 464|Community 464]]
-- [[_COMMUNITY_Community 465|Community 465]]
-- [[_COMMUNITY_Community 471|Community 471]]
-- [[_COMMUNITY_Community 472|Community 472]]
-- [[_COMMUNITY_Community 473|Community 473]]
-- [[_COMMUNITY_Community 474|Community 474]]
-- [[_COMMUNITY_Community 475|Community 475]]
-- [[_COMMUNITY_Community 476|Community 476]]
-- [[_COMMUNITY_Community 477|Community 477]]
-- [[_COMMUNITY_Community 482|Community 482]]
+- [[_COMMUNITY_Community 469|Community 469]]
+- [[_COMMUNITY_Community 500|Community 500]]
+- [[_COMMUNITY_Community 501|Community 501]]
+- [[_COMMUNITY_Community 502|Community 502]]
+- [[_COMMUNITY_Community 503|Community 503]]
+- [[_COMMUNITY_Community 504|Community 504]]
+- [[_COMMUNITY_Community 505|Community 505]]
+- [[_COMMUNITY_Community 506|Community 506]]
+- [[_COMMUNITY_Community 507|Community 507]]
+- [[_COMMUNITY_Community 508|Community 508]]
+- [[_COMMUNITY_Community 509|Community 509]]
+- [[_COMMUNITY_Community 510|Community 510]]
+- [[_COMMUNITY_Community 511|Community 511]]
+- [[_COMMUNITY_Community 512|Community 512]]
 - [[_COMMUNITY_Community 513|Community 513]]
 - [[_COMMUNITY_Community 514|Community 514]]
 - [[_COMMUNITY_Community 515|Community 515]]
@@ -488,19 +487,6 @@
 - [[_COMMUNITY_Community 526|Community 526]]
 - [[_COMMUNITY_Community 527|Community 527]]
 - [[_COMMUNITY_Community 528|Community 528]]
-- [[_COMMUNITY_Community 529|Community 529]]
-- [[_COMMUNITY_Community 530|Community 530]]
-- [[_COMMUNITY_Community 531|Community 531]]
-- [[_COMMUNITY_Community 532|Community 532]]
-- [[_COMMUNITY_Community 533|Community 533]]
-- [[_COMMUNITY_Community 534|Community 534]]
-- [[_COMMUNITY_Community 535|Community 535]]
-- [[_COMMUNITY_Community 536|Community 536]]
-- [[_COMMUNITY_Community 537|Community 537]]
-- [[_COMMUNITY_Community 538|Community 538]]
-- [[_COMMUNITY_Community 539|Community 539]]
-- [[_COMMUNITY_Community 540|Community 540]]
-- [[_COMMUNITY_Community 541|Community 541]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `remember()` - 313 edges
@@ -531,23 +517,23 @@
 - **Lossless multi-source failover** — resolver_isrc_failover, resolver_deezer_source, resolver_qobuz_source [EXTRACTED 1.00]
 - **Cast receiver lyrics flow** — cast_receiver_fetchlyrics, lrclib_api, cast_receiver_parselrc, cast_receiver_rendersynced [INFERRED 0.85]
 
-## Communities (543 total, 244 thin omitted)
+## Communities (530 total, 240 thin omitted)
 
 ### Community 0 - "Community 0"
-Cohesion: 0.03
-Nodes (102): ArtistSeparatorsDialog(), SeparatorChip(), AutoResizeText(), FontSizeRange, EnumDialog(), MarkdownText(), NavigationTile(), PreferenceGroup() (+94 more)
+Cohesion: 0.04
+Nodes (87): ArtistItemsScreen(), ArtistScreen(), StatItem(), CreatePlaylistDialog(), ListDialog(), AlbumGridItem(), AlbumListItem(), AlbumPlayButton() (+79 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.05
-Nodes (67): CastButton(), CreatePlaylistDialog(), ActionPromptDialog(), DefaultDialog(), EditPlaylistDialog(), InfoLabel(), TextFieldDialog(), CrossfadeBadge() (+59 more)
+Cohesion: 0.04
+Nodes (94): AutoResizeText(), FontSizeRange, NavigationTile(), PreferenceGroup(), GuideSection(), WelcomeGuideCard(), GraphicEqFader(), SongModDialog() (+86 more)
 
 ### Community 2 - "Community 2"
 Cohesion: 0.05
-Nodes (40): cast_kiosk_daemon(), check_eureka_info(), DashboardAPIHandler, DashboardServer, fetch_iss_location(), fetch_live_flights(), fetch_usd_mxn(), get_exact_device_info() (+32 more)
+Nodes (55): ArtistSongsScreen(), CastButton(), ChipsRow(), DraggableScrollbar(), EmptyPlaceholder(), HideOnScrollFAB(), IconButton(), SongListItem() (+47 more)
 
 ### Community 3 - "Community 3"
-Cohesion: 0.06
-Nodes (52): ArtistItemsScreen(), ArtistScreen(), StatItem(), ArtistVideo(), ListDialog(), ListItem(), YouTubeGridItem(), YouTubeListItem() (+44 more)
+Cohesion: 0.05
+Nodes (40): cast_kiosk_daemon(), check_eureka_info(), DashboardAPIHandler, DashboardServer, fetch_iss_location(), fetch_live_flights(), fetch_usd_mxn(), get_exact_device_info() (+32 more)
 
 ### Community 4 - "Community 4"
 Cohesion: 0.05
@@ -555,71 +541,75 @@ Nodes (65): isRtlText(), KaraokeWord(), Lyrics(), rtlAwareHorizontalGradient(), 
 
 ### Community 5 - "Community 5"
 Cohesion: 0.05
-Nodes (65): Album, Artist, MediaMetadata, resolveAlbum(), toMediaMetadata(), P2PAddFriendSheet(), MessageBubble(), P2PChatScreen() (+57 more)
+Nodes (63): mergeNearbyElements(), MusicMapGenres, ThrottledException, P2PAddFriendSheet(), MessageBubble(), P2PChatScreen(), safetyCode(), avatarModel() (+55 more)
 
 ### Community 6 - "Community 6"
+Cohesion: 0.06
+Nodes (58): ArtistAlbumsScreen(), ArtistVideo(), ArtistSeparatorsDialog(), SeparatorChip(), ActionPromptDialog(), DefaultDialog(), EditPlaylistDialog(), InfoLabel() (+50 more)
+
+### Community 7 - "Community 7"
 Cohesion: 0.05
 Nodes (66): avatarColor(), FeedFilterChip(), FloatingWindowButton(), VideoFeedCard(), VideoFeedScreen(), AudioVideoIconPill(), downloadCurrentVideo(), findHostActivity() (+58 more)
 
-### Community 8 - "Community 8"
+### Community 9 - "Community 9"
+Cohesion: 0.07
+Nodes (15): DezzyConnectSession, Mode, onEvents(), onPlayWhenReadyChanged(), Playback, Role, Track, isMusicVideo() (+7 more)
+
+### Community 10 - "Community 10"
 Cohesion: 0.05
 Nodes (20): get(), KizzyRepository, put(), remove(), ArtworkStorage, SavedArtwork, DiscordImageResolver, ResolvedDiscordImages (+12 more)
 
-### Community 9 - "Community 9"
-Cohesion: 0.05
-Nodes (64): CountryFlag(), flagRes(), clickableNoRipple(), Country, CountryChart, CountryHeader(), countryPillBitmap(), distanceKm() (+56 more)
-
-### Community 10 - "Community 10"
-Cohesion: 0.06
-Nodes (49): ArtistAlbumsScreen(), AlbumGridItem(), AlbumListItem(), AlbumPlayButton(), ArtistGridItem(), ArtistListItem(), GridItem(), Icon (+41 more)
-
 ### Community 11 - "Community 11"
 Cohesion: 0.05
-Nodes (47): ConnectedButtonShapes, StandardToggleButton(), ToggleColors, buildMetadata(), ChipData, CoverArt(), drawRing(), Error (+39 more)
+Nodes (62): CountryFlag(), flagRes(), clickableNoRipple(), Country, CountryChart, CountryHeader(), countryPillBitmap(), distanceKm() (+54 more)
 
 ### Community 12 - "Community 12"
 Cohesion: 0.06
-Nodes (40): AudioOutput, BtAudioDevice, BtAudioState, castRouteIcon(), CastRoutes, ConnectByIpDialog(), ConnectDeviceBottomSheet(), currentAudioOutput() (+32 more)
+Nodes (22): AppleCanvasLogger, AppleMusicCanvasProvider, CacheEntry, SpotifyCanvasLogger, SpotifyCanvasProvider, SpotifyClientTokenManager, CanvasArtwork, fetchCanvasArtworkForPlayback() (+14 more)
 
 ### Community 13 - "Community 13"
+Cohesion: 0.05
+Nodes (47): ConnectedButtonShapes, StandardToggleButton(), ToggleColors, buildMetadata(), ChipData, CoverArt(), drawRing(), Error (+39 more)
+
+### Community 14 - "Community 14"
+Cohesion: 0.06
+Nodes (40): AudioOutput, BtAudioDevice, BtAudioState, castRouteIcon(), CastRoutes, ConnectByIpDialog(), ConnectDeviceBottomSheet(), currentAudioOutput() (+32 more)
+
+### Community 15 - "Community 15"
 Cohesion: 0.08
 Nodes (10): BiquadFilterState, DezzyBiquadAudioProcessor, buildTypography(), createVariableFontFamily(), getTypeface(), getTypography(), CanvasCardVideoComposer, CanvasExportMode (+2 more)
 
-### Community 14 - "Community 14"
-Cohesion: 0.08
-Nodes (46): BigSeekBar(), DevicesButton(), rememberCastingRouteName(), rememberIsCasting(), calcFraction(), Config, drawTrack(), PlayerSliderColors (+38 more)
-
-### Community 15 - "Community 15"
+### Community 16 - "Community 16"
 Cohesion: 0.07
 Nodes (33): Action, Artist, Beacondata, Error, Genres, Geolocation, Hub, Images (+25 more)
 
-### Community 16 - "Community 16"
-Cohesion: 0.1
-Nodes (7): DezzyConnectSession, Mode, onEvents(), onPlayWhenReadyChanged(), Playback, Role, Track
-
 ### Community 17 - "Community 17"
-Cohesion: 0.06
-Nodes (40): IconButton(), ResizableIconButton(), SearchSongRow(), RankingsSearchField(), P2PComposerSheet(), RestoreContent(), DJDezzyPlayerSheet(), DjOrb() (+32 more)
+Cohesion: 0.05
+Nodes (4): LibraryFilter, PlaylistContinuationCandidate, playlistContinuationPageFromResponse(), YouTube
 
 ### Community 18 - "Community 18"
-Cohesion: 0.08
-Nodes (29): ArtistSongsScreen(), ChipsRow(), DraggableScrollbar(), EmptyPlaceholder(), HideOnScrollFAB(), SongListItem(), SortHeader(), LibraryArtistsScreen() (+21 more)
-
-### Community 19 - "Community 19"
 Cohesion: 0.09
 Nodes (10): CachedPlayback, CachedStreamUrl, CachedVideoPlayback, InvalidPlaybackLoginContextException, LoginRequiredForPlaybackException, PlaybackData, PlaybackGateFailure, StreamPick (+2 more)
 
-### Community 20 - "Community 20"
+### Community 19 - "Community 19"
 Cohesion: 0.07
-Nodes (44): LibraryDezzyHeader(), LibraryPill, LibraryPillButton(), Content, Tab, TabRenderer, Tabs, AddCandidateRow() (+36 more)
+Nodes (45): LibraryDezzyHeader(), LibraryPill, LibraryPillButton(), Content, Tab, TabRenderer, Tabs, AddCandidateRow() (+37 more)
+
+### Community 20 - "Community 20"
+Cohesion: 0.06
+Nodes (32): rememberBottomSheetState(), BottomSheetPage(), BottomSheetPageState, DezzyNavigationBar(), AccountSettingsDialog(), SearchBarInputField(), TopSearch(), SystemBarScrims() (+24 more)
 
 ### Community 21 - "Community 21"
 Cohesion: 0.06
 Nodes (10): Activity, Assets, Presence, Timestamps, getUserInfo(), KizzyRPC, StatusDisplayType, Type (+2 more)
 
+### Community 22 - "Community 22"
+Cohesion: 0.06
+Nodes (4): MainActivity, onServiceConnected(), PendingDeepLinkSong, PlayerConnection
+
 ### Community 23 - "Community 23"
-Cohesion: 0.07
-Nodes (27): audioPositionForVideo(), createVideoRenderersFactory(), disableVideoMode(), enableVideoMode(), handleAudioFocusChange(), handleBluetoothAutoStart(), handleDeviceMuteStateChanged(), isDeviceMutedNow() (+19 more)
+Cohesion: 0.09
+Nodes (39): CommentsSheet(), ComposerRow(), FriendActivityStrip(), MusicFeedScreen(), MusicPostCard(), playVideo(), PostAction(), SectionHeader() (+31 more)
 
 ### Community 24 - "Community 24"
 Cohesion: 0.09
@@ -630,210 +620,214 @@ Cohesion: 0.06
 Nodes (13): ExtensionRegistryClient, LosslessDownloadManager, LosslessDownloadWorker, LosslessEntryPoint, failure(), LosslessDownloadState, LosslessExtension, LosslessProvider (+5 more)
 
 ### Community 26 - "Community 26"
+Cohesion: 0.08
+Nodes (34): BottomSheet(), DownloadGridMenu(), GridMenuItem(), SleepTimerGridMenu(), AuroraBorealisBackground(), AuroraColorPickerRow(), AuroraCurtain, AuroraModeRow() (+26 more)
+
+### Community 27 - "Community 27"
+Cohesion: 0.07
+Nodes (8): runInitialSpotifyLikeSync(), SpotifyLikeSyncState, SpotifyFeatures, SpotifyLibrarySync, CachedMatch, MatchCandidate, SpotifyMatchFileCache, SpotifyYouTubeMapper
+
+### Community 28 - "Community 28"
 Cohesion: 0.1
 Nodes (11): AlphaIdentifier, GitCommit, NightlyInfo, NumericIdentifier, PreReleaseIdentifier, ReleaseInfo, ReleasesNetworkResult, SemVer (+3 more)
 
-### Community 27 - "Community 27"
+### Community 29 - "Community 29"
 Cohesion: 0.13
 Nodes (41): ArtistSpotlightPage(), awaitNextPreDraw(), computePersonality(), formatEs(), InsightBadge(), InsightGlassCard(), InsightPage, InsightPageContent() (+33 more)
 
-### Community 28 - "Community 28"
+### Community 30 - "Community 30"
 Cohesion: 0.08
 Nodes (27): HiResAudioProcessorChain, decodeBandLevelsMb(), decodeProfilesPayload(), encodeBandLevelsMb(), encodeProfilesPayload(), EqSection(), EqToggleSliderRow(), EqualizerDialog() (+19 more)
 
-### Community 29 - "Community 29"
+### Community 31 - "Community 31"
+Cohesion: 0.09
+Nodes (34): NavigationTitle(), rememberSpotifyTrackPlayer(), BigMixCard(), DezzyHomeHero(), DezzyMixesCarousel(), formatClock(), MixTile(), ResumeCard() (+26 more)
+
+### Community 32 - "Community 32"
+Cohesion: 0.09
+Nodes (33): BgChoice, BrandingRow(), downloadCanvasMediaFile(), findAudioFileForMedia(), LyricsSelectionDialog(), ShareBottomSheet(), ShareEntity, ShareIconButton() (+25 more)
+
+### Community 33 - "Community 33"
 Cohesion: 0.05
 Nodes (39): 1. Frontend Architecture (UI & Presentation), 2. Backend & Services Architecture (Core Playback & Resolvers), 3. Combined End-to-End Architecture, Acknowledgments, Android Studio Build, Build Methods, Building from Source, Code of Conduct (+31 more)
 
-### Community 30 - "Community 30"
+### Community 34 - "Community 34"
 Cohesion: 0.05
 Nodes (39): 1. Arquitectura del Frontend (UI & Presentación), 2. Arquitectura del Backend y Servicios (Core Playback & Resolvers), 3. Arquitectura Integral Combinada (End-to-End), Apoya el Proyecto, Arquitectura del Sistema, 🎵 Audio Hi-Fi y Descargas (Exclusivo), Beneficios Clave, Código de Conducta (+31 more)
 
-### Community 31 - "Community 31"
-Cohesion: 0.08
-Nodes (29): BufferComplete, BufferWait, ChatAckReceived, ChatMessageReceived, Connected, ConnectionState, CreateRoom, Disconnected (+21 more)
-
-### Community 32 - "Community 32"
+### Community 35 - "Community 35"
 Cohesion: 0.12
 Nodes (12): ActivityVisibility, CommentedTrack, DezzySocial, FriendActivity, MapUser, MusicPost, MusicProfile, PostComment (+4 more)
 
-### Community 33 - "Community 33"
-Cohesion: 0.1
-Nodes (33): rememberSpotifyTrackPlayer(), BigMixCard(), DezzyHomeHero(), DezzyMixesCarousel(), formatClock(), MixTile(), ResumeCard(), SmallMixCard() (+25 more)
+### Community 36 - "Community 36"
+Cohesion: 0.12
+Nodes (6): ConnectionError, ListenTogetherClient, LogEntry, Reconnecting, JoinRoomPayload, PlaybackActionPayload
 
-### Community 34 - "Community 34"
+### Community 37 - "Community 37"
+Cohesion: 0.07
+Nodes (19): cancelIdleStop(), handleAudioFocusChange(), handleBluetoothAutoStart(), handleDeviceMuteStateChanged(), isDeviceMutedNow(), isTogetherGuestSession(), navigateManual(), onReceive() (+11 more)
+
+### Community 38 - "Community 38"
 Cohesion: 0.05
 Nodes (36): AlbumFilter, AlbumSortType, AodArtShape, AodControlStyle, AodStyle, ArtistCanvasMode, ArtistFilter, ArtistSongSortType (+28 more)
 
-### Community 35 - "Community 35"
-Cohesion: 0.06
-Nodes (32): ActivityItem, BufferCompletePayload, BufferWaitPayload, ChatMessagePayload, ChatPayload, HostChangedPayload, JoinApprovedPayload, JoinRejectedPayload (+24 more)
-
-### Community 36 - "Community 36"
-Cohesion: 0.11
-Nodes (25): ChoiceChipsRow(), DownloadGridMenu(), GridMenuItem(), SleepTimerGridMenu(), Queue(), CodecInfoRow(), CurrentSongHeader(), QueueCollapsedContentV1() (+17 more)
-
-### Community 37 - "Community 37"
-Cohesion: 0.09
-Nodes (18): GqlOutcome, PersistedQueryNotFound, Precomputed, SpotifyAlbum, SpotifyArtist, SpotifyExternalIds, SpotifyImage, SpotifyLikedSong (+10 more)
-
-### Community 38 - "Community 38"
-Cohesion: 0.09
-Nodes (8): SongEntity, reportException(), ArtistViewModel, BackupRestoreProgressUi, BackupRestoreViewModel, ExportScope, readCsvRecords(), ExploreViewModel
-
 ### Community 39 - "Community 39"
-Cohesion: 0.15
-Nodes (3): ConnectionError, ListenTogetherClient, Reconnecting
+Cohesion: 0.06
+Nodes (33): ActivityItem, ApproveSuggestionPayload, BufferCompletePayload, BufferWaitPayload, ChatMessagePayload, ChatPayload, HostChangedPayload, JoinApprovedPayload (+25 more)
 
 ### Community 40 - "Community 40"
-Cohesion: 0.12
-Nodes (30): Author, Comment, CommentEntityPayload, CommentRepliesContinuation, CommentRepliesRenderer, CommentResponse, CommentsResult, CommentThread (+22 more)
+Cohesion: 0.17
+Nodes (31): DevicesButton(), rememberCastingRouteName(), rememberIsCasting(), ArtTones, AutoShrinkText(), CinematicPosterPlayer(), codecLabel(), DevicesPill() (+23 more)
 
 ### Community 41 - "Community 41"
-Cohesion: 0.06
-Nodes (28): AddTrackMode, AddTrackRequest, BanParticipant, ClientLeave, ControlAction, HeartbeatPing, HeartbeatPong, JoinDecision (+20 more)
+Cohesion: 0.09
+Nodes (28): BufferComplete, BufferWait, ChatAckReceived, ChatMessageReceived, Connected, ConnectionState, CreateRoom, Disconnected (+20 more)
 
 ### Community 42 - "Community 42"
 Cohesion: 0.1
-Nodes (22): rememberBottomSheetState(), BottomSheetPage(), BottomSheetPageState, DezzyNavigationBar(), AccountSettingsDialog(), SystemBarScrims(), VideoWallpaperPlayer(), WelcomeLoginDialog() (+14 more)
+Nodes (28): ResizableIconButton(), AppleGrabHandle(), AppleInlineVolume(), AppleQualityChip(), AppleSeekBar(), DezzyPlayer(), playerBlur(), drawAuroraTrack() (+20 more)
 
 ### Community 43 - "Community 43"
-Cohesion: 0.12
-Nodes (18): buildCrashReport(), buildDeviceInfo(), CrashReportScaffold(), CrashReportScreen(), DebugActivity, KeyValueRow(), animateColorScheme(), DezzyTheme() (+10 more)
+Cohesion: 0.11
+Nodes (23): P2PProfileEntity, NostrFilter, P2PUser, avatarDataUri(), BannerVideo, canSee(), compressPhoto(), decodeScaled() (+15 more)
 
 ### Community 44 - "Community 44"
-Cohesion: 0.16
-Nodes (5): EditPlaylistBody, LikeBody, SubscribeBody, CreateCommentBody, InnerTube
+Cohesion: 0.12
+Nodes (8): AuthOutcome, ConfirmEmail, Error, Success, SupabaseAuth, reportException(), ArtistViewModel, ExploreViewModel
 
 ### Community 45 - "Community 45"
-Cohesion: 0.13
-Nodes (8): P2PChatStateEntity, P2PDatabase, P2PFollowRequestEntity, P2PMessageEntity, P2PPrivatePostEntity, P2PPrivateReactionEntity, PeerUnread, P2PMessaging
+Cohesion: 0.12
+Nodes (30): Author, Comment, CommentEntityPayload, CommentRepliesContinuation, CommentRepliesRenderer, CommentResponse, CommentsResult, CommentThread (+22 more)
 
 ### Community 46 - "Community 46"
 Cohesion: 0.12
-Nodes (21): P2PProfileEntity, P2PUser, avatarDataUri(), BannerVideo, canSee(), compressPhoto(), decodeScaled(), FeedMode (+13 more)
+Nodes (18): buildCrashReport(), buildDeviceInfo(), CrashReportScaffold(), CrashReportScreen(), DebugActivity, KeyValueRow(), animateColorScheme(), DezzyTheme() (+10 more)
 
 ### Community 47 - "Community 47"
+Cohesion: 0.13
+Nodes (8): P2PChatStateEntity, P2PDatabase, P2PFollowRequestEntity, P2PMessageEntity, P2PPrivatePostEntity, P2PPrivateReactionEntity, PeerUnread, P2PMessaging
+
+### Community 48 - "Community 48"
+Cohesion: 0.07
+Nodes (27): AddTrackMode, BanParticipant, ClientLeave, ControlAction, HeartbeatPing, HeartbeatPong, JoinDecision, JoinRequest (+19 more)
+
+### Community 49 - "Community 49"
+Cohesion: 0.12
+Nodes (20): AuthorBadge, AuthorThumbnail, CommentRenderer, Icon, MetadataBadgeRenderer, ReplyCount, Run, TextRuns (+12 more)
+
+### Community 50 - "Community 50"
 Cohesion: 0.14
 Nodes (10): Error, Friend, FriendRequest, MyProfile, RpcException, SocialRepository, SocialResult, SocialUser (+2 more)
 
 ### Community 51 - "Community 51"
-Cohesion: 0.15
-Nodes (12): CountryStats, NetworkError, NeverCharted, NoSpotifySession, NotFoundOnSpotify, Ok, Result, SongChartStats (+4 more)
-
-### Community 52 - "Community 52"
-Cohesion: 0.12
-Nodes (21): BottomSheet(), AuroraBorealisBackground(), AuroraColorPickerRow(), AuroraCurtain, AuroraModeRow(), AuroraPlayer(), AuroraSettingsSheet(), drawAuroraCurtain() (+13 more)
+Cohesion: 0.11
+Nodes (20): acquireSession(), arlPool(), CONTAINER_BY_FORMAT, cooldownUntil, crypto, doLogin(), FORMAT_CHAINS, getCached() (+12 more)
 
 ### Community 53 - "Community 53"
-Cohesion: 0.21
-Nodes (3): SpotifyCanvasLogger, SpotifyCanvasProvider, SpotifyClientTokenManager
-
-### Community 54 - "Community 54"
-Cohesion: 0.12
-Nodes (21): getBlowfish(), IV, pipeDecrypted(), deezer, dl(), health(), { pipeDecrypted }, providers (+13 more)
+Cohesion: 0.08
+Nodes (12): BufferReadyPayload, ChatAckPayload, CreateRoomPayload, EditMessagePayload, KickUserPayload, ListenerReportPayload, RejectJoinPayload, SuggestTrackPayload (+4 more)
 
 ### Community 55 - "Community 55"
 Cohesion: 0.08
-Nodes (12): ApproveJoinPayload, ApproveSuggestionPayload, BufferReadyPayload, ChatAckPayload, ListenerReportPayload, RejectJoinPayload, RejectSuggestionPayload, SuggestTrackPayload (+4 more)
-
-### Community 56 - "Community 56"
-Cohesion: 0.17
-Nodes (4): Listener, Relay, RelayPool, Subscription
+Nodes (7): AlbumItem, ArtistItemsContinuationPage, ExplorePage, fromMusicTwoRowItemRenderer(), LibraryAlbumsPage, LibraryContinuationPage, NewReleaseAlbumPage
 
 ### Community 57 - "Community 57"
-Cohesion: 0.15
-Nodes (23): Content, ContentItem, Contents, Continuation, ContinuationCommand, ContinuationContents, ContinuationEndpoint, ContinuationItemRenderer (+15 more)
+Cohesion: 0.1
+Nodes (5): SongEntity, BackupRestoreProgressUi, BackupRestoreViewModel, ExportScope, readCsvRecords()
 
 ### Community 58 - "Community 58"
 Cohesion: 0.12
-Nodes (18): TogetherGuestPlaybackPlannerTest, Error, Guest, Host, Hosting, HostingOnline, Idle, Joined (+10 more)
+Nodes (21): getBlowfish(), IV, pipeDecrypted(), deezer, dl(), health(), { pipeDecrypted }, providers (+13 more)
 
 ### Community 59 - "Community 59"
-Cohesion: 0.18
-Nodes (23): AboutScreen(), BigValue(), BlockLabel(), BoardIcon(), BoardRow(), BrutalBlock(), Chip(), ContributorShimmerExpressive() (+15 more)
+Cohesion: 0.15
+Nodes (12): CountryStats, NetworkError, NeverCharted, NoSpotifySession, NotFoundOnSpotify, Ok, Result, SongChartStats (+4 more)
 
 ### Community 60 - "Community 60"
 Cohesion: 0.17
-Nodes (20): SettingsGroupCard(), SettingsPermissionBanner(), SettingsProfileHeader(), SettingsRow(), SettingsSearchEmpty(), SettingsUpdateBanner(), DezzySettingsAccountCard(), DezzySettingsHome() (+12 more)
+Nodes (4): Listener, Relay, RelayPool, Subscription
 
 ### Community 61 - "Community 61"
-Cohesion: 0.18
-Nodes (20): CommentsSheet(), ComposerRow(), FriendActivityStrip(), MusicFeedScreen(), MusicPostCard(), playVideo(), PostAction(), SectionHeader() (+12 more)
+Cohesion: 0.15
+Nodes (23): Content, ContentItem, Contents, Continuation, ContinuationCommand, ContinuationContents, ContinuationEndpoint, ContinuationItemRenderer (+15 more)
+
+### Community 62 - "Community 62"
+Cohesion: 0.12
+Nodes (18): TogetherGuestPlaybackPlannerTest, Error, Guest, Host, Hosting, HostingOnline, Idle, Joined (+10 more)
 
 ### Community 63 - "Community 63"
-Cohesion: 0.13
-Nodes (19): acquireSession(), arlPool(), CONTAINER_BY_FORMAT, cooldownUntil, crypto, doLogin(), FORMAT_CHAINS, getCached() (+11 more)
+Cohesion: 0.14
+Nodes (23): ActivityRow(), AutoQueueSetting(), Buffering, CenteredMessage(), Disconnected, Drift, EmptyBlock(), formatSeconds() (+15 more)
 
 ### Community 64 - "Community 64"
-Cohesion: 0.11
-Nodes (11): SongItem, ArtistItemsPage, fromMusicResponsiveListItemRenderer(), fromMusicTwoRowItemRenderer(), ChartSection, ChartsPage, ChartType, NextPage (+3 more)
-
-### Community 65 - "Community 65"
-Cohesion: 0.22
-Nodes (6): LIST, Ok, Spotify, SpotifyArtistsResult, SpotifyTracksResult, SpotifyUser
+Cohesion: 0.18
+Nodes (23): AboutScreen(), BigValue(), BlockLabel(), BoardIcon(), BoardRow(), BrutalBlock(), Chip(), ContributorShimmerExpressive() (+15 more)
 
 ### Community 66 - "Community 66"
+Cohesion: 0.12
+Nodes (16): GqlOutcome, Ok, PersistedQueryNotFound, SpotifyAlbum, SpotifyArtist, SpotifyExternalIds, SpotifyImage, SpotifyLikedSong (+8 more)
+
+### Community 67 - "Community 67"
+Cohesion: 0.16
+Nodes (5): SpotifyTrack, ArtistAccumulator, CachedArtistList, CachedTrackList, SpotifyProfileCache
+
+### Community 68 - "Community 68"
+Cohesion: 0.15
+Nodes (16): Connected, ConnectedRemote, Connecting, ConnectingRemote, Disconnected, Error, HeartbeatPong, Idle (+8 more)
+
+### Community 69 - "Community 69"
 Cohesion: 0.13
 Nodes (8): RoomStateMessage, TogetherParticipant, Connected, Connecting, Guest, Idle, TogetherOnlineHost, TogetherOnlineHostState
 
-### Community 67 - "Community 67"
-Cohesion: 0.17
-Nodes (5): AuthOutcome, ConfirmEmail, Error, Success, SupabaseAuth
+### Community 70 - "Community 70"
+Cohesion: 0.14
+Nodes (4): LyricsEntity, LyricsPreloadManager, DownloadExporter, LyricsMenuViewModel
 
-### Community 68 - "Community 68"
+### Community 71 - "Community 71"
 Cohesion: 0.17
 Nodes (20): AttributedDescription, Content, Contents, ContinuationCommand, ContinuationEndpoint, ContinuationItemRenderer, DateText, ItemSectionRenderer (+12 more)
 
-### Community 69 - "Community 69"
+### Community 72 - "Community 72"
 Cohesion: 0.09
 Nodes (21): Code Style, code:block1 (### Summary), code:block2 (<type>(<optional scope>): <short description>), code:block3 (feat(player): add support for offline playback), code:bash (git clone https://github.com/dezzy-music/Dezzy.git), code:bash (./gradlew build), Commit Messages, Contribution Guide (+13 more)
 
-### Community 70 - "Community 70"
-Cohesion: 0.16
-Nodes (15): Album, AlbumReleaseType, Artist, ArtistItem, filterExplicit(), filterVideo(), PlaylistItem, YTItem (+7 more)
-
-### Community 71 - "Community 71"
+### Community 73 - "Community 73"
 Cohesion: 0.1
 Nodes (14): ColumnInfo, InternalDatabase, MasterEntry, Migration10To11, Migration11To12, Migration12To13, Migration16To17, Migration18To19 (+6 more)
 
-### Community 73 - "Community 73"
-Cohesion: 0.17
-Nodes (15): Connected, ConnectedRemote, Connecting, ConnectingRemote, Disconnected, Error, HeartbeatPong, Idle (+7 more)
-
 ### Community 74 - "Community 74"
-Cohesion: 0.16
-Nodes (16): SearchBarInputField(), TopSearch(), buildIntegrationActions(), buildInternalItems(), buildQuickActions(), buildSettingsGroups(), SettingsGroup, SettingsIntegrationAction (+8 more)
+Cohesion: 0.26
+Nodes (4): LIST, Spotify, SpotifyArtistsResult, SpotifyTracksResult
 
 ### Community 75 - "Community 75"
-Cohesion: 0.25
-Nodes (19): AlbumPage, findAlbumRun(), findDuration(), getArtists(), getContinuationSongRenderers(), getContinuationSongs(), getHeader(), getNextSongContinuation() (+11 more)
+Cohesion: 0.11
+Nodes (10): DebugPanelItem(), EnumDialog(), Material3SettingsGroup(), Material3SettingsItem, Material3SettingsItemRow(), NewActionButton(), NewMenuSectionHeader(), LoadingScreen() (+2 more)
 
 ### Community 76 - "Community 76"
-Cohesion: 0.1
-Nodes (3): ArtistItemsContinuationPage, ExplorePage, LibraryContinuationPage
-
-### Community 77 - "Community 77"
 Cohesion: 0.18
 Nodes (19): BrowseResponse, Buttons, Contents, ContinuationContents, ContinuationItems, GridContinuation, Header, Microformat (+11 more)
 
-### Community 78 - "Community 78"
-Cohesion: 0.15
-Nodes (3): SyncLikedSongsOrderingTest, likedSongTimestamp(), SyncUtils
+### Community 77 - "Community 77"
+Cohesion: 0.25
+Nodes (19): AlbumPage, findAlbumRun(), findDuration(), getArtists(), getContinuationSongRenderers(), getContinuationSongs(), getHeader(), getNextSongContinuation() (+11 more)
 
-### Community 79 - "Community 79"
+### Community 78 - "Community 78"
 Cohesion: 0.14
 Nodes (7): LyricsTranslationEntity, Error, Idle, LyricsTranslationHelper, Success, Translating, TranslationStatus
 
-### Community 81 - "Community 81"
+### Community 79 - "Community 79"
+Cohesion: 0.23
+Nodes (16): SettingsGroupCard(), SettingsPermissionBanner(), SettingsProfileHeader(), SettingsRow(), SettingsSearchEmpty(), SettingsUpdateBanner(), IntegrationPill(), SettingsIntegrationsSection() (+8 more)
+
+### Community 80 - "Community 80"
 Cohesion: 0.18
 Nodes (7): Done, Failed, Idle, MusicVideoDownloader, Running, State, StreamingOnlyException
 
-### Community 82 - "Community 82"
+### Community 81 - "Community 81"
 Cohesion: 0.17
-Nodes (3): MainActivity, onServiceConnected(), PendingDeepLinkSong
+Nodes (13): Album, AlbumReleaseType, Artist, filterExplicit(), filterVideo(), PlaylistItem, SongItem, YTItem (+5 more)
 
-### Community 83 - "Community 83"
+### Community 82 - "Community 82"
 Cohesion: 0.2
 Nodes (17): acquireToken(), apiGet(), cooldownUntil, crypto, fetchAppConfig(), fileUrl(), FORMAT_CHAIN, getCached() (+9 more)
 
@@ -846,32 +840,36 @@ Cohesion: 0.13
 Nodes (7): ExoDownloadService, onDownloadChanged(), onDownloadsPausedChanged(), onIdle(), TerminalStateNotificationHelper, ensureStartedAsForeground(), restorePersistentQueue()
 
 ### Community 86 - "Community 86"
-Cohesion: 0.19
-Nodes (3): CachedArtistList, CachedTrackList, SpotifyProfileCache
+Cohesion: 0.18
+Nodes (15): buildIntegrationActions(), buildInternalItems(), buildQuickActions(), buildSettingsGroups(), SettingsContentState, SettingsGroup, SettingsIntegrationAction, SettingsItem (+7 more)
 
 ### Community 87 - "Community 87"
-Cohesion: 0.15
-Nodes (10): AgentResult, DezzyAgent, LaTeXText(), LaTeXWebView(), ChatBubble(), ChatMessage, DezzyIAScreen(), SongRecommendationCard() (+2 more)
+Cohesion: 0.21
+Nodes (18): AccountsServicesScreen(), colors(), DezzyIconTone, dezzyItemShape(), DezzyRowContent(), DezzySectionLabel(), DezzySettingsAccountCard(), DezzySettingsEntry (+10 more)
 
 ### Community 88 - "Community 88"
-Cohesion: 0.15
-Nodes (8): LyricsEntity, Completed, Error, Idle, PlaylistTranslationManager, Translating, TranslationState, LyricsMenuViewModel
+Cohesion: 0.16
+Nodes (3): SyncLikedSongsOrderingTest, likedSongTimestamp(), SyncUtils
 
 ### Community 89 - "Community 89"
-Cohesion: 0.15
-Nodes (13): Artist, browse(), chartPlaylistId(), COUNTRIES, fetchCountry(), Json, parseDuration(), playlistSongs() (+5 more)
+Cohesion: 0.13
+Nodes (4): NextBody, CreateCommentBody, InnerTube, MediaInfo
 
 ### Community 90 - "Community 90"
+Cohesion: 0.22
+Nodes (3): EditPlaylistBody, LikeBody, SubscribeBody
+
+### Community 91 - "Community 91"
 Cohesion: 0.22
 Nodes (4): DjSet, DjSetBuilder, Kind, Pick
 
 ### Community 92 - "Community 92"
-Cohesion: 0.12
-Nodes (12): toP2PSong(), FollowState, fromJson(), fromTag(), ListeningVisibility, P2PComment, P2PConversation, P2PMessage (+4 more)
+Cohesion: 0.16
+Nodes (7): CodecTest, detectMessageFormat(), LogLevel, MessageCodec, MessageFormat, ErrorPayload, Message
 
 ### Community 93 - "Community 93"
-Cohesion: 0.21
-Nodes (4): CachedMatch, MatchCandidate, SpotifyMatchFileCache, SpotifyYouTubeMapper
+Cohesion: 0.12
+Nodes (12): toP2PSong(), FollowState, fromJson(), fromTag(), ListeningVisibility, P2PComment, P2PConversation, P2PMessage (+4 more)
 
 ### Community 94 - "Community 94"
 Cohesion: 0.18
@@ -886,620 +884,568 @@ Cohesion: 0.18
 Nodes (4): AgentResponse, GeminiDjClient, DJDezzyViewModel, DJUiState
 
 ### Community 97 - "Community 97"
-Cohesion: 0.16
-Nodes (13): AppleGrabHandle(), AppleInlineVolume(), AppleQualityChip(), AppleSeekBar(), DezzyPlayer(), playerBlur(), InfoBlock(), MediaRow() (+5 more)
-
-### Community 98 - "Community 98"
 Cohesion: 0.18
 Nodes (12): CarouselDotsIndicator(), ColorPalettePicker(), ColorPaletteSelector(), ColorSwatch(), PaletteCard(), SelectedPaletteDetails(), ThemePalette, ThemePalettes (+4 more)
 
-### Community 99 - "Community 99"
+### Community 98 - "Community 98"
 Cohesion: 0.2
 Nodes (3): OriginReferer, StreamClientUtils, StreamRequestProfile
 
-### Community 100 - "Community 100"
+### Community 99 - "Community 99"
 Cohesion: 0.18
 Nodes (6): DesktopLink, Failed, Linked, Outcome, Sessions, Step
 
-### Community 101 - "Community 101"
+### Community 100 - "Community 100"
 Cohesion: 0.24
 Nodes (16): FloatingNavigationToolbar(), FloatingNavigationToolbarItem(), floatingToolbarContainerColor(), FloatingToolbarFabAction(), floatingToolbarFabContainerColor(), floatingToolbarFabContentColor(), floatingToolbarItemContentColor(), floatingToolbarMenuIconContainerColor() (+8 more)
 
-### Community 102 - "Community 102"
-Cohesion: 0.13
-Nodes (8): DebugPanelItem(), Material3SettingsGroup(), Material3SettingsItem, Material3SettingsItemRow(), NewActionButton(), NewMenuSectionHeader(), LoadingScreen(), BackupAndRestore()
-
-### Community 103 - "Community 103"
+### Community 101 - "Community 101"
 Cohesion: 0.18
 Nodes (3): SimilarRecommendation, GenreMix, HomeViewModel
 
-### Community 104 - "Community 104"
-Cohesion: 0.2
-Nodes (3): PlaylistSuggestion, PlaylistSuggestionPage, LocalPlaylistViewModel
-
-### Community 106 - "Community 106"
-Cohesion: 0.12
-Nodes (9): setOffloadEnabled(), canUpdatePresence(), ensurePresenceManager(), ensureScopesActive(), onCreate(), registerBluetoothReceiver(), unregisterBluetoothReceiver(), SleepTimer (+1 more)
-
-### Community 107 - "Community 107"
-Cohesion: 0.22
-Nodes (3): PlaybackPoTokenController, SessionTokens, WebPoTokenManager
-
-### Community 108 - "Community 108"
-Cohesion: 0.22
-Nodes (14): BgChoice, BrandingRow(), downloadCanvasMediaFile(), findAudioFileForMedia(), LyricsSelectionDialog(), ShareBottomSheet(), ShareEntity, ShareIconButton() (+6 more)
-
-### Community 109 - "Community 109"
-Cohesion: 0.16
-Nodes (15): CatalogSearch, Charted, ConnectSpotifyCard(), HistoryPeak, HistoryPeakBadge(), HistoryRankingsState, historySubtitle(), Loading (+7 more)
-
-### Community 110 - "Community 110"
-Cohesion: 0.21
-Nodes (3): mergeNearbyElements(), MusicMapGenres, ThrottledException
-
-### Community 111 - "Community 111"
-Cohesion: 0.25
-Nodes (15): AccountsServicesScreen(), colors(), DezzyIconTone, dezzyItemShape(), DezzyRowContent(), DezzySectionLabel(), DezzySettingsEntry, DezzySettingsGroupCard() (+7 more)
-
-### Community 112 - "Community 112"
-Cohesion: 0.21
-Nodes (13): CommentedTrackCard(), DezzyTrackCommentsPanel(), formatCount(), formatPosition(), playCommentedTrack(), playVideoId(), RealCommentedTrack, RealCommentsSheet() (+5 more)
-
-### Community 113 - "Community 113"
-Cohesion: 0.17
-Nodes (7): ArtistSongsViewModel, LibraryAlbumsViewModel, LibraryArtistsViewModel, LibraryMixViewModel, LibraryPlaylistsViewModel, LibrarySongsViewModel, LibraryViewModel
-
-### Community 114 - "Community 114"
+### Community 103 - "Community 103"
 Cohesion: 0.12
 Nodes (4): AlbumArtistMap, SongAlbumMap, DownloadUtil, onDownloadChanged()
 
-### Community 115 - "Community 115"
-Cohesion: 0.19
-Nodes (9): AuthorBadge, AuthorThumbnail, CommentRenderer, Icon, MetadataBadgeRenderer, ReplyCount, Run, TextRuns (+1 more)
+### Community 105 - "Community 105"
+Cohesion: 0.12
+Nodes (9): setOffloadEnabled(), canUpdatePresence(), ensurePresenceManager(), ensureScopesActive(), onCreate(), registerBluetoothReceiver(), unregisterBluetoothReceiver(), SleepTimer (+1 more)
 
-### Community 116 - "Community 116"
-Cohesion: 0.21
-Nodes (3): PreloadPlaylist, SpotifyPreloadManager, SelectablePlaylist
+### Community 106 - "Community 106"
+Cohesion: 0.22
+Nodes (3): PlaybackPoTokenController, SessionTokens, WebPoTokenManager
 
-### Community 117 - "Community 117"
+### Community 107 - "Community 107"
+Cohesion: 0.2
+Nodes (12): PublicRoomCard(), PublicRoomsScreen(), themeColor(), ThemeFilter, themeIcon(), TogetherActionCard(), TogetherPublicRoomRow(), TogetherSectionHeader() (+4 more)
+
+### Community 108 - "Community 108"
+Cohesion: 0.17
+Nodes (7): ArtistSongsViewModel, LibraryAlbumsViewModel, LibraryArtistsViewModel, LibraryMixViewModel, LibraryPlaylistsViewModel, LibrarySongsViewModel, LibraryViewModel
+
+### Community 109 - "Community 109"
 Cohesion: 0.15
 Nodes (5): TogetherClock, TogetherClockSnapshot, TogetherCoreTest, ClientHello, ControlRequest
 
-### Community 118 - "Community 118"
+### Community 110 - "Community 110"
+Cohesion: 0.18
+Nodes (7): BigSeekBar(), calcFraction(), Config, drawTrack(), PlayerSliderColors, PlayerSliderTrack(), stepsToTickFractions()
+
+### Community 111 - "Community 111"
+Cohesion: 0.21
+Nodes (12): ChoiceChipsRow(), StatsBars(), StatsFavoriteCard(), StatsFavoritesRow(), StatsListeningCard(), StatsRankNumber(), ArtistPieChart(), OptionStats (+4 more)
+
+### Community 112 - "Community 112"
 Cohesion: 0.21
 Nodes (5): YouTubeLocale, App, forgetAccount(), ImageDiskCacheConfig, resolveImageDiskCacheConfig()
 
-### Community 119 - "Community 119"
-Cohesion: 0.34
-Nodes (3): AppleCanvasLogger, AppleMusicCanvasProvider, CacheEntry
+### Community 113 - "Community 113"
+Cohesion: 0.21
+Nodes (3): PreloadPlaylist, SpotifyPreloadManager, SelectablePlaylist
 
-### Community 120 - "Community 120"
+### Community 114 - "Community 114"
+Cohesion: 0.29
+Nodes (9): duration(), lastText(), metadataGroups(), playlistAuthor(), SearchPage, SearchResult, toArtists(), watchEndpoint() (+1 more)
+
+### Community 115 - "Community 115"
 Cohesion: 0.25
 Nodes (13): BrowseEndpoint, BrowseEndpointContextMusicConfig, BrowseEndpointContextSupportedConfigs, DefaultServiceEndpoint, Endpoint, QueueAddEndpoint, QueueTarget, SearchEndpoint (+5 more)
 
-### Community 122 - "Community 122"
-Cohesion: 0.14
-Nodes (5): AlbumItem, fromMusicTwoRowItemRenderer(), LibraryAlbumsPage, NewReleaseAlbumPage, SearchSuggestionPage
-
-### Community 124 - "Community 124"
+### Community 117 - "Community 117"
 Cohesion: 0.26
 Nodes (7): TogetherOnlineApi, TogetherOnlineApiException, TogetherOnlineCreateSessionRequest, TogetherOnlineCreateSessionResponse, TogetherOnlineErrorResponse, TogetherOnlineResolveRequest, TogetherOnlineResolveResponse
 
-### Community 125 - "Community 125"
-Cohesion: 0.23
-Nodes (5): detectMessageFormat(), LogLevel, MessageCodec, MessageFormat, ErrorPayload
-
-### Community 126 - "Community 126"
-Cohesion: 0.24
-Nodes (7): appendJsonString(), computeId(), fromJson(), Kinds, NostrEvent, rumor(), sign()
-
-### Community 127 - "Community 127"
+### Community 119 - "Community 119"
 Cohesion: 0.2
 Nodes (5): P2PNearbyPerson, onBatchScanResults(), onScanResult(), P2PNearby, Status
 
-### Community 130 - "Community 130"
+### Community 122 - "Community 122"
+Cohesion: 0.24
+Nodes (3): generate(), NostrKeys, P2PIdentity
+
+### Community 123 - "Community 123"
+Cohesion: 0.24
+Nodes (7): appendJsonString(), computeId(), fromJson(), Kinds, NostrEvent, rumor(), sign()
+
+### Community 124 - "Community 124"
 Cohesion: 0.22
 Nodes (3): BotGuardPoTokenGenerator, create(), Runnable
 
-### Community 131 - "Community 131"
+### Community 125 - "Community 125"
 Cohesion: 0.23
 Nodes (3): bottomSheetDraggable(), BottomSheetState, onPreFling()
 
-### Community 132 - "Community 132"
+### Community 126 - "Community 126"
+Cohesion: 0.29
+Nodes (13): PresetSwatches(), PreviewSectionTitle(), PreviewSegment(), RgbSlider(), SeedChip(), SeedColorEditor(), SeedRole, SeedRolePicker() (+5 more)
+
+### Community 127 - "Community 127"
 Cohesion: 0.24
 Nodes (11): buildLoginRoute(), AccountCard(), AccountSettings(), AccountSettingsHeader(), AppVersionFooter(), PlaylistSelectionDialog(), SettingsClickableItem(), SettingsSection() (+3 more)
 
-### Community 135 - "Community 135"
+### Community 130 - "Community 130"
+Cohesion: 0.26
+Nodes (3): PlaylistSuggestion, PlaylistSuggestionPage, LocalPlaylistViewModel
+
+### Community 131 - "Community 131"
 Cohesion: 0.32
 Nodes (4): ParsedLine, ParsedWord, TimingContext, TTMLParser
 
-### Community 136 - "Community 136"
+### Community 132 - "Community 132"
+Cohesion: 0.21
+Nodes (12): Artist, browse(), chartPlaylistId(), COUNTRIES, fetchCountry(), Json, parseDuration(), playlistSongs() (+4 more)
+
+### Community 133 - "Community 133"
 Cohesion: 0.26
 Nodes (12): Action, Body, Content, Cue, CueGroup, GetTranscriptResponse, SimpleText, TranscriptBodyRenderer (+4 more)
 
-### Community 138 - "Community 138"
+### Community 135 - "Community 135"
 Cohesion: 0.27
 Nodes (10): bestMatchingFor(), calculateSimilarity(), findBestMatch(), levenshteinDistance(), Line, Lyrics, SearchResponse, Track (+2 more)
 
-### Community 139 - "Community 139"
+### Community 136 - "Community 136"
 Cohesion: 0.14
 Nodes (13): 1. Ver qué dispositivos Chromecast tienes en tu red, 2. Proyectar el Dashboard local (servidor web integrado), 3. Proyectar a un Chromecast específico por nombre, 4. Proyectar una URL externa o de tu Home Assistant, 🛠️ Cómo usarlo, ⚙️ Características, 📺 Chromecast Smart Home Dashboard Controller, code:bash (pip install -r requirements.txt) (+5 more)
 
-### Community 140 - "Community 140"
+### Community 137 - "Community 137"
 Cohesion: 0.15
 Nodes (14): Code of Conduct (Contributor Covenant 2.0), PRs target dev branch workflow, Contribution Guide, Crowdin translation config, ArchiveTune API server URL, Fastlane store listing (en-US) - title OpenTune, Fastlane store listing (es-ES) - title OpenTune, Dezzy Maps Logo Preview page (+6 more)
 
-### Community 141 - "Community 141"
-Cohesion: 0.27
-Nodes (3): generate(), NostrKeys, P2PIdentity
-
-### Community 143 - "Community 143"
-Cohesion: 0.24
-Nodes (8): buildSparkles(), buildSphere(), buildStars(), NcsVisualizerScreen(), Sparkle, SpherePoint, Star, AudioSpectrumEngine
-
-### Community 144 - "Community 144"
+### Community 139 - "Community 139"
 Cohesion: 0.15
 Nodes (11): toPersistQueue(), toQueue(), LOCAL_ALBUM_RADIO, LocalAlbumRadioData, PersistQueue, QueueData, QueueType, YOUTUBE (+3 more)
 
-### Community 145 - "Community 145"
+### Community 140 - "Community 140"
+Cohesion: 0.24
+Nodes (8): buildSparkles(), buildSphere(), buildStars(), DJVisualizerBox(), Sparkle, SpherePoint, Star, AudioSpectrumEngine
+
+### Community 141 - "Community 141"
 Cohesion: 0.26
 Nodes (10): MiniPlayer(), MiniPlayerBackgroundLayer(), MiniPlayerBackgroundStyle, NewMiniPlayer(), MiniPlayerArtwork(), MiniPlayerInfo(), MiniPlayerTransportButton(), MiniPlayerTransportControls() (+2 more)
 
-### Community 146 - "Community 146"
+### Community 142 - "Community 142"
 Cohesion: 0.24
 Nodes (3): CanvasArtworkPlaybackCache, SnapLayoutInfoProvider(), ThumbnailPage
 
-### Community 147 - "Community 147"
+### Community 143 - "Community 143"
 Cohesion: 0.26
 Nodes (9): AssignTagsDialog(), AssignTagsToPlaylistsDialog(), PlaylistTagChips(), TagChip(), TagsFilterChips(), AddEditTagDialog(), ColorPickerDialog(), EditableTagChip() (+1 more)
 
-### Community 148 - "Community 148"
-Cohesion: 0.29
-Nodes (11): CommentActionsMenu(), commentAgeMinutes(), CommentFilter, CommentItem(), CommentSheet(), findCommentTimestamp(), formatCommentTimestamp(), openCommentOnYouTube() (+3 more)
+### Community 144 - "Community 144"
+Cohesion: 0.22
+Nodes (12): BuildChannelInfoDialog(), CommitItem(), Error, formatCommitDate(), Idle, Loading, UpdateAvailable, UpdateAvailableDialog() (+4 more)
 
-### Community 149 - "Community 149"
-Cohesion: 0.29
-Nodes (10): DownloadOptionsDialog(), DownloadRequest, LosslessDefaults, LosslessResultRow(), LosslessScreen(), LosslessSearchScreen(), playLosslessStream(), rememberLosslessDefaults() (+2 more)
+### Community 145 - "Community 145"
+Cohesion: 0.22
+Nodes (6): ArtistItem, fromMusicResponsiveListItemRenderer(), fromMusicTwoRowItemRenderer(), LibraryPage, parseArtists(), SearchSuggestionPage
 
-### Community 150 - "Community 150"
+### Community 146 - "Community 146"
 Cohesion: 0.23
 Nodes (8): AccountInfo, AccountMenuResponse, Action, ActiveAccountHeaderRenderer, Header, MultiPageMenuRenderer, OpenPopupAction, Popup
 
-### Community 151 - "Community 151"
+### Community 147 - "Community 147"
 Cohesion: 0.28
 Nodes (11): AtrUrl, AudioConfig, Format, PlayabilityStatus, PlaybackTracking, PlayerConfig, PlayerResponse, StreamingData (+3 more)
 
-### Community 153 - "Community 153"
+### Community 149 - "Community 149"
 Cohesion: 0.15
 Nodes (12): Cómo obtener el ARL, code:bash (cd resolver), code:bash (cd resolver), Conectar la app, Configuración (variables de entorno), Desplegar en Vercel, Desplegar sin límite de tiempo (recomendado para FLAC grande), Dezzy Lossless Resolver (+4 more)
 
-### Community 154 - "Community 154"
-Cohesion: 0.18
-Nodes (4): Converters, migrate(), Migration13To14, ArtistEntity
+### Community 150 - "Community 150"
+Cohesion: 0.23
+Nodes (5): Block, MusicDatabase, newInstance(), UniversalMigration, tryOrNull()
 
-### Community 155 - "Community 155"
+### Community 153 - "Community 153"
+Cohesion: 0.18
+Nodes (4): LyricsInjectingConverter, onCastSessionAvailable(), ResolvedStream, SplashVideoPlayer()
+
+### Community 154 - "Community 154"
+Cohesion: 0.27
+Nodes (10): BadWebViewException, base64ToByteArray(), base64ToU8(), descramble(), newUint8Array(), parseChallengeData(), parseIntegrityTokenData(), PoTokenException (+2 more)
+
+### Community 156 - "Community 156"
+Cohesion: 0.23
+Nodes (11): DarkMode, HomeWallpaperPreview(), LyricsPosition, NavigationTab, PlayerTextAlignment, sliderStyleLabel(), SliderStyleOptionCard(), VideoWallpaperPreviewCard() (+3 more)
+
+### Community 157 - "Community 157"
 Cohesion: 0.27
 Nodes (3): PlaylistEntity, playlistsForAddToPlaylist(), AddToPlaylistDialogFilterTest
 
 ### Community 158 - "Community 158"
-Cohesion: 0.27
-Nodes (10): BadWebViewException, base64ToByteArray(), base64ToU8(), descramble(), newUint8Array(), parseChallengeData(), parseIntegrityTokenData(), PoTokenException (+2 more)
-
-### Community 159 - "Community 159"
-Cohesion: 0.18
-Nodes (4): LyricsInjectingConverter, onCastSessionAvailable(), ResolvedStream, SplashVideoPlayer()
-
-### Community 161 - "Community 161"
-Cohesion: 0.18
-Nodes (11): BuildChannelInfoDialog(), CommitItem(), Error, formatCommitDate(), Idle, Loading, UpdateAvailable, UpdateAvailableDialog() (+3 more)
-
-### Community 162 - "Community 162"
-Cohesion: 0.23
-Nodes (11): DarkMode, HomeWallpaperPreview(), LyricsPosition, NavigationTab, PlayerTextAlignment, sliderStyleLabel(), SliderStyleOptionCard(), VideoWallpaperPreviewCard() (+3 more)
-
-### Community 163 - "Community 163"
-Cohesion: 0.3
-Nodes (10): CreatePostSheet(), FeedEmptyState(), FeedScreen(), PostCard(), readScaledJpeg(), relativeTime(), StoriesBar(), ShareSongSheet() (+2 more)
-
-### Community 164 - "Community 164"
 Cohesion: 0.3
 Nodes (3): FeedPost, FeedRepository, Story
 
-### Community 165 - "Community 165"
+### Community 159 - "Community 159"
 Cohesion: 0.18
 Nodes (10): AlbumUiState, AlbumViewModel, Content, Empty, Error, Failed, FetchState, Loading (+2 more)
 
-### Community 167 - "Community 167"
-Cohesion: 0.35
-Nodes (7): ArtistPage, ArtistSection, fromMusicCarouselShelfRenderer(), fromMusicResponsiveListItemRenderer(), fromMusicShelfRenderer(), fromMusicTwoRowItemRenderer(), fromSectionListRendererContent()
-
-### Community 171 - "Community 171"
-Cohesion: 0.35
-Nodes (10): CarouselCard(), CarouselShimmerRow(), EmptyState(), ErrorState(), HeroStat(), M3Carousel(), NewReleaseHero(), NewReleaseScreen() (+2 more)
-
-### Community 172 - "Community 172"
-Cohesion: 0.42
-Nodes (9): completed(), completePlaylistPage(), isDurationSeparator(), isIgnorableDurationChar(), isPrivateId(), normalizedContinuation(), parseTime(), sha1() (+1 more)
-
-### Community 173 - "Community 173"
-Cohesion: 0.33
-Nodes (10): Bio, clickableRow(), EditDialog(), EditField, Links, Name, Phone, ProfileRow() (+2 more)
-
-### Community 174 - "Community 174"
-Cohesion: 0.18
-Nodes (7): DateAgo, HistoryViewModel, LastWeek, Other, ThisWeek, Today, Yesterday
-
-### Community 176 - "Community 176"
+### Community 161 - "Community 161"
 Cohesion: 0.18
 Nodes (3): PlaylistTagMap, PlaylistWithTags, TagEntity
 
-### Community 178 - "Community 178"
+### Community 163 - "Community 163"
+Cohesion: 0.27
+Nodes (11): audioPositionForVideo(), createVideoRenderersFactory(), disableVideoMode(), enableVideoMode(), notifySessionStateChanged(), onVideoEnded(), retryVideoMode(), setVideoQuality() (+3 more)
+
+### Community 164 - "Community 164"
+Cohesion: 0.35
+Nodes (10): CarouselCard(), CarouselShimmerRow(), EmptyState(), ErrorState(), HeroStat(), M3Carousel(), NewReleaseHero(), NewReleaseScreen() (+2 more)
+
+### Community 165 - "Community 165"
+Cohesion: 0.42
+Nodes (9): completed(), completePlaylistPage(), isDurationSeparator(), isIgnorableDurationChar(), isPrivateId(), normalizedContinuation(), parseTime(), sha1() (+1 more)
+
+### Community 167 - "Community 167"
+Cohesion: 0.33
+Nodes (10): Bio, clickableRow(), EditDialog(), EditField, Links, Name, Phone, ProfileRow() (+2 more)
+
+### Community 168 - "Community 168"
+Cohesion: 0.18
+Nodes (7): DateAgo, HistoryViewModel, LastWeek, Other, ThisWeek, Today, Yesterday
+
+### Community 170 - "Community 170"
 Cohesion: 0.24
-Nodes (8): activeProviders(), deezer, deezerConfigured(), plan(), planDeezer(), PLANNERS, qobuz, qobuzConfigured()
+Nodes (3): ChartSection, ChartsPage, ChartType
 
-### Community 179 - "Community 179"
-Cohesion: 0.44
-Nodes (8): duration(), lastText(), metadataGroups(), playlistAuthor(), SearchPage, toArtists(), watchEndpoint(), year()
-
-### Community 181 - "Community 181"
+### Community 171 - "Community 171"
 Cohesion: 0.35
 Nodes (6): Chip, fromChipCloudChipRenderer(), fromMusicCarouselShelfRenderer(), fromMusicTwoRowItemRenderer(), HomePage, Section
 
-### Community 182 - "Community 182"
-Cohesion: 0.31
-Nodes (3): DatabaseCallback, newInstance(), UniversalMigration
+### Community 173 - "Community 173"
+Cohesion: 0.24
+Nodes (8): activeProviders(), deezer, deezerConfigured(), plan(), planDeezer(), PLANNERS, qobuz, qobuzConfigured()
 
-### Community 184 - "Community 184"
+### Community 174 - "Community 174"
+Cohesion: 0.29
+Nodes (6): Completed, Error, Idle, PlaylistTranslationManager, Translating, TranslationState
+
+### Community 176 - "Community 176"
 Cohesion: 0.24
 Nodes (4): filterExplicit(), filterVideo(), Queue, Status
 
-### Community 185 - "Community 185"
-Cohesion: 0.2
-Nodes (9): Cancelled, Completed, Converting, Counting, Error, FetchingPlaylists, Idle, SelectingPlaylists (+1 more)
-
-### Community 189 - "Community 189"
+### Community 180 - "Community 180"
 Cohesion: 0.27
 Nodes (9): DesktopLinkScreen(), Done, DoneCard(), Failed, Idle, InfoRow(), LinkUi, StatusLine() (+1 more)
 
-### Community 190 - "Community 190"
-Cohesion: 0.38
-Nodes (9): AddButton(), FriendsEmptyState(), GoogleConnectBanner(), openChat(), ProfileHeaderCard(), RelationTag(), SectionTitle(), SocialHub() (+1 more)
+### Community 183 - "Community 183"
+Cohesion: 0.2
+Nodes (9): Cancelled, Completed, Converting, Counting, Error, FetchingPlaylists, Idle, SelectingPlaylists (+1 more)
 
-### Community 194 - "Community 194"
+### Community 184 - "Community 184"
+Cohesion: 0.31
+Nodes (4): fromMusicCardShelfRenderer(), fromMusicResponsiveListItemRenderer(), SearchSummary, SearchSummaryPage
+
+### Community 185 - "Community 185"
 Cohesion: 0.36
 Nodes (8): ButtonRenderer, Item, Menu, MenuNavigationItemRenderer, MenuRenderer, MenuServiceItemRenderer, ToggleMenuServiceRenderer, TopLevelButton
 
-### Community 195 - "Community 195"
+### Community 186 - "Community 186"
 Cohesion: 0.36
 Nodes (8): Content, FlexColumn, MusicItemThumbnailOverlayRenderer, MusicPlayButtonRenderer, MusicResponsiveListItemFlexColumnRenderer, MusicResponsiveListItemRenderer, Overlay, PlaylistItemData
 
-### Community 196 - "Community 196"
+### Community 187 - "Community 187"
 Cohesion: 0.36
 Nodes (8): Chip, ChipCloudChipRenderer, ChipCloudRenderer, Content, Header, ItemSectionContent, ItemSectionRenderer, SectionListRenderer
 
-### Community 199 - "Community 199"
+### Community 189 - "Community 189"
 Cohesion: 0.2
-Nodes (8): dezzy_dsp native shared library (C++20), po_token.html BotGuard WebView page, obtainPoToken(), runBotGuard(), DezzyBiquadAudioProcessor (Biquad DSP chain), Media3 ExoPlayer (primary audio + VideoMode), ResolvingDataSource + SimpleCache, YTPlayerUtils / InnerTube client rotation
+Nodes (8): extractPalette(), fetchLyrics(), parseLrc(), renderSynced(), showTrack(), LRCLIB lyrics API, Canvas System (Video Backgrounds), Synchronized Lyrics (LRC)
 
-### Community 200 - "Community 200"
+### Community 191 - "Community 191"
 Cohesion: 0.25
 Nodes (3): DezzyEqManager, EqBand, FilterType
 
-### Community 201 - "Community 201"
-Cohesion: 0.28
-Nodes (3): Block, MusicDatabase, tryOrNull()
-
-### Community 203 - "Community 203"
-Cohesion: 0.28
-Nodes (4): NostrFilter, P2PListening, P2PPresence, followCounts()
-
-### Community 204 - "Community 204"
+### Community 192 - "Community 192"
 Cohesion: 0.33
 Nodes (3): Geohash, P2PMap, P2PMapListener
 
-### Community 205 - "Community 205"
+### Community 193 - "Community 193"
 Cohesion: 0.25
 Nodes (3): NetworkModule, NetworkConnectivityObserver, onLost()
 
-### Community 207 - "Community 207"
+### Community 196 - "Community 196"
+Cohesion: 0.36
+Nodes (7): LaTeXText(), LaTeXWebView(), ChatBubble(), ChatMessage, DezzyIAScreen(), SongRecommendationCard(), TypingIndicator()
+
+### Community 197 - "Community 197"
 Cohesion: 0.22
 Nodes (8): DownloadQueue, Home, Library, MoodAndGenres, Screens, Search, Social, Together
 
-### Community 209 - "Community 209"
+### Community 198 - "Community 198"
 Cohesion: 0.31
 Nodes (5): isInternetConnected(), isSyncEnabled(), isUserLoggedIn(), CookieParsingTest, parseCookieString()
 
-### Community 214 - "Community 214"
+### Community 204 - "Community 204"
 Cohesion: 0.36
 Nodes (3): ContactsRepository, ContactSyncResult, DeviceContact
 
-### Community 215 - "Community 215"
+### Community 205 - "Community 205"
 Cohesion: 0.31
 Nodes (6): Empty, Error, Loading, NewReleaseUiState, NewReleaseViewModel, Success
 
-### Community 216 - "Community 216"
+### Community 206 - "Community 206"
 Cohesion: 0.28
 Nodes (5): Error, Idle, PoTokenState, PoTokenViewModel, Success
 
-### Community 220 - "Community 220"
+### Community 210 - "Community 210"
 Cohesion: 0.42
 Nodes (4): needsServiceIntegrity(), normalizeAuthValue(), normalizeDataSyncId(), PlaybackAuthState
 
-### Community 222 - "Community 222"
+### Community 211 - "Community 211"
+Cohesion: 0.56
+Nodes (7): ArtistPage, ArtistSection, fromMusicCarouselShelfRenderer(), fromMusicResponsiveListItemRenderer(), fromMusicShelfRenderer(), fromMusicTwoRowItemRenderer(), fromSectionListRendererContent()
+
+### Community 213 - "Community 213"
 Cohesion: 0.28
 Nodes (9): LosslessDownloadManager, Deezer source (ARL, Blowfish stripe decrypt), Resolver endpoints (POST /dl/:provider, GET /stream, /health), HMAC-signed /stream URLs (RESOLVER_SECRET), Multi-source ISRC failover, Qobuz source (self-healing app_id/secret), Dezzy Lossless Resolver, App ResolverClient (+1 more)
 
-### Community 225 - "Community 225"
+### Community 218 - "Community 218"
 Cohesion: 0.36
 Nodes (7): now(), attach_pot(), CacheEntry, current_time_ms(), Java_com_dezzy_music_utils_NativeVideoResolver_resolveVideoNative(), ResolutionResult, resolve_youtube_video()
 
-### Community 229 - "Community 229"
+### Community 222 - "Community 222"
 Cohesion: 0.46
-Nodes (7): buildSparkles(), buildSphere(), buildStars(), DJVisualizerBox(), Sparkle, SpherePoint, Star
+Nodes (7): buildSparkles(), buildSphere(), buildStars(), NcsVisualizerScreen(), Sparkle, SpherePoint, Star
 
-### Community 231 - "Community 231"
-Cohesion: 0.5
-Nodes (6): artistNames(), SpotifyCover(), SpotifyTrackCard(), SpotifyTrackPlayer, SpotifyTrackRow(), SpotifyTrackShelf()
-
-### Community 232 - "Community 232"
-Cohesion: 0.46
-Nodes (7): findCause(), httpStatusCodeOrNull(), invalidPlaybackLoginContextUrl(), loginRecoveryUrl(), PlaybackErrorInfo, PlaybackErrorKind, toPlaybackErrorInfo()
-
-### Community 233 - "Community 233"
-Cohesion: 0.43
-Nodes (7): ExperienceDjCard(), ExperienceLink, ExperiencesScreen(), ExperienceTile, ExperienceTileCard(), ExperienceTone, formatExperienceListenTime()
-
-### Community 235 - "Community 235"
+### Community 223 - "Community 223"
 Cohesion: 0.5
 Nodes (7): AccountCard(), loadWelcomeTiles(), normalizedName(), TileRibbon(), WelcomeHero(), WelcomeScreen(), WelcomeTile
 
-### Community 237 - "Community 237"
+### Community 225 - "Community 225"
+Cohesion: 0.5
+Nodes (6): artistNames(), SpotifyCover(), SpotifyTrackCard(), SpotifyTrackPlayer, SpotifyTrackRow(), SpotifyTrackShelf()
+
+### Community 226 - "Community 226"
+Cohesion: 0.46
+Nodes (7): findCause(), httpStatusCodeOrNull(), invalidPlaybackLoginContextUrl(), loginRecoveryUrl(), PlaybackErrorInfo, PlaybackErrorKind, toPlaybackErrorInfo()
+
+### Community 227 - "Community 227"
+Cohesion: 0.43
+Nodes (7): ExperienceDjCard(), ExperienceLink, ExperiencesScreen(), ExperienceTile, ExperienceTileCard(), ExperienceTone, formatExperienceListenTime()
+
+### Community 228 - "Community 228"
+Cohesion: 0.39
+Nodes (6): MoodAndGenresButton(), MoodAndGenresScreen(), DiscoverCard(), DiscoverEntry, SearchHomeScreen(), SearchHomeSectionTitle()
+
+### Community 231 - "Community 231"
 Cohesion: 0.32
 Nodes (3): GlobalLog, GlobalLogTree, LogEntry
 
-### Community 239 - "Community 239"
-Cohesion: 0.39
-Nodes (3): ChatMessage, Conversation, MessagesRepository
-
-### Community 240 - "Community 240"
+### Community 234 - "Community 234"
 Cohesion: 0.25
 Nodes (3): ItemsPage, ArtistItemsViewModel, OnlineSearchViewModel
 
-### Community 245 - "Community 245"
+### Community 235 - "Community 235"
+Cohesion: 0.39
+Nodes (3): ChatMessage, Conversation, MessagesRepository
+
+### Community 237 - "Community 237"
 Cohesion: 0.43
 Nodes (6): Action, AddPlaylistAction, AddVideoAction, MoveVideoAction, RemoveVideoAction, RenamePlaylistAction
 
-### Community 246 - "Community 246"
+### Community 238 - "Community 238"
+Cohesion: 0.36
+Nodes (4): ContentPlaybackContext, PlaybackContext, PlayerBody, ServiceIntegrityDimensions
+
+### Community 239 - "Community 239"
 Cohesion: 0.32
 Nodes (3): DiscordImage, ExternalImage, RpcImage
 
-### Community 247 - "Community 247"
+### Community 240 - "Community 240"
 Cohesion: 0.25
 Nodes (7): Alcance, Aplicación, Atribución, Código de Conducta, Nuestras Responsabilidades, Nuestro Compromiso, Nuestros Estándares
 
-### Community 248 - "Community 248"
-Cohesion: 0.43
-Nodes (4): fromMusicCardShelfRenderer(), fromMusicResponsiveListItemRenderer(), SearchSummary, SearchSummaryPage
-
-### Community 249 - "Community 249"
+### Community 241 - "Community 241"
 Cohesion: 0.25
 Nodes (3): createFlightArc(), fetchLiveFlightsData(), Three.js tactical globe dashboard
 
-### Community 251 - "Community 251"
+### Community 242 - "Community 242"
 Cohesion: 0.29
-Nodes (4): CodecTest, CreateRoomPayload, JoinRoomPayload, Message
+Nodes (3): Converters, migrate(), Migration13To14
 
-### Community 256 - "Community 256"
-Cohesion: 0.52
-Nodes (6): ConversationRow(), InboxEmptyState(), InboxTab(), MessagesInboxScreen(), RequestList(), shortAgo()
-
-### Community 257 - "Community 257"
-Cohesion: 0.52
-Nodes (6): MyPostRow(), MyProfileScreen(), playVideo(), ProfileHeaderThreads(), shareProfile(), SuggestionsRow()
-
-### Community 263 - "Community 263"
+### Community 255 - "Community 255"
 Cohesion: 0.43
 Nodes (6): LocalFilter, LocalSearchResult, LocalSearchViewModel, matchRank(), normalize(), rankMatches()
 
-### Community 267 - "Community 267"
-Cohesion: 0.38
-Nodes (4): CanvasArtwork, fetchCanvasArtworkForPlayback(), normalizeCanvasArtistName(), normalizeCanvasSongTitle()
-
-### Community 268 - "Community 268"
-Cohesion: 0.48
-Nodes (5): Client, Context, Request, ThirdParty, User
-
-### Community 269 - "Community 269"
-Cohesion: 0.48
-Nodes (5): EditHeader, Header, MusicDetailHeaderRenderer, MusicEditablePlaylistDetailHeaderRenderer, MusicPlaylistEditHeaderRenderer
-
-### Community 270 - "Community 270"
-Cohesion: 0.48
-Nodes (5): clean(), oddElements(), Run, Runs, splitBySeparator()
-
-### Community 271 - "Community 271"
-Cohesion: 0.48
-Nodes (5): Content, Contents, ContinuationContents, MusicShelfContinuation, SearchResponse
-
-### Community 273 - "Community 273"
+### Community 256 - "Community 256"
 Cohesion: 0.52
 Nodes (4): fromMusicResponsiveListItemRenderer(), fromMusicShelfRenderer(), HistoryPage, HistorySection
 
-### Community 274 - "Community 274"
-Cohesion: 0.29
-Nodes (4): extractPalette(), showTrack(), wireCast(), Canvas System (Video Backgrounds)
+### Community 257 - "Community 257"
+Cohesion: 0.48
+Nodes (5): Client, Context, Request, ThirdParty, User
 
-### Community 275 - "Community 275"
+### Community 258 - "Community 258"
+Cohesion: 0.48
+Nodes (5): EditHeader, Header, MusicDetailHeaderRenderer, MusicEditablePlaylistDetailHeaderRenderer, MusicPlaylistEditHeaderRenderer
+
+### Community 259 - "Community 259"
+Cohesion: 0.48
+Nodes (5): clean(), oddElements(), Run, Runs, splitBySeparator()
+
+### Community 260 - "Community 260"
+Cohesion: 0.48
+Nodes (5): Content, Contents, ContinuationContents, MusicShelfContinuation, SearchResponse
+
+### Community 262 - "Community 262"
+Cohesion: 0.29
+Nodes (5): po_token.html BotGuard WebView page, obtainPoToken(), runBotGuard(), ResolvingDataSource + SimpleCache, YTPlayerUtils / InnerTube client rotation
+
+### Community 263 - "Community 263"
 Cohesion: 0.29
 Nodes (7): Coil 3 image pipeline with OfflineArtworkInterceptor, Jetpack Compose presentation layer, Modular Players (Spotify, Vinyl, Deezer, Dezzy, CarMode), Platform Imitation player styles, PlayerConnection (reactive StateFlow bridge), ViewModels (HomeViewModel, DJDezzyViewModel), HomeScreen.kt diff (Dezzy mass rename commit)
 
-### Community 277 - "Community 277"
+### Community 267 - "Community 267"
 Cohesion: 0.47
 Nodes (4): AddTrack, Control, TogetherGuestOp, TogetherGuestPlaybackPlanner
 
-### Community 283 - "Community 283"
+### Community 274 - "Community 274"
 Cohesion: 0.47
 Nodes (3): CloudUploadState, FilebinService, uploadBackupToCloud()
 
-### Community 285 - "Community 285"
+### Community 275 - "Community 275"
 Cohesion: 0.53
 Nodes (4): buildViews(), commandIntent(), MusicWidgetProvider, update()
 
-### Community 287 - "Community 287"
+### Community 277 - "Community 277"
 Cohesion: 0.47
 Nodes (3): ArtistVideoCanvasProvider, ArtistVideoResponse, CacheEntry
 
-### Community 288 - "Community 288"
+### Community 279 - "Community 279"
 Cohesion: 0.53
 Nodes (4): GridHeaderRenderer, GridRenderer, Header, Item
 
-### Community 289 - "Community 289"
+### Community 280 - "Community 280"
 Cohesion: 0.53
 Nodes (4): Content, Header, MusicCardShelfHeaderBasicRenderer, MusicCardShelfRenderer
 
-### Community 290 - "Community 290"
+### Community 281 - "Community 281"
 Cohesion: 0.53
 Nodes (4): Content, Header, MusicQueueHeaderRenderer, MusicQueueRenderer
 
-### Community 291 - "Community 291"
+### Community 282 - "Community 282"
 Cohesion: 0.53
 Nodes (4): Content, getContinuation(), getItems(), MusicShelfRenderer
 
-### Community 292 - "Community 292"
+### Community 283 - "Community 283"
 Cohesion: 0.47
 Nodes (3): MusicAnimatedThumbnailRenderer, MusicThumbnailRenderer, ThumbnailRenderer
 
-### Community 293 - "Community 293"
+### Community 284 - "Community 284"
 Cohesion: 0.53
 Nodes (4): Content, SecondaryContents, SectionListRenderer, TwoColumnBrowseResultsRenderer
 
-### Community 295 - "Community 295"
-Cohesion: 0.53
-Nodes (4): ContentPlaybackContext, PlaybackContext, PlayerBody, ServiceIntegrityDimensions
-
-### Community 296 - "Community 296"
+### Community 286 - "Community 286"
 Cohesion: 0.67
 Nodes (4): fromMusicNavigationButtonRenderer(), fromSectionListRendererContent(), Item, MoodAndGenres
 
-### Community 297 - "Community 297"
+### Community 287 - "Community 287"
 Cohesion: 0.53
 Nodes (4): Authentication, LastFmError, Session, TokenResponse
 
-### Community 300 - "Community 300"
+### Community 290 - "Community 290"
 Cohesion: 0.53
 Nodes (4): Content, Header, MusicCarouselShelfBasicHeaderRenderer, MusicCarouselShelfRenderer
 
-### Community 302 - "Community 302"
-Cohesion: 0.4
-Nodes (3): LibraryFilter, PlaylistContinuationCandidate, playlistContinuationPageFromResponse()
-
-### Community 303 - "Community 303"
+### Community 291 - "Community 291"
 Cohesion: 0.33
-Nodes (6): Dezzy Cast Receiver (CAF web receiver), cast_service.py (discovery, local server, watchdog), Chromecast Smart Home Dashboard Controller, DJ Dezzy (Gemini AI & Edge TTS), ListenTogether & Discord RPC (Kizzy), MusicService (Foreground Service & MediaSession)
+Nodes (6): dezzy_dsp native shared library (C++20), DJ Dezzy (Gemini AI & Edge TTS), DezzyBiquadAudioProcessor (Biquad DSP chain), Media3 ExoPlayer (primary audio + VideoMode), ListenTogether & Discord RPC (Kizzy), MusicService (Foreground Service & MediaSession)
 
-### Community 304 - "Community 304"
+### Community 292 - "Community 292"
 Cohesion: 0.6
 Nodes (3): initializeSphere(), Java_com_dezzy_music_utils_NativeDspEngine_computeSpherePointsNative(), Java_com_dezzy_music_utils_NativeDspEngine_initSphereNative()
 
-### Community 321 - "Community 321"
+### Community 312 - "Community 312"
 Cohesion: 0.5
 Nodes (4): IpodLcdMode, IpodMenuItem, ipodWheelRotation(), ipodWheelRotationUpdated()
 
-### Community 322 - "Community 322"
+### Community 313 - "Community 313"
 Cohesion: 0.6
 Nodes (4): ActionPill(), DezzyAction, DezzyActionSlider(), handleAction()
 
-### Community 323 - "Community 323"
+### Community 315 - "Community 315"
 Cohesion: 0.7
 Nodes (3): extractAndFetchToken(), loginWithSpDc(), SpotifyLoginScreen()
 
-### Community 324 - "Community 324"
+### Community 316 - "Community 316"
 Cohesion: 0.4
 Nodes (4): StatsBucket, StatsListening, bucketListening(), StatsViewModel
 
-### Community 326 - "Community 326"
-Cohesion: 0.5
-Nodes (3): currentTogetherRoom(), TogetherCurrentRoom, TogetherRoomMembership
-
-### Community 327 - "Community 327"
-Cohesion: 0.7
-Nodes (4): DezzySearchField(), DezzyTextField(), fieldContainerColor(), FieldSurface()
-
-### Community 329 - "Community 329"
+### Community 319 - "Community 319"
 Cohesion: 0.4
 Nodes (3): CacheItem, CacheSectionState, CacheType
 
-### Community 330 - "Community 330"
+### Community 320 - "Community 320"
 Cohesion: 0.5
 Nodes (3): Capturable(), CaptureController, rememberCaptureController()
 
-### Community 337 - "Community 337"
+### Community 325 - "Community 325"
+Cohesion: 0.6
+Nodes (3): fromMusicResponsiveListItemRenderer(), fromMusicTwoRowItemRenderer(), RelatedPage
+
+### Community 327 - "Community 327"
 Cohesion: 0.6
 Nodes (3): AutomixPlaylistVideoRenderer, AutomixPreviewVideoRenderer, Content
 
-### Community 338 - "Community 338"
+### Community 328 - "Community 328"
 Cohesion: 0.6
 Nodes (3): Continuation, getContinuation(), NextContinuationData
 
-### Community 339 - "Community 339"
+### Community 329 - "Community 329"
 Cohesion: 0.6
 Nodes (3): ContinuationCommand, ContinuationEndpoint, ContinuationItemRenderer
 
-### Community 340 - "Community 340"
+### Community 330 - "Community 330"
 Cohesion: 0.6
 Nodes (3): IconStyle, MusicNavigationButtonRenderer, Solid
 
-### Community 341 - "Community 341"
+### Community 331 - "Community 331"
 Cohesion: 0.6
 Nodes (3): Button, MusicPlayButtonRenderer, MusicResponsiveHeaderRenderer
 
-### Community 342 - "Community 342"
+### Community 332 - "Community 332"
 Cohesion: 0.6
 Nodes (3): Param, ResponseContext, ServiceTrackingParam
 
-### Community 343 - "Community 343"
+### Community 333 - "Community 333"
 Cohesion: 0.6
 Nodes (3): Content, SearchSuggestionRenderer, SearchSuggestionsSectionRenderer
 
-### Community 345 - "Community 345"
+### Community 337 - "Community 337"
 Cohesion: 0.6
 Nodes (3): PlaylistTarget, Target, VideoTarget
 
-### Community 347 - "Community 347"
-Cohesion: 0.6
-Nodes (3): ContinuationItems, ContinuationResponse, ResponseAction
-
-### Community 348 - "Community 348"
-Cohesion: 0.8
-Nodes (3): Identify, Properties, toIdentifyPayload()
-
-### Community 350 - "Community 350"
-Cohesion: 0.6
-Nodes (3): Data, Info, SearchSongResponse
-
-### Community 352 - "Community 352"
+### Community 338 - "Community 338"
 Cohesion: 0.6
 Nodes (3): AddItemYouTubePlaylistResponse, PlaylistEditResult, PlaylistEditVideoAddedResultData
 
-### Community 353 - "Community 353"
-Cohesion: 0.4
-Nodes (5): fetchLyrics(), parseLrc(), renderSynced(), LRCLIB lyrics API, Synchronized Lyrics (LRC)
+### Community 339 - "Community 339"
+Cohesion: 0.6
+Nodes (3): ContinuationItems, ContinuationResponse, ResponseAction
 
-### Community 365 - "Community 365"
+### Community 340 - "Community 340"
+Cohesion: 0.8
+Nodes (3): Identify, Properties, toIdentifyPayload()
+
+### Community 342 - "Community 342"
+Cohesion: 0.6
+Nodes (3): Data, Info, SearchSongResponse
+
+### Community 343 - "Community 343"
+Cohesion: 0.4
+Nodes (4): Dezzy Cast Receiver (CAF web receiver), wireCast(), cast_service.py (discovery, local server, watchdog), Chromecast Smart Home Dashboard Controller
+
+### Community 356 - "Community 356"
 Cohesion: 0.83
 Nodes (3): normalizeCanvasArtistName(), normalizeCanvasSongTitle(), rememberAlbumCanvas()
 
-### Community 366 - "Community 366"
+### Community 357 - "Community 357"
 Cohesion: 0.83
 Nodes (3): md5(), toArtworkBaseUrl(), toArtworkHash()
 
-### Community 390 - "Community 390"
+### Community 380 - "Community 380"
 Cohesion: 0.83
 Nodes (3): drawCountryDots(), drawWorldMapBackground(), MusicMapScreen()
-
-### Community 409 - "Community 409"
-Cohesion: 1.0
-Nodes (3): cancelIdleStop(), scheduleStopIfIdle(), stopForegroundAndSelf()
 
 ## Ambiguous Edges - Review These
 - `ArchiveTune API server URL` → `Dezzy (YouTube Music client for Android)`  [AMBIGUOUS]
@@ -1512,7 +1458,7 @@ Nodes (3): cancelIdleStop(), scheduleStopIfIdle(), stopForegroundAndSelf()
 ## Knowledge Gaps
 - **530 isolated node(s):** `Kind`, `FilterType`, `Role`, `Mode`, `ConnectState` (+525 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **244 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **240 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
@@ -1523,11 +1469,11 @@ _Questions this graph is uniquely positioned to answer:_
   _Edge tagged AMBIGUOUS (relation: references) - confidence is low._
 - **What is the exact relationship between `Canvas System (Video Backgrounds)` and `extractPalette()`?**
   _Edge tagged AMBIGUOUS (relation: semantically_similar_to) - confidence is low._
-- **Why does `remember()` connect `Community 1` to `Community 0`, `Community 256`, `Community 257`, `Community 3`, `Community 4`, `Community 5`, `Community 6`, `Community 132`, `Community 9`, `Community 10`, `Community 11`, `Community 12`, `Community 14`, `Community 143`, `Community 17`, `Community 18`, `Community 147`, `Community 145`, `Community 148`, `Community 149`, `Community 20`, `Community 24`, `Community 411`, `Community 28`, `Community 413`, `Community 27`, `Community 159`, `Community 33`, `Community 163`, `Community 36`, `Community 42`, `Community 43`, `Community 173`, `Community 46`, `Community 52`, `Community 59`, `Community 60`, `Community 61`, `Community 190`, `Community 323`, `Community 327`, `Community 74`, `Community 330`, `Community 87`, `Community 95`, `Community 97`, `Community 98`, `Community 101`, `Community 229`, `Community 102`, `Community 233`, `Community 108`, `Community 365`, `Community 109`, `Community 111`, `Community 112`?**
-  _High betweenness centrality (0.147) - this node is a cross-community bridge._
-- **Why does `reportException()` connect `Community 38` to `Community 1`, `Community 3`, `Community 260`, `Community 261`, `Community 262`, `Community 19`, `Community 23`, `Community 283`, `Community 32`, `Community 164`, `Community 165`, `Community 174`, `Community 47`, `Community 50`, `Community 67`, `Community 332`, `Community 333`, `Community 82`, `Community 85`, `Community 214`, `Community 215`, `Community 227`, `Community 103`, `Community 104`, `Community 106`, `Community 239`, `Community 240`, `Community 241`, `Community 242`, `Community 113`, `Community 118`?**
-  _High betweenness centrality (0.122) - this node is a cross-community bridge._
-- **Why does `PublicRoomsScreen()` connect `Community 0` to `Community 1`, `Community 326`, `Community 39`?**
+- **Why does `remember()` connect `Community 6` to `Community 0`, `Community 1`, `Community 2`, `Community 4`, `Community 5`, `Community 7`, `Community 11`, `Community 140`, `Community 397`, `Community 14`, `Community 143`, `Community 399`, `Community 141`, `Community 12`, `Community 19`, `Community 20`, `Community 13`, `Community 144`, `Community 23`, `Community 24`, `Community 153`, `Community 26`, `Community 29`, `Community 30`, `Community 31`, `Community 32`, `Community 167`, `Community 42`, `Community 43`, `Community 46`, `Community 49`, `Community 314`, `Community 315`, `Community 63`, `Community 64`, `Community 320`, `Community 196`, `Community 75`, `Community 79`, `Community 86`, `Community 87`, `Community 222`, `Community 95`, `Community 97`, `Community 227`, `Community 100`, `Community 356`, `Community 107`, `Community 111`, `Community 126`, `Community 127`?**
+  _High betweenness centrality (0.142) - this node is a cross-community bridge._
+- **Why does `reportException()` connect `Community 44` to `Community 0`, `Community 130`, `Community 6`, `Community 395`, `Community 18`, `Community 274`, `Community 22`, `Community 158`, `Community 159`, `Community 163`, `Community 35`, `Community 37`, `Community 168`, `Community 50`, `Community 57`, `Community 323`, `Community 70`, `Community 204`, `Community 205`, `Community 85`, `Community 220`, `Community 101`, `Community 105`, `Community 234`, `Community 235`, `Community 236`, `Community 108`, `Community 112`, `Community 252`, `Community 253`, `Community 254`?**
+  _High betweenness centrality (0.123) - this node is a cross-community bridge._
+- **Why does `PublicRoomsScreen()` connect `Community 107` to `Community 1`, `Community 2`, `Community 36`, `Community 6`?**
   _High betweenness centrality (0.058) - this node is a cross-community bridge._
 - **Are the 309 inferred relationships involving `remember()` (e.g. with `.onCreate()` and `ArtistSeparatorsDialog()`) actually correct?**
   _`remember()` has 309 INFERRED edges - model-reasoned connections that need verification._

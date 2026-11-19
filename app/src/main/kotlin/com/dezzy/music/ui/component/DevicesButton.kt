@@ -41,13 +41,15 @@ fun DevicesButton(
     activeTint: Color = tint,
     iconSize: Dp = 24.dp,
     onOpenListenTogether: (() -> Unit)? = null,
+    /** Icono en reposo (sin emitir); el estilo Mínimo pasa su versión de trazo fino. */
+    idleIcon: Int = R.drawable.devices,
 ) {
     val casting = rememberIsCasting()
     var showSheet by remember { mutableStateOf(false) }
 
     IconButton(onClick = { showSheet = true }, modifier = modifier) {
         Icon(
-            painter = painterResource(if (casting) R.drawable.cast_connected else R.drawable.devices),
+            painter = painterResource(if (casting) R.drawable.cast_connected else idleIcon),
             contentDescription = "Conectar a un dispositivo",
             tint = if (casting) activeTint else tint,
             modifier = Modifier.size(iconSize),
