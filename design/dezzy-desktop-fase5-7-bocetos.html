@@ -1,0 +1,876 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dezzy escritorio · Fases 5-7</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..800&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dezzy-desktop-base.css">
+<style>
+.toc{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
+.toc a{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--doc-line);border-radius:20px;padding:8px 14px;color:var(--ink);text-decoration:none;font-weight:500;font-size:14px}
+.toc a .ms{color:var(--doc-accent);font-size:18px}
+.android{display:flex;gap:10px;background:#fff;border:1px dashed var(--doc-accent);border-radius:12px;padding:12px 14px;margin-top:12px;font-size:14px;color:var(--muted)}
+.android b{color:var(--ink)}
+.android .ms{color:var(--doc-accent)}
+.row{display:flex;align-items:center;gap:10px}
+.grow{flex:1}
+.muted{color:var(--on-sv)}
+.iconbtn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:var(--on-sv)}
+.iconbtn.on{background:var(--sc2);color:var(--on-sc2)}
+.seg{display:inline-flex;border:1px solid var(--outline);border-radius:20px;overflow:hidden}
+.seg span{height:36px;display:inline-flex;align-items:center;gap:6px;padding:0 14px;font-size:13px;font-weight:500;color:var(--on-s)}
+.seg span+span{border-left:1px solid var(--outline)}
+.seg span.on{background:var(--sc2);color:var(--on-sc2)}
+.badge{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:11px;font-size:12px;font-weight:500;background:var(--s-highest);color:var(--on-sv)}
+
+/* 1 · Reproduciendo (reproductor Dezzy, versión horizontal) */
+.dz{flex:1;margin:0 8px 8px;border-radius:12px;overflow:hidden;position:relative;display:flex;flex-direction:column;color:#fff}
+.dz .blur{position:absolute;inset:-60px;background:
+  radial-gradient(40% 55% at 22% 45%,#FF9E57,transparent 70%),
+  radial-gradient(45% 60% at 70% 30%,#C2410C,transparent 70%),
+  radial-gradient(50% 60% at 60% 90%,#7C2D12,transparent 70%),#2A120A;filter:blur(40px) saturate(1.2);opacity:.75}
+.dz .vig{position:absolute;inset:0;background:
+  linear-gradient(180deg,rgba(0,0,0,.35),rgba(0,0,0,0) 22%,rgba(0,0,0,0) 70%,rgba(0,0,0,.55)),
+  radial-gradient(90% 90% at 30% 50%,rgba(0,0,0,0),rgba(0,0,0,.45)),rgba(0,0,0,.18)}
+.dz>*:not(.blur):not(.vig){position:relative}
+.dztop{display:flex;align-items:center;padding:12px 16px 0;gap:6px}
+.dztop .ib,.dzround{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:rgba(255,255,255,.85)}
+.dztop .mid{flex:1;display:flex;justify-content:center;align-items:center;gap:4px}
+.svpill{display:inline-flex;padding:4px;border-radius:22px;background:rgba(255,255,255,.12)}
+.svpill span{height:32px;padding:0 18px;border-radius:16px;display:inline-flex;align-items:center;gap:6px;font-weight:500;font-size:13px;color:rgba(255,255,255,.75)}
+.svpill span.on{background:#fff;color:#2A120A}
+.svpill span.on .ms{color:#2A120A}
+.dzmain{flex:1;display:grid;grid-template-columns:440px 1fr;gap:40px;padding:6px 40px 18px 48px;min-height:0}
+.dzleft{display:flex;flex-direction:column;justify-content:center;gap:14px}
+.artcard{width:340px;height:340px;border-radius:16px;align-self:center;position:relative;
+  background:linear-gradient(135deg,#FFB74D,#BF360C);box-shadow:0 28px 60px rgba(191,54,12,.55),0 8px 20px rgba(0,0,0,.45);transform:scale(1.02)}
+.artcard .breath{position:absolute;left:10px;bottom:10px;background:rgba(0,0,0,.35);padding:4px 8px;border-radius:10px;font-size:11px;color:rgba(255,255,255,.7);display:flex;align-items:center;gap:4px}
+.dzti{display:flex;align-items:center;gap:10px;margin-top:6px}
+.dzti .t{flex:1;min-width:0}
+.dzti b{display:block;font:800 24px/1.15 'Roboto Flex',Roboto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dzti small{font-size:15px;color:rgba(255,255,255,.72)}
+.dzround{background:rgba(255,255,255,.14)}
+.dzseek{height:16px}
+.dzseek svg{width:100%;height:16px;display:block}
+.dztimes{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:rgba(255,255,255,.7);margin-top:-6px}
+.dztimes .q{font:500 11px 'Roboto Mono';letter-spacing:.04em;padding:2px 8px;border-radius:8px;background:rgba(255,255,255,.12);color:#fff}
+.dztrans{display:flex;align-items:center;justify-content:center;gap:26px}
+.dztrans .sm{color:rgba(255,255,255,.55)}
+.dztrans .sm.on{color:#FFB77A}
+.dztrans .bg1{font-size:44px}
+.dztrans .pp{font-size:64px}
+.dzrow{display:flex;align-items:center;justify-content:space-between}
+.dzsplit{display:inline-flex;border-radius:20px;overflow:hidden}
+.dzsplit span{height:40px;width:64px;display:grid;place-items:center;background:rgba(255,255,255,.15)}
+.dzsplit i{width:1px;background:rgba(255,255,255,.10)}
+.dzrow .act{color:#FFB77A}
+.dzlyr{display:flex;flex-direction:column;justify-content:center;min-height:0}
+.dzlyr .lh{display:flex;align-items:center;gap:8px;margin-bottom:26px}
+.dzlyr .lh .chip{background:rgba(255,255,255,.12);border-color:transparent;color:#fff;height:30px}
+.dzlyr .lh .chip.on{background:#fff;color:#2A120A}
+.dzlyr .lh small{color:rgba(255,255,255,.55);font-size:12px;margin-left:auto}
+.ly{font:700 30px/1.25 'Roboto Flex',Roboto;color:rgba(255,255,255,.32);margin:0 0 16px}
+.ly.past{color:rgba(255,255,255,.22);filter:blur(1px);font-size:26px}
+.ly.near{color:rgba(255,255,255,.5)}
+.ly.now{font-size:38px;color:rgba(255,255,255,.38);text-shadow:0 0 24px rgba(255,183,122,.25)}
+.ly.now .w{color:#fff}
+.ly.now .w.part{background:linear-gradient(90deg,#fff 55%,rgba(255,255,255,.38) 55%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ly .tr{display:block;font:italic 500 17px/1.3 Roboto;color:rgba(255,255,255,.6);margin-top:6px;text-shadow:none}
+.dzdet{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+.dzdet .cell{background:#2A120A;border-radius:14px;padding:14px;color:#fff;display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.dzdet .cell small{color:rgba(255,255,255,.65);font-size:12px;line-height:1.45}
+.dzdet .cell b{font-weight:500;font-size:13px}
+.shcards{display:flex;gap:8px}
+.shcards div{width:62px;height:86px;border-radius:10px;padding:6px;font-size:10px;display:flex;align-items:flex-end;background:linear-gradient(160deg,#FFB74D,#7C2D12)}
+.shcards div.on{outline:2px solid #fff;outline-offset:2px}
+
+/* 2 · Cola */
+.qwrap{flex:1;display:flex;gap:8px;min-height:0}
+.qpanel{width:380px;flex:none;display:flex;flex-direction:column;padding:16px 12px 12px;overflow:hidden}
+.qpanel h5{font:700 22px 'Roboto Flex',Roboto;display:flex;align-items:center;gap:8px;padding:0 6px}
+.qpanel .lbl{font:500 12px Roboto;letter-spacing:.06em;text-transform:uppercase;color:var(--outline);margin:14px 8px 6px}
+.qrow{display:flex;align-items:center;gap:10px;padding:6px 6px;border-radius:10px}
+.qrow i{width:44px;height:44px;border-radius:8px;flex:none;position:relative}
+.qrow .t{flex:1;min-width:0}
+.qrow .t b{display:block;font-weight:500;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qrow .t small{color:var(--on-sv);font-size:12px}
+.qrow .h{color:var(--outline)}
+.qrow.now{background:var(--sc2)}
+.qrow.now b{color:var(--on-sc2)}
+.qrow.now i::after{content:"equalizer";font-family:'Material Symbols Outlined';position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.45);border-radius:8px;color:#fff;font-size:22px}
+.qrow.drag{background:var(--s-highest);box-shadow:0 8px 24px rgba(0,0,0,.4);transform:translateX(6px)}
+.qrow.played{opacity:.55}
+.qfoot{display:flex;gap:6px;margin-top:auto;padding-top:10px;border-top:1px solid var(--ov)}
+
+/* 3 · Artista */
+.ahero{height:300px;margin:-4px -24px 0;position:relative;display:flex;align-items:flex-end;padding:0 28px 22px;
+  background:linear-gradient(180deg,rgba(26,17,18,0) 20%,rgba(26,17,18,.9) 100%),radial-gradient(80% 120% at 70% 20%,#C2185B,#4A148C 55%,#1A1112)}
+.ahero .tag{font-size:12px;display:flex;align-items:center;gap:6px;color:#fff}
+.ahero h5{font:800 72px/1 'Roboto Flex',Roboto;color:#fff;margin:8px 0 6px;letter-spacing:-.02em}
+.ahero p{color:rgba(255,255,255,.8)}
+.ahero .canvas{position:absolute;right:20px;top:20px;display:flex;align-items:center;gap:6px;font-size:12px;color:#fff;background:rgba(0,0,0,.35);padding:6px 10px;border-radius:14px}
+.aacts{display:flex;align-items:center;gap:10px;margin:18px 0 18px}
+.aacts .bigplay{width:56px;height:56px;border-radius:50%;background:var(--primary);color:var(--on-primary);display:grid;place-items:center}
+.acols{display:grid;grid-template-columns:1.25fr 1fr;gap:28px}
+.trk{display:flex;align-items:center;gap:12px;padding:6px 6px;border-radius:10px}
+.trk .pos{width:18px;text-align:right;color:var(--on-sv);font-size:14px}
+.trk i{width:40px;height:40px;border-radius:6px;flex:none}
+.trk .t{flex:1;min-width:0}
+.trk .t b{display:block;font-weight:500;font-size:14px}
+.trk .t small{color:var(--on-sv);font-size:12px}
+.trk .n{color:var(--on-sv);font-size:12px;width:70px;text-align:right}
+.about{background:var(--s);border-radius:16px;padding:16px;display:flex;gap:14px}
+.about i{width:88px;height:88px;border-radius:50%;flex:none}
+.about p{color:var(--on-sv);font-size:13px;line-height:1.5}
+.agrid{display:grid;grid-template-columns:repeat(6,1fr);gap:16px}
+.agrid .card.round i{border-radius:50%}
+
+/* 4 · Apariencia */
+.setnav .nav a{height:42px}
+.setmain{overflow:hidden}
+.ap{display:grid;grid-template-columns:1fr 300px;gap:28px}
+.grp{font:500 12px Roboto;letter-spacing:.06em;text-transform:uppercase;color:var(--primary);margin:18px 2px 4px}
+.grp:first-child{margin-top:0}
+.pal{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+.pal span{width:44px;height:44px;border-radius:50%;position:relative;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+.pal span::before{content:"";position:absolute;inset:0 50% 50% 0;background:rgba(255,255,255,.25)}
+.pal span.on{outline:3px solid var(--on-s);outline-offset:3px}
+.pal span.on::after{content:"check";font-family:'Material Symbols Outlined';position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:22px}
+.pal span.more{background:var(--s-highest);display:grid;place-items:center;color:var(--on-sv)}
+.pal span.more::before{display:none}
+.selrow{display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:10px;background:var(--s-high);font-size:13px}
+.prev{position:sticky;top:0;background:var(--s);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.prev small{color:var(--on-sv)}
+.prev .mini{border-radius:16px;padding:12px;display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#7D3A12,#3A1C10)}
+.prev .mini i{width:44px;height:44px;border-radius:8px}
+.prev .mini b{display:block;color:#fff;font-size:14px}
+.prev .mini small{color:rgba(255,255,255,.7)}
+.prev .chips{display:flex;gap:6px;flex-wrap:wrap}
+.prev .lyrp{background:#140D0E;border-radius:14px;padding:14px;font:700 15px/1.4 'Roboto Flex';color:rgba(240,222,223,.35)}
+.prev .lyrp b{color:#fff;display:block;font-size:17px}
+.sliders{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+.sliders div{background:var(--s-high);border-radius:12px;padding:10px;font-size:12px;color:var(--on-sv);display:flex;flex-direction:column;gap:8px}
+.sliders div.on{background:var(--sc2);color:var(--on-sc2)}
+.sliders svg{width:100%;height:14px}
+
+/* 5 · Reproductor y audio */
+.qopts{display:flex;gap:8px;margin-top:8px}
+.qopts div{flex:1;background:var(--s-high);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:2px}
+.qopts div b{font-weight:500}
+.qopts div small{color:var(--on-sv);font-size:12px}
+.qopts div.on{background:var(--sc2);box-shadow:inset 0 0 0 2px var(--primary)}
+.qopts div.on b{color:var(--on-sc2)}
+.dev{display:flex;align-items:center;gap:10px;margin-top:8px;padding:10px 12px;border-radius:12px;background:var(--s-high)}
+.range{width:220px;height:4px;border-radius:2px;background:var(--s-highest);position:relative}
+.range::before{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--p,40%);background:var(--primary);border-radius:2px}
+.range::after{content:"";position:absolute;left:var(--p,40%);top:50%;width:16px;height:16px;border-radius:50%;background:var(--primary);transform:translate(-50%,-50%)}
+
+/* ── Fases 5-7 ─────────────────────────────── */
+.phase{margin-top:72px;padding:18px 22px;border-radius:16px;background:#fff;border:1px solid var(--doc-line);display:flex;gap:16px;align-items:center}
+.phase .big{font:800 44px 'Roboto Flex',Roboto;color:var(--doc-accent);line-height:1}
+.phase b{font:700 22px 'Roboto Flex',Roboto;display:block}
+.phase p{color:var(--muted);font-size:15px}
+.scrim{position:absolute;inset:36px 0 0 0;background:rgba(10,6,7,.62);display:grid;place-items:center;z-index:5}
+.dlg{background:var(--s);border-radius:28px;padding:24px;width:520px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.dlg h5{font:700 22px 'Roboto Flex',Roboto;margin-bottom:4px}
+.dlg .hint{color:var(--on-sv);font-size:13px;margin-bottom:16px}
+.dlg .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.field{border:1px solid var(--outline);border-radius:8px;padding:10px 14px;margin-top:12px;position:relative}
+.field label{position:absolute;top:-9px;left:10px;background:var(--s);padding:0 4px;font-size:12px;color:var(--primary)}
+.field.focus{border:2px solid var(--primary)}
+.field.dim label{color:var(--on-sv)}
+.seg2{display:flex;border:1px solid var(--outline);border-radius:20px;overflow:hidden;margin-top:14px}
+.seg2 span{flex:1;height:40px;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:500;font-size:13px;border-left:1px solid var(--outline)}
+.seg2 span:first-child{border-left:none}
+.seg2 span.on{background:var(--sc2);color:var(--on-sc2)}
+.muted{color:var(--on-sv)}
+.row{display:flex;align-items:center;gap:10px}
+.grow{flex:1}
+
+/* 5.1 Video */
+.vid{width:560px;aspect-ratio:16/9;border-radius:18px;position:relative;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.5);
+  background:linear-gradient(160deg,rgba(0,0,0,.0),rgba(0,0,0,.55)),radial-gradient(60% 80% at 30% 40%,#F48FB1,#6A1B4D 55%,#1B0A12)}
+.vid::before{content:"";position:absolute;left:52%;top:18%;width:150px;height:220px;border-radius:70px 70px 20px 20px;background:linear-gradient(#2A0F1C,#12060B);opacity:.85}
+.vid::after{content:"";position:absolute;left:46%;top:8%;width:90px;height:90px;border-radius:50%;background:#2A0F1C;opacity:.9}
+.vid .hud{position:absolute;left:12px;right:12px;bottom:10px;display:flex;align-items:center;gap:8px;font-size:12px;z-index:1}
+.vid .hud .p{background:rgba(0,0,0,.5);border-radius:8px;padding:3px 8px;font:500 11px 'Roboto Mono'}
+.vid .hud .ms{background:rgba(0,0,0,.45);border-radius:50%;width:32px;height:32px;display:grid;place-items:center;font-size:18px}
+.dzmain.v{grid-template-columns:560px 1fr}
+
+/* 5.2 Visualizador */
+.viz{flex:1;position:relative;overflow:hidden;background:radial-gradient(70% 70% at 50% 45%,#3B1426,#120709 70%);color:#fff}
+.viz .rays{position:absolute;inset:0;background:repeating-conic-gradient(from 0deg at 50% 46%,rgba(255,138,128,.07) 0 6deg,transparent 6deg 18deg)}
+.viz .ring{position:absolute;left:50%;top:46%;width:360px;height:360px;border-radius:50%;transform:translate(-50%,-50%);
+  box-shadow:0 0 0 2px rgba(255,178,185,.35),0 0 80px 10px rgba(255,138,128,.25),inset 0 0 60px rgba(255,138,128,.25)}
+.viz .words{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.viz .w1{font:900 92px/0.95 'Roboto Flex',Roboto;letter-spacing:-.02em;text-transform:uppercase}
+.viz .w1 em{font-style:normal;color:#FFB2B9;display:inline-block;transform:rotate(-4deg) scale(1.08)}
+.viz .w0{font:700 26px 'Roboto Flex';color:rgba(255,255,255,.35);margin-bottom:10px;letter-spacing:.2em;text-transform:uppercase}
+.viz .w2{font:700 30px 'Roboto Flex';color:rgba(255,255,255,.5);margin-top:16px}
+.viz .dots i{position:absolute;width:6px;height:6px;border-radius:50%;background:#FFB2B9;opacity:.6}
+.viz .top{position:absolute;top:16px;left:16px;right:16px;display:flex;align-items:center;gap:8px}
+.viz .top .chip{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.15);color:#fff}
+.viz .top .chip.on{background:#fff;color:#2A120A}
+.viz .bot{position:absolute;left:24px;right:24px;bottom:20px;display:flex;align-items:center;gap:16px}
+.viz .bot .mini{display:flex;align-items:center;gap:10px}
+.viz .bot .mini i{width:44px;height:44px;border-radius:8px}
+.viz .bot .mini small{display:block;color:rgba(255,255,255,.6)}
+.viz .eqbars{display:flex;align-items:flex-end;gap:3px;height:34px;margin:0 auto}
+.viz .eqbars span{width:5px;border-radius:3px;background:linear-gradient(#FFB2B9,#9C3F48)}
+
+/* 5.3 Mini reproductor */
+.desk{flex:1;position:relative;overflow:hidden;background:
+  radial-gradient(60% 70% at 70% 30%,#2E4A6B,transparent 70%),radial-gradient(60% 60% at 20% 80%,#3D2B4F,transparent 70%),#141A24}
+.desk .appwin{position:absolute;left:40px;top:30px;width:640px;height:420px;border-radius:10px;background:#1F2530;box-shadow:0 20px 50px rgba(0,0,0,.5);
+  color:#C9D1DC;padding:0;overflow:hidden;font-size:12px}
+.desk .appwin .tb{height:32px;background:#262D39;display:flex;align-items:center;padding:0 12px;gap:8px}
+.desk .appwin .ln{height:10px;border-radius:5px;background:#2C3442;margin:12px 16px}
+.taskbar{position:absolute;left:0;right:0;bottom:0;height:48px;background:rgba(32,32,36,.85);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;gap:6px;color:#fff}
+.taskbar .ti{width:40px;height:40px;border-radius:6px;display:grid;place-items:center}
+.taskbar .ti.on{background:rgba(255,255,255,.08);position:relative}
+.taskbar .ti.on::after{content:"";position:absolute;bottom:2px;left:16px;width:8px;height:3px;border-radius:2px;background:#FFB2B9}
+.taskbar .dl{width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,var(--primary),var(--tertiary))}
+.taskbar .tray{position:absolute;right:12px;display:flex;align-items:center;gap:12px;font-size:12px}
+.mp{position:absolute;border-radius:16px;overflow:hidden;color:#fff;box-shadow:0 24px 60px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.08)}
+.mp .bgc{position:absolute;inset:0;background:linear-gradient(135deg,#B04A3A,#3A1410)}
+.mp>*:not(.bgc){position:relative}
+.mp.compact{width:340px;height:88px;display:flex;align-items:center;gap:12px;padding:12px}
+.mp.compact i{width:64px;height:64px;border-radius:10px;flex:none}
+.mp .t{flex:1;min-width:0}
+.mp .t b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp .t small{color:rgba(255,255,255,.7)}
+.mp .pb{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.2)}
+.mp .pb::before{content:"";position:absolute;left:0;top:0;bottom:0;width:32%;background:#fff}
+.mp.big{width:300px;height:390px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.mp.big i{width:100%;aspect-ratio:1;border-radius:12px;max-height:200px}
+.mp .ctr{display:flex;align-items:center;justify-content:center;gap:18px}
+.mp .lyl{font:700 16px 'Roboto Flex';text-align:center}
+.mp .lyl small{display:block;font:500 12px Roboto;color:rgba(255,255,255,.5)}
+.mp .hov{position:absolute;top:8px;right:8px;display:flex;gap:2px;z-index:2}
+.mp .hov span{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.35);font-size:16px}
+.callout{position:absolute;background:#fff;color:var(--ink);border-radius:10px;padding:6px 10px;font-size:12px;box-shadow:0 6px 18px rgba(0,0,0,.3);max-width:220px}
+
+/* 5.4 Compartir / traducir */
+.shrow{display:flex;gap:14px;justify-content:center;margin:6px 0 14px}
+.shc{width:150px;height:240px;border-radius:18px;padding:14px;display:flex;flex-direction:column;justify-content:flex-end;color:#fff;position:relative;overflow:hidden;opacity:.55;transform:scale(.92)}
+.shc.on{opacity:1;transform:none;box-shadow:0 0 0 3px var(--primary)}
+.shc .ar{position:absolute;top:14px;left:14px;right:14px;aspect-ratio:1;border-radius:12px}
+.shc b{font-size:13px}.shc small{font-size:11px;opacity:.75}
+.shc .q{font:800 17px/1.15 'Roboto Flex';margin-bottom:auto;margin-top:6px}
+.shc .logo{display:flex;align-items:center;gap:5px;font-size:10px;opacity:.8;margin-top:8px}
+.shc .logo i{width:10px;height:10px;border-radius:3px;background:linear-gradient(135deg,var(--primary),var(--tertiary))}
+.dots2{display:flex;justify-content:center;gap:6px}
+.dots2 i{width:6px;height:6px;border-radius:50%;background:var(--ov)}
+.dots2 i.on{background:var(--primary);width:18px;border-radius:3px}
+.pop{position:absolute;background:var(--s-high);border-radius:16px;padding:8px;width:260px;box-shadow:0 20px 50px rgba(0,0,0,.5);z-index:4;color:var(--on-s)}
+.pop .it{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;font-size:14px}
+.pop .it.on{background:var(--sc2);color:var(--on-sc2)}
+.pop .sep{height:1px;background:var(--ov);margin:6px 4px}
+.pop .cap{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--outline);padding:6px 12px 2px}
+
+/* 6.1 Estadísticas */
+.stgrid{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:14px}
+.stc{background:var(--s);border-radius:20px;padding:18px}
+.stc .lab{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--outline)}
+.stc .num{font:800 46px/1 'Roboto Flex',Roboto;margin:8px 0 2px}
+.stc .num small{font:500 16px Roboto;color:var(--on-sv)}
+.bars{display:flex;align-items:flex-end;gap:8px;height:110px;margin-top:14px}
+.bars span{flex:1;border-radius:6px 6px 2px 2px;background:var(--s-highest);position:relative}
+.bars span.on{background:var(--primary)}
+.bars span em{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-style:normal;font-size:11px;color:var(--on-sv)}
+.toplist{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.toplist div{display:flex;align-items:center;gap:10px}
+.toplist .n{width:18px;font:700 14px 'Roboto Flex';color:var(--outline)}
+.toplist i{width:36px;height:36px;border-radius:50%}
+.toplist i.sq{border-radius:6px}
+.toplist b{font-weight:500;flex:1}
+.toplist small{color:var(--on-sv)}
+.heat{display:grid;grid-template-columns:repeat(26,1fr);gap:3px;margin-top:12px}
+.heat i{aspect-ratio:1;border-radius:3px;background:var(--s-highest)}
+.heat i.a{background:#7D2833}.heat i.b{background:#B5505C}.heat i.c{background:#FFB2B9}
+
+/* 6.2 Máquina del tiempo */
+.tm{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.yearline{display:flex;align-items:center;gap:0;margin:8px 0 18px;position:relative}
+.yearline::before{content:"";position:absolute;left:0;right:0;top:50%;height:2px;background:var(--ov)}
+.yearline span{position:relative;flex:1;text-align:center;font:600 13px 'Roboto Flex';color:var(--on-sv);padding-top:22px}
+.yearline span::before{content:"";position:absolute;top:2px;left:50%;width:10px;height:10px;border-radius:50%;background:var(--s-highest);transform:translateX(-50%)}
+.yearline span.on{color:var(--primary);font-size:16px}
+.yearline span.on::before{width:18px;height:18px;top:-2px;background:var(--primary);box-shadow:0 0 0 6px rgba(255,178,185,.18)}
+.tmhero{border-radius:24px;padding:24px;height:300px;display:flex;flex-direction:column;justify-content:flex-end;position:relative;overflow:hidden;
+  background:radial-gradient(80% 90% at 80% 10%,#E8C08E,#7D2833 55%,#2A1316)}
+.tmhero h5{font:900 64px/1 'Roboto Flex'}
+.tmhero p{color:rgba(255,255,255,.8)}
+.tmhero .row{margin-top:14px}
+
+/* 6.3 Nueva playlist */
+.cover{width:132px;height:132px;border-radius:16px;flex:none;display:grid;grid-template-columns:1fr 1fr;overflow:hidden;position:relative}
+.cover i{display:block}
+.cover .ed{position:absolute;right:6px;bottom:6px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.55);display:grid;place-items:center;color:#fff}
+
+/* 6.4 Descargas */
+.dlhead{display:flex;align-items:flex-end;gap:16px;margin:6px 0 16px}
+.dlhead h3{font:700 32px 'Roboto Flex',Roboto}
+.store{background:var(--s);border-radius:16px;padding:14px 16px;margin-bottom:14px}
+.store .sb{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--s-highest);margin:10px 0 6px}
+.store .sb i:nth-child(1){background:var(--primary)}.store .sb i:nth-child(2){background:var(--tertiary)}
+.legend2{display:flex;gap:16px;font-size:12px;color:var(--on-sv)}
+.legend2 span::before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;background:var(--c)}
+.dlrow{display:grid;grid-template-columns:44px 1fr 130px 210px 40px;align-items:center;gap:12px;padding:8px 10px;border-radius:12px}
+.dlrow:hover,.dlrow.hl{background:var(--s)}
+.dlrow i{width:44px;height:44px;border-radius:8px}
+.dlrow .t b{display:block;font-weight:500}
+.dlrow .t small{color:var(--on-sv);font-size:12px}
+.qtag{font:500 11px 'Roboto Mono';padding:3px 8px;border-radius:8px;background:var(--s-high);color:var(--on-sv);justify-self:start}
+.qtag.hi{background:rgba(232,192,142,.18);color:var(--tertiary)}
+.prog{height:6px;border-radius:3px;background:var(--s-highest);position:relative}
+.prog::before{content:"";position:absolute;inset:0 auto 0 0;width:var(--p);border-radius:3px;background:var(--primary)}
+.dlstate{font-size:12px;color:var(--on-sv);display:flex;align-items:center;gap:6px}
+.dlstate.ok{color:var(--ok)}
+
+/* 7.1 Escuchar juntos */
+.ltw{display:grid;grid-template-columns:1fr 340px;gap:16px}
+.ltroom{background:var(--s);border-radius:20px;padding:20px}
+.qrbig{width:168px;height:168px;border-radius:16px;background:#fff;padding:10px;flex:none;position:relative}
+.qrbig .g{width:100%;height:100%;background:
+  conic-gradient(from 90deg at 30% 30%,#000 25%,#fff 0 50%,#000 0 75%,#fff 0) 0 0/18px 18px}
+.qrbig .c{position:absolute;width:42px;height:42px;border:7px solid #000;border-radius:6px;background:#fff}
+.qrbig .c::after{content:"";position:absolute;inset:5px;background:#000;border-radius:2px}
+.qrbig .lg{position:absolute;left:50%;top:50%;width:34px;height:34px;transform:translate(-50%,-50%);border-radius:9px;background:linear-gradient(135deg,var(--primary),var(--tertiary));border:4px solid #fff}
+.code{font:700 30px 'Roboto Mono';letter-spacing:.12em}
+.people{display:flex;margin-top:10px}
+.people .avatar{width:34px;height:34px;font-size:13px;border:3px solid var(--s);margin-left:-8px}
+.people .avatar:first-child{margin-left:0}
+.vote{background:var(--s-high);border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:10px;margin-top:8px}
+.vote i{width:40px;height:40px;border-radius:8px;flex:none}
+.vote .t{flex:1;min-width:0}
+.vote .t b{display:block;font-weight:500;font-size:13px}
+.vote .t small{color:var(--on-sv);font-size:12px}
+.vb{display:flex;gap:6px}
+.vb span{height:30px;padding:0 10px;border-radius:15px;display:inline-flex;align-items:center;gap:4px;font-size:12px;background:var(--s-highest)}
+.vb span.on{background:var(--sc2);color:var(--on-sc2)}
+.vmeter{height:4px;border-radius:2px;background:var(--s-highest);margin-top:6px;position:relative}
+.vmeter::before{content:"";position:absolute;inset:0 auto 0 0;width:var(--p);background:var(--ok);border-radius:2px}
+
+/* 7.2 Windows */
+.smtc{position:absolute;left:50%;top:40px;transform:translateX(-50%);width:420px;background:rgba(44,44,48,.92);backdrop-filter:blur(30px);border-radius:10px;padding:14px;color:#fff;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.smtc .r{display:flex;align-items:center;gap:12px}
+.smtc i{width:72px;height:72px;border-radius:6px;flex:none}
+.smtc .src{font-size:11px;color:rgba(255,255,255,.65);display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.smtc .src em{width:14px;height:14px;border-radius:4px;background:linear-gradient(135deg,var(--primary),var(--tertiary))}
+.smtc .vol{background:rgba(255,255,255,.2);width:auto;flex:1}
+.thumb{position:absolute;bottom:56px;left:50%;transform:translateX(-40%);width:240px;background:rgba(44,44,48,.95);border-radius:10px;padding:8px;color:#fff;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.thumb .hd{display:flex;align-items:center;gap:6px;font-size:12px;padding:2px 4px 8px}
+.thumb .hd em{width:14px;height:14px;border-radius:4px;background:linear-gradient(135deg,var(--primary),var(--tertiary))}
+.thumb .pv{height:120px;border-radius:6px;background:linear-gradient(135deg,#B04A3A,#3A1410);display:flex;align-items:flex-end;padding:8px;font-size:12px}
+.thumb .tbb{display:flex;justify-content:center;gap:4px;margin-top:6px}
+.thumb .tbb span{width:36px;height:30px;border-radius:4px;display:grid;place-items:center;font-size:18px}
+.thumb .tbb span:hover,.thumb .tbb span.h{background:rgba(255,255,255,.1)}
+.traymenu{position:absolute;right:70px;bottom:56px;width:250px;background:rgba(44,44,48,.95);border-radius:8px;padding:6px;color:#fff;font-size:13px;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.traymenu .it{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:4px}
+.traymenu .it.h{background:rgba(255,255,255,.08)}
+.traymenu .np2{display:flex;gap:10px;align-items:center;padding:8px 10px}
+.traymenu .np2 i{width:36px;height:36px;border-radius:4px}
+.traymenu .np2 small{display:block;color:rgba(255,255,255,.6)}
+.traymenu .sep{height:1px;background:rgba(255,255,255,.1);margin:4px 0}
+.toast{position:absolute;right:12px;bottom:60px;width:340px;background:rgba(44,44,48,.95);border-radius:8px;padding:12px;color:#fff;font-size:13px;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.toast .h{display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.65);margin-bottom:8px}
+.toast .h em{width:14px;height:14px;border-radius:4px;background:linear-gradient(135deg,var(--primary),var(--tertiary))}
+.toast .r{display:flex;gap:10px;align-items:center}
+.toast i{width:48px;height:48px;border-radius:4px}
+.toast small{display:block;color:rgba(255,255,255,.7)}
+
+/* 7.3 Atajos e integraciones / 7.4 Acerca de */
+.kbrow{display:flex;align-items:center;gap:14px;padding:11px 2px;border-top:1px solid var(--ov)}
+.kbrow:first-of-type{border-top:none}
+.kbrow .t{flex:1}
+.kbrow .t b{font-weight:500;display:block}
+.kbrow .t small{color:var(--on-sv);font-size:12px}
+kbd{font:500 12px 'Roboto Mono';background:var(--s-high);border:1px solid var(--ov);border-bottom-width:3px;border-radius:6px;padding:3px 8px;color:var(--on-s)}
+.glob{font-size:11px;color:var(--tertiary);border:1px solid rgba(232,192,142,.4);border-radius:8px;padding:1px 6px;margin-left:6px}
+.about{display:flex;align-items:center;gap:18px;margin-bottom:16px}
+.about .lg{width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,var(--primary),var(--tertiary));display:grid;place-items:center;color:var(--on-primary)}
+.about h4{font:800 30px 'Roboto Flex'}
+.upd{background:var(--sc2);color:var(--on-sc2);border-radius:20px;padding:18px 20px;margin-bottom:14px}
+.upd ul{margin:8px 0 0 18px;font-size:13px;color:var(--on-sc2);opacity:.9}
+.upd .prog{margin-top:12px;background:rgba(255,255,255,.15)}
+</style>
+</head>
+<body>
+<main class="doc">
+<header>
+  <div class="kicker">Dezzy · escritorio · bocetos fases 5, 6 y 7</div>
+  <h1>Lo que falta para publicar el escritorio</h1>
+  <p class="lead">Con la fase 4 el escritorio ya reproduce, tiene cola, artista y ajustes. Quedan botones marcados «Pronto» y partes de Android que aún no tienen versión de escritorio. Estas tres fases las cierran. Cada una se puede programar y probar sola, y los nombres salen de Dezzy para Android.</p>
+  <div class="alert">
+    <span class="ms s28" style="color:var(--doc-accent)">flag</span>
+    <div>
+      <b>Orden propuesto</b>
+      <p>La 5 termina «Reproduciendo». La 6 trae tu historia musical, las playlists propias y las descargas. La 7 es todo lo que hace que se sienta una app de Windows: controles del sistema, atajos, integraciones, salas con QR y actualizaciones. Después de la 7 queda el instalador.</p>
+    </div>
+  </div>
+  <nav class="toc">
+    <a href="#video"><span class="ms">smart_display</span>5.1 · Video</a>
+    <a href="#visualizador"><span class="ms">auto_awesome</span>5.2 · Visualizador</a>
+    <a href="#mini"><span class="ms">picture_in_picture_alt</span>5.3 · Mini reproductor</a>
+    <a href="#compartir"><span class="ms">ios_share</span>5.4 · Compartir y traducir</a>
+    <a href="#stats"><span class="ms">insights</span>6.1 · Estadísticas</a>
+    <a href="#tiempo"><span class="ms">history_toggle_off</span>6.2 · Máquina del tiempo</a>
+    <a href="#playlist"><span class="ms">playlist_add</span>6.3 · Nueva playlist</a>
+    <a href="#descargas"><span class="ms">download</span>6.4 · Descargas</a>
+    <a href="#juntos"><span class="ms">groups</span>7.1 · Sala con QR y votos</a>
+    <a href="#windows"><span class="ms">desktop_windows</span>7.2 · Windows</a>
+    <a href="#atajos"><span class="ms">keyboard</span>7.3 · Atajos e integraciones</a>
+    <a href="#acerca"><span class="ms">info</span>7.4 · Acerca de</a>
+  </nav>
+</header>
+
+<!-- ═════════ FASE 5 ═════════ -->
+<div class="phase"><span class="big">5</span><div><b>Reproduciendo, completo</b><p>Se activan Video, el visualizador ✨, el mini reproductor, Compartir, Traducir, Me gusta y el fundido entre canciones.</p></div></div>
+
+<section id="video">
+  <h2><span class="n">5.1</span>Video</h2>
+  <p class="sub">La píldora Canción/Video ya funciona. El videoclip ocupa la tarjeta flotante, que se ensancha a 16:9, y la letra sigue a la derecha. El audio no se corta al cambiar: el vídeo se engancha en el mismo segundo.</p>
+  <div class="stage"><div class="win" data-full>
+    <div class="dz">
+      <div class="blur"></div><div class="vig"></div>
+      <div class="dztop">
+        <span class="ib"><span class="ms">keyboard_arrow_down</span></span>
+        <div class="mid">
+          <span class="ib"><span class="ms">share</span></span>
+          <span class="svpill"><span><span class="ms s18">music_note</span>Canción</span><span class="on"><span class="ms s18">smart_display</span>Video</span></span>
+          <span class="ib"><span class="ms">auto_awesome</span></span>
+        </div>
+        <span class="ib"><span class="ms">open_in_new</span></span>
+      </div>
+      <div class="dzmain v">
+        <div class="dzleft">
+          <div class="vid"><div class="hud"><span class="p">1080p</span><span class="grow"></span><span class="ms">closed_caption</span><span class="ms">fullscreen</span></div></div>
+          <div class="dzti">
+            <div class="t"><b>Si Antes Te Hubiera Conocido</b><small>Karol G · Videoclip oficial</small></div>
+            <span class="dzround"><span class="ms">more_horiz</span></span>
+            <span class="dzround"><span class="ms f" style="color:#FF8A80">favorite</span></span>
+          </div>
+          <div class="dzseek"><svg viewBox="0 0 560 16" preserveAspectRatio="none"><path d="M2 8 Q7 2 12 8 T22 8 T32 8 T42 8 T52 8 T62 8 T72 8 T82 8 T92 8 T102 8 T112 8 T122 8 T132 8 T142 8 T152 8 T162 8 T172 8" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/><line x1="178" y1="8" x2="558" y2="8" stroke="rgba(255,255,255,.28)" stroke-width="3.5" stroke-linecap="round"/><circle cx="176" cy="8" r="7" fill="#fff"/></svg></div>
+          <div class="dztimes"><span>1:02</span><span class="q">VIDEO • 1080p</span><span>3:32</span></div>
+          <div class="dztrans">
+            <span class="ms sm on">shuffle</span><span class="ms f bg1">fast_rewind</span><span class="ms f pp">pause</span><span class="ms f bg1">fast_forward</span><span class="ms sm">repeat</span>
+          </div>
+        </div>
+        <div class="dzlyr">
+          <div class="lh">
+            <span class="chip on"><span class="ms s16">graphic_eq</span>Sincronizada</span>
+            <span class="chip"><span class="ms s16">translate</span>Traducir</span>
+            <small>La letra va con el audio, no con el vídeo</small>
+          </div>
+          <p class="ly near">no estaría así de perdido</p>
+          <p class="ly now"><span class="w">ahora</span> <span class="w">todo</span> <span class="w part">tiene</span> sentido</p>
+          <p class="ly near">cuando bailas junto a mí</p>
+          <p class="ly">y el mundo se nos borra</p>
+        </div>
+      </div>
+    </div>
+  </div></div>
+  <div class="notes">
+    <div><span class="ms s18">fullscreen</span><span>Doble clic o F pone el vídeo a pantalla completa con los controles ocultos. Al mover el ratón vuelven 3 s.</span></div>
+    <div><span class="ms s18">hd</span><span>La calidad la elige el ajuste «Calidad de vídeo» (Auto, 480p, 720p, 1080p). En Auto se ajusta a la conexión.</span></div>
+    <div><span class="ms s18">music_off</span><span>Si la canción no tiene videoclip, la opción Video aparece gris con «Sin videoclip» y no cambia nada.</span></div>
+  </div>
+  <div class="android"><span class="ms">phone_android</span><span><b>Conexión con Android:</b> el mismo flujo que el móvil, el cliente VISIONOS con HLS para el videoclip, y <code>SongVideoToggle</code>. En el escritorio el HLS se reproduce con el reproductor de vídeo de Chromium, sin descargar nada nuevo.</span></div>
+</section>
+
+<section id="visualizador">
+  <h2><span class="n">5.2</span>Visualizador ✨</h2>
+  <p class="sub">Es el AI Canvas del móvil: tipografía en movimiento que baila con la letra y el ritmo. Ocupa toda la ventana y, con F11, toda la pantalla, para dejarlo puesto en una fiesta o en la tele.</p>
+  <div class="stage"><div class="win" data-full>
+    <div class="viz">
+      <div class="rays"></div><div class="ring"></div>
+      <div class="dots"><i style="left:22%;top:30%"></i><i style="left:70%;top:22%"></i><i style="left:80%;top:60%;width:10px;height:10px"></i><i style="left:15%;top:68%;width:4px;height:4px"></i><i style="left:58%;top:78%"></i><i style="left:35%;top:16%;width:3px;height:3px"></i></div>
+      <div class="words"><div><div class="w0">no estaría así de perdido</div><div class="w1">ahora todo<br><em>tiene</em> sentido</div><div class="w2">cuando bailas junto a mí</div></div></div>
+      <div class="top">
+        <span class="chip on"><span class="ms s16">text_fields</span>Tipográfico</span>
+        <span class="chip"><span class="ms s16">blur_circular</span>Aura</span>
+        <span class="chip"><span class="ms s16">graphic_eq</span>Ondas</span>
+        <span class="grow"></span>
+        <span class="chip"><span class="ms s16">palette</span>Color de la portada</span>
+        <span class="chip"><span class="ms s16">fullscreen</span>F11</span>
+        <span class="chip"><span class="ms s16">close</span>Esc</span>
+      </div>
+      <div class="bot">
+        <div class="mini"><i class="c2"></i><div><b>Si Antes Te Hubiera Conocido</b><small>Karol G</small></div></div>
+        <div class="eqbars"><span style="height:40%"></span><span style="height:70%"></span><span style="height:100%"></span><span style="height:55%"></span><span style="height:80%"></span><span style="height:35%"></span><span style="height:90%"></span><span style="height:60%"></span><span style="height:45%"></span><span style="height:75%"></span></div>
+        <span class="ms s28">skip_previous</span><span class="ms f s32">pause_circle</span><span class="ms s28">skip_next</span>
+      </div>
+    </div>
+  </div></div>
+  <div class="notes">
+    <div><span class="ms s18">text_fields</span><span><b>Tipográfico</b> es el modo v1 del móvil. <b>Aura</b> y <b>Ondas</b> son variantes sin letra para canciones instrumentales, y se eligen solas si no hay letra.</span></div>
+    <div><span class="ms s18">visibility_off</span><span>Los controles y la barra de arriba se esconden a los 3 s sin mover el ratón. Espacio sigue pausando.</span></div>
+    <div><span class="ms s18">motion_photos_off</span><span>Si Windows tiene «Efectos de animación» desactivados, las palabras cambian con un fundido, sin saltos ni giros.</span></div>
+  </div>
+  <div class="android"><span class="ms">phone_android</span><span><b>Conexión con Android:</b> mismo motor procedural que el AI Canvas (v1). Se abre desde ✨ en Reproduciendo, igual que desde las letras en el móvil. Todo se dibuja en un canvas 2D, sin vídeo ni red.</span></div>
+</section>
+
+<section id="mini">
+  <h2><span class="n">5.3</span>Mini reproductor</h2>
+  <p class="sub">El icono ↗ de Reproduciendo y la tecla M sacan una ventanita siempre encima de las demás, para seguir trabajando. Tiene dos tamaños: barra y tarjeta con la línea de letra actual.</p>
+  <div class="stage"><div class="win" data-full>
+    <div class="desk">
+      <div class="appwin"><div class="tb"><span class="ms s16">description</span>Informe trimestral.docx</div><div class="ln" style="width:60%"></div><div class="ln"></div><div class="ln" style="width:80%"></div><div class="ln" style="width:70%"></div><div class="ln"></div><div class="ln" style="width:40%"></div></div>
+      <div class="mp compact" style="left:720px;top:40px"><div class="bgc"></div><i class="c2"></i><div class="t"><b>Si Antes Te Hubiera Conocido</b><small>Karol G</small></div><span class="ms">skip_previous</span><span class="ms f s28">pause</span><span class="ms">skip_next</span><div class="pb"></div></div>
+      <div class="callout" style="left:720px;top:138px">Barra: 340 × 88. Se arrastra desde cualquier sitio y se pega a los bordes.</div>
+      <div class="mp big" style="left:860px;top:190px"><div class="bgc"></div>
+        <div class="hov"><span class="ms">favorite</span><span class="ms">open_in_full</span><span class="ms">close</span></div>
+        <i class="c2"></i>
+        <div class="t" style="text-align:center"><b>Si Antes Te Hubiera Conocido</b><small>Karol G</small></div>
+        <div class="lyl">ahora todo tiene sentido<small>cuando bailas junto a mí</small></div>
+        <div class="ctr"><span class="ms">skip_previous</span><span class="ms f s32">pause_circle</span><span class="ms">skip_next</span></div>
+        <div class="pb"></div>
+      </div>
+      <div class="callout" style="left:600px;top:470px">Tarjeta: al pasar el ratón aparecen ♥, volver a la app y cerrar.</div>
+      <div class="taskbar"><span class="ti"><span class="ms s20">grid_view</span></span><span class="ti"><span class="ms s20">search</span></span><span class="ti"><span class="ms s20">folder</span></span><span class="ti"><span class="ms s20">description</span></span><span class="ti on"><span class="dl"></span></span>
+        <div class="tray"><span class="ms s16">wifi</span><span class="ms s16">volume_up</span><span>18:42</span></div></div>
+    </div>
+  </div></div>
+  <div class="notes">
+    <div><span class="ms s18">swap_horiz</span><span>Doble clic en la mini ventana cambia entre barra y tarjeta. Recuerda su tamaño y posición, también con varios monitores.</span></div>
+    <div><span class="ms s18">opacity</span><span>La rueda del ratón encima sube o baja el volumen. Con Ctrl + rueda la ventana se vuelve más transparente.</span></div>
+    <div><span class="ms s18">close</span><span>Cerrarla no para la música: vuelve la ventana grande, minimizada en la barra de tareas.</span></div>
+  </div>
+  <div class="android"><span class="ms">phone_android</span><span><b>Conexión con Android:</b> es el equivalente al modo imagen en imagen y al reproductor mini. Es una segunda ventana de Electron, <code>alwaysOnTop</code> y sin marco, que comparte el mismo <code>store/player</code>, así que no hay dos reproductores.</span></div>
+</section>
+
+<section id="compartir">
+  <h2><span class="n">5.4</span>Compartir y traducir</h2>
+  <p class="sub">Compartir abre el carrusel de tarjetas de Android: Canción, Letra (con las líneas que elijas) y Canvas. En el escritorio la tarjeta se copia al portapapeles o se guarda como PNG. Traducir abre un menú con el idioma de destino.</p>
+  <div class="stage"><div class="win" data-full>
+    <div class="dz">
+      <div class="blur"></div><div class="vig"></div>
+      <div class="dztop"><span class="ib"><span class="ms">keyboard_arrow_down</span></span><div class="mid"><span class="ib"><span class="ms">share</span></span><span class="svpill"><span class="on"><span class="ms s18">music_note</span>Canción</span><span><span class="ms s18">smart_display</span>Video</span></span><span class="ib"><span class="ms">auto_awesome</span></span></div><span class="ib"><span class="ms">open_in_new</span></span></div>
+      <div class="dzmain">
+        <div class="dzleft"><div class="artcard"></div></div>
+        <div class="dzlyr">
+          <div class="lh"><span class="chip on"><span class="ms s16">graphic_eq</span>Sincronizada</span><span class="chip on"><span class="ms s16">translate</span>Inglés</span></div>
+          <p class="ly now"><span class="w">ahora</span> <span class="w">todo</span> tiene sentido</p>
+        </div>
+      </div>
+      <div class="pop" style="left:660px;top:150px">
+        <div class="cap">Traducir a</div>
+        <div class="it on"><span class="ms s18">check</span>Inglés</div>
+        <div class="it"><span class="ms s18" style="opacity:0">check</span>Portugués</div>
+        <div class="it"><span class="ms s18" style="opacity:0">check</span>Francés</div>
+        <div class="it"><span class="ms s18" style="opacity:0">check</span>Japonés</div>
+        <div class="sep"></div>
+        <div class="it"><span class="ms s18">visibility_off</span>Quitar traducción</div>
+      </div>
+    </div>
+    <div class="scrim" style="left:auto;right:0;width:620px;background:transparent;place-items:center end;padding-right:24px">
+      <div class="dlg" style="width:580px">
+        <h5>Compartir</h5>
+        <p class="hint">Elige una tarjeta. Las flechas ← → cambian de tarjeta.</p>
+        <div class="shrow">
+          <div class="shc c2"><span class="ar c2" style="filter:brightness(1.2)"></span><b>Si Antes Te Hubiera Conocido</b><small>Karol G</small><span class="logo"><i></i>Dezzy</span></div>
+          <div class="shc on" style="background:linear-gradient(160deg,#B04A3A,#2A1012)"><small>Karol G · Si Antes Te Hubiera Conocido</small><span class="q">«ahora todo tiene sentido, cuando bailas junto a mí»</span><span class="logo"><i></i>Dezzy</span></div>
+          <div class="shc c7"><b>Canvas</b><small>Vídeo de 8 s</small><span class="logo"><i></i>Dezzy</span></div>
+        </div>
+        <div class="dots2"><i></i><i class="on"></i><i></i></div>
+        <div class="acts">
+          <span class="btn txt"><span class="ms s20">link</span>Copiar enlace</span>
+          <span class="grow"></span>
+          <span class="btn out"><span class="ms s20">download</span>Guardar PNG</span>
+          <span class="btn fill"><span class="ms s20">content_copy</span>Copiar imagen</span>
+        </div>
+      </div>
+    </div>
+  </div></div>
+  <div class="notes">
+    <div><span class="ms s18">format_quote</span><span>En la tarjeta Letra se eligen hasta 4 líneas haciendo clic en ellas en la propia letra, como en el móvil.</span></div>
+    <div><span class="ms s18">translate</span><span>La traducción aparece debajo de la línea activa. El idioma se recuerda, y «Quitar traducción» la apaga.</span></div>
+    <div><span class="ms s18">favorite</span><span>♥ guarda la canción en «Me gusta» y se sincroniza con tu biblioteca, así que el móvil la ve al momento.</span></div>
+    <div><span class="ms s18">swap_calls</span><span>«Fundido entre canciones» (Ajustes › Reproductor) se activa con 0–12 s. Cuando el fundido está activo, el modo «En ambos» de Dezzy Connect lo desactiva para no perder la sincronía.</span></div>
+  </div>
+  <div class="android"><span class="ms">phone_android</span><span><b>Conexión con Android:</b> mismas tarjetas que <code>ShareSheet</code> (Canción/Letra/Canvas) y mismo traductor de letras. La imagen se pinta con un canvas en el proceso de la ventana, no hace falta ningún servicio externo.</span></div>
+</section>
+
+<!-- ═════════ FASE 6 ═════════ -->
+<div class="phase"><span class="big">6</span><div><b>Tu música</b><p>Estadísticas con racha, Máquina del tiempo, playlists propias y Descargas con lossless. Las estadísticas se calculan con lo que escuchas en el escritorio y en el móvil.</p></div></div>
+
+<section id="stats">
+  <h2><span class="n">6.1</span>Estadísticas</h2>
+  <p class="sub">Es una entrada nueva en la barra lateral, en Biblioteca › Estadísticas. Muestra el tiempo escuchado, la racha, el top de artistas y canciones y el mapa de calor del año. Se elige el periodo arriba.</p>
+  <div class="stage"><div class="win" data-nav="Biblioteca">
+    <div class="body"><div class="panel main"><div class="topbar" data-top></div><div class="scroll">
+      <div class="hello"><div><h3>Estadísticas</h3><p>Escritorio + móvil, este mes</p></div>
+        <div class="row"><span class="chip">Semana</span><span class="chip on">Mes</span><span class="chip">Año</span><span class="chip">Siempre</span></div></div>
+      <div class="stgrid">
+        <div class="stc"><div class="lab">Tiempo escuchado</div><div class="num">41 h <small>12 min</small></div><small class="muted">+18 % que el mes pasado</small>
+          <div class="bars"><span style="height:40%"><em>L</em></span><span style="height:55%"><em>M</em></span><span style="height:35%"><em>X</em></span><span style="height:70%"><em>J</em></span><span class="on" style="height:100%"><em>V</em></span><span style="height:85%"><em>S</em></span><span style="height:50%"><em>D</em></span></div></div>
+        <div class="stc"><div class="lab">Top artistas</div><div class="toplist">
+          <div><span class="n">1</span><i class="c2"></i><b>Karol G</b><small>9 h</small></div>
+          <div><span class="n">2</span><i class="c1"></i><b>Feid</b><small>6 h</small></div>
+          <div><span class="n">3</span><i class="c3"></i><b>Bad Bunny</b><small>4 h</small></div>
+          <div><span class="n">4</span><i class="c7"></i><b>Young Miko</b><small>3 h</small></div>
+          <div><span class="n">5</span><i class="c5"></i><b>Mora</b><small>2 h</small></div></div></div>
+        <div class="stc"><div class="lab">Top canciones</div><div class="toplist">
+          <div><span class="n">1</span><i class="sq c2"></i><b>Si Antes Te Hubiera…</b><small>48</small></div>
+          <div><span class="n">2</span><i class="sq c1"></i><b>LUNA</b><small>31</small></div>
+          <div><span class="n">3</span><i class="sq c8"></i><b>Provenza</b><small>27</small></div>
+          <div><span class="n">4</span><i class="sq c7"></i><b>Classy 101</b><small>22</small></div>
+          <div><span class="n">5</span><i class="sq c3"></i><b>Tusa</b><small>19</small></div></div></div>
+      </div>
+      <div class="stc" style="margin-top:14px"><div class="row"><div class="lab grow">Tu año escuchando</div><span class="streak"><span class="ms f s18">local_fire_department</span>Racha de 23 días</span></div>
+        <div class="heat" id="heat"></div></div>
+    </div></div></div>
+  </div></div>
+  <div class="notes">
+    <div><span class="ms s18">sync</span><span>Las escuchas del escritorio se suman a las del móvil a través del enlace (tu historial), así la racha no se rompe por escuchar en el PC.</span></div>
+    <div><span class="ms s18">touch_app</span><span>Clic en un artista o canción abre su página. Clic en un día del mapa de calor abre el historial de ese día.</span></div>
+    <div><span class="ms s18">celebration</span><span>En diciembre aparece arriba «Tu año en música», el resumen por pantallas del móvil.</span></div>
+  </div>
+  <div class="android"><span class="ms">phone_android</span><span><b>Conexión con Android:</b> mismos cálculos que <code>StatsScreen</code> y la racha de la home (<code>DezzyHomeHero</code>). «Tu año en música» es <code>YearInMusicScreen</code>.</span></div>
+</section>
+
+<section id="tiempo">
+  <h2><span class="n">6.2</span>Máquina del tiempo</h2>
+  <p class="sub">Viaja a un año y te monta la playlist de lo que sonaba entonces y de lo que tú escuchabas. Se entra desde Inicio o desde Estadísticas.</p>
+  <div class="stage"><div class="win" data-nav="Inicio">
+    <div class="body"><div class="panel main"><div class="topbar" data-top></div><div class="scroll">
+      <div class="hello"><div><h3>Máquina del tiempo</h3><p>Elige un año en la línea o escríbelo</p></div></div>
+      <div class="yearline"><span>2012</span><span>2014</span><span>2016</span><span class="on">2018</span><span>2020</span><span>2022</span><span>2024</span><span>2026</span></div>
+      <div class="tm">
+        <div class="tmhero"><h5>2018</h5><p>Reggaetón en todas partes, «Dura», «X» y «Te Boté»</p><div class="row"><span class="btn fill"><span class="ms f s20">play_arrow</span>Viajar a 2018</span><span class="btn tonal"><span class="ms s20">playlist_add</span>Guardar lista</span></div></div>
+        <div class="stc" style="background:var(--s-low);padding:4px 0">
+          <div class="qrow"><i class="c8"></i><div class="t"><b>Te Boté (Remix)</b><small>Nio García, Casper Mágico, Bad Bunny…</small></div><small class="muted">6:57</small></div>
+          <div class="qrow"><i class="c3"></i><div class="t"><b>X</b><small>Nicky Jam, J Balvin</small></div><small class="muted">2:54</small></div>
+          <div class="qrow"><i class="c5"></i><div class="t"><b>Dura</b><small>Daddy Yankee</small></div><small class="muted">3:20</small></div>
+          <div class="qrow"><i class="c1"></i><div class="t"><b>Sin Pijama</b><small>Becky G, Natti Natasha</small></div><small class="muted">3:08</small></div>
+          <div class="qrow"><i class="c4"></i><div class="t"><b>Me Niego</b><small>Reik, Ozuna, Wisin</small></div><small class="muted">3:41</small></div>
+          <div class="qrow"><i class="c6"></i><div class="t"><b>Mayores</b><small>Becky G, Bad Bunny</small></div><small class="muted">3:21</small></div>
+        </div>
+      </div>
+    </div></div></div>
+  </div></div>
+  <div class="android"><span class="ms">phone_android</span><span><b>Conexión con Android:</b> es <code>TimeMachineScreen</code>, con los mismos botones «Viajar a …» y «Guardar lista». Si tu historial llega a ese año, lo tuyo sale primero.</span></div>
+</section>
+
+<section id="playlist">
+  <h2><span class="n">6.3</span>Nueva playlist</h2>
+  <p class="sub">Se abre desde «＋» en «Tus playlists» de la barra lateral, desde «Guardar como playlist» en la cola y desde «Añadir a playlist › Nueva» en cualquier menú. La playlist se crea en tu biblioteca y aparece también en el móvil.</p>
+  <div class="stage"><div class="win" data-nav="Biblioteca">
+    <div class="body"><div class="panel main"><div class="topbar" data-top></div><div class="scroll"><div class="hello"><h3>Biblioteca</h3></div><div class="cards"><div class="card"><i class="c4"></i><b>Me gusta</b><small>842 canciones</small></div><div class="card"><i class="c3"></i><b>Noche de shoegaze</b><small>Playlist</small></div><div class="card"><i class="c2"></i><b>Para manejar</b><small>Playlist</small></div><div class="card"><i class="c6"></i><b>Ferxxocalipsis</b><small>Álbum</small></div><div class="card"><i class="c5"></i><b>Mañana Será Bonito</b><small>Álbum</small></div><div class="card"><i class="c8"></i><b>Sólo tú</b><small>Mix</small></div></div></div></div></div>
+    <div class="scrim">
+      <div class="dlg">
+        <h5>Nueva playlist</h5>
+        <p class="hint">Con las 7 canciones de la cola</p>
+        <div class="row" style="gap:18px;align-items:flex-start">
+          <div class="cover"><i class="c2"></i><i class="c1"></i><i class="c7"></i><i class="c3"></i><span class="ed"><span class="ms s18">edit</span></span></div>
+          <div class="grow">
+            <div class="field focus"><label>Nombre</label>Viernes con Karol|</div>
+            <div class="field dim"><label>Descripción (opcional)</label><span class="muted">Para el camino a casa</span></div>
+            <div class="seg2"><span class="on"><span class="ms s18">lock</span>Privada</span><span><span class="ms s18">link</span>Con enlace</span><span><span class="ms s18">public</span>Pública</span></div>
+          </div>
+        </div>
+        <div class="acts"><span class="btn txt">Cancelar</span><span class="btn fill">Crear</span></div>
+      </div>
+    </div>
+  </div></div>
+  <div class="notes">
+    <div><span class="ms s18">image</span><span>La portada es un mosaico de las 4 primeras canciones. El lápiz deja poner una imagen tuya (se recorta cuadrada).</span></div>
+    <div><span class="ms s18">drag_indicator</span><span>Dentro de la playlist las canciones se arrastran para ordenarlas y se sueltan encima de la playlist en la barra lateral para añadirlas.</span></div>
+    <div><span class="ms s18">keyboard_return</span><span>Enter crea la playlist y Esc cierra el diálogo. El nombre no puede quedar vacío.</span></div>
+  </div>
+  <div class="android"><span class="ms">phone_android</span><span><b>Conexión con Android:</b> el mismo diálogo que «Crear playlist» del móvil, con el mismo selector de privacidad. Se crea en la biblioteca de la cuenta vinculada, así que el móvil la ve sin hacer nada.</span></div>
+</section>
+
+<section id="descargas">
+  <h2><span class="n">6.4</span>Descargas</h2>
+  <p class="sub">Descargas guarda las canciones para escucharlas sin conexión. Con «Lossless» activado baja FLAC real a través de tu resolver. Arriba se ve el espacio usado y abajo la cola.</p>
+  <div class="stage"><div class="win" data-nav="Descargas">
+    <div class="body"><div class="panel main"><div class="topbar" data-top></div><div class="scroll">
+      <div class="dlhead"><h3 class="grow">Descargas</h3><span class="chip on"><span class="ms s16">high_quality</span>Lossless</span><span class="chip"><span class="ms s16">folder_open</span>Música\Dezzy</span><span class="btn tonal"><span class="ms s20">pause</span>Pausar todo</span></div>
+      <div class="store"><div class="row"><b class="grow">6,2 GB de 40 GB</b><small class="muted">Disco C: con 212 GB libres</small></div><div class="sb"><i style="width:11%"></i><i style="width:4.5%"></i></div><div class="legend2"><span style="--c:var(--primary)">FLAC · 4,4 GB · 312 canciones</span><span style="--c:var(--tertiary)">Normal · 1,8 GB · 410 canciones</span></div></div>
+      <div class="row" style="margin:6px 0"><span class="chip on">Todas</span><span class="chip">Descargando · 3</span><span class="chip">Listas · 722</span><span class="chip">Con error · 1</span></div>
+      <div class="dlrow hl"><i class="c2"></i><div class="t"><b>Si Antes Te Hubiera Conocido</b><small>Karol G</small></div><span class="qtag hi">FLAC 16/44,1</span><div><div class="prog" style="--p:64%"></div><div class="dlstate" style="margin-top:4px">18,2 de 28,4 MB · 3 MB/s</div></div><span class="ms" style="color:var(--on-sv)">pause</span></div>
+      <div class="dlrow"><i class="c1"></i><div class="t"><b>LUNA</b><small>Feid, ATL Jacob</small></div><span class="qtag hi">FLAC 24/48</span><div><div class="prog" style="--p:12%"></div><div class="dlstate" style="margin-top:4px">En cola</div></div><span class="ms" style="color:var(--on-sv)">close</span></div>
+      <div class="dlrow"><i class="c7"></i><div class="t"><b>Classy 101</b><small>Feid, Young Miko</small></div><span class="qtag">OPUS 160</span><div class="dlstate"><span class="ms s16">info</span>Sin FLAC: se baja en calidad normal</div><span class="ms" style="color:var(--on-sv)">close</span></div>
+      <div class="dlrow"><i class="c3"></i><div class="t"><b>Tusa</b><small>Karol G, Nicki Minaj</small></div><span class="qtag hi">FLAC 16/44,1</span><div class="dlstate ok"><span class="ms f s16">check_circle</span>Lista · 31,9 MB</div><span class="ms" style="color:var(--on-sv)">more_vert</span></div>
+      <div class="dlrow"><i class="c8"></i><div class="t"><b>Provenza</b><small>Karol G</small></div><span class="qtag hi">FLAC 16/44,1</span><div class="dlstate" style="color:#FFB4AB"><span class="ms s16">error</span>Falló · <u>Reintentar</u></div><span class="ms" style="color:var(--on-sv)">more_vert</span></div>
+    </div></div></div>
+  </div></div>
+  <div class="notes">
+    <div><span class="ms s18">download_for_offline</span><span>Una flecha ↓ en álbumes, playlists y en el menú de cada canción manda a la cola. Lo descargado lleva un punto verde en toda la app.</span></div>
+    <div><span class="ms s18">wifi_off</span><span>Sin conexión, la app abre directamente en Descargas y el resto de pantallas avisa de que no hay red.</span></div>
+    <div><span class="ms s18">settings</span><span>Ajustes › Descargas: carpeta, límite de espacio, descargas a la vez (1–4), calidad normal y «Preferir lossless».</span></div>
+  </div>
+  <div class="android"><span class="ms">phone_android</span><span><b>Conexión con Android:</b> igual que <code>LosslessDownloadsScreen</code> («Cola de descargas») y <code>LosslessSettings</code>. El FLAC sale del resolver propio (<code>/resolver</code>), así que esta parte depende de que el resolver esté desplegado. Las descargas no se sincronizan entre dispositivos: cada uno guarda las suyas.</span></div>
+</section>
+
+<!-- ═════════ FASE 7 ═════════ -->
+<div class="phase"><span class="big">7</span><div><b>Una app de Windows de verdad</b><p>Controles multimedia del sistema, barra de tareas, bandeja, notificaciones, atajos globales, integraciones, salas con QR y votos, y Acerca de con actualizaciones.</p></div></div>
+
+<section id="juntos">
+  <h2><span class="n">7.1</span>Escuchar juntos: sala con QR y votos</h2>
+  <p class="sub">Esto completa lo que quedó pendiente en la fase 3. Al crear una sala salen un QR y un código que se pueden escanear con el móvil, y los invitados votan lo que suena después.</p>
+  <div class="stage"><div class="win" data-nav="Escuchar juntos">
+    <div class="body"><div class="panel main"><div class="topbar" data-top></div><div class="scroll">
+      <div class="hello"><div><h3>Sala de Dezzy</h3><p>Eres el anfitrión · 4 personas</p></div><span class="btn out"><span class="ms s20">logout</span>Cerrar sala</span></div>
+      <div class="ltw">
+        <div class="ltroom">
+          <div class="row" style="gap:22px;align-items:flex-start">
+            <div class="qrbig"><div class="g"></div><span class="c" style="left:10px;top:10px"></span><span class="c" style="right:10px;top:10px"></span><span class="c" style="left:10px;bottom:10px"></span><span class="lg"></span></div>
+            <div class="grow">
+              <div class="lab" style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--outline)">Código de la sala</div>
+              <div class="code">KX7-42Q</div>
+              <p class="muted" style="margin:6px 0 12px">Escanéalo con la cámara del móvil o escribe el código en Escuchar juntos.</p>
+              <div class="row"><span class="btn tonal"><span class="ms s20">content_copy</span>Copiar enlace</span><span class="btn txt"><span class="ms s20">refresh</span>Nuevo código</span></div>
+              <div class="people"><span class="avatar">D</span><span class="avatar" style="background:linear-gradient(135deg,#4DB6AC,#1A237E)">A</span><span class="avatar" style="background:linear-gradient(135deg,#FFB74D,#BF360C)">M</span><span class="avatar" style="background:linear-gradient(135deg,#CE93D8,#4A0072)">L</span></div>
+            </div>
+          </div>
+          <div class="opt" style="margin-top:16px;border-top:1px solid var(--ov)"><div class="t"><b>Modo DJ</b><small>Sólo tú decides lo que suena; los demás proponen y votan</small></div><span class="sw"></span></div>
+          <div class="opt"><div class="t"><b>Permitir que los invitados controlen</b><small>Pausar, saltar y mover la barra</small></div><span class="sw off"></span></div>
+        </div>
+        <div class="ltroom" style="padding:16px">
+          <div class="row"><b class="grow" style="font:700 18px 'Roboto Flex'">Votaciones</b><small class="muted">la más votada suena después</small></div>
+          <div class="vote"><i class="c1"></i><div class="t"><b>LUNA</b><small>propuesta por Ana</small><div class="vmeter" style="--p:75%"></div></div><div class="vb"><span class="on"><span class="ms s16">thumb_up</span>3</span><span><span class="ms s16">thumb_down</span>1</span></div></div>
+          <div class="vote"><i class="c3"></i><div class="t"><b>Tusa</b><small>propuesta por Marco</small><div class="vmeter" style="--p:50%"></div></div><div class="vb"><span><span class="ms s16">thumb_up</span>2</span><span><span class="ms s16">thumb_down</span>2</span></div></div>
+          <div class="vote"><i class="c5"></i><div class="t"><b>Bichota</b><small>propuesta por Lucía</small><div class="vmeter" style="--p:25%"></div></div><div class="vb"><span><span class="ms s16">thumb_up</span>1</span><span><span class="ms s16">thumb_down</span>3</span></div></div>
+          <span class="btn txt" style="margin-top:10px"><span class="ms s20">add</span>Proponer canción</span>
+        </div>
+      </div>
+    </div></div></div>
+  </div></div>
+  <div class="android"><span class="ms">phone_android</span><span><b>Conexión con Android:</b> mismo servidor Listen Together (v2.3, con panel del anfitrión) y mismos ajustes que <code>MusicTogetherScreen</code>: «Modo DJ» y «Permitir que los invitados controlen». Las votaciones son las de <code>DJVoteSheet</code> («Sí (n)» / «No (n)»). El QR lleva el mismo enlace que comparte el móvil.</span></div>
+</section>
+
+<section id="windows">
+  <h2><span class="n">7.2</span>Windows: controles del sistema, barra de tareas, bandeja y avisos</h2>
+  <p class="sub">Dezzy aparece donde Windows enseña la música: en el panel multimedia de volumen y de las teclas, en la vista previa de la barra de tareas con ⏮ ⏯ ⏭, en la bandeja junto al reloj y en un aviso discreto al cambiar de canción (que viene desactivado).</p>
+  <div class="stage"><div class="win" data-full>
+    <div class="desk">
+      <div class="smtc"><div class="src"><em></em>Dezzy</div><div class="r"><i class="c2"></i><div class="grow"><b>Si Antes Te Hubiera Conocido</b><small class="muted" style="display:block;color:rgba(255,255,255,.7)">Karol G</small><div class="row" style="margin-top:8px;gap:16px"><span class="ms">skip_previous</span><span class="ms f">pause</span><span class="ms">skip_next</span></div></div></div><div class="row" style="margin-top:12px"><span class="ms s18">volume_up</span><span class="vol"></span><small style="color:rgba(255,255,255,.7)">62</small></div></div>
+      <div class="callout" style="left:840px;top:60px">Panel multimedia de Windows: teclas ⏯ del teclado, auriculares Bluetooth y pantalla de bloqueo.</div>
+      <div class="thumb"><div class="hd"><em></em>Dezzy<span class="grow"></span><span class="ms s16">close</span></div><div class="pv">Si Antes Te Hubiera Conocido</div><div class="tbb"><span class="ms">skip_previous</span><span class="ms f h">pause</span><span class="ms">skip_next</span><span class="ms">favorite</span></div></div>
+      <div class="traymenu"><div class="np2"><i class="c2"></i><div><b>Si Antes Te Hubiera…</b><small>Karol G</small></div></div><div class="sep"></div>
+        <div class="it h"><span class="ms s18">pause</span>Pausar</div><div class="it"><span class="ms s18">skip_next</span>Siguiente</div><div class="it"><span class="ms s18">favorite</span>Me gusta</div><div class="it"><span class="ms s18">picture_in_picture_alt</span>Mini reproductor</div><div class="sep"></div><div class="it"><span class="ms s18">open_in_new</span>Abrir Dezzy</div><div class="it"><span class="ms s18">power_settings_new</span>Salir</div></div>
+      <div class="toast" style="bottom:auto;top:260px;right:24px"><div class="h"><em></em>Dezzy · ahora suena</div><div class="r"><i class="c1"></i><div><b>LUNA</b><small>Feid, ATL Jacob</small></div><span class="grow"></span><span class="ms">skip_next</span></div></div>
+      <div class="taskbar"><span class="ti"><span class="ms s20">grid_view</span></span><span class="ti"><span class="ms s20">search</span></span><span class="ti"><span class="ms s20">folder</span></span><span class="ti on"><span class="dl"></span></span>
+        <div class="tray"><span class="dl" style="width:16px;height:16px;border-radius:4px;background:linear-gradient(135deg,var(--primary),var(--tertiary))"></span><span class="ms s16">wifi</span><span class="ms s16">volume_up</span><span>18:42</span></div></div>
+    </div>
+  </div></div>
+  <div class="notes">
+    <div><span class="ms s18">close</span><span>Ajuste «Al cerrar la ventana»: <b>Seguir en la bandeja</b> (de serie) o Salir. La primera vez que se cierra, un aviso explica dónde quedó Dezzy.</span></div>
+    <div><span class="ms s18">power</span><span>«Abrir al iniciar Windows», desactivado de serie. Si se activa, Dezzy arranca minimizado en la bandeja.</span></div>
+    <div><span class="ms s18">notifications</span><span>«Avisar al cambiar de canción» viene apagado. Si se enciende, el aviso no suena y no aparece mientras Dezzy está en primer plano.</span></div>
+  </div>
+  <div class="android"><span class="ms">phone_android</span><span><b>Conexión con Android:</b> es el equivalente a la notificación multimedia y la sesión <code>MediaSession</code> del móvil. En Electron se hace con <code>navigator.mediaSession</code> (Chromium ya lo conecta al panel de Windows), <code>setThumbarButtons</code>, <code>Tray</code> y <code>Notification</code>. No hacen falta módulos nativos.</span></div>
+</section>
+
+<section id="atajos">
+  <h2><span class="n">7.3</span>Ajustes › Atajos e Integraciones</h2>
+  <p class="sub">Los atajos se pueden cambiar y algunos funcionan con Dezzy en segundo plano (marcados «global»). Integraciones reúne Discord (lo que escuchas en tu perfil) y el scrobbling a Last.fm y ListenBrainz.</p>
+  <div class="stage"><div class="win" data-nav="">
+    <div class="set">
+      <aside class="panel setnav"><h3>Ajustes</h3><nav class="nav">
+        <a href="#"><span class="ms">phonelink</span>Móvil vinculado</a><a href="#"><span class="ms">palette</span>Apariencia</a><a href="#"><span class="ms">tune</span>Reproductor y audio</a><a href="#"><span class="ms">download</span>Descargas</a><a href="#" class="on"><span class="ms">keyboard</span>Atajos</a><a href="#"><span class="ms">extension</span>Integraciones</a><a href="#"><span class="ms">desktop_windows</span>Windows</a><a href="#"><span class="ms">info</span>Acerca de</a></nav></aside>
+      <div class="panel setmain" style="display:grid;grid-template-columns:1fr 1fr;gap:32px">
+        <div>
+          <h4>Atajos</h4><p class="hint">Clic en una tecla para cambiarla.</p>
+          <div class="kbrow"><div class="t"><b>Reproducir / pausar</b></div><kbd>Espacio</kbd><span class="glob">global: <kbd>⏯</kbd></span></div>
+          <div class="kbrow"><div class="t"><b>Siguiente / anterior</b></div><kbd>Ctrl</kbd><kbd>→</kbd> <kbd>Ctrl</kbd><kbd>←</kbd></div>
+          <div class="kbrow"><div class="t"><b>Avanzar / retroceder 10 s</b></div><kbd>→</kbd> <kbd>←</kbd></div>
+          <div class="kbrow"><div class="t"><b>Volumen</b></div><kbd>↑</kbd> <kbd>↓</kbd></div>
+          <div class="kbrow"><div class="t"><b>Me gusta</b></div><kbd>Ctrl</kbd><kbd>L</kbd><span class="glob">global</span></div>
+          <div class="kbrow"><div class="t"><b>Buscar</b></div><kbd>Ctrl</kbd><kbd>K</kbd></div>
+          <div class="kbrow"><div class="t"><b>Letras · Video · Mini</b></div><kbd>L</kbd> <kbd>V</kbd> <kbd>M</kbd></div>
+          <div class="kbrow"><div class="t"><b>Enseñar u ocultar Dezzy</b><small>Desde cualquier app</small></div><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>D</kbd><span class="glob">global</span></div>
+        </div>
+        <div>
+          <h4>Integraciones</h4><p class="hint">Se conectan sólo en este ordenador.</p>
+          <div class="acard"><div class="ahead"><span class="logo" style="background:#5865F2"><span class="ms">sports_esports</span></span><div class="t"><b>Discord</b><small>Muestra «Escuchando Dezzy» en tu perfil</small></div><span class="sw"></span></div>
+            <div class="opt" style="margin-top:8px"><div class="t"><b>Enseñar la portada y el botón «Escuchar»</b></div><span class="sw"></span></div></div>
+          <div class="acard"><div class="ahead"><span class="logo" style="background:#D51007"><span class="ms">radio</span></span><div class="t"><b>Last.fm</b><small>Conectado como dezzy · 12 480 scrobbles</small></div><span class="btn txt">Desconectar</span></div></div>
+          <div class="acard"><div class="ahead"><span class="logo" style="background:#353070"><span class="ms">hearing</span></span><div class="t"><b>ListenBrainz</b><small>Pega tu token de usuario</small></div><span class="btn tonal">Conectar</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+  <div class="notes">
+    <div><span class="ms s18">warning</span><span>Si un atajo global ya lo usa otra app, la fila lo dice («Ocupado por otra app») y deja elegir otro.</span></div>
+    <div><span class="ms s18">sync_disabled</span><span>Para no contar dos veces, si el móvil ya hace scrobbling y suena en «En ambos», sólo hace scrobble quien marca el paso.</span></div>
+  </div>
+  <div class="android"><span class="ms">phone_android</span><span><b>Conexión con Android:</b> Discord es <code>DiscordSettings</code> (Rich Presence; en el escritorio va por IPC local, sin iniciar sesión en la web). Last.fm y ListenBrainz son <code>LastFMSettings</code> y <code>ListenBrainzManager</code>. Las claves de Last.fm del móvil no viajan en el enlace: se conecta aparte, con su propio navegador del sistema.</span></div>
+</section>
+
+<section id="acerca">
+  <h2><span class="n">7.4</span>Ajustes › Acerca de y actualizaciones</h2>
+  <p class="sub">Acerca de enseña la versión y, si hay una nueva en las releases, la descarga en segundo plano y la instala al cerrar la app. Igual que el actualizador del móvil, toma el instalador de la release.</p>
+  <div class="stage"><div class="win" data-nav="">
+    <div class="set">
+      <aside class="panel setnav"><h3>Ajustes</h3><nav class="nav">
+        <a href="#"><span class="ms">phonelink</span>Móvil vinculado</a><a href="#"><span class="ms">palette</span>Apariencia</a><a href="#"><span class="ms">tune</span>Reproductor y audio</a><a href="#"><span class="ms">download</span>Descargas</a><a href="#"><span class="ms">keyboard</span>Atajos</a><a href="#"><span class="ms">extension</span>Integraciones</a><a href="#"><span class="ms">desktop_windows</span>Windows</a><a href="#" class="on"><span class="ms">info</span>Acerca de</a></nav></aside>
+      <div class="panel setmain" style="max-width:none">
+        <div class="about"><span class="lg"><span class="ms f s32">graphic_eq</span></span><div><h4>Dezzy para PC</h4><small class="muted">Versión 1.0.0 · Windows 11 x64</small></div></div>
+        <div class="upd"><div class="row"><span class="ms">system_update</span><b class="grow">Hay una versión nueva: 1.1.0</b><span class="btn fill">Reiniciar y actualizar</span></div>
+          <ul><li>Dezzy Connect: «En ambos» más preciso</li><li>Mini reproductor con letra</li><li>Arreglos en Descargas</li></ul>
+          <div class="prog" style="--p:100%"></div><small style="display:block;margin-top:6px;opacity:.8">Descargada · se instala sola al cerrar Dezzy si no reinicias ahora</small></div>
+        <div class="acard">
+          <div class="opt"><div class="t"><b>Buscar actualizaciones al abrir</b></div><span class="sw"></span></div>
+          <div class="opt"><div class="t"><b>Novedades</b><small>Lo que cambió en cada versión</small></div><span class="ms" style="color:var(--on-sv)">chevron_right</span></div>
+          <div class="opt"><div class="t"><b>Licencias de código abierto</b></div><span class="ms" style="color:var(--on-sv)">chevron_right</span></div>
+          <div class="opt"><div class="t"><b>Informar de un problema</b><small>Abre un informe con la versión y el registro (sin datos de tu cuenta)</small></div><span class="ms" style="color:var(--on-sv)">chevron_right</span></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+  <div class="android"><span class="ms">phone_android</span><span><b>Conexión con Android:</b> mismas filas que <code>AboutScreen</code> y <code>ChangelogScreen</code>. Las releases siguen la regla del móvil (tag sin «v» y título «Dezzy X.Y.Z»), pero en un canal propio del escritorio para no mezclar el APK con el instalador.</span></div>
+</section>
+
+<section>
+  <h2><span class="n">✓</span>Resumen por fase</h2>
+  <div class="notes">
+    <div><span class="ms s18">looks_5</span><span><b>Fase 5 · Reproduciendo.</b> Video, Visualizador, Mini reproductor, Compartir, Traducir, Me gusta y Fundido. Quita todos los «Pronto» de Reproduciendo.</span></div>
+    <div><span class="ms s18">looks_6</span><span><b>Fase 6 · Tu música.</b> Estadísticas con racha, Máquina del tiempo, Nueva playlist y Descargas con lossless. Depende del resolver desplegado para el FLAC.</span></div>
+    <div><span class="ms s18">filter_7</span><span><b>Fase 7 · Windows.</b> Controles del sistema, bandeja, avisos, atajos, Discord, Last.fm y ListenBrainz, sala con QR y votos, y Acerca de con actualizaciones. Después: instalador firmado.</span></div>
+  </div>
+</section>
+</main>
+
+<template id="shell-top">
+  <span class="search"><span class="ms">search</span>Canciones, artistas, letras…<span class="kbd">Ctrl K</span></span>
+  <span style="flex:1"></span>
+  <span class="ms" style="color:var(--on-sv)">notifications</span>
+  <span class="avatar">D</span>
+</template>
+<script>
+// Monta la ventana común en cada boceto. data-full = sin barra lateral ni reproductor (lo pinta el boceto).
+const NAV = [['home','Inicio'],['search','Buscar'],['library_music','Biblioteca'],['public','Mapa musical'],['leaderboard','Rankings'],['group','Social'],['groups','Escuchar juntos'],['download','Descargas']];
+document.querySelectorAll('.win').forEach((win) => {
+  win.insertAdjacentHTML('afterbegin', '<div class="titlebar"><span class="logo"></span>Dezzy<span class="sp"></span><span class="wc"><span class="ms s16">remove</span><span class="ms s16">crop_square</span><span class="ms s16">close</span></span></div>');
+  if (win.hasAttribute('data-full')) return;
+  const body = win.querySelector('.body');
+  if (body) {
+    const active = win.dataset.nav;
+    const side = '<aside class="panel side"><nav class="nav">' +
+      NAV.map(([i, l]) => `<a class="${l === active ? 'on' : ''}" href="#"><span class="ms">${i}</span>${l}</a>`).join('') +
+      '</nav><h4>Tus playlists</h4>' +
+      '<div class="pl"><i class="c4"></i><div><b>Me gusta</b><small>842 canciones</small></div></div>' +
+      '<div class="pl"><i class="c3"></i><div><b>Noche de shoegaze</b><small>Playlist, 64</small></div></div>' +
+      '<div class="pl"><i class="c2"></i><div><b>Para manejar</b><small>Playlist, 120</small></div></div></aside>';
+    body.insertAdjacentHTML('afterbegin', side);
+  }
+  win.querySelectorAll('[data-top]').forEach((t) => (t.innerHTML = document.getElementById('shell-top').innerHTML));
+  const queueOn = !!win.querySelector('.qpanel');
+  win.insertAdjacentHTML('beforeend', '<div class="player"><div class="np"><i class="c2"></i><div style="min-width:0"><b>Si Antes Te Hubiera Conocido</b><small>Karol G</small></div><span class="ms f" style="color:var(--primary)">favorite</span></div><div class="ctrl"><div class="btns"><span class="ms s20">shuffle</span><span class="ms">skip_previous</span><span class="play"><span class="ms f s28">pause</span></span><span class="ms">skip_next</span><span class="ms s20">repeat</span></div><div class="bar">1:02<span class="track" style="--p:30%"></span>3:15</div></div><div class="extra"><span class="ms s20">lyrics</span><span class="ms s20' + (queueOn ? ' on' : '') + '">queue_music</span><span class="ms s20">devices</span><span class="ms s20">groups</span><span class="ms s20">volume_up</span><span class="vol"></span><span class="ms s20">open_in_full</span></div></div>');
+});
+</script>
+<script>
+// Mapa de calor del año (datos de mentira, deterministas).
+const h = document.getElementById('heat');
+if (h) { let s = 7; for (let i = 0; i < 26 * 7; i++) { s = (s * 9301 + 49297) % 233280; const r = s / 233280; h.insertAdjacentHTML('beforeend', `<i class="${r > .85 ? 'c' : r > .6 ? 'b' : r > .35 ? 'a' : ''}"></i>`) } }
+</script>
+</body>
+</html>

@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reproductor Spotify · bocetos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="reproductor-estilos-base.css">
+<style>
+/* ── Estilo Spotify (SpotifyPlayer.kt) ── */
+:root{--green:#1DB954;--album:#7A2E4A;--album-mid:#4A1C2E;--album-deep:#1E0D14;--card:#5A2238}
+.spt{background:#121212}
+.grad{position:absolute;inset:0;background:linear-gradient(180deg,var(--album) 0%,var(--album-mid) 45%,var(--album-deep) 80%,#121212 100%)}
+.p-head{display:flex;align-items:center;gap:4px;padding:4px 4px 0}
+.ctx{flex:1;min-width:0;text-align:center;font-size:11px;letter-spacing:.6px;color:var(--on-var);line-height:15px}
+.ctx b{display:block;font-size:14px;letter-spacing:0;font-weight:700;color:var(--on)}
+.art{width:312px;height:312px;margin:22px auto 0;border-radius:12px;box-shadow:0 18px 40px rgba(0,0,0,.5);position:relative;flex:none}
+.t-row{display:flex;align-items:center;gap:8px;padding:22px 16px 0 24px;position:relative}
+.t-row .tx{flex:1;min-width:0}
+.t-row b{display:block;font-size:24px;font-weight:700;line-height:30px}
+.t-row span{display:block;font-size:15px;color:var(--on-var);margin-top:2px}
+.chk{width:26px;height:26px;border-radius:50%;background:var(--green);display:grid;place-items:center;color:#000}
+.livebig{padding:20px 24px 0;font:700 22px/1.3 Roboto;color:#fff}
+.seek{padding:16px 24px 0;position:relative}
+.ctrls{display:flex;align-items:center;justify-content:space-between;padding:8px 18px 0;position:relative}
+.ctrls .on{color:var(--green);position:relative}
+.ctrls .on::after{content:"";position:absolute;bottom:-6px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--green)}
+.play{width:64px;height:64px;border-radius:50%;background:#fff;color:#111;display:grid;place-items:center}
+.acts{display:flex;align-items:center;gap:2px;padding:14px 10px 0 16px;position:relative}
+.dev{display:flex;align-items:center;gap:6px;height:32px;padding:0 12px 0 10px;border-radius:16px;font-size:12px;font-weight:500;background:rgba(255,255,255,.12);color:var(--on-var)}
+.dev.on{color:var(--green);background:rgba(29,185,84,.14)}
+.act{width:40px;height:40px;display:grid;place-items:center;color:rgba(255,255,255,.8)}
+.card{border-radius:16px;background:var(--card);padding:16px;position:relative}
+.card h5{display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700}
+.lyl{font:700 20px/1.35 Roboto;margin-top:10px}
+.lyl .dim{color:rgba(0,0,0,.45)}
+.sticky{display:flex;align-items:center;gap:12px;height:60px;padding:0 10px 0 16px;background:var(--album-mid);flex:none;z-index:2;position:relative}
+.sticky .tx{flex:1;min-width:0;font-size:14px}
+.sticky b{display:block;font-weight:700}.sticky span{font-size:12px;color:var(--on-var)}
+.mini{width:36px;height:36px;border-radius:6px;flex:none}
+.canvas{position:absolute;inset:0;background:radial-gradient(ellipse at 30% 30%,rgba(255,200,216,.55),transparent 40%),radial-gradient(ellipse at 75% 55%,rgba(247,200,115,.45),transparent 45%),linear-gradient(170deg,#3A1222,#7A2E4A 40%,#C0507A 70%,#3A1222)}
+.canvas::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.4) 0%,transparent 20%,transparent 42%,rgba(0,0,0,.85) 75%,#000 100%)}
+.canvas .fig{position:absolute;left:96px;top:140px;width:170px;height:260px;border-radius:85px 85px 30px 30px;background:linear-gradient(180deg,rgba(255,220,230,.38),rgba(255,220,230,.08))}
+.pill{height:30px;border-radius:15px;padding:0 12px;display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;background:#fff;color:#111}
+.q-row{display:flex;align-items:center;gap:12px;min-height:52px}
+.q-row .a{width:44px;height:44px;border-radius:6px;flex:none}
+.q-row b{display:block;font-size:15px;font-weight:500}.q-row span{font-size:13px;color:var(--on-var)}
+.dna .n{width:40px;height:40px;border-radius:50%;border:2px solid var(--card);margin-left:-8px;flex:none;display:inline-block}
+.dna .n:first-child{margin-left:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="styles">
+  <a href="dezzy-android-reproductor-applemusic-bocetos.html">Apple Music</a>
+  <a class="on" href="dezzy-android-reproductor-spotify-bocetos.html">Spotify</a>
+  <a href="dezzy-android-reproductor-ipod-bocetos.html">iPod</a>
+  <a href="dezzy-android-reproductor-dezzystyle-bocetos.html">Dezzy Style</a>
+</nav>
+<header class="top">
+  <h1>Reproductor · estilo Spotify</h1>
+  <p class="lead">Se mantiene todo lo que ya funciona (degradado con la paleta, canvas a pantalla completa, tarjetas al hacer scroll, cabecera fija). Los bocetos sólo pulen detalles; los círculos naranjas numerados coinciden con «Qué cambia».</p>
+  <div class="today">
+    <h4>Cómo está hoy (<code>ui/player/SpotifyPlayer.kt</code>)</h4>
+    <ul>
+      <li>Cabecera: ⌄ · «REPRODUCIENDO DESDE» + nombre de la cola · visualizador ✨ · ⋮.</li>
+      <li>Carátula con pager (deslizar = saltar) de 12 dp de radio; con canvas, el vídeo ocupa toda la pantalla.</li>
+      <li>Si hay letra sincronizada, la línea en vivo va <b>encima</b> del título a 22 sp (empuja el título hacia abajo).</li>
+      <li>Título 24 sp + artista 15 sp + check verde de guardado. Barra fina de 4 dp con bolita y tiempos 11 sp.</li>
+      <li>Controles: aleatorio · anterior · play blanco 64 dp · siguiente · repetir (puntos verdes).</li>
+      <li>Fila inferior: pastilla de dispositivo · vídeo · temporizador · compartir · cola (5 elementos).</li>
+      <li>Tarjetas al bajar: Letras · Acerca del artista · Explorar · Créditos · SongDNA; cabecera fija con mini carátula.</li>
+    </ul>
+  </div>
+</header>
+
+<!-- ───────────── ACTUAL ───────────── -->
+<section class="sketch now">
+  <div class="sk-head"><span class="sk-tag">ACTUAL</span><h3>Referencia: así se ve hoy</h3><p>Para comparar. No se elige.</p></div>
+  <div class="sk-body">
+    <div>
+      <div class="phone spt">
+        <div class="grad"></div>
+        <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+        <div class="content"><div class="layer">
+          <div class="p-head"><div class="icon-btn"><span class="ms s28">expand_more</span></div><div class="ctx">REPRODUCIENDO DESDE<b class="ell">Mix diario 2</b></div><div class="icon-btn"><span class="ms s22">auto_awesome</span></div><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+          <div class="art art-a" style="width:296px;height:296px;margin-top:16px"></div>
+          <div class="livebig">y la ciudad se apaga sin ti</div>
+          <div class="t-row" style="padding-top:12px"><div class="tx"><b class="ell">Luz de Neón</b><span>Marina Vega</span></div><div class="chk"><span class="ms s16">check</span></div></div>
+          <div class="seek"><div class="track thumb"><i style="width:38%"></i></div><div class="times" style="font-size:11px"><span>1:24</span><span>3:41</span></div></div>
+          <div class="ctrls"><span class="ms s26 on">shuffle</span><span class="ms f s36">skip_previous</span><span class="play"><span class="ms f s32">pause</span></span><span class="ms f s36">skip_next</span><span class="ms s26">repeat</span></div>
+          <div class="acts"><span class="dev"><span class="ms s18">speaker</span>Este teléfono</span><div class="sp"></div><span class="act"><span class="ms s22">slow_motion_video</span></span><span class="act"><span class="ms s22">timer</span></span><span class="act"><span class="ms s20">share</span></span><span class="act"><span class="ms s22">queue_music</span></span></div>
+        </div></div>
+        <div class="gesture"><i></i></div>
+      </div>
+      <p class="cap">Estado actual (con letra sincronizada).</p>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────── A ───────────── -->
+<section class="sketch">
+  <div class="sk-head"><span class="sk-tag">BOCETO A</span><h3>Cabecera y acciones más limpias</h3>
+    <p>La pantalla principal respira: la letra en vivo baja de tamaño y de sitio, y la fila inferior pasa de 5 a 3 elementos.</p></div>
+  <div class="sk-body">
+    <div>
+      <div class="phone spt">
+        <div class="grad"></div>
+        <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+        <div class="content"><div class="layer">
+          <div class="p-head" style="position:relative"><div class="icon-btn"><span class="ms s28">expand_more</span></div><div class="ctx">PLAYLIST<b class="ell">Mix diario 2</b></div><div class="icon-btn"><span class="ms s22">auto_awesome</span></div><div class="icon-btn"><span class="ms">more_vert</span></div><span class="mk" style="left:118px;top:0">1</span></div>
+          <div class="art art-a"></div>
+          <div class="t-row"><div class="tx"><b class="ell">Luz de Neón</b><span>Marina Vega</span></div><div class="icon-btn" style="width:40px"><span class="ms s26">add_circle</span></div><div class="chk"><span class="ms s16">check</span></div><span class="mk" style="left:258px;top:12px">2</span></div>
+          <div style="padding:8px 24px 0;font-size:14px;font-weight:600;color:#fff;opacity:.9;position:relative" class="ell">♪ y la ciudad se apaga sin ti<span class="mk" style="right:8px;top:6px">3</span></div>
+          <div class="seek"><div class="track thumb"><i style="width:38%"></i></div><div class="times" style="font-size:11px"><span>1:24</span><span>3:41</span></div></div>
+          <div class="ctrls"><span class="ms s26 on">shuffle</span><span class="ms f s36">skip_previous</span><span class="play"><span class="ms f s32">pause</span></span><span class="ms f s36">skip_next</span><span class="ms s26">repeat</span></div>
+          <div class="acts"><span class="dev on"><span class="ms s18">speaker_group</span>Salón · Chromecast</span><span class="mk" style="left:26px;top:4px">4</span><div class="sp"></div><span class="act"><span class="ms s20">share</span></span><span class="act"><span class="ms s22">queue_music</span></span><span class="mk" style="left:276px;top:4px">5</span></div>
+        </div></div>
+        <div class="gesture"><i></i></div>
+      </div>
+      <p class="cap">La carátula vuelve a su tamaño completo aunque haya letra.</p>
+    </div>
+    <div class="notes">
+      <h4>Qué cambia respecto al actual</h4>
+      <ol class="chg">
+        <li><b>Tipo de origen</b> en la cabecera («PLAYLIST», «ÁLBUM», «ARTISTA», «RADIO») en vez del genérico «REPRODUCIENDO DESDE».</li>
+        <li><b>Añadir a playlist</b> (⊕) junto al check de guardado.</li>
+        <li><b>Letra en vivo discreta</b>: una línea de 14 sp <b>debajo</b> del artista. Ya no empuja el título ni encoge la carátula.</li>
+        <li><b>Dispositivo en verde</b> cuando suena en otro aparato (Cast/Listen Together), con su nombre; en el teléfono sigue gris.</li>
+        <li><b>3 acciones</b>: dispositivo · compartir · cola. Vídeo y temporizador pasan al menú ⋮ (el vídeo sigue también en la pastilla del canvas).</li>
+      </ol>
+      <h4>Valoración</h4>
+      <ul><li class="pro">El más parecido al Spotify real y el menos recargado.</li><li class="con">Vídeo y temporizador a un toque más.</li></ul>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────── B ───────────── -->
+<section class="sketch">
+  <div class="sk-head"><span class="sk-tag">BOCETO B</span><h3>Canvas protagonista</h3>
+    <p>Cuando la canción tiene canvas, los textos se apoyan sobre el vídeo y una tarjeta asoma abajo para invitar a bajar.</p></div>
+  <div class="sk-body">
+    <div>
+      <div class="phone spt">
+        <div class="canvas"><div class="fig"></div></div>
+        <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+        <div class="content"><div class="layer">
+          <div class="p-head"><div class="icon-btn"><span class="ms s28">expand_more</span></div><div class="ctx">PLAYLIST<b class="ell">Mix diario 2</b></div><div class="icon-btn"><span class="ms s22">auto_awesome</span></div><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+          <div class="sp"></div>
+          <div class="t-row" style="padding-bottom:0"><div class="mini art-a" style="width:48px;height:48px;border-radius:6px;position:relative"><span class="mk" style="left:-10px;top:-10px">1</span></div><div class="tx"><b class="ell" style="font-size:22px">Luz de Neón</b><span>Marina Vega</span></div><div class="chk"><span class="ms s16">check</span></div></div>
+          <div class="seek" style="padding-top:18px"><div class="track" style="height:6px;border-radius:3px"><i style="width:38%;border-radius:3px"></i></div><div class="times" style="font-size:11px"><span>1:24</span><span>3:41</span></div><span class="mk" style="right:2px;top:8px">2</span></div>
+          <div class="ctrls"><span class="ms s26 on">shuffle</span><span class="ms f s36">skip_previous</span><span class="play"><span class="ms f s32">pause</span></span><span class="ms f s36">skip_next</span><span class="ms s26">repeat</span></div>
+          <div class="acts"><span class="dev"><span class="ms s18">speaker</span>Este teléfono</span><div class="sp"></div><span class="act" style="position:relative"><span class="ms s22">volume_off</span><span class="mk" style="left:-8px;top:-8px">3</span></span><span class="act"><span class="ms s20">share</span></span><span class="act"><span class="ms s22">queue_music</span></span></div>
+          <div style="margin:16px 12px 0;height:60px;border-radius:16px 16px 0 0;background:#5A2238;padding:14px 16px;position:relative;flex:none"><div class="row" style="font-weight:700;font-size:16px">Letras<div class="sp"></div><span class="ms s20">open_in_full</span></div><span class="mk" style="left:80px;top:-10px">4</span></div>
+        </div></div>
+      </div>
+      <p class="cap">Con canvas activo. Sin canvas se ve como el boceto A.</p>
+    </div>
+    <div class="notes">
+      <h4>Qué cambia respecto al actual</h4>
+      <ol class="chg">
+        <li><b>Mini carátula</b> de 48 dp junto al título cuando hay canvas: hoy, con canvas, la carátula desaparece y se pierde la referencia del álbum.</li>
+        <li><b>Barra de 6 dp</b> sin bolita en reposo; la bolita aparece sólo al arrastrar (más legible sobre el vídeo).</li>
+        <li><b>Silenciar canvas</b>: un toque para pausar el vídeo de fondo (ahorra batería) sin cambiar de estilo.</li>
+        <li><b>Tarjeta que asoma</b>: el borde de «Letras» queda visible abajo, indicando que hay más contenido al bajar.</li>
+      </ol>
+      <h4>Valoración</h4>
+      <ul><li class="pro">Saca más partido al canvas, que es lo que distingue a este estilo.</li><li class="con">Sólo cambia de verdad en canciones con canvas.</li></ul>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────── C ───────────── -->
+<section class="sketch">
+  <div class="sk-head"><span class="sk-tag">BOCETO C</span><h3>Tarjetas al bajar, ordenadas</h3>
+    <p>La pantalla principal queda como hoy; el pulido va en la zona de scroll: qué sale primero, la cabecera fija y la cola.</p></div>
+  <div class="sk-body">
+    <div>
+      <div class="phone spt" style="background:#1E0D14">
+        <div class="statusbar" style="background:#4A1C2E"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+        <div class="sticky"><div class="mini art-a"></div><div class="tx"><b class="ell">Luz de Neón</b><span>Marina Vega</span></div><div class="chk" style="width:22px;height:22px"><span class="ms s14">check</span></div><span class="ms f s28" style="margin-left:6px">pause_circle</span><i style="position:absolute;left:0;bottom:0;height:2px;width:38%;background:#fff"></i><span class="mk" style="left:110px;top:44px">1</span></div>
+        <div class="content"><div class="layer" style="padding:10px 12px 0;gap:12px">
+          <div class="card" style="background:#2A1820"><h5>Siguiente en la cola<div class="sp"></div><span style="font-size:13px;font-weight:500;color:var(--on-var)">Abrir cola</span></h5>
+            <div class="q-row" style="margin-top:6px"><div class="a art-b"></div><div style="flex:1;min-width:0"><b class="ell">Mar de Fondo</b><span>Los Ríos</span></div><span class="ms">drag_handle</span></div><span class="mk" style="right:10px;top:-8px">2</span></div>
+          <div class="card" style="background:#E2879F;color:#2a0b17"><h5>Letras<div class="sp"></div><span class="ms s18">share</span></h5>
+            <div class="lyl">y la ciudad se apaga sin ti<br><span class="dim">luces de neón sobre el asfalto</span><br><span class="dim">nadie me espera al llegar</span></div>
+            <div style="margin-top:12px"><span class="pill" style="background:#2a0b17;color:#fff">Mostrar la letra</span></div><span class="mk" style="right:10px;top:-8px">3</span></div>
+          <div class="card"><h5><span class="ms s20">auto_awesome</span>Créditos y SongDNA</h5>
+            <div class="row" style="margin-top:12px;gap:12px"><div class="dna"><span class="n art-a"></span><span class="n art-d"></span><span class="n art-c"></span></div><div style="flex:1;font-size:13px;color:var(--on-var)">Marina Vega, J. Ortiz y 3 más</div><span class="pill">Explorar</span></div><span class="mk" style="right:10px;top:-8px">4</span></div>
+          <div class="card" style="background:#181818;height:140px"><h5>Acerca del artista</h5></div>
+        </div></div>
+        <div class="gesture"><i></i></div>
+      </div>
+      <p class="cap">Estado al hacer scroll, con la cabecera fija.</p>
+    </div>
+    <div class="notes">
+      <h4>Qué cambia respecto al actual</h4>
+      <ol class="chg">
+        <li><b>Cabecera fija con progreso</b>: línea de 2 dp que avanza con la canción y el check de guardado a mano.</li>
+        <li><b>Nueva tarjeta «Siguiente en la cola»</b> arriba del todo: la próxima canción con asa para reordenar y acceso a la cola.</li>
+        <li><b>Letras en color vivo</b> de la paleta (hoy ya existe <code>targetLyricsCardColor</code>) con texto oscuro cuando el tono es claro, para que no se pierda contraste.</li>
+        <li><b>Créditos + SongDNA en una sola tarjeta</b> con avatares apilados; hoy son dos tarjetas que repiten a las mismas personas.</li>
+      </ol>
+      <h4>Valoración</h4>
+      <ul><li class="pro">No toca lo que ya gusta de la pantalla principal.</li><li class="con">Unir Créditos y SongDNA reordena código de tarjetas.</li></ul>
+    </div>
+  </div>
+</section>
+
+<div class="pick">Elige <b>A</b>, <b>B</b> o <b>C</b> para el estilo Spotify. Como B y C tocan zonas distintas (canvas y tarjetas), también se pueden combinar con A.</div>
+</div>
+</body>
+</html>

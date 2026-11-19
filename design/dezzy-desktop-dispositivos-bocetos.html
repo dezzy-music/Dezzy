@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dezzy escritorio · Dispositivos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..800&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dezzy-desktop-base.css">
+<style>
+.toc{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
+.toc a{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--doc-line);border-radius:20px;padding:8px 14px;color:var(--ink);text-decoration:none;font-weight:500;font-size:14px}
+.toc a .ms{color:var(--doc-accent);font-size:18px}
+.android{display:flex;gap:10px;background:#fff;border:1px dashed var(--doc-accent);border-radius:12px;padding:12px 14px;margin-top:12px;font-size:14px;color:var(--muted)}
+.android b{color:var(--ink)}
+.android .ms{color:var(--doc-accent)}
+.grow{flex:1}
+.muted{color:var(--on-sv)}
+.win{position:relative}
+
+/* Contenido de fondo */
+.mixes{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.cards4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:22px}
+
+/* Popover de dispositivos (sale del botón «Dispositivos» de la barra) */
+.dev{position:absolute;right:150px;bottom:92px;width:392px;background:var(--s-high);border-radius:24px;
+  box-shadow:0 18px 50px rgba(0,0,0,.55);padding:18px 0 10px;z-index:3;color:var(--on-s)}
+.dev::after{content:"";position:absolute;right:122px;bottom:-7px;width:14px;height:14px;background:var(--s-high);transform:rotate(45deg);border-radius:2px}
+.dev h5{display:flex;align-items:center;gap:8px;font:700 20px 'Roboto Flex',Roboto;padding:0 12px 0 22px;margin:0}
+.dev .ib{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:var(--on-sv)}
+.dev .status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--on-sv);padding:2px 22px 10px}
+.dev .status .dot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.dev .spin{width:14px;height:14px;border-radius:50%;border:2px solid var(--ov);border-top-color:var(--primary)}
+.dev .lbl{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--on-sv);padding:12px 22px 6px}
+.drow{display:flex;align-items:center;gap:14px;margin:0 10px;padding:10px 12px;border-radius:16px}
+.drow .ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:var(--s-highest);color:var(--on-sv);flex:none}
+.drow .t{flex:1;min-width:0}
+.drow .t b{display:block;font-weight:500;font-size:15px}
+.drow .t small{display:block;font-size:12.5px;color:var(--on-sv);margin-top:1px}
+.drow.here{background:var(--sc2);color:var(--on-sc2)}
+.drow.here .ic{background:var(--primary);color:var(--on-primary)}
+.drow.here small{color:var(--on-sc2);opacity:.85}
+.drow.off{opacity:.5}
+.drow.hover{background:color-mix(in srgb,var(--on-s) 7%,transparent)}
+.drow .eq{color:var(--primary)}
+.outrow{display:flex;align-items:center;gap:10px;margin:2px 22px 4px 80px;font-size:12.5px;color:var(--on-sv)}
+.slider{flex:1;height:4px;border-radius:2px;background:var(--s-highest);position:relative}
+.slider::before{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--p,60%);background:var(--primary);border-radius:2px}
+.slider::after{content:"";position:absolute;left:var(--p,60%);top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:var(--primary)}
+.jt{display:flex;align-items:center;gap:14px;margin:12px 16px 4px;padding:12px 14px;border-radius:20px;background:var(--sc2);color:var(--on-sc2)}
+.jt .ic{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--tertiary);color:#3B2A12}
+.jt small{display:block;font-size:12.5px;opacity:.8}
+.dfoot{display:flex;align-items:center;gap:6px;padding:8px 14px 0;border-top:1px solid var(--ov);margin-top:10px}
+
+/* Elección de modo al pulsar un dispositivo */
+.modes{margin:4px 22px 6px 80px;display:flex;flex-direction:column;gap:8px}
+.mode{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:16px;border:1px solid var(--ov)}
+.mode .ms{color:var(--on-sv);margin-top:1px}
+.mode b{display:block;font-weight:500;font-size:14px}
+.mode small{display:block;font-size:12.5px;color:var(--on-sv);margin-top:2px;line-height:1.4}
+.mode.on{border-color:var(--primary);background:color-mix(in srgb,var(--primary) 12%,transparent)}
+.mode.on .ms{color:var(--primary)}
+.remember{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--on-sv);margin:2px 0 0 2px}
+.remember i{width:18px;height:18px;border-radius:4px;border:2px solid var(--outline)}
+
+/* Ajuste de sincronía en «En ambos» */
+.sync{margin:8px 16px 0;padding:12px 14px;border-radius:16px;background:var(--s-highest)}
+.sync .row{display:flex;align-items:center;gap:10px;font-size:13px}
+.sync small{display:block;font-size:12px;color:var(--on-sv);margin-top:6px;line-height:1.4}
+.sync .ms{color:var(--on-sv)}
+.pill{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:11px;font:500 11.5px 'Roboto Mono';background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+
+/* Franja sobre la barra del reproductor cuando suena en otro sitio */
+.strip{height:30px;flex:none;margin:0 8px;border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:0 18px;
+  background:var(--primary);color:var(--on-primary);font-size:13px;font-weight:500}
+.strip .ms{font-size:18px}
+.strip.ctrl{background:var(--tertiary);color:#3B2A12;justify-content:space-between}
+.strip .x{display:flex;align-items:center;gap:6px;opacity:.85}
+.win.strip-on .body{padding-bottom:0}
+.extra .devon{color:var(--primary)}
+
+/* Vacío */
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;padding:8px 26px 4px}
+.empty .big{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;background:var(--s-highest);color:var(--on-sv);margin-bottom:12px}
+.empty b{font-size:16px}
+.tips{margin:14px 16px 4px;padding:12px 14px;border-radius:16px;background:var(--s-highest);display:flex;flex-direction:column;gap:10px;font-size:13px;color:var(--on-sv)}
+.tips div{display:flex;gap:10px;align-items:flex-start}
+.tips .ms{font-size:18px;color:var(--on-sv)}
+.ebtns{display:flex;gap:8px;justify-content:center;margin-top:12px}
+
+/* Diagrama de cómo se encuentran */
+.flow{display:grid;grid-template-columns:1fr 60px 1fr 60px 1fr;align-items:center;gap:0;margin-top:18px}
+.flow .box{background:#fff;border:1px solid var(--doc-line);border-radius:14px;padding:14px 16px;font-size:14px;color:var(--muted)}
+.flow .box b{display:flex;align-items:center;gap:8px;color:var(--ink);margin-bottom:4px}
+.flow .box .ms{color:var(--doc-accent)}
+.flow .arr{text-align:center;color:var(--doc-accent)}
+</style>
+</head>
+<body>
+<main class="doc">
+<header>
+  <div class="kicker">Dezzy · escritorio · bocetos</div>
+  <h1>Conectar a un dispositivo</h1>
+  <p class="lead">El botón «Dispositivos» de la barra, hoy desactivado, abre la misma lista que la hoja «Conectar a un dispositivo» de Android. Ahí aparecen el móvil y los demás ordenadores con Dezzy de tu Wi‑Fi. Al elegir uno, decides si la música suena sólo allí o en los dos a la vez.</p>
+  <div class="alert">
+    <span class="ms s28" style="color:var(--doc-accent)">lock</span>
+    <div>
+      <b>Sólo tus dispositivos</b>
+      <p>La lista muestra únicamente los equipos vinculados entre sí con el QR de «Móvil vinculado». Otra persona en la misma Wi‑Fi no ve tu Dezzy ni puede mandarle música. Es un protocolo propio de Dezzy; no usa el de ninguna otra app.</p>
+    </div>
+  </div>
+  <nav class="toc">
+    <a href="#lista"><span class="ms">devices</span>1 · Lista de dispositivos</a>
+    <a href="#modo"><span class="ms">call_split</span>2 · Sólo allí o en ambos</a>
+    <a href="#alli"><span class="ms">phone_android</span>3 · Sonando en el móvil</a>
+    <a href="#ambos"><span class="ms">speaker_group</span>4 · En ambos a la vez</a>
+    <a href="#controlado"><span class="ms">settings_remote</span>5 · Controlado desde el móvil</a>
+    <a href="#vacio"><span class="ms">wifi_off</span>6 · Sin dispositivos</a>
+  </nav>
+</header>
+
+<!-- 1 · Lista -->
+<section id="lista">
+  <h2><span class="n">1</span>Lista de dispositivos</h2>
+  <p class="sub">Es un panel flotante sobre la barra, como el volumen. Arriba va este ordenador con su salida de audio y debajo «En tu red», con lo que Dezzy encuentra. Los equipos conocidos que no responden salen en gris como «No disponible ahora», igual que en Android.</p>
+  <div class="stage"><div class="win" data-nav="Inicio" data-dev>
+    <div class="body"><div class="panel main"><div class="topbar" data-top></div><div class="scroll" data-home></div></div></div>
+    <div class="dev">
+      <h5>Conectar a un dispositivo<span class="grow"></span><span class="ib" title="Buscar de nuevo"><span class="ms">cached</span></span></h5>
+      <div class="status"><span class="dot"></span>2 dispositivos en tu red</div>
+      <div class="drow here"><span class="ic"><span class="ms f">computer</span></span><div class="t"><b>Este ordenador</b><small>Sonando aquí</small></div><span class="ms eq" style="color:var(--on-sc2)">graphic_eq</span></div>
+      <div class="outrow"><span class="ms s18">speaker</span><span>Salida: Altavoces (Realtek)</span><span class="ms s16">navigate_next</span></div>
+      <div class="lbl"><span class="ms s18">wifi</span>En tu red</div>
+      <div class="drow hover"><span class="ic"><span class="ms">smartphone</span></span><div class="t"><b>POCO C71</b><small>Dezzy para Android · toca para elegir cómo</small></div><span class="ib"><span class="ms">more_vert</span></span></div>
+      <div class="drow off"><span class="ic"><span class="ms">laptop_windows</span></span><div class="t"><b>Portátil del salón</b><small>Dezzy para PC · No disponible ahora</small></div><span class="ib"><span class="ms">more_vert</span></span></div>
+      <div class="jt"><span class="ic"><span class="ms">group</span></span><div class="grow"><b>Escuchar juntos</b><small>Con amigos, estén donde estén</small></div><span class="ms">navigate_next</span></div>
+      <div class="dfoot"><span class="btn txt"><span class="ms s20">qr_code_2</span>Vincular otro dispositivo</span><span class="grow"></span><span class="btn txt"><span class="ms s20">tune</span>Salidas de audio</span></div>
+    </div>
+  </div></div>
+  <div class="notes">
+    <div><span class="ms s18">cached</span><span>Al abrir el panel se busca durante unos segundos («Buscando en tu red…» con un círculo girando). «Buscar de nuevo» repite la búsqueda.</span></div>
+    <div><span class="ms s18">more_vert</span><span>El menú ⋮ de cada fila tiene «Olvidar este dispositivo», como en Android. Olvidar un móvil también lo desvincula.</span></div>
+    <div><span class="ms s18">speaker</span><span>«Salida» abre la lista de salidas de Windows (altavoces, auriculares, Bluetooth) de Ajustes › Reproductor y audio.</span></div>
+  </div>
+  <div class="android"><span class="ms">phone_android</span><span><b>Conexión con Android:</b> la hoja «Conectar a un dispositivo» ya existe. Sólo cambia que, además de buscar como hoy, también encuentra los Dezzy para PC vinculados, con el mismo icono y textos («Dezzy para PC · controlas desde aquí»).</span></div>
+</section>
+
+<!-- 2 · Modo -->
+<section id="modo">
+  <h2><span class="n">2</span>Sólo allí o en ambos</h2>
+  <p class="sub">Al pulsar un dispositivo, la fila se abre con dos opciones. La canción, la cola y el punto exacto pasan sin cortes. Si marcas «Recordar mi elección», la próxima vez se conecta directamente.</p>
+  <div class="stage"><div class="win" data-nav="Inicio" data-dev>
+    <div class="body"><div class="panel main"><div class="topbar" data-top></div><div class="scroll" data-home></div></div></div>
+    <div class="dev">
+      <h5>Conectar a un dispositivo<span class="grow"></span><span class="ib"><span class="ms">cached</span></span></h5>
+      <div class="status"><span class="dot"></span>2 dispositivos en tu red</div>
+      <div class="drow here"><span class="ic"><span class="ms f">computer</span></span><div class="t"><b>Este ordenador</b><small>Sonando aquí</small></div><span class="ms" style="color:var(--on-sc2)">graphic_eq</span></div>
+      <div class="lbl"><span class="ms s18">wifi</span>En tu red</div>
+      <div class="drow hover"><span class="ic"><span class="ms">smartphone</span></span><div class="t"><b>POCO C71</b><small>Dezzy para Android</small></div><span class="ib"><span class="ms">expand_less</span></span></div>
+      <div class="modes">
+        <div class="mode on"><span class="ms">phone_android</span><div><b>Sólo en POCO C71</b><small>Deja de sonar aquí y el ordenador se queda de mando: pausa, salta y cambia el volumen del móvil.</small></div></div>
+        <div class="mode"><span class="ms">speaker_group</span><div><b>En ambos a la vez</b><small>Suena en los dos, sincronizados. Ideal para dos habitaciones.</small></div></div>
+        <div class="remember"><i></i>Recordar mi elección para POCO C71</div>
+      </div>
+      <div class="drow off"><span class="ic"><span class="ms">laptop_windows</span></span><div class="t"><b>Portátil del salón</b><small>Dezzy para PC · No disponible ahora</small></div><span class="ib"><span class="ms">more_vert</span></span></div>
+      <div class="dfoot"><span class="btn txt"><span class="ms s20">qr_code_2</span>Vincular otro dispositivo</span></div>
+    </div>
+  </div></div>
+  <div class="notes">
+    <div><span class="ms s18">swap_horiz</span><span>«Sólo en…» es pasar la música: el otro equipo la recoge en el mismo segundo y este se calla.</span></div>
+    <div><span class="ms s18">speaker_group</span><span>«En ambos» mantiene los dos sonando con el mismo reloj. Se puede añadir un tercero desde la misma lista.</span></div>
+  </div>
+  <div class="android"><span class="ms">phone_android</span><span><b>Conexión con Android:</b> la hoja del móvil gana las mismas dos opciones al tocar un Dezzy para PC. Es la única pieza nueva en Android.</span></div>
+</section>
+
+<!-- 3 · Sólo allí -->
+<section id="alli">
+  <h2><span class="n">3</span>Sonando en el móvil</h2>
+  <p class="sub">Una franja de color sobre la barra avisa de dónde suena. Los botones de la barra, la cola y Reproduciendo siguen funcionando: mandan las órdenes al móvil. El volumen de la barra es el del móvil.</p>
+  <div class="stage"><div class="win strip-on" data-nav="Inicio" data-dev="on" data-strip="Sonando en POCO C71">
+    <div class="body"><div class="panel main"><div class="topbar" data-top></div><div class="scroll" data-home></div></div></div>
+    <div class="dev" style="bottom:122px">
+      <h5>Conectar a un dispositivo<span class="grow"></span><span class="ib"><span class="ms">cached</span></span></h5>
+      <div class="status"><span class="dot"></span>Conectado a POCO C71</div>
+      <div class="drow here"><span class="ic"><span class="ms f">smartphone</span></span><div class="t"><b>POCO C71</b><small>Dezzy para Android · controlas desde aquí</small></div><span class="ib" style="color:var(--on-sc2)" title="Desconectar"><span class="ms">close</span></span></div>
+      <div class="outrow"><span class="ms s18">volume_up</span><span class="slider" style="--p:70%"></span><span>70 %</span></div>
+      <div class="drow"><span class="ic"><span class="ms">computer</span></span><div class="t"><b>Este ordenador</b><small>Toca para traer la música aquí</small></div></div>
+      <div class="lbl"><span class="ms s18">wifi</span>En tu red</div>
+      <div class="drow off"><span class="ic"><span class="ms">laptop_windows</span></span><div class="t"><b>Portátil del salón</b><small>Dezzy para PC · No disponible ahora</small></div><span class="ib"><span class="ms">more_vert</span></span></div>
+      <div class="dfoot"><span class="btn txt"><span class="ms s20">speaker_group</span>Sonar también aquí</span></div>
+    </div>
+  </div></div>
+  <div class="notes">
+    <div><span class="ms s18">close</span><span>La ✕ de la fila (o «Desconectar») devuelve la música al ordenador en el mismo punto.</span></div>
+    <div><span class="ms s18">speaker_group</span><span>«Sonar también aquí» pasa a «En ambos» sin cortar la canción.</span></div>
+    <div><span class="ms s18">wifi_off</span><span>Si se pierde la conexión, el móvil sigue sonando solo y aquí sale un aviso con «Reintentar».</span></div>
+  </div>
+</section>
+
+<!-- 4 · En ambos -->
+<section id="ambos">
+  <h2><span class="n">4</span>En ambos a la vez</h2>
+  <p class="sub">Cada dispositivo tiene su volumen. Abajo se ve si están sincronizados y, si se nota eco (por ejemplo con auriculares Bluetooth, que llevan retraso), se corrige a mano con «Ajustar sincronía».</p>
+  <div class="stage"><div class="win strip-on" data-nav="Inicio" data-dev="on" data-strip="Sonando en este ordenador y POCO C71">
+    <div class="body"><div class="panel main"><div class="topbar" data-top></div><div class="scroll" data-home></div></div></div>
+    <div class="dev" style="bottom:122px">
+      <h5>Conectar a un dispositivo<span class="grow"></span><span class="ib"><span class="ms">cached</span></span></h5>
+      <div class="status"><span class="dot"></span>2 dispositivos sonando a la vez</div>
+      <div class="drow here"><span class="ic"><span class="ms f">computer</span></span><div class="t"><b>Este ordenador</b><small>Sonando aquí</small></div><span class="ib" style="color:var(--on-sc2)" title="Dejar de sonar aquí"><span class="ms">close</span></span></div>
+      <div class="outrow"><span class="ms s18">volume_up</span><span class="slider" style="--p:55%"></span><span>55 %</span></div>
+      <div class="drow here"><span class="ic"><span class="ms f">smartphone</span></span><div class="t"><b>POCO C71</b><small>Dezzy para Android · sonando</small></div><span class="ib" style="color:var(--on-sc2)" title="Quitar"><span class="ms">close</span></span></div>
+      <div class="outrow"><span class="ms s18">volume_up</span><span class="slider" style="--p:80%"></span><span>80 %</span></div>
+      <div class="sync">
+        <div class="row"><span class="ms s20">sync</span><b style="font-weight:500">Sincronía</b><span class="grow"></span><span class="pill"><span class="ms s16">check</span>12 ms</span></div>
+        <div class="row" style="margin-top:10px"><span style="font-size:12.5px;color:var(--on-sv)">Ajustar sincronía</span><span class="slider" style="--p:50%"></span><span style="font:500 12px 'Roboto Mono'">0 ms</span></div>
+        <small>Si oyes eco, mueve el control hasta que suenen a la vez. Se guarda para este par de dispositivos.</small>
+      </div>
+      <div class="lbl"><span class="ms s18">wifi</span>En tu red</div>
+      <div class="drow off"><span class="ic"><span class="ms">laptop_windows</span></span><div class="t"><b>Portátil del salón</b><small>No disponible ahora</small></div><span class="ms" style="color:var(--on-sv)">add</span></div>
+    </div>
+  </div></div>
+  <div class="notes">
+    <div><span class="ms s18">sync</span><span>El reloj se ajusta solo cada pocos segundos. La cifra verde es la diferencia medida; en ámbar si pasa de 40 ms.</span></div>
+    <div><span class="ms s18">add</span><span>El «+» de un dispositivo disponible lo suma a la reproducción. Se pueden juntar varios.</span></div>
+    <div><span class="ms s18">close</span><span>La ✕ quita ese dispositivo; con uno solo sonando, vuelve al estado normal.</span></div>
+  </div>
+</section>
+
+<!-- 5 · Controlado -->
+<section id="controlado">
+  <h2><span class="n">5</span>Controlado desde el móvil</h2>
+  <p class="sub">Cuando eliges el ordenador desde el móvil, el escritorio suena y avisa con una franja de otro color. Desde aquí también se puede tocar todo; el móvil ve los cambios al momento.</p>
+  <div class="stage"><div class="win strip-on" data-nav="Inicio" data-dev="on" data-strip="ctrl:Lo controla POCO C71">
+    <div class="body"><div class="panel main"><div class="topbar" data-top></div><div class="scroll" data-home></div></div></div>
+  </div></div>
+  <div class="notes">
+    <div><span class="ms s18">settings_remote</span><span>«Desconectar» en la franja corta el control del móvil; la música sigue sonando aquí.</span></div>
+    <div><span class="ms s18">notifications</span><span>La primera vez que un móvil toma el control, Windows muestra una notificación con su nombre.</span></div>
+  </div>
+  <div class="android"><span class="ms">phone_android</span><span><b>Conexión con Android:</b> el móvil muestra su estado de siempre, «Dezzy para PC · controlas desde aquí» con «Desconectar», y su reproductor manda las órdenes al ordenador.</span></div>
+</section>
+
+<!-- 6 · Vacío -->
+<section id="vacio">
+  <h2><span class="n">6</span>Sin dispositivos</h2>
+  <p class="sub">Los mismos consejos que en Android, más el del cortafuegos de Windows, que es lo que más falla en el escritorio.</p>
+  <div class="stage"><div class="win" data-nav="Inicio" data-dev>
+    <div class="body"><div class="panel main"><div class="topbar" data-top></div><div class="scroll" data-home></div></div></div>
+    <div class="dev">
+      <h5>Conectar a un dispositivo<span class="grow"></span><span class="ib"><span class="ms">cached</span></span></h5>
+      <div class="drow here" style="margin-top:6px"><span class="ic"><span class="ms f">computer</span></span><div class="t"><b>Este ordenador</b><small>Sonando aquí</small></div></div>
+      <div class="empty" style="margin-top:14px">
+        <span class="big"><span class="ms s28">wifi_find</span></span>
+        <b>No encontramos dispositivos</b>
+        <small class="muted" style="margin-top:4px">Revisa esto y vuelve a buscar:</small>
+      </div>
+      <div class="tips">
+        <div><span class="ms">wifi</span><span>El móvil y el ordenador están en la misma Wi‑Fi.</span></div>
+        <div><span class="ms">smartphone</span><span>Dezzy está abierto en el móvil.</span></div>
+        <div><span class="ms">qr_code_2</span><span>El móvil está vinculado a este ordenador.</span></div>
+        <div><span class="ms">shield</span><span>Windows deja a Dezzy usar las redes privadas (te lo pregunta la primera vez).</span></div>
+      </div>
+      <div class="ebtns"><span class="btn tonal"><span class="ms s20">cached</span>Buscar de nuevo</span><span class="btn out"><span class="ms s20">qr_code_2</span>Vincular</span></div>
+    </div>
+  </div></div>
+</section>
+
+<!-- Cómo funciona -->
+<section id="como">
+  <h2><span class="n">·</span>Cómo se encuentran</h2>
+  <p class="sub">Para que se vea qué hay debajo. No cambia nada en pantalla.</p>
+  <div class="flow">
+    <div class="box"><b><span class="ms">qr_code_2</span>Vinculación</b>El QR de «Móvil vinculado» ya intercambia claves. Esas claves son las que luego reconocen a tus dispositivos.</div>
+    <div class="arr"><span class="ms s28">arrow_forward</span></div>
+    <div class="box"><b><span class="ms">wifi</span>Aviso en tu red</b>Cada Dezzy se anuncia en la Wi‑Fi con un aviso firmado. Sólo lo entienden los dispositivos vinculados.</div>
+    <div class="arr"><span class="ms s28">arrow_forward</span></div>
+    <div class="box"><b><span class="ms">sync</span>Conexión directa</b>Se hablan directamente por la red de casa, cifrado, sin pasar por ningún servidor.</div>
+  </div>
+</section>
+</main>
+
+<template id="shell-top">
+  <span class="search"><span class="ms">search</span>Canciones, artistas, letras…<span class="kbd">Ctrl K</span></span>
+  <span style="flex:1"></span>
+  <span class="ms" style="color:var(--on-sv)">notifications</span>
+  <span class="avatar">D</span>
+</template>
+<template id="shell-home">
+  <div class="rowh"><h4>Tus mixes</h4></div>
+  <div class="mixes">
+    <div class="mix c1" style="height:150px">Mix Dezzy 1<small>Karol G, Feid, Young Miko</small></div>
+    <div class="mix c3" style="height:150px">Descubrimiento<small>Novedades para ti</small></div>
+    <div class="mix c7" style="height:150px">Noche<small>Shoegaze y dream pop</small></div>
+  </div>
+  <div class="cards4">
+    <div class="card"><i class="c5"></i><b>Mañana Será Bonito</b><small>Álbum · Karol G</small></div>
+    <div class="card"><i class="c8"></i><b>Para manejar</b><small>Playlist</small></div>
+    <div class="card"><i class="c6"></i><b>Ferxxocalipsis</b><small>Álbum · Feid</small></div>
+    <div class="card"><i class="c4"></i><b>Me gusta</b><small>842 canciones</small></div>
+  </div>
+</template>
+<script>
+const NAV = [['home','Inicio'],['search','Buscar'],['library_music','Biblioteca'],['public','Mapa musical'],['leaderboard','Rankings'],['group','Social'],['groups','Escuchar juntos'],['download','Descargas']];
+document.querySelectorAll('.win').forEach((win) => {
+  win.insertAdjacentHTML('afterbegin', '<div class="titlebar"><span class="logo"></span>Dezzy<span class="sp"></span><span class="wc"><span class="ms s16">remove</span><span class="ms s16">crop_square</span><span class="ms s16">close</span></span></div>');
+  const body = win.querySelector('.body');
+  const active = win.dataset.nav;
+  body.insertAdjacentHTML('afterbegin', '<aside class="panel side"><nav class="nav">' +
+    NAV.map(([i, l]) => `<a class="${l === active ? 'on' : ''}" href="#"><span class="ms">${i}</span>${l}</a>`).join('') +
+    '</nav><h4>Tus playlists</h4>' +
+    '<div class="pl"><i class="c4"></i><div><b>Me gusta</b><small>842 canciones</small></div></div>' +
+    '<div class="pl"><i class="c3"></i><div><b>Noche de shoegaze</b><small>Playlist, 64</small></div></div>' +
+    '<div class="pl"><i class="c2"></i><div><b>Para manejar</b><small>Playlist, 120</small></div></div></aside>');
+  win.querySelectorAll('[data-top]').forEach((t) => (t.innerHTML = document.getElementById('shell-top').innerHTML));
+  win.querySelectorAll('[data-home]').forEach((t) => (t.innerHTML = document.getElementById('shell-home').innerHTML));
+  const strip = win.dataset.strip;
+  if (strip) {
+    const ctrl = strip.startsWith('ctrl:');
+    const text = ctrl ? strip.slice(5) : strip;
+    win.insertAdjacentHTML('beforeend', ctrl
+      ? `<div class="strip ctrl"><span class="x"><span class="ms">settings_remote</span>${text}</span><span class="x"><span class="ms">link_off</span>Desconectar</span></div>`
+      : `<div class="strip"><span class="ms">${text.includes('ambos') || text.includes(' y ') ? 'speaker_group' : 'phone_android'}</span>${text}</div>`);
+  }
+  const devOn = win.dataset.dev === 'on';
+  win.insertAdjacentHTML('beforeend', '<div class="player"><div class="np"><i class="c2"></i><div style="min-width:0"><b>Si Antes Te Hubiera Conocido</b><small>Karol G</small></div><span class="ms f" style="color:var(--primary)">favorite</span></div><div class="ctrl"><div class="btns"><span class="ms s20">shuffle</span><span class="ms">skip_previous</span><span class="play"><span class="ms f s28">pause</span></span><span class="ms">skip_next</span><span class="ms s20">repeat</span></div><div class="bar">1:02<span class="track" style="--p:30%"></span>3:15</div></div><div class="extra"><span class="ms s20">lyrics</span><span class="ms s20">queue_music</span><span class="ms s20 ' + (devOn || win.querySelector('.dev') ? 'devon' : '') + '">' + (devOn ? 'devices_other' : 'devices') + '</span><span class="ms s20">groups</span><span class="ms s20">volume_up</span><span class="vol"></span><span class="ms s20">open_in_full</span></div></div>');
+});
+</script>
+</body>
+</html>

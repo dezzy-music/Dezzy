@@ -1,0 +1,8 @@
+_temp_scripts/
+graphify-out/
+.claude/
+**/build/
+.gradle/
+.kotlin/
+design/
+*.html

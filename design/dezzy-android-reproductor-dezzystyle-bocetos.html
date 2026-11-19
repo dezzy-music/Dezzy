@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reproductor Dezzy Style · bocetos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="reproductor-estilos-base.css">
+<style>
+/* ── Dezzy Style: tornamesa de vinilo (VinylPlayer.kt, PlayerDesignStyle.LIVE_MESH) ── */
+.vin{background:#EFECE3;color:#141414;--subtle:#8C8A82;--btn:#F8F6EF}
+.v-top{display:flex;align-items:center;padding:6px 12px;gap:8px;position:relative}
+.rbtn{width:46px;height:46px;border-radius:50%;background:var(--btn);display:grid;place-items:center;flex:none;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.seg{display:flex;height:34px;border-radius:17px;background:rgba(0,0,0,.07);padding:3px}
+.seg span{padding:0 14px;display:grid;place-items:center;border-radius:14px;font-size:13px;font-weight:500;color:#5a584f}
+.seg span.on{background:#141414;color:#fff}
+.deck{flex:1;position:relative;min-height:0}
+.disc{position:absolute;left:-18px;top:50%;width:330px;height:330px;margin-top:-165px;border-radius:50%;
+  background:radial-gradient(circle,transparent 0 30%,rgba(255,255,255,.05) 30.5%,transparent 31%),repeating-radial-gradient(circle,#17171A 0 2px,#202024 2px 3px);
+  box-shadow:0 14px 30px rgba(0,0,0,.28),inset 0 0 0 2px #0c0c0e}
+.disc::before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 20deg,transparent 0 40deg,rgba(255,255,255,.10) 55deg,transparent 70deg 220deg,rgba(255,255,255,.07) 235deg,transparent 250deg)}
+.label{position:absolute;left:50%;top:50%;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;box-shadow:0 0 0 4px #fff}
+.label::after{content:"";position:absolute;left:50%;top:50%;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:#EFECE3}
+.arm{position:absolute;right:26px;top:22px;width:40px;height:250px;transform-origin:20px 20px;transform:rotate(18deg)}
+.arm .piv{position:absolute;left:4px;top:4px;width:32px;height:32px;border-radius:50%;background:radial-gradient(circle,#D6D9DC,#8E9398);box-shadow:0 2px 4px rgba(0,0,0,.25)}
+.arm .rod{position:absolute;left:17px;top:20px;width:6px;height:200px;border-radius:3px;background:linear-gradient(90deg,#B9BEC2,#ECEFF1,#9EA3A8)}
+.arm .head{position:absolute;left:8px;top:212px;width:24px;height:34px;border-radius:4px;background:#2A2A2D}
+.info{padding:0 28px}
+.info b{display:block;font:700 28px/36px Roboto}
+.info span{display:block;font-size:16px;color:var(--subtle);margin-top:4px}
+.vt{display:flex;justify-content:space-between;font-size:12px;color:var(--subtle);padding:8px 28px 0}
+.pills{display:flex;align-items:center;padding:14px 32px 0;gap:18px}
+.pb{height:44px;border-radius:22px;background:var(--btn);display:grid;place-items:center;font-size:13px;font-weight:600;letter-spacing:2px;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.brow{display:flex;justify-content:space-between;padding:14px 28px 8px}
+.lbl{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--subtle)}
+.tip{position:absolute;background:#141414;color:#fff;font-size:12px;font-weight:600;border-radius:8px;padding:3px 8px;white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="styles">
+  <a href="dezzy-android-reproductor-applemusic-bocetos.html">Apple Music</a>
+  <a href="dezzy-android-reproductor-spotify-bocetos.html">Spotify</a>
+  <a href="dezzy-android-reproductor-ipod-bocetos.html">iPod</a>
+  <a class="on" href="dezzy-android-reproductor-dezzystyle-bocetos.html">Dezzy Style</a>
+</nav>
+<header class="top">
+  <h1>Reproductor · Dezzy Style (tornamesa)</h1>
+  <p class="lead">Se mantiene la tornamesa: disco que gira asomando por la izquierda, brazo que hace de barra de progreso, temas de color y gestos sobre el disco. Los bocetos pulen lo que cuesta descubrir (que el brazo es la barra) y los acabados.</p>
+  <div class="today">
+    <h4>Cómo está hoy (<code>ui/player/VinylPlayer.kt</code>, <code>PlayerDesignStyle.LIVE_MESH</code>)</h4>
+    <ul>
+      <li>Fondo del tema (crema, naranja, gris, plata, negro o dinámico desde la carátula).</li>
+      <li>Arriba: botón redondo ⌄ · pastilla Canción/Video · cola · ajustes (tema, vinilo, velocidad).</li>
+      <li>Disco con la carátula como etiqueta; tocar = play/pausa, deslizar = cambiar de canción, mantener = guardar imagen.</li>
+      <li>El brazo plateado es la barra de progreso: no hay barra deslizante, sólo los tiempos 12 sp. Nada indica que se puede arrastrar.</li>
+      <li>Título <code>headlineMedium</code> negrita y artista a la izquierda; pastilla «PLAY/PAUSE» de texto y pastillas ⏮ ⏭.</li>
+      <li>Fila inferior de botones redondos sin texto: me gusta · visualizador · compartir · letras.</li>
+    </ul>
+  </div>
+</header>
+
+<!-- ───────────── ACTUAL ───────────── -->
+<section class="sketch now">
+  <div class="sk-head"><span class="sk-tag">ACTUAL</span><h3>Referencia: así se ve hoy</h3><p>Para comparar. No se elige.</p></div>
+  <div class="sk-body">
+    <div>
+      <div class="phone vin">
+        <div class="statusbar dark"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+        <div class="content"><div class="layer">
+          <div class="v-top"><div class="rbtn"><span class="ms">expand_more</span></div><div class="sp"></div><div class="seg"><span class="on">Canción</span><span>Video</span></div><div class="sp"></div><div class="rbtn"><span class="ms">list</span></div><div class="rbtn"><span class="ms">settings</span></div></div>
+          <div class="deck"><div class="disc"><div class="label art-d"></div></div><div class="arm"><div class="rod"></div><div class="head"></div><div class="piv"></div></div></div>
+          <div class="info"><b class="ell">Satélite</b><span class="ell">Nora Azul</span></div>
+          <div class="vt"><span>1:12</span><span>3:20</span></div>
+          <div class="pills"><div class="pb" style="width:110px">PAUSE</div><div class="sp"></div><div class="pb" style="width:96px"><span class="ms f s20">skip_previous</span></div><div class="pb" style="width:96px"><span class="ms f s20">skip_next</span></div></div>
+          <div class="brow"><div class="rbtn"><span class="ms">favorite</span></div><div class="rbtn"><span class="ms">auto_awesome</span></div><div class="rbtn"><span class="ms">share</span></div><div class="rbtn"><span class="ms">lyrics</span></div></div>
+        </div></div>
+        <div class="gesture dark"><i></i></div>
+      </div>
+      <p class="cap">Estado actual (tema crema, vinilo clásico).</p>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────── A ───────────── -->
+<section class="sketch">
+  <div class="sk-head"><span class="sk-tag">BOCETO A</span><h3>El brazo se explica solo</h3>
+    <p>Todo igual, pero el disco muestra cuánto falta y el brazo dice la hora al arrastrarlo.</p></div>
+  <div class="sk-body">
+    <div>
+      <div class="phone vin">
+        <div class="statusbar dark"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+        <div class="content"><div class="layer">
+          <div class="v-top"><div class="rbtn"><span class="ms">expand_more</span></div><div class="sp"></div><div class="seg"><span class="on">Canción</span><span>Video</span></div><div class="sp"></div><div class="rbtn"><span class="ms">list</span></div><div class="rbtn"><span class="ms">settings</span></div></div>
+          <div class="deck">
+            <div class="disc"><div class="label art-d"></div>
+              <svg width="330" height="330" viewBox="0 0 330 330" style="position:absolute;inset:0;transform:rotate(-90deg)"><circle cx="165" cy="165" r="158" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="3"/><circle cx="165" cy="165" r="158" fill="none" stroke="#F2B66B" stroke-width="3" stroke-linecap="round" stroke-dasharray="356 993"/></svg>
+            </div>
+            <span class="mk" style="left:150px;top:6px">1</span>
+            <div class="arm"><div class="rod"></div><div class="head"></div><div class="piv"></div></div>
+            <div class="tip" style="right:6px;top:268px">1:12 / 3:20</div><span class="mk" style="right:96px;top:262px">2</span>
+          </div>
+          <div class="info" style="position:relative"><b class="ell">Satélite</b><span class="ell">Nora Azul</span></div>
+          <div class="vt" style="position:relative"><span>1:12</span><span style="font-size:11.5px;color:#5a584f"><span class="ms s14" style="vertical-align:-2px">swipe_vertical</span> Arrastra el brazo para avanzar</span><span>3:20</span><span class="mk" style="left:170px;top:-10px">3</span></div>
+          <div class="pills" style="position:relative"><div class="pb" style="width:120px;display:flex;gap:6px;justify-content:center"><span class="ms f s20">pause</span>PAUSE</div><div class="sp"></div><div class="pb" style="width:88px"><span class="ms f s20">skip_previous</span></div><div class="pb" style="width:88px"><span class="ms f s20">skip_next</span></div><span class="mk" style="left:24px;top:6px">4</span></div>
+          <div class="brow"><div class="rbtn"><span class="ms f" style="color:#C2410C">favorite</span></div><div class="rbtn"><span class="ms">auto_awesome</span></div><div class="rbtn"><span class="ms">share</span></div><div class="rbtn"><span class="ms">lyrics</span></div></div>
+        </div></div>
+        <div class="gesture dark"><i></i></div>
+      </div>
+      <p class="cap">La pista de texto sale sólo las primeras veces.</p>
+    </div>
+    <div class="notes">
+      <h4>Qué cambia respecto al actual</h4>
+      <ol class="chg">
+        <li><b>Arco de progreso</b> fino sobre el borde del disco (color del tema): se ve lo que lleva la canción aunque no mires los números. No gira con el disco.</li>
+        <li><b>Burbuja de tiempo</b> junto al cabezal mientras arrastras el brazo («1:12 / 3:20»).</li>
+        <li><b>Pista de uso</b> entre los tiempos, sólo las 3 primeras veces que abres el estilo: «Arrastra el brazo para avanzar».</li>
+        <li><b>PAUSE con icono</b> además del texto, y ♥ relleno en color cuando ya te gusta (hoy sólo cambia el contorno).</li>
+      </ol>
+      <h4>Valoración</h4>
+      <ul><li class="pro">Resuelve el «¿cómo adelanto?» sin añadir una barra.</li><li class="con">El arco añade un elemento más sobre el disco.</li></ul>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────── B ───────────── -->
+<section class="sketch">
+  <div class="sk-head"><span class="sk-tag">BOCETO B</span><h3>Etiqueta impresa y fila con nombres</h3>
+    <p>Lleva al vertical la etiqueta de vinilo impresa que ya existe en horizontal y ordena los botones.</p></div>
+  <div class="sk-body">
+    <div>
+      <div class="phone vin">
+        <div class="statusbar dark"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+        <div class="content"><div class="layer">
+          <div class="v-top"><div class="rbtn"><span class="ms">expand_more</span></div><div class="sp"></div><div class="seg"><span class="on">Canción</span><span>Video</span></div><div class="sp"></div><div class="rbtn" style="width:auto;padding:0 14px;border-radius:23px;font-size:13px;font-weight:700;gap:6px;display:flex;align-items:center">33⅓</div><div class="rbtn"><span class="ms">tune</span></div><span class="mk" style="right:66px;top:0">1</span></div>
+          <div class="deck">
+            <div class="disc"><div class="label" style="background:#EAD9B8;width:128px;height:128px;margin:-64px 0 0 -64px">
+              <svg width="128" height="128" viewBox="0 0 128 128" style="position:absolute;inset:0"><defs><path id="ta" d="M 18 64 A 46 46 0 0 1 110 64"/><path id="tb" d="M 22 64 A 42 42 0 0 0 106 64"/></defs><text font-size="11" font-weight="700" fill="#141414" letter-spacing="1"><textPath href="#ta" startOffset="50%" text-anchor="middle">SATÉLITE</textPath></text><text font-size="9" fill="#5a584f" letter-spacing="1"><textPath href="#tb" startOffset="50%" text-anchor="middle">NORA AZUL · LADO A</textPath></text></svg>
+              <div class="art-d" style="position:absolute;left:44px;top:44px;width:40px;height:40px;border-radius:50%"></div></div></div>
+            <span class="mk" style="left:200px;top:120px">2</span>
+            <div class="arm"><div class="rod"></div><div class="head"></div><div class="piv"></div></div>
+          </div>
+          <div class="info" style="display:flex;align-items:flex-end;gap:8px;position:relative"><div style="flex:1;min-width:0"><b class="ell">Satélite</b><span class="ell">Nora Azul</span></div><div class="rbtn" style="width:44px;height:44px"><span class="ms f" style="color:#C2410C">favorite</span></div><span class="mk" style="right:16px;top:-10px">3</span></div>
+          <div class="vt"><span>1:12</span><span>3:20</span></div>
+          <div class="pills"><div class="pb" style="width:110px">PAUSE</div><div class="sp"></div><div class="pb" style="width:96px"><span class="ms f s20">skip_previous</span></div><div class="pb" style="width:96px"><span class="ms f s20">skip_next</span></div></div>
+          <div class="brow" style="position:relative"><div class="lbl"><div class="rbtn" style="width:44px;height:44px"><span class="ms">lyrics</span></div>Letras</div><div class="lbl"><div class="rbtn" style="width:44px;height:44px"><span class="ms">list</span></div>Cola</div><div class="lbl"><div class="rbtn" style="width:44px;height:44px"><span class="ms">auto_awesome</span></div>Visual</div><div class="lbl"><div class="rbtn" style="width:44px;height:44px"><span class="ms">share</span></div>Compartir</div><span class="mk" style="left:2px;top:-6px">4</span></div>
+        </div></div>
+        <div class="gesture dark"><i></i></div>
+      </div>
+      <p class="cap">La carátula queda en pequeño en el centro de la etiqueta.</p>
+    </div>
+    <div class="notes">
+      <h4>Qué cambia respecto al actual</h4>
+      <ol class="chg">
+        <li><b>Velocidad a la vista</b>: pastilla arriba con la velocidad de giro; un toque alterna. Las opciones de hoy (Lenta · Normal · Rápida) se rotulan como <b>16 · 33⅓ · 45</b> rpm. Ajustes pasa a icono <code>tune</code> y la cola baja a la fila inferior.</li>
+        <li><b>Etiqueta impresa</b> en vertical, como la del modo horizontal: título y artista en arco y la carátula en pequeño en el centro.</li>
+        <li><b>Me gusta junto al título</b>, relleno en color cuando está activo.</li>
+        <li><b>Fila inferior con nombres</b>: Letras · Cola · Visual · Compartir (hoy son 4 círculos iguales sin texto).</li>
+      </ol>
+      <h4>Valoración</h4>
+      <ul><li class="pro">Más «disco de verdad» y botones que se entienden a la primera.</li><li class="con">La carátula se ve menos (sólo en la etiqueta pequeña).</li></ul>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────── C ───────────── -->
+<section class="sketch">
+  <div class="sk-head"><span class="sk-tag">BOCETO C</span><h3>Plato y acabados</h3>
+    <p>La disposición no cambia; el pulido va en materiales: plato con alfombrilla, luz del tema y sombra del brazo.</p></div>
+  <div class="sk-body">
+    <div>
+      <div class="phone vin" style="background:linear-gradient(180deg,#F3F0E8 0%,#E6E1D4 100%)">
+        <div class="statusbar dark"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+        <span class="mk" style="left:300px;top:640px">4</span>
+        <div class="content"><div class="layer">
+          <div class="v-top"><div class="rbtn"><span class="ms">expand_more</span></div><div class="sp"></div><div class="seg"><span class="on">Canción</span><span>Video</span></div><div class="sp"></div><div class="rbtn"><span class="ms">list</span></div><div class="rbtn"><span class="ms">settings</span></div></div>
+          <div class="deck">
+            <div style="position:absolute;left:-30px;top:50%;width:354px;height:354px;margin-top:-177px;border-radius:50%;background:radial-gradient(circle,#3a3a3e 0 60%,#2b2b2f 61%,#232326 100%);box-shadow:0 18px 36px rgba(0,0,0,.25)"></div>
+            <div style="position:absolute;left:-30px;top:50%;width:354px;height:354px;margin-top:-177px;border-radius:50%;background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.55) 0 1.2deg,transparent 1.2deg 6deg);-webkit-mask:radial-gradient(circle,transparent 0 172px,#000 172px 177px);mask:radial-gradient(circle,transparent 0 172px,#000 172px 177px)"></div>
+            <span class="mk" style="left:6px;top:26px">1</span>
+            <div class="disc" style="box-shadow:0 4px 10px rgba(0,0,0,.35),inset 0 0 0 2px #0c0c0e"><div class="label art-d"></div></div>
+            <div class="arm" style="filter:drop-shadow(8px 10px 6px rgba(0,0,0,.28))"><div class="rod"></div><div class="head"></div><div class="piv"></div></div>
+            <span class="mk" style="right:22px;top:150px">2</span>
+            <div style="position:absolute;right:20px;bottom:10px;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:1px;color:#5a584f"><i style="width:8px;height:8px;border-radius:50%;background:#F2B66B;box-shadow:0 0 8px #F2B66B"></i>33⅓</div>
+            <span class="mk" style="right:76px;bottom:8px">3</span>
+          </div>
+          <div class="info"><b class="ell">Satélite</b><span class="ell">Nora Azul</span></div>
+          <div class="vt"><span>1:12</span><span>3:20</span></div>
+          <div class="pills"><div class="pb" style="width:110px;box-shadow:0 3px 0 rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.1)">PAUSE</div><div class="sp"></div><div class="pb" style="width:96px;box-shadow:0 3px 0 rgba(0,0,0,.12)"><span class="ms f s20">skip_previous</span></div><div class="pb" style="width:96px;box-shadow:0 3px 0 rgba(0,0,0,.12)"><span class="ms f s20">skip_next</span></div></div>
+          <div class="brow"><div class="rbtn"><span class="ms">favorite</span></div><div class="rbtn"><span class="ms">auto_awesome</span></div><div class="rbtn"><span class="ms">share</span></div><div class="rbtn"><span class="ms">lyrics</span></div></div>
+        </div></div>
+        <div class="gesture dark"><i></i></div>
+      </div>
+      <p class="cap">Mismo orden de todo; cambian las texturas y la luz.</p>
+    </div>
+    <div class="notes">
+      <h4>Qué cambia respecto al actual</h4>
+      <ol class="chg">
+        <li><b>Plato bajo el disco</b> con borde de puntos estroboscópicos que giran con la música (se paran al pausar): el disco ya no flota sobre el fondo.</li>
+        <li><b>Sombra del brazo</b> proyectada sobre el disco, que se mueve con su ángulo.</li>
+        <li><b>Piloto de encendido</b> en el color del tema con la velocidad (Normal = «33⅓»); parpadea suave en pausa.</li>
+        <li><b>Botones «físicos»</b>: las pastillas tienen canto inferior de 3 dp y se hunden al pulsarlas; el fondo pasa a un degradado leve del tema.</li>
+      </ol>
+      <h4>Valoración</h4>
+      <ul><li class="pro">El más bonito para capturas; no cambia cómo se usa.</li><li class="con">No aclara que el brazo es la barra (se puede sumar el arco de A).</li></ul>
+    </div>
+  </div>
+</section>
+
+<div class="pick">Elige <b>A</b>, <b>B</b> o <b>C</b> para Dezzy Style. Combinación natural: <b>C con el arco y la burbuja de A</b>.</div>
+</div>
+</body>
+</html>

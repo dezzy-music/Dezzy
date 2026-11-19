@@ -1,0 +1,76 @@
+/* Base compartida de los bocetos de los 4 estilos de reproductor (Apple Music, Spotify, iPod, Dezzy Style) */
+:root{
+  --page:#F4EFEF; --ink:#22191A; --muted:#5E5051; --outline-variant:#D8C1C2; --primary-doc:#9C3F48; --sc-doc:#F8EBEB;
+  --on:#FFFFFF; --on-var:rgba(255,255,255,.72); --on-dim:rgba(255,255,255,.5);
+  --mark:#F6A04D;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--page);color:var(--ink);font-family:Roboto,system-ui,sans-serif;line-height:1.45}
+.ms{font-family:'Material Symbols Outlined';font-weight:400;font-style:normal;font-size:24px;line-height:1;display:inline-block;
+  letter-spacing:normal;text-transform:none;white-space:nowrap;direction:ltr;-webkit-font-smoothing:antialiased;
+  font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;user-select:none}
+.ms.f{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+.s12{font-size:12px!important}.s14{font-size:14px!important}.s16{font-size:16px!important}.s18{font-size:18px!important}.s20{font-size:20px!important}.s22{font-size:22px!important}
+.s26{font-size:26px!important}.s28{font-size:28px!important}.s32{font-size:32px!important}.s36{font-size:36px!important}.s44{font-size:44px!important}.s56{font-size:56px!important}
+
+/* ── Documento ── */
+.wrap{max-width:1240px;margin:0 auto;padding:40px 16px 80px}
+nav.styles{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px}
+nav.styles a{font-size:13px;font-weight:500;text-decoration:none;color:var(--ink);border:1px solid var(--outline-variant);border-radius:16px;padding:5px 12px;background:#fff}
+nav.styles a.on{background:var(--primary-doc);border-color:var(--primary-doc);color:#fff}
+header.top h1{font-family:'Roboto Flex',Roboto;font-size:36px;font-weight:700;letter-spacing:-.5px}
+header.top p.lead{font-size:16px;color:var(--muted);max-width:860px;margin-top:8px}
+.today{margin-top:20px;background:#fff;border:1px solid var(--outline-variant);border-radius:20px;padding:18px 20px;font-size:14px;max-width:980px}
+.today h4{font-size:15px;margin-bottom:6px}.today ul{padding-left:18px}.today li{margin:3px 0}
+section.sketch{margin-top:56px;padding-top:28px;border-top:3px solid var(--primary-doc)}
+section.sketch.now{border-top-color:#8A8A8A}
+.sk-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.sk-tag{font:700 13px Roboto;letter-spacing:1px;background:var(--primary-doc);color:#fff;border-radius:8px;padding:4px 10px}
+section.now .sk-tag{background:#6A6A6A}
+.sk-head h3{font-family:'Roboto Flex',Roboto;font-size:28px;font-weight:700}
+.sk-head p{flex-basis:100%;color:var(--muted);font-size:15px;max-width:880px}
+.sk-body{display:flex;gap:28px;flex-wrap:wrap;margin-top:24px;align-items:flex-start}
+.cap{font-size:13px;color:var(--muted);text-align:center;margin-top:12px;max-width:360px}
+.notes{flex:1 1 300px;min-width:280px;background:#fff;border:1px solid var(--outline-variant);border-radius:20px;padding:20px;font-size:14px}
+.notes h4{font-size:15px;margin:14px 0 6px}.notes h4:first-child{margin-top:0}
+.notes ol,.notes ul{padding-left:20px}.notes li{margin:4px 0}
+.notes code,.today code{font-size:12.5px;background:var(--sc-doc);border-radius:4px;padding:1px 4px}
+.notes ol.chg{list-style:none;padding-left:0;counter-reset:c}
+.notes ol.chg li{counter-increment:c;position:relative;padding-left:30px}
+.notes ol.chg li::before{content:counter(c);position:absolute;left:0;top:1px;width:20px;height:20px;border-radius:50%;background:var(--mark);color:#2b1a00;font:700 11px/20px Roboto;text-align:center}
+.pro{color:#2E6B3A}.con{color:#9C3F48}
+.pick{margin-top:64px;background:#fff;border:2px solid var(--primary-doc);border-radius:20px;padding:20px 22px;font-size:15px;max-width:980px}
+.pick b{color:var(--primary-doc)}
+
+/* ── Teléfono ── */
+.phone{width:360px;height:780px;border-radius:32px;background:#000;overflow:hidden;position:relative;
+  box-shadow:0 0 0 10px #1d1b1b,0 18px 40px rgba(0,0,0,.25);display:flex;flex-direction:column;color:var(--on);flex:none}
+.statusbar{height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-size:13px;font-weight:500;z-index:5;position:relative}
+.statusbar .ic{display:flex;gap:4px}
+.statusbar.dark{color:#1a1a1a}
+.gesture{height:20px;flex:none;display:flex;align-items:center;justify-content:center;z-index:5;position:relative}
+.gesture i{width:108px;height:4px;border-radius:2px;background:rgba(255,255,255,.85)}
+.gesture.dark i{background:rgba(0,0,0,.6)}
+.content{flex:1;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.layer{position:relative;z-index:1;display:flex;flex-direction:column;flex:1;min-height:0}
+.icon-btn{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;flex:none;position:relative}
+.sp{flex:1}
+.row{display:flex;align-items:center}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Marcador numerado sobre el teléfono: coincide con la lista "Qué cambia" */
+.mk{position:absolute;z-index:9;width:20px;height:20px;border-radius:50%;background:var(--mark);color:#2b1a00;
+  font:700 11px/20px Roboto;text-align:center;box-shadow:0 0 0 2px rgba(0,0,0,.35)}
+
+/* Carátulas de ejemplo (sin imágenes reales) */
+.art-a{background:radial-gradient(circle at 32% 34%,#FFC8D8 0 13%,transparent 14%),radial-gradient(circle at 68% 62%,#F7C873 0 21%,transparent 22%),linear-gradient(140deg,#7A2E4A,#C0507A 55%,#3A1222)}
+.art-b{background:radial-gradient(circle at 60% 40%,#9FE3D0 0 22%,transparent 23%),linear-gradient(160deg,#123F44,#2F8C8C)}
+.art-c{background:radial-gradient(circle at 40% 60%,#C9D86B 0 18%,transparent 19%),linear-gradient(140deg,#2F3A12,#6F8A2A)}
+.art-d{background:radial-gradient(circle at 50% 50%,#9FB6FF 0 16%,transparent 17%),linear-gradient(135deg,#1B2552,#4A5FB0)}
+
+/* Barra de progreso genérica */
+.track{height:4px;border-radius:2px;background:rgba(255,255,255,.28);position:relative}
+.track i{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:#fff}
+.track.thumb i::after{content:"";position:absolute;right:-6px;top:-4px;width:12px;height:12px;border-radius:50%;background:#fff}
+.times{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--on-var);margin-top:8px}
+.badge{font-size:10.5px;font-weight:700;letter-spacing:.4px;border-radius:4px;padding:1px 6px}

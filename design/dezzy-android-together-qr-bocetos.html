@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Listen Together · QR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..900&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="reproductor-estilos-base.css">
+<style>
+.app{background:#141012;color:#EDE0E1}
+.surf{background:#221B1D;border-radius:24px}
+.surf2{background:#2E2527;border-radius:16px}
+.tl{font-family:'Roboto Flex';font-size:22px;font-weight:700}
+.muted{color:rgba(237,224,225,.6)}
+.btn{height:40px;border-radius:20px;padding:0 16px;display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:500}
+.btn.fill{background:#FFB2BC;color:#5F1121}
+.btn.tonal{background:#5C3A40;color:#FFD9DD}
+.btn.out{border:1px solid #9F8C8E;color:#FFD9DD}
+.code{font-family:'Roboto Mono';font-weight:700;letter-spacing:6px}
+.qr{background:#fff;border-radius:16px;padding:10px;display:grid;place-items:center;flex:none}
+.qr canvas{display:block;image-rendering:pixelated}
+.field{height:56px;border-radius:12px;border:1px solid #9F8C8E;display:flex;align-items:center;padding:0 8px 0 16px;gap:8px}
+.mem{width:34px;height:34px;border-radius:50%;border:2px solid #221B1D;margin-left:-8px}
+.cam{position:absolute;inset:0;background:radial-gradient(circle at 40% 30%,#4a4038,#1b1714 70%)}
+.reticle{position:absolute;left:50%;top:42%;width:230px;height:230px;transform:translate(-50%,-50%)}
+.reticle i{position:absolute;width:40px;height:40px;border:4px solid #fff}
+.reticle i:nth-child(1){left:0;top:0;border-right:0;border-bottom:0;border-radius:18px 0 0 0}
+.reticle i:nth-child(2){right:0;top:0;border-left:0;border-bottom:0;border-radius:0 18px 0 0}
+.reticle i:nth-child(3){left:0;bottom:0;border-right:0;border-top:0;border-radius:0 0 0 18px}
+.reticle i:nth-child(4){right:0;bottom:0;border-left:0;border-top:0;border-radius:0 0 18px 0}
+.scanline{position:absolute;left:14px;right:14px;height:2px;background:#FFB2BC;box-shadow:0 0 12px #FFB2BC;animation:sc 2.2s ease-in-out infinite alternate}
+@keyframes sc{from{top:14px}to{top:214px}}
+.seg2{display:flex;background:#2E2527;border-radius:20px;padding:4px}
+.seg2 span{flex:1;height:36px;border-radius:16px;display:grid;place-items:center;font-size:14px;font-weight:500;color:rgba(237,224,225,.7)}
+.seg2 span.on{background:#FFB2BC;color:#5F1121}
+.lbl{font-size:12px;font-weight:500;letter-spacing:.4px;color:rgba(237,224,225,.6)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="styles"><a href="dezzy-android-reproductor-estilos-nuevos-bocetos.html">Reproductores</a><a href="dezzy-android-visualizadores-bocetos.html">Visualizadores</a><a class="on" href="dezzy-android-together-qr-bocetos.html">Listen Together · QR</a></nav>
+  <header class="top">
+    <h1>Listen Together · entrar con QR</h1>
+    <p class="lead">Igual que en Dezzy Desktop: la sala muestra un <b>QR con su código</b> y los demás entran escaneándolo. El QR lleva el mismo enlace que el escritorio (<code>dezzy://together?code=…</code>), así que un móvil puede escanear el QR del PC y al revés.</p>
+    <div class="today"><h4>En las tres variantes</h4><ul>
+      <li>El escáner es el de Google (el mismo que ya usa «Vincular con el PC»): no pide permiso de cámara a Dezzy.</li>
+      <li>Escanearlo con la cámara normal del teléfono también abre Dezzy y entra en la sala (el enlace ya está registrado).</li>
+      <li>Se sigue pudiendo escribir el código de 6 caracteres a mano.</li></ul></div>
+  </header>
+
+  <!-- ═════════ A ═════════ -->
+  <section class="sketch">
+    <div class="sk-head"><span class="sk-tag">A</span><h3>Tarjeta como en el escritorio</h3>
+      <p>En la sala, una tarjeta con el QR a la izquierda y el código a la derecha, con «Copiar código», «Copiar enlace» y «Compartir». Para entrar, un botón «Escanear QR» junto al campo del código.</p></div>
+    <div class="sk-body">
+      <div>
+        <div class="phone app"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s14">signal_cellular_alt</span><span class="ms s14">battery_full</span></span></div>
+          <div class="content" style="padding:0 16px">
+            <div class="row" style="height:56px"><span class="ms">arrow_back</span><span class="tl" style="margin-left:16px">Sala de Dezzy</span><span class="sp"></span><span class="ms">more_vert</span></div>
+            <div class="surf" style="padding:16px;margin-top:6px">
+              <div class="row" style="gap:14px;align-items:flex-start">
+                <div class="qr" style="width:118px;height:118px"><canvas data-qr="96"></canvas></div>
+                <div class="sp" style="min-width:0"><div class="lbl">CÓDIGO DE LA SALA</div><div class="code" style="font-size:26px;margin-top:4px">K7Q2XM</div>
+                  <div class="muted" style="font-size:12.5px;margin-top:6px;line-height:17px">Escanéalo con otro móvil o escribe el código en Escuchar juntos.</div></div></div>
+              <div class="row" style="gap:6px;margin-top:14px"><span class="btn tonal" style="padding:0 12px"><span class="ms s18">content_copy</span>Código</span><span class="btn out" style="padding:0 12px"><span class="ms s18">link</span>Enlace</span><span class="btn out" style="padding:0 12px"><span class="ms s18">share</span>Compartir</span></div>
+            </div>
+            <div class="surf" style="padding:16px;margin-top:12px">
+              <div class="row"><b style="font-size:15px">En la sala · 3</b><span class="sp"></span><span class="row"><span class="mem art-a"></span><span class="mem art-b"></span><span class="mem art-c"></span></span></div>
+              <div class="row" style="gap:12px;margin-top:14px"><div class="art-a" style="width:52px;height:52px;border-radius:8px;flex:none"></div><div class="sp"><b style="font-size:15px">Luces de neón</b><div class="muted" style="font-size:13px">Aurora Vega · sonando para todos</div></div><span class="ms f s32">pause_circle</span></div>
+            </div>
+            <div class="surf2" style="padding:14px 16px;margin-top:12px" ><div class="row"><span class="ms s20 muted">chat</span><span class="muted" style="margin-left:10px;font-size:14px">Chat de la sala</span><span class="sp"></span><span class="ms s20 muted">chevron_right</span></div></div>
+          </div><div class="gesture"><i></i></div></div>
+        <p class="cap">Anfitrión: dentro de la sala.</p>
+      </div>
+      <div>
+        <div class="phone app"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s14">signal_cellular_alt</span><span class="ms s14">battery_full</span></span></div>
+          <div class="content" style="padding:0 16px">
+            <div class="row" style="height:56px"><span class="ms">arrow_back</span><span class="tl" style="margin-left:16px">Escuchar juntos</span></div>
+            <div class="surf" style="padding:18px;margin-top:6px">
+              <b style="font-size:17px">Unirse a una sala</b>
+              <div class="field" style="margin-top:14px"><span class="code sp" style="font-size:18px;color:rgba(237,224,225,.45)">______</span><span class="btn tonal" style="height:40px;padding:0 12px;position:relative"><span class="ms s20">qr_code_scanner</span>Escanear</span></div>
+              <div class="muted" style="font-size:12.5px;margin-top:8px">Escribe el código o escanea el QR del móvil o del PC.</div>
+              <div class="row" style="justify-content:flex-end;margin-top:14px"><span class="btn fill">Entrar</span></div>
+            </div>
+            <div class="surf" style="padding:18px;margin-top:12px"><b style="font-size:17px">Crear una sala</b><div class="muted" style="font-size:13px;margin-top:4px">Los demás escuchan lo que tú pones.</div><div class="row" style="justify-content:flex-end;margin-top:12px"><span class="btn tonal"><span class="ms s18">add</span>Crear</span></div></div>
+            <div class="surf2" style="padding:14px 16px;margin-top:12px"><div class="row"><span class="ms s20 muted">public</span><span class="muted" style="margin-left:10px;font-size:14px">Salas públicas</span><span class="sp"></span><span class="ms s20 muted">chevron_right</span></div></div>
+          </div><div class="gesture"><i></i></div></div>
+        <p class="cap">Invitado: el botón «Escanear» está dentro del campo.</p>
+      </div>
+      <div class="notes"><h4>Qué cambia</h4><ul>
+        <li>Nueva tarjeta «Código de la sala» arriba en la sala (anfitrión e invitados la ven: cualquiera puede invitar).</li>
+        <li>Botón «Escanear» al lado del campo; al leer un QR válido rellena el código y entra solo.</li>
+        <li>QR que no es de Dezzy: aviso «Este QR no es de una sala de Dezzy».</li>
+      </ul><p class="pro" style="margin-top:10px">Es la que más se parece al escritorio.</p></div>
+    </div>
+  </section>
+
+  <!-- ═════════ B ═════════ -->
+  <section class="sketch">
+    <div class="sk-head"><span class="sk-tag">B</span><h3>Invitar a pantalla completa</h3>
+      <p>Un botón «Invitar» en la sala abre el QR en grande sobre el color de la carátula, con el brillo subido para que se lea a distancia. Para entrar, botón grande «Escanear QR» con visor.</p></div>
+    <div class="sk-body">
+      <div>
+        <div class="phone app" style="background:linear-gradient(180deg,#7A2E4A,#2A1220 70%)"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s14">signal_cellular_alt</span><span class="ms s14">battery_full</span></span></div>
+          <div class="content" style="padding:0 20px;align-items:center;text-align:center">
+            <div class="row" style="height:56px;align-self:stretch"><span class="ms">close</span><span class="sp"></span><span class="ms">share</span></div>
+            <div style="font-family:'Roboto Flex';font-size:26px;font-weight:800;margin-top:20px">Escanea para unirte</div>
+            <div style="color:rgba(255,255,255,.7);font-size:14px;margin-top:6px">Sala de Dezzy · 3 escuchando</div>
+            <div class="qr" style="width:250px;height:250px;margin-top:30px;border-radius:28px;box-shadow:0 20px 50px rgba(0,0,0,.4)"><canvas data-qr="214"></canvas></div>
+            <div class="code" style="font-size:34px;margin-top:28px">K7Q2XM</div>
+            <div style="color:rgba(255,255,255,.6);font-size:13px;margin-top:4px">o escribe este código</div>
+            <div class="row" style="gap:12px;margin-top:26px"><div class="art-a" style="width:44px;height:44px;border-radius:8px"></div><div style="text-align:left"><b style="font-size:14px">Luces de neón</b><div style="font-size:12px;color:rgba(255,255,255,.65)">Sonando ahora</div></div></div>
+            <div class="sp"></div>
+            <div class="row" style="gap:8px;margin-bottom:12px"><span class="btn" style="background:rgba(255,255,255,.16)"><span class="ms s18">content_copy</span>Copiar enlace</span></div>
+          </div><div class="gesture"><i></i></div></div>
+        <p class="cap">Anfitrión: «Invitar» → QR grande.</p>
+      </div>
+      <div>
+        <div class="phone app"><div class="cam"></div>
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s14">signal_cellular_alt</span><span class="ms s14">battery_full</span></span></div>
+          <div class="content">
+            <div class="row" style="height:56px;padding:0 16px;z-index:2"><span class="ms">close</span><span class="sp"></span><span class="ms">flashlight_on</span></div>
+            <div class="reticle"><i></i><i></i><i></i><i></i><div class="scanline"></div></div>
+            <div style="position:absolute;left:0;right:0;top:calc(42% + 140px);text-align:center;z-index:2"><b style="font-size:17px">Apunta al QR de la sala</b><div style="font-size:13px;color:rgba(255,255,255,.7);margin-top:4px">Sirve el de otro móvil o el del PC</div></div>
+            <div style="position:absolute;left:16px;right:16px;bottom:30px;z-index:2" class="surf"><div style="padding:14px 16px" class="row"><span class="ms muted">keyboard</span><span style="margin-left:12px;font-size:14px">Escribir el código</span><span class="sp"></span><span class="ms muted">chevron_right</span></div></div>
+          </div><div class="gesture" style="z-index:2"><i></i></div></div>
+        <p class="cap">Invitado: escáner a pantalla completa.</p>
+      </div>
+      <div class="notes"><h4>Qué cambia</h4><ul>
+        <li>Botón «Invitar» (<span class="ms s16">qr_code_2</span>) en la cabecera de la sala.</li>
+        <li>Pantalla del QR con brillo al máximo mientras está abierta.</li>
+        <li>En «Escuchar juntos», «Escanear QR» pasa a ser el botón principal.</li>
+      </ul><p class="con" style="margin-top:10px">El visor propio necesita CameraX y permiso de cámara (A y C usan el escáner de Google, sin permiso).</p></div>
+    </div>
+  </section>
+
+  <!-- ═════════ C ═════════ -->
+  <section class="sketch">
+    <div class="sk-head"><span class="sk-tag">C</span><h3>Hoja «Mi código / Escanear»</h3>
+      <p>Un solo botón QR en la cabecera de Escuchar juntos abre una hoja con dos pestañas: «Mi código» (si estás en una sala) y «Escanear». Igual sirve para invitar y para entrar.</p></div>
+    <div class="sk-body">
+      <div>
+        <div class="phone app"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s14">signal_cellular_alt</span><span class="ms s14">battery_full</span></span></div>
+          <div class="content" style="padding:0 16px;opacity:.35">
+            <div class="row" style="height:56px"><span class="ms">arrow_back</span><span class="tl" style="margin-left:16px">Sala de Dezzy</span><span class="sp"></span><span class="ms">qr_code_2</span></div>
+            <div class="surf" style="height:150px;margin-top:6px"></div><div class="surf" style="height:90px;margin-top:12px"></div>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;height:560px;background:#221B1D;border-radius:28px 28px 0 0;z-index:3;padding:10px 20px 0;display:flex;flex-direction:column;align-items:center">
+            <div class="grab" style="background:rgba(255,255,255,.3)"></div>
+            <div class="seg2" style="align-self:stretch;margin-top:16px"><span class="on">Mi código</span><span>Escanear</span></div>
+            <div class="qr" style="width:220px;height:220px;margin-top:26px;border-radius:24px"><canvas data-qr="190"></canvas></div>
+            <div class="code" style="font-size:30px;margin-top:22px">K7Q2XM</div>
+            <div class="muted" style="font-size:13px;margin-top:4px">Sala de Dezzy · caduca al cerrarla</div>
+            <div class="row" style="gap:8px;margin-top:20px"><span class="btn tonal"><span class="ms s18">content_copy</span>Copiar</span><span class="btn fill"><span class="ms s18">share</span>Compartir</span></div>
+            <div class="sp"></div><div class="gesture"><i></i></div>
+          </div></div>
+        <p class="cap">Pestaña «Mi código».</p>
+      </div>
+      <div>
+        <div class="phone app"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s14">signal_cellular_alt</span><span class="ms s14">battery_full</span></span></div>
+          <div class="content" style="padding:0 16px;opacity:.35">
+            <div class="row" style="height:56px"><span class="ms">arrow_back</span><span class="tl" style="margin-left:16px">Escuchar juntos</span><span class="sp"></span><span class="ms">qr_code_2</span></div>
+            <div class="surf" style="height:150px;margin-top:6px"></div>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;height:560px;background:#221B1D;border-radius:28px 28px 0 0;z-index:3;padding:10px 20px 0;display:flex;flex-direction:column;align-items:center">
+            <div class="grab" style="background:rgba(255,255,255,.3)"></div>
+            <div class="seg2" style="align-self:stretch;margin-top:16px"><span style="opacity:.4">Mi código</span><span class="on">Escanear</span></div>
+            <div style="width:220px;height:220px;margin-top:26px;border-radius:24px;background:#2E2527;display:grid;place-items:center"><span class="ms s56" style="color:#FFB2BC;font-size:88px!important">qr_code_scanner</span></div>
+            <div style="font-size:16px;font-weight:500;margin-top:22px">Escanea el QR de una sala</div>
+            <div class="muted" style="font-size:13px;margin-top:4px;text-align:center">De otro móvil o de Dezzy en el PC</div>
+            <div class="row" style="gap:8px;margin-top:20px"><span class="btn fill"><span class="ms s18">photo_camera</span>Abrir cámara</span></div>
+            <div class="field" style="align-self:stretch;margin-top:20px"><span class="sp" style="font-size:15px;color:rgba(237,224,225,.55)">o escribe el código</span><span class="ms" style="color:#FFB2BC">arrow_forward</span></div>
+            <div class="sp"></div><div class="gesture"><i></i></div>
+          </div></div>
+        <p class="cap">Pestaña «Escanear» (sin sala, «Mi código» aparece desactivada).</p>
+      </div>
+      <div class="notes"><h4>Qué cambia</h4><ul>
+        <li>Un icono <span class="ms s16">qr_code_2</span> en la cabecera de Escuchar juntos y de la sala.</li>
+        <li>«Abrir cámara» lanza el escáner de Google.</li>
+        <li>Todo lo del QR en un único sitio; la pantalla de la sala no cambia.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <div class="pick"><p><b>Para elegir:</b> A, B o C (o mezcla, p. ej. «tarjeta de A + pantalla grande de B al tocar el QR»).</p></div>
+</div>
+<script>
+// QR de muestra (no codifica datos: sólo da el aspecto). Patrones de posición en 3 esquinas.
+function fakeQr(c,size){const n=29,m=Math.floor(size/n),x=c.getContext('2d');c.width=c.height=n*m;let s=7;const rnd=()=>{s=(s*16807)%2147483647;return s/2147483647};
+ x.fillStyle='#fff';x.fillRect(0,0,n*m,n*m);x.fillStyle='#000';
+ const finder=(cx,cy)=>{for(let i=0;i<7;i++)for(let j=0;j<7;j++){const e=i===0||i===6||j===0||j===6,c2=i>=2&&i<=4&&j>=2&&j<=4;if(e||c2)x.fillRect((cx+i)*m,(cy+j)*m,m,m)}};
+ for(let i=0;i<n;i++)for(let j=0;j<n;j++){const inF=(i<8&&j<8)||(i>n-9&&j<8)||(i<8&&j>n-9);if(!inF&&rnd()>.52)x.fillRect(i*m,j*m,m,m)}
+ finder(0,0);finder(n-7,0);finder(0,n-7);}
+document.querySelectorAll('canvas[data-qr]').forEach(c=>fakeQr(c,+c.dataset.qr));
+</script>
+</body>
+</html>

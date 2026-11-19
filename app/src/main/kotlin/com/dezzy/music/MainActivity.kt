@@ -1415,7 +1415,7 @@ class MainActivity : AppCompatActivity() {
                                                     }
                                                 },
                                                 actions = {
-                                                    com.dezzy.music.ui.component.CastButton()
+                                                    com.dezzy.music.ui.component.DevicesButton()
                                                     // Botón de Amigos oculto temporalmente (integración social intacta,
                                                     // se reactivará en el futuro). Ruta "social" sigue registrada en NavigationBuilder.
                                                     /*

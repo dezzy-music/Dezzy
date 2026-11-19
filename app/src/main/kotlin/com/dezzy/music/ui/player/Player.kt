@@ -637,8 +637,9 @@ fun BottomSheetPlayer(
             title = { Text("Consejos rápidos") },
             text = {
                 Text(
-                    "• En los estilos Clásico, Moderno, Mínimo y Cinemático usa el botón " +
-                        "Canción/Video sobre la carátula para ver el video musical.\n\n" +
+                    "• En el estilo Clásico usa el botón Canción/Video sobre la carátula, y en " +
+                        "Moderno, Mínimo, Cinemático y Expresivo el botón de video de arriba, " +
+                        "para ver el video musical.\n\n" +
                         "• En el estilo Deezer, desliza la carátula para cambiar de canción.\n\n" +
                         "• Al compartir una canción, toca un color de la paleta para personalizar la tarjeta.\n\n" +
                         "• Cambia el estilo del reproductor en Ajustes → Apariencia."
@@ -672,7 +673,9 @@ fun BottomSheetPlayer(
             // Aurora draws its own Cola/Letra buttons; the peeking queue header overlapped them.
             playerDesignStyle == PlayerDesignStyle.AURORA ||
             // Clásico (rediseño fase 2) también dibuja sus propias acciones.
-            playerDesignStyle == PlayerDesignStyle.V1
+            playerDesignStyle == PlayerDesignStyle.V1 ||
+            // Moderno, Mínimo, Cinemático y Expresivo (rediseño 2026-11-19) también.
+            playerDesignStyle in RedesignedPlayerStyles
         ) {
             0.dp
         } else {
@@ -977,7 +980,9 @@ fun BottomSheetPlayer(
             playerDesignStyle != PlayerDesignStyle.LIVE_MESH &&
             playerDesignStyle != PlayerDesignStyle.AURORA &&
             // Clásico pinta su propio degradado con el color de la carátula.
-            playerDesignStyle != PlayerDesignStyle.V1
+            playerDesignStyle != PlayerDesignStyle.V1 &&
+            // Los cuatro estilos rediseñados pintan su propio fondo (claro u oscuro).
+            playerDesignStyle !in RedesignedPlayerStyles
         ) {
             PlayerBackground(
                 playerBackground = playerBackground,
@@ -1159,6 +1164,39 @@ fun BottomSheetPlayer(
                 onSleepTimerClick = { showSleepTimerDialog = true },
                 sleepTimerEnabled = sleepTimerEnabled,
                 sleepTimerTimeLeft = sleepTimerTimeLeft,
+                onMenuClick = {
+                    enrichedMetadata?.let { metadata ->
+                        menuState.show {
+                            PlayerMenu(
+                                mediaMetadata = metadata,
+                                navController = navController,
+                                playerBottomSheetState = state,
+                                onShowDetailsDialog = {
+                                    bottomSheetPageState.show {
+                                        ShowMediaInfo(metadata.id)
+                                    }
+                                },
+                                onDismiss = menuState::dismiss
+                            )
+                        }
+                    }
+                },
+                onVisualizerClick = { canvasSheetState.expandSoft() },
+                modifier = Modifier,
+            )
+        } else if (playerDesignStyle in RedesignedPlayerStyles) {
+            // Moderno «Cristal», Mínimo «Papel», Cinemático «Póster» y Expresivo
+            // «Tipografía viva» (bocetos aprobados 2026-11-19): ver RedesignedPlayers.kt.
+            RedesignedStylePlayer(
+                style = playerDesignStyle,
+                state = state,
+                navController = navController,
+                positionState = rememberUpdatedState(position),
+                durationState = rememberUpdatedState(duration),
+                sliderPosition = sliderPosition,
+                onSliderPositionChange = { sliderPosition = it },
+                onQueueClick = queueSheetState::expandSoft,
+                onLyricsClick = lyricsSheetState::expandSoft,
                 onMenuClick = {
                     enrichedMetadata?.let { metadata ->
                         menuState.show {

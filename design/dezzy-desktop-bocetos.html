@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dezzy para escritorio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<style>
+:root{
+  --page:#F4EFEF; --ink:#22191A; --muted:#5E5051; --doc-line:#D8C1C2; --doc-accent:#9C3F48;
+  --primary:#FFB2B9; --on-primary:#5F1320; --pc:#7D2833; --on-pc:#FFDADC;
+  --sc2:#5C3F41; --on-sc2:#FFDADC; --tertiary:#E8C08E;
+  --surface:#1A1112; --s-low:#22191A; --s:#261D1E; --s-high:#312828; --s-highest:#3C3233;
+  --on-s:#F0DEDF; --on-sv:#D7C1C2; --outline:#A08C8D; --ov:#524344;
+  --ok:#9BD3A6; --yt:#FF4E45; --sp:#1ED760;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--page);color:var(--ink);font-family:Roboto,system-ui,sans-serif;line-height:1.45}
+.ms{font-family:'Material Symbols Outlined';font-weight:400;font-style:normal;font-size:22px;line-height:1;display:inline-block;
+  white-space:nowrap;direction:ltr;-webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;user-select:none}
+.ms.f{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+.s16{font-size:16px!important}.s18{font-size:18px!important}.s20{font-size:20px!important}.s28{font-size:28px!important}.s32{font-size:32px!important}
+
+/* ── Documento ─────────────────────────────── */
+.doc{max-width:1320px;margin:0 auto;padding:48px 16px 80px}
+.doc header{margin-bottom:32px}
+.kicker{font:500 13px Roboto;letter-spacing:.08em;text-transform:uppercase;color:var(--doc-accent)}
+h1{font:700 34px/1.15 'Roboto Flex',Roboto;margin:6px 0 12px;max-width:900px}
+.lead{font-size:17px;color:var(--muted);max-width:820px}
+.alert{display:flex;gap:12px;background:#FFF;border:1px solid var(--doc-line);border-left:4px solid var(--doc-accent);
+  border-radius:12px;padding:16px 18px;margin:24px 0 0;max-width:980px}
+.alert b{display:block;margin-bottom:2px}
+.alert p{font-size:15px;color:var(--muted)}
+section{margin-top:56px}
+h2{font:700 24px 'Roboto Flex',Roboto;display:flex;align-items:center;gap:10px}
+h2 .n{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--doc-accent);color:#fff;font-size:16px}
+.sub{color:var(--muted);margin:6px 0 18px;max-width:900px;font-size:15px}
+.stage{overflow-x:auto;padding-bottom:8px}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:16px}
+.notes div{background:#fff;border:1px solid var(--doc-line);border-radius:12px;padding:12px 14px;font-size:14px;color:var(--muted);display:flex;gap:10px}
+.notes .ms{color:var(--doc-accent)}
+
+/* ── Ventana de escritorio ─────────────────── */
+.win{width:1240px;height:760px;border-radius:14px;overflow:hidden;background:var(--surface);color:var(--on-s);
+  box-shadow:0 24px 60px rgba(34,25,26,.28),0 0 0 1px rgba(0,0,0,.25);display:flex;flex-direction:column;position:relative;font-size:14px}
+.titlebar{height:36px;flex:none;display:flex;align-items:center;gap:10px;padding:0 0 0 14px;background:var(--surface);font-size:12px;color:var(--on-sv);-webkit-app-region:drag}
+.titlebar .logo{width:18px;height:18px;border-radius:5px;background:linear-gradient(135deg,var(--primary),var(--tertiary))}
+.titlebar .sp{flex:1}
+.titlebar .wc{display:flex;height:100%}
+.titlebar .wc span{width:46px;display:grid;place-items:center}
+.body{flex:1;display:flex;min-height:0;gap:8px;padding:0 8px 8px}
+.panel{background:var(--s-low);border-radius:12px;min-height:0}
+
+/* Barra lateral */
+.side{width:248px;flex:none;display:flex;flex-direction:column;padding:12px 8px}
+.nav a{display:flex;align-items:center;gap:14px;height:44px;padding:0 14px;border-radius:22px;color:var(--on-sv);text-decoration:none;font-weight:500}
+.nav a.on{background:var(--sc2);color:var(--on-sc2)}
+.nav a.on .ms{font-variation-settings:'FILL' 1}
+.side h4{font:500 12px Roboto;letter-spacing:.06em;text-transform:uppercase;color:var(--outline);margin:18px 14px 6px}
+.pl{display:flex;align-items:center;gap:12px;padding:6px 10px;border-radius:10px}
+.pl i{width:40px;height:40px;border-radius:8px;flex:none}
+.pl small{display:block;color:var(--on-sv);font-size:12px}
+.pl b{font-weight:500;font-size:14px}
+
+/* Contenido */
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;gap:12px;padding:14px 20px}
+.search{flex:1;max-width:520px;height:44px;border-radius:22px;background:var(--s-high);display:flex;align-items:center;gap:10px;padding:0 16px;color:var(--on-sv)}
+.kbd{margin-left:auto;font-size:11px;border:1px solid var(--ov);border-radius:6px;padding:2px 6px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:16px;border:1px solid var(--ov);font-size:13px;color:var(--on-sv)}
+.chip.on{background:var(--sc2);border-color:transparent;color:var(--on-sc2)}
+.avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#B76E79,#5C3F41);display:grid;place-items:center;font-weight:700;color:#fff}
+.scroll{flex:1;overflow:hidden;padding:4px 24px 24px}
+
+/* Barra de reproducción */
+.player{height:84px;flex:none;display:grid;grid-template-columns:320px 1fr 320px;align-items:center;padding:0 16px;gap:16px}
+.np{display:flex;align-items:center;gap:12px;min-width:0}
+.np i{width:56px;height:56px;border-radius:8px;flex:none}
+.np b{display:block;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.np small{color:var(--on-sv)}
+.ctrl{display:flex;flex-direction:column;align-items:center;gap:6px}
+.ctrl .btns{display:flex;align-items:center;gap:18px;color:var(--on-sv)}
+.play{width:44px;height:44px;border-radius:50%;background:var(--on-s);color:var(--surface);display:grid;place-items:center}
+.bar{display:flex;align-items:center;gap:10px;width:100%;max-width:560px;font-size:11px;color:var(--on-sv)}
+.track{flex:1;height:4px;border-radius:2px;background:var(--s-highest);position:relative}
+.track::before{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--p,40%);background:var(--primary);border-radius:2px}
+.extra{display:flex;align-items:center;justify-content:flex-end;gap:14px;color:var(--on-sv)}
+.extra .on{color:var(--primary)}
+.vol{width:96px;height:4px;border-radius:2px;background:var(--s-highest);position:relative}
+.vol::before{content:"";position:absolute;inset:0 30% 0 0;background:var(--on-sv);border-radius:2px}
+
+/* Portadas de mentira */
+.c1{background:linear-gradient(135deg,#E57373,#4A148C)}
+.c2{background:linear-gradient(135deg,#FFB74D,#BF360C)}
+.c3{background:linear-gradient(135deg,#4DB6AC,#1A237E)}
+.c4{background:linear-gradient(135deg,#F06292,#311B92)}
+.c5{background:linear-gradient(135deg,#AED581,#33691E)}
+.c6{background:linear-gradient(135deg,#90A4AE,#263238)}
+.c7{background:linear-gradient(135deg,#CE93D8,#4A0072)}
+.c8{background:linear-gradient(135deg,#FFD54F,#E65100)}
+
+/* Inicio */
+.hello{display:flex;align-items:flex-end;justify-content:space-between;margin:6px 0 18px}
+.hello h3{font:700 32px 'Roboto Flex',Roboto}
+.hello p{color:var(--on-sv);margin-top:2px}
+.streak{display:flex;align-items:center;gap:8px;background:var(--s-high);border-radius:20px;padding:8px 14px;color:var(--tertiary);font-weight:500}
+.hero{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:22px}
+.resume{height:210px;border-radius:20px;position:relative;overflow:hidden;padding:22px;display:flex;flex-direction:column;justify-content:flex-end}
+.resume::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(26,17,18,.9),rgba(26,17,18,0) 70%)}
+.resume>*{position:relative;z-index:1}
+.resume .tag{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--on-pc)}
+.resume h5{font:700 28px 'Roboto Flex',Roboto;margin:4px 0}
+.resume .row{display:flex;align-items:center;gap:12px;margin-top:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 18px;border-radius:20px;font-weight:500;font-size:14px}
+.btn.fill{background:var(--primary);color:var(--on-primary)}
+.btn.tonal{background:var(--sc2);color:var(--on-sc2)}
+.btn.out{border:1px solid var(--outline);color:var(--on-s)}
+.btn.txt{color:var(--primary);padding:0 10px}
+.bento{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:12px}
+.mix{border-radius:16px;padding:14px;display:flex;flex-direction:column;justify-content:flex-end;font-weight:700;font-size:15px;position:relative;overflow:hidden}
+.mix small{font-weight:400;font-size:12px;opacity:.9}
+.rowh{display:flex;align-items:center;justify-content:space-between;margin:4px 0 12px}
+.rowh h4{font:700 20px 'Roboto Flex',Roboto}
+.cards{display:grid;grid-template-columns:repeat(6,1fr);gap:16px}
+.card i{display:block;aspect-ratio:1;border-radius:12px;margin-bottom:8px}
+.card b{display:block;font-weight:500;font-size:14px}
+.card small{color:var(--on-sv);font-size:12px}
+
+/* Bienvenida */
+.welcome{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 8px 8px}
+.wl{border-radius:12px;position:relative;overflow:hidden;padding:48px;display:flex;flex-direction:column;justify-content:flex-end;
+  background:radial-gradient(120% 90% at 20% 10%,#7D2833 0%,#3A1D22 45%,#1A1112 100%)}
+.wl .stack{position:absolute;top:56px;left:48px;right:48px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;opacity:.85;transform:rotate(-4deg)}
+.wl .stack i{aspect-ratio:1;border-radius:14px;display:block}
+.wl h3{font:800 44px/1.05 'Roboto Flex',Roboto;max-width:460px}
+.wl p{color:var(--on-sv);font-size:16px;margin-top:12px;max-width:440px}
+.wr{display:flex;flex-direction:column;justify-content:center;padding:48px 64px}
+.wr h4{font:700 26px 'Roboto Flex',Roboto}
+.wr .hint{color:var(--on-sv);margin:6px 0 24px}
+.acc{display:flex;align-items:center;gap:16px;background:var(--s-low);border:1px solid var(--ov);border-radius:16px;padding:16px 18px;margin-bottom:12px}
+.acc.done{border-color:rgba(155,211,166,.5)}
+.acc .logo{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;flex:none;color:#fff}
+.acc .t{flex:1}
+.acc .t b{display:block;font-size:16px;font-weight:500}
+.acc .t small{color:var(--on-sv);font-size:13px}
+.ok{display:inline-flex;align-items:center;gap:6px;color:var(--ok);font-weight:500;font-size:14px}
+.skip{margin-top:12px;display:flex;justify-content:space-between;align-items:center;color:var(--on-sv);font-size:13px}
+
+/* Reproduciendo */
+.npfull{flex:1;margin:0 8px 8px;border-radius:12px;overflow:hidden;position:relative;display:grid;grid-template-columns:1fr 1fr}
+.npfull .bg{position:absolute;inset:0;background:radial-gradient(70% 90% at 25% 40%,#8E3B5A,#2A1420 60%,#140D0E);filter:saturate(1.1)}
+.npfull>*:not(.bg){position:relative}
+.npl{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px}
+.art{width:380px;height:380px;border-radius:20px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.npl h3{font:800 30px 'Roboto Flex',Roboto;margin-top:26px}
+.npl p{color:var(--on-sv);font-size:16px}
+.npl .acts{display:flex;gap:10px;margin-top:16px}
+.lyr{padding:56px 56px 40px 24px;display:flex;flex-direction:column;justify-content:center;gap:18px}
+.lyr p{font:700 28px/1.25 'Roboto Flex',Roboto;color:rgba(240,222,223,.35)}
+.lyr p.now{color:#fff;font-size:34px}
+.lyr p.near{color:rgba(240,222,223,.6)}
+.tabs{position:absolute;top:16px;right:16px;display:flex;gap:6px}
+.tabs .chip{background:rgba(26,17,18,.5);border-color:rgba(255,255,255,.15);color:#fff}
+.tabs .chip.on{background:var(--primary);color:var(--on-primary)}
+
+/* Ajustes */
+.set{flex:1;display:flex;gap:8px;padding:0 8px 8px;min-height:0}
+.setnav{width:248px;padding:16px 8px}
+.setnav h3{font:700 22px 'Roboto Flex',Roboto;margin:0 14px 14px}
+.setmain{flex:1;padding:24px 40px;overflow:hidden}
+.setmain h4{font:700 26px 'Roboto Flex',Roboto}
+.setmain .hint{color:var(--on-sv);margin:4px 0 20px}
+.acard{background:var(--s);border-radius:16px;padding:18px 20px;margin-bottom:14px}
+.ahead{display:flex;align-items:center;gap:14px}
+.ahead .logo{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;color:#fff;flex:none}
+.ahead .t{flex:1}
+.ahead .t b{font-size:16px;font-weight:500;display:block}
+.ahead .t small{color:var(--on-sv)}
+.who{display:flex;align-items:center;gap:10px;margin:14px 0 4px;padding:10px 12px;background:var(--s-high);border-radius:12px}
+.who .avatar{width:32px;height:32px;font-size:13px}
+.opt{display:flex;align-items:center;gap:14px;padding:12px 2px;border-top:1px solid var(--ov)}
+.opt:first-of-type{border-top:none}
+.opt .t{flex:1}
+.opt .t b{font-weight:500;display:block}
+.opt .t small{color:var(--on-sv);font-size:13px}
+.sw{width:52px;height:32px;border-radius:16px;background:var(--primary);position:relative;flex:none}
+.sw::after{content:"";position:absolute;right:4px;top:4px;width:24px;height:24px;border-radius:50%;background:var(--on-primary)}
+.sw.off{background:var(--s-highest);border:2px solid var(--outline)}
+.sw.off::after{left:4px;right:auto;top:4px;width:16px;height:16px;background:var(--outline);margin:2px}
+.qr{width:96px;height:96px;border-radius:12px;background:
+  conic-gradient(from 90deg at 25% 25%,#fff 25%,#000 0 50%,#fff 0 75%,#000 0) 0 0/24px 24px;border:6px solid #fff;flex:none}
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.legend span{background:#fff;border:1px solid var(--doc-line);border-radius:16px;padding:4px 10px;font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<main class="doc">
+<header>
+  <div class="kicker">Dezzy · escritorio · bocetos v1</div>
+  <h1>Dezzy para escritorio: tus cuentas de YouTube Music y Spotify, tu música y tus letras en el ordenador</h1>
+  <p class="lead">Cuatro pantallas para revisar: la bienvenida con las cuentas, el inicio, la vista «Reproduciendo» con letras y los ajustes de cuentas. Siguen el estilo de Dezzy en el móvil (rosa sobre fondo oscuro, Material 3) adaptado a ventana: barra lateral, buscador arriba y reproductor fijo abajo.</p>
+  <div class="alert">
+    <span class="ms s28" style="color:var(--doc-accent)">gavel</span>
+    <div>
+      <b>Antes de programar: la licencia de Liner</b>
+      <p>Liner es «source-available»: permite modificarlo para uso personal, pero prohíbe publicar forks con otra marca y reutilizar su interfaz o su código en otras apps. Estos bocetos son diseño propio de Dezzy y no copian la interfaz de Liner. Falta decidir sobre qué base se construye la app.</p>
+    </div>
+  </div>
+</header>
+
+<!-- 1 · Bienvenida -->
+<section>
+  <h2><span class="n">1</span>Bienvenida: conecta tus cuentas</h2>
+  <p class="sub">La primera vez que se abre la app. YouTube Music pone la música (reproducción, biblioteca, me gusta). Spotify es opcional: importa tus playlists y da los rankings reales. Cada cuenta se conecta en una ventana de inicio de sesión oficial; Dezzy nunca ve tu contraseña.</p>
+  <div class="stage"><div class="win">
+    <div class="titlebar"><span class="logo"></span>Dezzy<span class="sp"></span><span class="wc"><span class="ms s16">remove</span><span class="ms s16">crop_square</span><span class="ms s16">close</span></span></div>
+    <div class="welcome">
+      <div class="wl">
+        <div class="stack"><i class="c1"></i><i class="c2"></i><i class="c3"></i><i class="c4"></i><i class="c5"></i><i class="c6"></i><i class="c7"></i><i class="c8"></i></div>
+        <h3>Tu música, ahora también en el ordenador</h3>
+        <p>Lo que escuchas en el móvil sigue aquí: tu biblioteca, tus letras, tu racha y Dezzy Connect para pasar la canción de un dispositivo a otro.</p>
+      </div>
+      <div class="panel wr">
+        <h4>Conecta tus cuentas</h4>
+        <p class="hint">Puedes cambiarlas cuando quieras en Ajustes, Cuentas.</p>
+        <div class="acc done">
+          <span class="logo" style="background:var(--yt)"><span class="ms f">play_arrow</span></span>
+          <div class="t"><b>YouTube Music</b><small>Conectado como Dezzy. Biblioteca, me gusta y recomendaciones.</small></div>
+          <span class="ok"><span class="ms s20 f">check_circle</span>Listo</span>
+        </div>
+        <div class="acc">
+          <span class="logo" style="background:#191414"><span class="ms" style="color:var(--sp)">graphic_eq</span></span>
+          <div class="t"><b>Spotify</b><small>Opcional. Importa tus playlists y ve los rankings reales de cada canción.</small></div>
+          <span class="btn tonal">Conectar</span>
+        </div>
+        <div class="acc">
+          <span class="logo" style="background:var(--pc)"><span class="ms">smartphone</span></span>
+          <div class="t"><b>Dezzy en tu móvil</b><small>Escanea un QR y sincroniza tu historial, tu racha y tu cola.</small></div>
+          <span class="btn out">Vincular</span>
+        </div>
+        <div class="skip"><span>Sin cuenta puedes escuchar, pero no se guarda tu biblioteca.</span><span class="btn fill">Empezar</span></div>
+      </div>
+    </div>
+  </div></div>
+  <div class="notes">
+    <div><span class="ms s18">login</span><span>«Conectar» abre la ventana oficial de Google o Spotify dentro de la app. Al terminar se cierra sola y la tarjeta pasa a «Listo».</span></div>
+    <div><span class="ms s18">lock</span><span>Las cookies de sesión se guardan cifradas con el llavero del sistema (safeStorage), nunca en texto plano.</span></div>
+    <div><span class="ms s18">sync</span><span>Spotify no reproduce: sirve para importar y para las estadísticas, igual que en el móvil. La música sale de YouTube Music.</span></div>
+  </div>
+</section>
+
+<!-- 2 · Inicio -->
+<section>
+  <h2><span class="n">2</span>Inicio</h2>
+  <p class="sub">El inicio de Dezzy adaptado a pantalla ancha: saludo con racha, «Reanudar» grande con el canvas de la canción, mixes en mosaico y tus filas de siempre. Barra lateral con las secciones y tus playlists; el reproductor queda fijo abajo.</p>
+  <div class="stage"><div class="win">
+    <div class="titlebar"><span class="logo"></span>Dezzy<span class="sp"></span><span class="wc"><span class="ms s16">remove</span><span class="ms s16">crop_square</span><span class="ms s16">close</span></span></div>
+    <div class="body">
+      <aside class="panel side">
+        <nav class="nav">
+          <a class="on" href="#"><span class="ms">home</span>Inicio</a>
+          <a href="#"><span class="ms">search</span>Buscar</a>
+          <a href="#"><span class="ms">library_music</span>Biblioteca</a>
+          <a href="#"><span class="ms">public</span>Mapa musical</a>
+          <a href="#"><span class="ms">leaderboard</span>Rankings</a>
+          <a href="#"><span class="ms">group</span>Social</a>
+          <a href="#"><span class="ms">download</span>Descargas</a>
+        </nav>
+        <h4>Tus playlists</h4>
+        <div class="pl"><i class="c4"></i><div><b>Me gusta</b><small>842 canciones</small></div></div>
+        <div class="pl"><i class="c3"></i><div><b>Noche de shoegaze</b><small>Playlist, 64</small></div></div>
+        <div class="pl"><i class="c2"></i><div><b>Importada de Spotify</b><small>Playlist, 120</small></div></div>
+        <div class="pl"><i class="c6"></i><div><b>Descargas</b><small>Sin conexión, 37</small></div></div>
+      </aside>
+      <div class="panel main">
+        <div class="topbar">
+          <span class="search"><span class="ms">search</span>Canciones, artistas, letras…<span class="kbd">Ctrl K</span></span>
+          <span class="chip on">Todo</span><span class="chip">Música</span><span class="chip">Podcasts</span>
+          <span style="flex:1"></span>
+          <span class="ms" style="color:var(--on-sv)">notifications</span>
+          <span class="avatar">D</span>
+        </div>
+        <div class="scroll">
+          <div class="hello">
+            <div><h3>Buenas noches, Dezzy</h3><p>Hoy llevas 1 h 12 min escuchando.</p></div>
+            <span class="streak"><span class="ms f s20">local_fire_department</span>12 días seguidos</span>
+          </div>
+          <div class="hero">
+            <div class="resume c4">
+              <span class="tag">Reanudar</span>
+              <h5>Fall in Love with a Ghost</h5>
+              <span style="color:var(--on-sv)">Phantogram, 2:14 de 3:52</span>
+              <div class="row"><span class="btn fill"><span class="ms f s20">play_arrow</span>Seguir</span><span class="btn tonal"><span class="ms s20">radio</span>Radio</span></div>
+            </div>
+            <div class="bento">
+              <div class="mix c3">Mix diario 1<small>Smashing Pumpkins, Slowdive…</small></div>
+              <div class="mix c2">Descubrimiento<small>Novedades para ti</small></div>
+              <div class="mix c7">Tu ADN musical<small>Lo que más te define</small></div>
+              <div class="mix c5">Modo concentración<small>Sin letra, 2 h</small></div>
+            </div>
+          </div>
+          <div class="rowh"><h4>Escuchado recientemente</h4><span class="btn txt">Ver todo</span></div>
+          <div class="cards">
+            <div class="card"><i class="c1"></i><b>Siamese Dream</b><small>The Smashing Pumpkins</small></div>
+            <div class="card"><i class="c8"></i><b>Voices</b><small>Phantogram</small></div>
+            <div class="card"><i class="c6"></i><b>Souvlaki</b><small>Slowdive</small></div>
+            <div class="card"><i class="c3"></i><b>Mezzanine</b><small>Massive Attack</small></div>
+            <div class="card"><i class="c7"></i><b>Disintegration</b><small>The Cure</small></div>
+            <div class="card"><i class="c5"></i><b>In Rainbows</b><small>Radiohead</small></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="player">
+      <div class="np"><i class="c4"></i><div style="min-width:0"><b>Fall in Love with a Ghost</b><small>Phantogram</small></div><span class="ms f" style="color:var(--primary)">favorite</span></div>
+      <div class="ctrl">
+        <div class="btns"><span class="ms s20">shuffle</span><span class="ms">skip_previous</span><span class="play"><span class="ms f s28">pause</span></span><span class="ms">skip_next</span><span class="ms s20">repeat</span></div>
+        <div class="bar">2:14<span class="track" style="--p:58%"></span>3:52</div>
+      </div>
+      <div class="extra"><span class="ms s20 on">lyrics</span><span class="ms s20">queue_music</span><span class="ms s20">devices</span><span class="ms s20">groups</span><span class="ms s20">volume_up</span><span class="vol"></span><span class="ms s20">open_in_full</span></div>
+    </div>
+  </div></div>
+  <div class="notes">
+    <div><span class="ms s18">keyboard</span><span>Atajos de escritorio: Ctrl K busca, espacio pausa, flechas saltan. Las teclas multimedia del teclado también funcionan.</span></div>
+    <div><span class="ms s18">devices</span><span>«Dispositivos» abre Dezzy Connect: elige si suena en el PC, en el móvil o en la tele. «Grupo» abre Escuchar juntos.</span></div>
+    <div><span class="ms s18">view_sidebar</span><span>La barra lateral se puede plegar a iconos cuando la ventana es estrecha.</span></div>
+  </div>
+</section>
+
+<!-- 3 · Reproduciendo -->
+<section>
+  <h2><span class="n">3</span>Reproduciendo, con letras</h2>
+  <p class="sub">Se abre con el botón de ampliar del reproductor. El fondo se tiñe con los colores de la portada; las letras sincronizadas van a la derecha, en grande, y la línea actual resalta. Arriba se cambia entre Letras, Cola y Canvas.</p>
+  <div class="stage"><div class="win">
+    <div class="titlebar"><span class="logo"></span>Dezzy<span class="sp"></span><span class="wc"><span class="ms s16">remove</span><span class="ms s16">crop_square</span><span class="ms s16">close</span></span></div>
+    <div class="npfull">
+      <div class="bg"></div>
+      <div class="tabs"><span class="chip on"><span class="ms s18">lyrics</span>Letras</span><span class="chip"><span class="ms s18">queue_music</span>Cola</span><span class="chip"><span class="ms s18">auto_awesome</span>Canvas</span><span class="chip"><span class="ms s18">close_fullscreen</span></span></div>
+      <div class="npl">
+        <div class="art c4"></div>
+        <h3>Fall in Love with a Ghost</h3>
+        <p>Phantogram, Ceremony</p>
+        <div class="acts"><span class="btn tonal"><span class="ms s20">leaderboard</span>Estadísticas</span><span class="btn out"><span class="ms s20">share</span>Compartir</span></div>
+      </div>
+      <div class="lyr">
+        <p>Primera línea de la letra, ya cantada</p>
+        <p class="near">La línea anterior se queda a la vista</p>
+        <p class="now">Esta es la línea que suena ahora</p>
+        <p class="near">La siguiente asoma para que la anticipes</p>
+        <p>Y más abajo sigue el resto de la canción</p>
+      </div>
+    </div>
+    <div class="player">
+      <div class="np"><i class="c4"></i><div style="min-width:0"><b>Fall in Love with a Ghost</b><small>Phantogram</small></div><span class="ms f" style="color:var(--primary)">favorite</span></div>
+      <div class="ctrl">
+        <div class="btns"><span class="ms s20">shuffle</span><span class="ms">skip_previous</span><span class="play"><span class="ms f s28">pause</span></span><span class="ms">skip_next</span><span class="ms s20">repeat</span></div>
+        <div class="bar">2:14<span class="track" style="--p:58%"></span>3:52</div>
+      </div>
+      <div class="extra"><span class="ms s20 on">lyrics</span><span class="ms s20">queue_music</span><span class="ms s20">devices</span><span class="ms s20">groups</span><span class="ms s20">volume_up</span><span class="vol"></span><span class="ms s20 on">close_fullscreen</span></div>
+    </div>
+  </div></div>
+  <div class="notes">
+    <div><span class="ms s18">touch_app</span><span>Clic en cualquier línea para saltar a ese momento de la canción.</span></div>
+    <div><span class="ms s18">picture_in_picture</span><span>Mini reproductor flotante opcional, siempre encima, con la línea de letra actual.</span></div>
+    <div><span class="ms s18">leaderboard</span><span>«Estadísticas» abre la misma pantalla de rankings por país que en el móvil.</span></div>
+  </div>
+</section>
+
+<!-- 4 · Ajustes › Cuentas -->
+<section>
+  <h2><span class="n">4</span>Ajustes, Cuentas</h2>
+  <p class="sub">Todo lo de las cuentas en un sitio: con qué cuenta estás, qué se sincroniza y cómo desconectarla. Vincular el móvil usa un QR, igual que Dezzy Connect.</p>
+  <div class="stage"><div class="win">
+    <div class="titlebar"><span class="logo"></span>Dezzy, Ajustes<span class="sp"></span><span class="wc"><span class="ms s16">remove</span><span class="ms s16">crop_square</span><span class="ms s16">close</span></span></div>
+    <div class="set">
+      <aside class="panel setnav">
+        <h3>Ajustes</h3>
+        <nav class="nav">
+          <a class="on" href="#"><span class="ms">account_circle</span>Cuentas</a>
+          <a href="#"><span class="ms">graphic_eq</span>Audio y calidad</a>
+          <a href="#"><span class="ms">palette</span>Apariencia</a>
+          <a href="#"><span class="ms">lyrics</span>Letras</a>
+          <a href="#"><span class="ms">download</span>Descargas</a>
+          <a href="#"><span class="ms">keyboard</span>Atajos</a>
+          <a href="#"><span class="ms">shield</span>Privacidad</a>
+          <a href="#"><span class="ms">info</span>Acerca de</a>
+        </nav>
+      </aside>
+      <div class="panel setmain">
+        <h4>Cuentas</h4>
+        <p class="hint">Dezzy no guarda contraseñas. Las sesiones se cifran en este ordenador.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div class="acard">
+            <div class="ahead"><span class="logo" style="background:var(--yt)"><span class="ms f">play_arrow</span></span><div class="t"><b>YouTube Music</b><small>Reproducción y biblioteca</small></div><span class="ok"><span class="ms s20 f">check_circle</span>Conectado</span></div>
+            <div class="who"><span class="avatar">D</span><div><b style="font-weight:500">Dezzy</b><br><small style="color:var(--on-sv)">Cuenta de Google</small></div></div>
+            <div class="opt"><div class="t"><b>Sincronizar playlists y me gusta</b><small>Cada vez que abres la app</small></div><span class="sw"></span></div>
+            <div class="opt"><div class="t"><b>Guardar historial en YouTube</b><small>Mejora tus recomendaciones</small></div><span class="sw"></span></div>
+            <div class="opt" style="justify-content:flex-end;gap:8px"><span class="btn txt">Cambiar de cuenta</span><span class="btn out">Cerrar sesión</span></div>
+          </div>
+          <div class="acard">
+            <div class="ahead"><span class="logo" style="background:#191414"><span class="ms" style="color:var(--sp)">graphic_eq</span></span><div class="t"><b>Spotify</b><small>Importar y rankings</small></div><span class="ok"><span class="ms s20 f">check_circle</span>Conectado</span></div>
+            <div class="who"><span class="avatar" style="background:linear-gradient(135deg,#1ED760,#0B5D2A)">D</span><div><b style="font-weight:500">dezzy</b><br><small style="color:var(--on-sv)">Cuenta de Spotify</small></div></div>
+            <div class="opt"><div class="t"><b>Rankings reales por país</b><small>Estadísticas de cualquier canción</small></div><span class="sw"></span></div>
+            <div class="opt"><div class="t"><b>Importar playlists nuevas</b><small>Se buscan en YouTube Music al importarlas</small></div><span class="sw off"></span></div>
+            <div class="opt" style="justify-content:flex-end;gap:8px"><span class="btn tonal"><span class="ms s20">playlist_add</span>Importar ahora</span><span class="btn out">Desconectar</span></div>
+          </div>
+        </div>
+        <div class="acard" style="display:flex;align-items:center;gap:20px">
+          <span class="qr"></span>
+          <div style="flex:1"><b style="font-size:16px;font-weight:500">Vincular con Dezzy en el móvil</b><p style="color:var(--on-sv);margin-top:4px">En el móvil, abre Dispositivos y escanea este código. Se comparten historial, racha, cola y «Me gusta». Todo va cifrado de extremo a extremo, sin servidores de Dezzy.</p></div>
+          <span class="btn fill"><span class="ms s20">qr_code_scanner</span>Mostrar otro código</span>
+        </div>
+      </div>
+    </div>
+  </div></div>
+  <div class="notes">
+    <div><span class="ms s18">logout</span><span>«Cerrar sesión» borra las cookies de esa cuenta y su caché. Tus descargas se quedan.</span></div>
+    <div><span class="ms s18">swap_horiz</span><span>«Cambiar de cuenta» abre otra vez la ventana de Google sin borrar la biblioteca local.</span></div>
+    <div><span class="ms s18">p2p</span><span>La vinculación con el móvil reutiliza la red P2P de Dezzy (Nostr), sin Supabase.</span></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">?</span>Lo que falta decidir</h2>
+  <div class="legend">
+    <span>Sobre qué base se construye (ver aviso arriba)</span>
+    <span>Siguientes bocetos: Buscar, Biblioteca, Mapa musical, Rankings, Social</span>
+  </div>
+</section>
+</main>
+</body>
+</html>

@@ -405,9 +405,13 @@ fun ConnectDeviceBottomSheet(
             items(items = cast.routes, key = { "cast_${it.id}" }) { route ->
                 val selected = route.id == cast.selected?.id
                 DeviceRow(
-                    icon = if (selected) R.drawable.cast_connected else R.drawable.cast,
+                    icon = if (selected) R.drawable.cast_connected else castRouteIcon(route),
                     title = route.name,
-                    subtitle = if (selected) "Transmitiendo · toca para detener" else "Google Cast",
+                    subtitle = if (selected) {
+                        "Transmitiendo · toca para detener"
+                    } else {
+                        route.description?.toString()?.takeIf { it.isNotBlank() } ?: "Google Cast"
+                    },
                     badge = "CAST",
                     state = when {
                         selected -> DeviceRowState.Active
@@ -1290,6 +1294,14 @@ private class CastRoutes(
     val selected: MediaRouter.RouteInfo?,
     val stop: () -> Unit,
 )
+
+/** Icono según el tipo de aparato Cast: tele, altavoz o el genérico de Cast. */
+private fun castRouteIcon(route: MediaRouter.RouteInfo): Int = when (route.deviceType) {
+    MediaRouter.RouteInfo.DEVICE_TYPE_TV -> R.drawable.tv
+    MediaRouter.RouteInfo.DEVICE_TYPE_SPEAKER,
+    MediaRouter.RouteInfo.DEVICE_TYPE_GROUP -> R.drawable.speaker
+    else -> R.drawable.cast
+}
 
 /** Rutas de Google Cast con búsqueda activa mientras la hoja está abierta. */
 @Composable

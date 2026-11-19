@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reproductor iPod · bocetos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="reproductor-estilos-base.css">
+<style>
+/* ── Estilo iPod (IpodPlayer.kt) ── */
+.ipod{background:#EAEDED;color:#1B2631}
+.ip-top{display:flex;align-items:center;padding:4px 8px 0 4px;color:#2C3E50;position:relative}
+.ip-top .name{font-size:18px;font-weight:700;margin-left:2px}
+.ip-top .ms{color:#34495E}
+.lcd-wrap{margin:16px 24px 0;border-radius:8px;border:1px solid #566573;padding:1px;box-shadow:0 6px 14px rgba(0,0,0,.18);position:relative;flex:none}
+.lcd{border:3px solid #BDC3C7;border-radius:7px;background:radial-gradient(circle at 50% 45%,#C2D9D2,#9FB2AB);overflow:hidden;position:relative;color:#1B2631}
+.lcd::after{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.28),transparent 38%);pointer-events:none}
+.lcd-bar{display:flex;align-items:center;justify-content:space-between;padding:5px 12px;font-size:8.5px;font-weight:700;border-bottom:1px solid rgba(123,153,144,.6)}
+.batt{display:inline-flex;align-items:center;gap:3px}
+.batt i{display:inline-block;width:18px;height:9px;border:1px solid #000;border-radius:1px;padding:1px}
+.batt i::before{content:"";display:block;height:100%;width:70%;background:#1B2631}
+.lcd-body{display:flex;gap:16px;padding:10px 16px 12px;align-items:center}
+.lcd-cover{width:105px;height:105px;border-radius:3px;border:1px solid #7B9990;flex:none}
+.lcd-tx{flex:1;min-width:0}
+.lcd-tx b{display:block;font-size:10.5px;font-weight:700}
+.lcd-tx span{display:block;font-size:8.5px;color:#2C3E50;margin-top:4px}
+.lbar{height:6px;border-radius:3px;background:rgba(123,153,144,.5);margin-top:14px;position:relative}
+.lbar i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:#1B2631}
+.ltimes{display:flex;justify-content:space-between;font-size:8.5px;color:#2C3E50;margin-top:4px}
+.wheel{width:240px;height:240px;border-radius:50%;background:#F2F4F4;border:1px solid #BDC3C7;margin:0 auto;position:relative;box-shadow:0 8px 18px rgba(0,0,0,.12);color:#5D6D7E;flex:none}
+.wheel .c{position:absolute;left:50%;top:50%;width:80px;height:80px;margin:-40px 0 0 -40px;border-radius:50%;background:#EAEDED;border:1px solid #BDC3C7}
+.wheel .m{position:absolute;left:0;right:0;top:16px;text-align:center;font-size:11px;font-weight:700;letter-spacing:.5px}
+.wheel .pp{position:absolute;left:0;right:0;bottom:16px;display:flex;justify-content:center;gap:2px}
+.wheel .l{position:absolute;left:14px;top:50%;margin-top:-14px}
+.wheel .r{position:absolute;right:14px;top:50%;margin-top:-14px}
+.menu-row{display:flex;align-items:center;justify-content:space-between;padding:4px 12px;font-size:13px;font-weight:600}
+.menu-row.sel{background:linear-gradient(180deg,#3A5A78,#1F3A55);color:#E9F2F0}
+.stars{font-size:12px;letter-spacing:2px;margin-top:6px}
+.chassis-dots{display:flex;gap:10px;justify-content:center;margin-top:10px}
+.chassis-dots i{width:18px;height:18px;border-radius:50%;border:2px solid rgba(0,0,0,.15);display:inline-block}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="styles">
+  <a href="dezzy-android-reproductor-applemusic-bocetos.html">Apple Music</a>
+  <a href="dezzy-android-reproductor-spotify-bocetos.html">Spotify</a>
+  <a class="on" href="dezzy-android-reproductor-ipod-bocetos.html">iPod</a>
+  <a href="dezzy-android-reproductor-dezzystyle-bocetos.html">Dezzy Style</a>
+</nav>
+<header class="top">
+  <h1>Reproductor · estilo iPod</h1>
+  <p class="lead">Se conserva el chasis, la pantalla LCD verdosa con reflejo y la rueda con MENU / ⏮ / ⏭ / ▶❚❚. Los bocetos atacan lo que hoy más se nota: el texto diminuto de la pantalla y la barra superior con 5 iconos sueltos.</p>
+  <div class="today">
+    <h4>Cómo está hoy (<code>ui/player/IpodPlayer.kt</code>)</h4>
+    <ul>
+      <li>Chasis gris claro <code>#EAEDED</code> (o del color dominante de la carátula en modo «iPod Dinámico»).</li>
+      <li>Barra superior: ⌄ · «iPod Classic» · vídeo · visualizador · compartir · letras · cola (5 iconos a la derecha).</li>
+      <li>LCD de 210 dp (245 con letras): barra de estado (▶ · «Reproduciendo» · batería), carátula 105 dp, título <b>10,5 sp</b>, artista <b>8,5 sp</b>, tiempos <b>8,5 sp</b>.</li>
+      <li>Con letras: pantalla partida (carátula + datos a la izquierda, letra sincronizada a la derecha) con textos de 7–8,5 sp.</li>
+      <li>Rueda de 240 dp: MENU abre el menú de la canción (hoja de Android), ⏮, ⏭, ▶❚❚; el botón central vacío hace play/pausa. No se puede girar.</li>
+    </ul>
+  </div>
+</header>
+
+<!-- ───────────── ACTUAL ───────────── -->
+<section class="sketch now">
+  <div class="sk-head"><span class="sk-tag">ACTUAL</span><h3>Referencia: así se ve hoy</h3><p>Para comparar. No se elige.</p></div>
+  <div class="sk-body">
+    <div>
+      <div class="phone ipod">
+        <div class="statusbar dark"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+        <div class="content"><div class="layer" style="padding:0 0 16px">
+          <div class="ip-top"><span class="ms s32">expand_more</span><span class="name">iPod Classic</span><div class="sp"></div><span class="ms s22">slow_motion_video</span>&nbsp;<span class="ms s22">auto_awesome</span>&nbsp;<span class="ms s22">share</span>&nbsp;<span class="ms">lyrics</span>&nbsp;<span class="ms">queue_music</span></div>
+          <div class="lcd-wrap"><div class="lcd">
+            <div class="lcd-bar"><span class="ms f" style="font-size:10px">play_arrow</span><span>Reproduciendo</span><span class="batt">82%<i></i></span></div>
+            <div class="lcd-body"><div class="lcd-cover art-c"></div><div class="lcd-tx"><b class="ell">Verano Eléctrico</b><span class="ell">Club Tropical</span><div class="lbar"><i style="width:40%"></i></div><div class="ltimes"><span>1:31</span><span>3:48</span></div></div></div>
+          </div></div>
+          <div class="sp"></div>
+          <div class="wheel"><span class="m">MENU</span><span class="ms f s28 l">skip_previous</span><span class="ms f s28 r">skip_next</span><span class="pp"><span class="ms f s14">play_arrow</span><span class="ms f s14">pause</span></span><div class="c"></div></div>
+          <div class="sp" style="flex:1.5"></div>
+        </div></div>
+        <div class="gesture dark"><i></i></div>
+      </div>
+      <p class="cap">Estado actual (iPod Classic).</p>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────── A ───────────── -->
+<section class="sketch">
+  <div class="sk-head"><span class="sk-tag">BOCETO A</span><h3>Pantalla legible</h3>
+    <p>Mismo aparato, pero la LCD crece y su texto se puede leer sin acercar el móvil. La barra superior se queda con lo justo.</p></div>
+  <div class="sk-body">
+    <div>
+      <div class="phone ipod">
+        <div class="statusbar dark"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+        <div class="content"><div class="layer" style="padding:0 0 16px">
+          <div class="ip-top"><span class="ms s32">expand_more</span><span class="name">iPod Classic</span><div class="sp"></div><span class="ms">lyrics</span>&nbsp;&nbsp;<span class="ms">more_horiz</span>&nbsp;<span class="mk" style="right:4px;top:-6px">1</span></div>
+          <div class="lcd-wrap"><div class="lcd">
+            <div class="lcd-bar" style="font-size:11px;padding:6px 12px;position:relative"><span class="ms f" style="font-size:12px">play_arrow</span><span>Reproduciendo</span><span>3 de 12</span><span class="mk" style="left:196px;top:2px">2</span></div>
+            <div class="lcd-body" style="padding:14px 14px 6px;position:relative"><div class="lcd-cover art-c" style="width:112px;height:112px"></div><div class="lcd-tx"><b style="font-size:15px;line-height:19px">Verano Eléctrico</b><span style="font-size:13px">Club Tropical</span><span style="font-size:12px;opacity:.8;margin-top:2px">Noches de Julio</span></div><span class="mk" style="left:206px;top:-2px">3</span></div>
+            <div style="padding:6px 14px 12px;position:relative"><div class="lbar" style="margin-top:0;height:8px;border:1px solid #1B2631;background:rgba(255,255,255,.25)"><i style="width:40%;border-radius:2px"></i></div><div class="ltimes" style="font-size:11.5px;font-weight:600"><span>1:31</span><span>−2:17</span></div><span class="mk" style="right:2px;top:-6px">4</span></div>
+          </div></div>
+          <div class="sp"></div>
+          <div class="wheel"><span class="m">MENU</span><span class="ms f s28 l">skip_previous</span><span class="ms f s28 r">skip_next</span><span class="pp"><span class="ms f s14">play_arrow</span><span class="ms f s14">pause</span></span><div class="c"></div><span class="mk" style="left:150px;top:4px">5</span></div>
+          <div class="sp" style="flex:1.2"></div>
+        </div></div>
+        <div class="gesture dark"><i></i></div>
+      </div>
+      <p class="cap">La LCD pasa de ~150 a ~200 dp de alto útil.</p>
+    </div>
+    <div class="notes">
+      <h4>Qué cambia respecto al actual</h4>
+      <ol class="chg">
+        <li><b>Barra superior con 2 iconos</b>: letras y ⋯. Vídeo, visualizador, compartir y cola pasan al menú ⋯ (hoy son 5 iconos apretados).</li>
+        <li><b>Contador «3 de 12»</b> en la barra de la LCD (posición en la cola), texto de 11 sp en vez de 8,5 sp.</li>
+        <li><b>Texto grande</b>: título 15 sp, artista 13 sp y nueva línea con el <b>álbum</b>; el título puede ocupar 2 líneas.</li>
+        <li><b>Barra a lo ancho</b> de la LCD, con borde fino como las de la época, y tiempo restante (−2:17) en 11,5 sp.</li>
+        <li><b>MENU unificado</b>: hoy abre la hoja de opciones de la canción y el ⋯ nuevo abre otra cosa; pasan a abrir lo mismo (hoja con vídeo, visualizador, compartir, cola y las opciones de siempre).</li>
+      </ol>
+      <h4>Valoración</h4>
+      <ul><li class="pro">Arregla la legibilidad, que es el problema real del estilo.</li><li class="con">Menos «juguete»: menos iconos a la vista.</li></ul>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────── B ───────────── -->
+<section class="sketch">
+  <div class="sk-head"><span class="sk-tag">BOCETO B</span><h3>Menú en la pantalla</h3>
+    <p>MENU abre una lista dentro de la propia LCD, al estilo de los iPod de rueda: se navega girando el dedo por la rueda y se elige con el botón central.</p></div>
+  <div class="sk-body">
+    <div>
+      <div class="phone ipod">
+        <div class="statusbar dark"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+        <div class="content"><div class="layer" style="padding:0 0 16px">
+          <div class="ip-top"><span class="ms s32">expand_more</span><span class="name">iPod Classic</span><div class="sp"></div><span class="mk" style="right:150px;top:8px">1</span></div>
+          <div class="lcd-wrap"><div class="lcd">
+            <div class="lcd-bar" style="font-size:11px;padding:6px 12px"><span class="ms f" style="font-size:12px">play_arrow</span><span>Dezzy</span><span class="batt">82%<i></i></span></div>
+            <div style="padding:4px 0 8px;position:relative">
+              <div class="menu-row sel"><span>Letras</span><span class="ms s18">chevron_right</span></div>
+              <div class="menu-row"><span>Cola</span><span class="ms s18">chevron_right</span></div>
+              <div class="menu-row"><span>Video</span><span class="ms s18">chevron_right</span></div>
+              <div class="menu-row"><span>Visualizador</span><span class="ms s18">chevron_right</span></div>
+              <div class="menu-row"><span>Compartir</span><span class="ms s18">chevron_right</span></div>
+              <div class="menu-row"><span>Reproduciendo</span><span class="ms s18">chevron_right</span></div>
+              <span class="mk" style="right:40px;top:6px">2</span>
+            </div>
+          </div></div>
+          <div class="sp"></div>
+          <div class="wheel"><span class="m">MENU</span><span class="ms f s28 l">skip_previous</span><span class="ms f s28 r">skip_next</span><span class="pp"><span class="ms f s14">play_arrow</span><span class="ms f s14">pause</span></span><div class="c"></div>
+            <svg width="240" height="240" style="position:absolute;inset:0" viewBox="0 0 240 240"><path d="M 196 72 A 92 92 0 0 1 206 150" fill="none" stroke="#F6A04D" stroke-width="3" stroke-dasharray="4 5"/><path d="M 206 150 l -7 -2 m 7 2 l 3 -7" stroke="#F6A04D" stroke-width="3" fill="none"/></svg>
+            <span class="mk" style="left:212px;top:96px">3</span><span class="mk" style="left:110px;top:110px">4</span></div>
+          <div class="sp" style="flex:1.2"></div>
+        </div></div>
+        <div class="gesture dark"><i></i></div>
+      </div>
+      <p class="cap">Estado con el menú abierto; «Reproduciendo» vuelve a la pantalla de la canción.</p>
+    </div>
+    <div class="notes">
+      <h4>Qué cambia respecto al actual</h4>
+      <ol class="chg">
+        <li><b>Barra superior vacía</b> salvo ⌄ y el nombre: todo lo demás vive dentro del iPod.</li>
+        <li><b>Menú en la LCD</b> con fila seleccionada en azul oscuro degradado: Letras, Cola, Video, Visualizador, Compartir, Reproduciendo.</li>
+        <li><b>Rueda que gira</b>: deslizar el dedo en círculo mueve la selección (con vibración háptica en cada paso); en la pantalla de la canción, girar cambia el <b>volumen</b>.</li>
+        <li><b>Botón central</b>: elige la opción del menú; en la pantalla de la canción sigue siendo play/pausa como hoy.</li>
+      </ol>
+      <h4>Valoración</h4>
+      <ul><li class="pro">El más divertido y el más fiel a la experiencia de rueda.</li><li class="con">El que más código nuevo pide (detección del giro y estados de la LCD).</li></ul>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────── C ───────────── -->
+<section class="sketch">
+  <div class="sk-head"><span class="sk-tag">BOCETO C</span><h3>Acabado del chasis</h3>
+    <p>La disposición se queda como hoy; el pulido va en materiales: chasis con brillo metálico, rueda con relieve y la LCD con calificación.</p></div>
+  <div class="sk-body">
+    <div>
+      <div class="phone ipod" style="background:linear-gradient(160deg,#F7F8F8,#D9DDDE 55%,#C9CED0)">
+        <div class="statusbar dark"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+        <span class="mk" style="left:14px;top:300px">1</span>
+        <div class="content"><div class="layer" style="padding:0 0 12px">
+          <div class="ip-top"><span class="ms s32">expand_more</span><span class="name">iPod Classic</span><div class="sp"></div><span class="ms">lyrics</span>&nbsp;&nbsp;<span class="ms">more_horiz</span>&nbsp;</div>
+          <div class="lcd-wrap"><div class="lcd">
+            <div class="lcd-bar"><span class="ms f" style="font-size:10px">play_arrow</span><span>Reproduciendo</span><span class="batt">82%<i></i></span></div>
+            <div class="lcd-body" style="position:relative"><div class="lcd-cover art-c" style="box-shadow:0 2px 0 rgba(0,0,0,.15)"></div><div class="lcd-tx"><b class="ell" style="font-size:13px">Verano Eléctrico</b><span class="ell" style="font-size:11px">Club Tropical</span><div class="stars">★★★★☆</div><div class="lbar" style="margin-top:8px"><i style="width:40%"></i></div><div class="ltimes" style="font-size:10px"><span>1:31</span><span>3:48</span></div></div><span class="mk" style="left:180px;top:52px">2</span></div>
+          </div></div>
+          <div class="sp"></div>
+          <div class="wheel" style="background:radial-gradient(circle at 50% 30%,#FFFFFF,#E6E9EA 70%,#D5DADB);box-shadow:inset 0 2px 3px rgba(255,255,255,.9),inset 0 -3px 6px rgba(0,0,0,.08),0 10px 22px rgba(0,0,0,.16)"><span class="m">MENU</span><span class="ms f s28 l">skip_previous</span><span class="ms f s28 r">skip_next</span><span class="pp"><span class="ms f s14">play_arrow</span><span class="ms f s14">pause</span></span><div class="c" style="background:radial-gradient(circle at 50% 70%,#F4F6F6,#DDE1E2);box-shadow:inset 0 2px 4px rgba(0,0,0,.12)"></div><span class="mk" style="left:200px;top:24px">3</span></div>
+          <div class="chassis-dots" style="position:relative"><i style="background:#EAEDED"></i><i style="background:#2B2B2E"></i><i style="background:#B23A3A"></i><i style="background:conic-gradient(#C0507A,#2F8C8C,#6F8A2A,#C0507A)"></i><span class="mk" style="left:226px;top:0">4</span></div>
+          <div class="sp" style="flex:.6"></div>
+        </div></div>
+        <div class="gesture dark"><i></i></div>
+      </div>
+      <p class="cap">Chasis plata; abajo, selector rápido de acabado.</p>
+    </div>
+    <div class="notes">
+      <h4>Qué cambia respecto al actual</h4>
+      <ol class="chg">
+        <li><b>Chasis con degradado metálico</b> suave (plata, negro o rojo) en vez del gris plano. En «Dinámico» el degradado se hace con el color de la carátula.</li>
+        <li><b>Calificación ★</b> en la LCD (tocarla = me gusta, hoy no hay me gusta en este estilo); los textos suben a 13/11/10 sp (sin cambiar la disposición).</li>
+        <li><b>Rueda con relieve</b>: luz arriba, sombra interior abajo y botón central cóncavo; al pulsar, se hunde 1 dp.</li>
+        <li><b>Selector de acabado</b> bajo la rueda (Classic · Negro · Rojo · Dinámico); hoy se cambia sólo en Ajustes → Apariencia.</li>
+      </ol>
+      <h4>Valoración</h4>
+      <ul><li class="pro">Más «premium» sin cambiar cómo se usa.</li><li class="con">No resuelve del todo la legibilidad (la sube, pero menos que A).</li></ul>
+    </div>
+  </div>
+</section>
+
+<div class="pick">Elige <b>A</b>, <b>B</b> o <b>C</b> para el estilo iPod. Combinación natural: <b>A + el acabado de C</b>, o <b>B con la letra grande de A</b> en la pantalla «Reproduciendo».</div>
+</div>
+</body>
+</html>

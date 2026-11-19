@@ -78,6 +78,7 @@ import com.dezzy.music.models.toMediaMetadata
 import com.dezzy.music.playback.queues.YouTubeQueue
 import com.dezzy.music.ui.component.BottomSheetState
 import com.dezzy.music.ui.component.Lyrics
+import com.dezzy.music.ui.menu.AddToPlaylistDialog
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import com.dezzy.music.constants.SliderStyle
@@ -140,8 +141,11 @@ fun SpotifyPlayer(
     val linerManager = remember { LinerConnectManager.getInstance(context) }
     val linerConnState by linerManager.connectionState.collectAsState()
     val linerDeviceName by linerManager.connectedDeviceName.collectAsState()
-    val isConnectedToDesktop = linerConnState == ConnectState.CONNECTED
-    val activeDeviceName = if (isConnectedToDesktop) {
+    val castingRouteName = com.dezzy.music.ui.component.rememberCastingRouteName()
+    val isConnectedToDesktop = linerConnState == ConnectState.CONNECTED || castingRouteName != null
+    val activeDeviceName = if (castingRouteName != null) {
+        castingRouteName
+    } else if (linerConnState == ConnectState.CONNECTED) {
         linerDeviceName ?: "Liner Desktop"
     } else {
         LinerConnectManager.getExactPhoneDeviceName(context)
@@ -237,7 +241,11 @@ fun SpotifyPlayer(
         durationMs = duration,
     )
     val (canvasPrimary, canvasFallback) = canvasArtwork?.playbackUrls() ?: (null to null)
-    val hasCanvas = canvasPrimary != null || canvasFallback != null
+    val canvasAvailable = canvasPrimary != null || canvasFallback != null
+    // «Silenciar canvas» (boceto B): se vuelve a la carátula hasta que se reactive.
+    var canvasMuted by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    val hasCanvas = canvasAvailable && !canvasMuted
+    var showAddToPlaylist by remember { mutableStateOf(false) }
 
     // ---- Colores dinámicos de la carátula (como Spotify): fondo con la paleta y
     //      tarjetas de un tono distinto pero relacionado ----
@@ -245,7 +253,7 @@ fun SpotifyPlayer(
     // Fondo inferior (al hacer scroll) y color de las tarjetas, ambos derivados
     // de la paleta pero más oscuros/desaturados; las tarjetas van un poco más
     // claras que el fondo para destacar sobre él.
-    var targetBgBottomColor by remember { mutableStateOf(Color(0xFF121212)) }
+    var targetBgBottomColor by remember { mutableStateOf(Color.Black) }
     var targetCardColor by remember { mutableStateOf(Color(0xFF1F1F1F)) }
     // Tarjeta de letras: tono más vibrante/claro derivado del álbum (como Spotify).
     var targetLyricsCardColor by remember { mutableStateOf(Color(0xFF2A2A2A)) }
@@ -296,7 +304,7 @@ fun SpotifyPlayer(
                     val hsl = FloatArray(3)
                     androidx.core.graphics.ColorUtils.colorToHSL(dominant, hsl)
                     topBg = androidx.core.graphics.ColorUtils.HSLToColor(floatArrayOf(hsl[0], (hsl[1] * 0.85f).coerceIn(0.15f, 0.6f), 0.30f))
-                    bottomBg = androidx.core.graphics.ColorUtils.HSLToColor(floatArrayOf(hsl[0], (hsl[1] * 0.5f).coerceIn(0.08f, 0.35f), 0.07f))
+                    bottomBg = android.graphics.Color.BLACK
                     card = androidx.core.graphics.ColorUtils.HSLToColor(floatArrayOf(hsl[0], (hsl[1] * 0.45f).coerceIn(0.06f, 0.30f), 0.155f))
                     lyricsCard = androidx.core.graphics.ColorUtils.HSLToColor(floatArrayOf(hsl[0], (hsl[1] * 0.65f).coerceIn(0.12f, 0.50f), 0.20f))
                 } else {
@@ -311,7 +319,8 @@ fun SpotifyPlayer(
                     hsl[2] = hsl[2].coerceIn(0.1f, 0.4f)
                     val srcSat = hsl[1]
                     topBg = androidx.core.graphics.ColorUtils.HSLToColor(hsl)
-                    bottomBg = android.graphics.Color.parseColor("#121212")
+                    // El degradado acaba en negro puro: las tarjetas se ven sobre #000.
+                    bottomBg = android.graphics.Color.BLACK
                     card = androidx.core.graphics.ColorUtils.HSLToColor(
                         floatArrayOf(hsl[0], if (srcSat < 0.12f) srcSat else (srcSat * 0.45f).coerceIn(0.06f, 0.35f), 0.16f)
                     )
@@ -393,7 +402,9 @@ fun SpotifyPlayer(
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(dominantColor, bgBottomColor)
+                    0f to dominantColor,
+                    0.62f to androidx.compose.ui.graphics.lerp(dominantColor, bgBottomColor, 0.7f),
+                    0.86f to bgBottomColor,
                 )
             )
     ) {
@@ -449,6 +460,14 @@ fun SpotifyPlayer(
                 )
             }
         }
+        // Al bajar, todo lo que rodea a las tarjetas pasa a negro puro (las tarjetas
+        // conservan su color; la cabecera fija mantiene el de la carátula).
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer { alpha = 1f - canvasAlpha }
+                .background(Color.Black)
+        )
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -475,8 +494,15 @@ fun SpotifyPlayer(
                     )
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    val albumTitle = mediaMetadata?.album?.title
+                    val source = queueTitle
+                    val sourceLabel = when {
+                        source == null || source == albumTitle -> if (albumTitle != null) "ÁLBUM" else "REPRODUCIENDO DESDE"
+                        source.contains("radio", ignoreCase = true) -> "RADIO"
+                        else -> "PLAYLIST"
+                    }
                     Text(
-                        text = "REPRODUCIENDO DESDE",
+                        text = sourceLabel,
                         color = Color.White.copy(alpha = 0.7f),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
@@ -492,7 +518,6 @@ fun SpotifyPlayer(
                     )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    com.dezzy.music.ui.component.CastButton(tint = Color.White)
                     IconButton(onClick = onVisualizerClick) {
                         Icon(
                             painter = painterResource(R.drawable.auto_awesome),
@@ -594,6 +619,7 @@ fun SpotifyPlayer(
                                     }
                                 )
                             }
+                            AddToPlaylistButton { showAddToPlaylist = true }
                             SavedCheck(currentSongLiked) { playerConnection.toggleLike() }
                         }
 
@@ -745,22 +771,6 @@ fun SpotifyPlayer(
                     }
                 }
 
-                // ---------- Live lyric line ----------
-                if (liveLyricLine != null) {
-                    Spacer(Modifier.height(24.dp))
-                    Text(
-                        text = liveLyricLine,
-                        color = Color.White,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onLyricsClick() }
-                    )
-                }
-
                 Spacer(Modifier.height(20.dp))
 
                 // ---------- Title + saved check + artist ----------
@@ -769,11 +779,23 @@ fun SpotifyPlayer(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Con canvas no hay carátula grande: mini carátula junto al título (boceto B).
+                    if (hasCanvas) {
+                        AsyncImage(
+                            model = mediaMetadata?.thumbnailUrl,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                        )
+                        Spacer(Modifier.width(12.dp))
+                    }
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = mediaMetadata?.title ?: "",
                             color = Color.White,
-                            fontSize = 24.sp,
+                            fontSize = if (hasCanvas) 22.sp else 24.sp,
                             fontWeight = FontWeight.ExtraBold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -793,7 +815,24 @@ fun SpotifyPlayer(
                             }
                         )
                     }
+                    AddToPlaylistButton { showAddToPlaylist = true }
                     SavedCheck(currentSongLiked) { playerConnection.toggleLike() }
+                }
+
+                // Letra en vivo bajo el artista (boceto A): una línea, toca para abrir la letra.
+                if (liveLyricLine != null) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "♪ $liveLyricLine",
+                        color = Color.White.copy(alpha = 0.9f),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onLyricsClick() }
+                    )
                 }
 
                 Spacer(Modifier.height(16.dp))
@@ -843,8 +882,10 @@ fun SpotifyPlayer(
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                         ) {
                             Icon(
-                                painter = painterResource(R.drawable.speaker),
-                                contentDescription = "Dispositivos conectados",
+                                painter = painterResource(
+                                    if (castingRouteName != null) R.drawable.cast_connected else R.drawable.devices
+                                ),
+                                contentDescription = "Conectar a un dispositivo",
                                 tint = if (isConnectedToDesktop) SpotifyGreen else Color.White,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -860,6 +901,16 @@ fun SpotifyPlayer(
                     }
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (canvasAvailable) {
+                            IconButton(onClick = { canvasMuted = !canvasMuted }) {
+                                Icon(
+                                    painter = painterResource(if (canvasMuted) R.drawable.slow_motion_video else R.drawable.volume_off),
+                                    contentDescription = if (canvasMuted) "Mostrar el canvas" else "Silenciar el canvas",
+                                    tint = if (canvasMuted) SpotifyGreen else Color.White.copy(alpha = 0.8f),
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                        }
                         run {
                             val videoModeActive by playerConnection.videoModeActive.collectAsState()
                             val videoModeLoading by playerConnection.videoModeLoading.collectAsState()
@@ -911,6 +962,16 @@ fun SpotifyPlayer(
             }
 
             // ---------- Cards ----------
+            queueWindows.getOrNull(currentWindowIndex + 1)?.mediaItem?.metadata?.let { next ->
+                NextInQueueCard(
+                    title = next.title,
+                    artist = next.artists.joinToString { it.name },
+                    thumbnailUrl = next.thumbnailUrl,
+                    cardColor = cardColor,
+                    onOpenQueue = onQueueClick,
+                )
+                Spacer(Modifier.height(16.dp))
+            }
             if (isLocalSong) {
                 LocalSongCard()
             } else {
@@ -923,6 +984,27 @@ fun SpotifyPlayer(
                         lyricsCardColor = lyricsCardColor,
                         onShowLyrics = { onLyricsClick() },
                         onShareLyrics = { showShareSheet = true },
+                    )
+                    Spacer(Modifier.height(16.dp))
+                }
+
+                // Créditos y SongDNA en una sola tarjeta (boceto C).
+                val creditArtists = mediaMetadata?.artists?.filter { it.name.isNotBlank() }.orEmpty()
+                if (creditArtists.isNotEmpty() || songCredits != null) {
+                    CreditsDnaCard(
+                        songTitle = mediaMetadata?.title.orEmpty(),
+                        artists = creditArtists.map { it.name to it.id },
+                        credits = songCredits,
+                        cardColor = cardColor,
+                        onExplore = primaryArtistId?.let { id ->
+                            {
+                                state.collapseSoft()
+                                navController.navigate("songdna/$id")
+                            }
+                        },
+                        onArtistClick = { id ->
+                            id?.let { state.collapseSoft(); navController.navigate("artist/$it") }
+                        },
                     )
                     Spacer(Modifier.height(16.dp))
                 }
@@ -970,40 +1052,6 @@ fun SpotifyPlayer(
                     }
                 }
 
-                // Credits: intérpretes del metadata + compositores/productores REALES
-                val creditArtists = mediaMetadata?.artists?.filter { it.name.isNotBlank() }.orEmpty()
-                if (creditArtists.isNotEmpty() || songCredits != null) {
-                    CreditsCard(
-                        songTitle = mediaMetadata?.title.orEmpty(),
-                        artists = creditArtists.map { it.name to it.id },
-                        credits = songCredits,
-                        onArtistClick = { id ->
-                            id?.let { state.collapseSoft(); navController.navigate("artist/$it") }
-                        }
-                    )
-                    Spacer(Modifier.height(16.dp))
-                }
-
-                // SongDNA (estilo Spotify): las personas detrás de la canción +
-                // explorar la combinación de artistas.
-                if (primaryArtistId != null) {
-                    SongDnaCard(
-                        songTitle = mediaMetadata?.title.orEmpty(),
-                        primaryArtistName = artistPage?.artist?.title
-                            ?: mediaMetadata?.artists?.firstOrNull()?.name.orEmpty(),
-                        primaryArtistThumbnail = artistPage?.artist?.thumbnail,
-                        secondContributor = songCredits?.writers?.firstOrNull()
-                            ?: songCredits?.producers?.firstOrNull(),
-                        contributorCount = ((songCredits?.performers?.size ?: creditArtists.size) +
-                            (songCredits?.writers?.size ?: 0) +
-                            (songCredits?.producers?.size ?: 0)).coerceAtLeast(1),
-                        cardColor = cardColor,
-                        onExplore = {
-                            state.collapseSoft()
-                            navController.navigate("songdna/$primaryArtistId")
-                        },
-                    )
-                }
             }
 
             Spacer(Modifier.height(48.dp))
@@ -1016,6 +1064,7 @@ fun SpotifyPlayer(
             exit = fadeOut(),
             modifier = Modifier.align(Alignment.TopCenter)
         ) {
+            Box(modifier = Modifier.fillMaxWidth()) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1062,6 +1111,17 @@ fun SpotifyPlayer(
                     )
                 }
             }
+            // Progreso de la canción pegado al borde inferior de la cabecera.
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth(
+                        if (duration > 0L) (currentPos.toFloat() / duration).coerceIn(0f, 1f) else 0f
+                    )
+                    .height(2.dp)
+                    .background(Color.White)
+            )
+            }
         }
     }
 
@@ -1078,6 +1138,27 @@ fun SpotifyPlayer(
         )
     }
 
+    mediaMetadata?.let { meta ->
+        val database = LocalDatabase.current
+        AddToPlaylistDialog(
+            isVisible = showAddToPlaylist,
+            onGetSong = {
+                database.transaction { insert(meta) }
+                listOf(meta.id)
+            },
+            onDismiss = { showAddToPlaylist = false },
+            onAddComplete = { _, playlistNames ->
+                val message = if (playlistNames.size == 1) {
+                    context.getString(R.string.added_to_playlist, playlistNames.first())
+                } else {
+                    context.getString(R.string.added_to_n_playlists, playlistNames.size)
+                }
+                android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
+            },
+            subtitle = meta.title,
+        )
+    }
+
     if (showDevicePicker) {
         ConnectDeviceBottomSheet(
             onDismissRequest = { showDevicePicker = false },
@@ -1088,6 +1169,70 @@ fun SpotifyPlayer(
             },
         )
     }
+    }
+}
+
+/** «Siguiente en la cola» (boceto C): la próxima canción; toca para abrir la cola. */
+@Composable
+private fun NextInQueueCard(
+    title: String,
+    artist: String,
+    thumbnailUrl: String?,
+    cardColor: Color,
+    onOpenQueue: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(cardColor)
+            .clickable(onClick = onOpenQueue)
+            .padding(16.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "Siguiente en la cola",
+                color = Color.White,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = "Abrir cola",
+                color = Color.White.copy(alpha = 0.7f),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        Spacer(Modifier.height(12.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            AsyncImage(
+                model = thumbnailUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(6.dp))
+            )
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    color = Color.White,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = artist,
+                    color = Color.White.copy(alpha = 0.7f),
+                    fontSize = 13.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
     }
 }
 
@@ -1552,68 +1697,6 @@ private fun ExploreCard(
 }
 
 @Composable
-private fun CreditsCard(
-    songTitle: String,
-    artists: List<Pair<String, String?>>,
-    credits: SongCredits?,
-    onArtistClick: (String?) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFF282828))
-            .padding(20.dp)
-    ) {
-        Text(
-            text = "Créditos",
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold
-        )
-        if (songTitle.isNotBlank()) {
-            Text(
-                text = songTitle,
-                color = Color.White.copy(alpha = 0.6f),
-                fontSize = 13.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-        Spacer(Modifier.height(14.dp))
-
-        // Intérpretes: los del metadata (clicables), como en Spotify
-        artists.forEachIndexed { index, (name, id) ->
-            CreditRow(
-                name = name,
-                role = if (index == 0) "Artista principal" else "Artista",
-                clickable = id != null,
-                onClick = { onArtistClick(id) },
-            )
-        }
-
-        // Compositores y productores REALES (MusicBrainz)
-        val artistNames = artists.map { it.first.lowercase() }.toSet()
-        credits?.writers?.filter { it.lowercase() !in artistNames || credits.producers.isEmpty() }
-            ?.forEach { writer ->
-                CreditRow(name = writer, role = "Compositor", clickable = false, onClick = {})
-            }
-        credits?.producers?.forEach { producer ->
-            CreditRow(name = producer, role = "Productor", clickable = false, onClick = {})
-        }
-
-        if (credits != null) {
-            Spacer(Modifier.height(10.dp))
-            Text(
-                text = "Fuente: ${credits.source}",
-                color = Color.White.copy(alpha = 0.4f),
-                fontSize = 11.sp
-            )
-        }
-    }
-}
-
-@Composable
 private fun CreditRow(
     name: String,
     role: String,
@@ -1646,33 +1729,51 @@ private fun CreditRow(
     }
 }
 
-// ── Tu ADN musical ───────────────────────────────────────────────────────────
+// ── Créditos y SongDNA ───────────────────────────────────────────────────────
+
+/** ⊕ junto al check: añade la canción a una playlist. */
+@Composable
+private fun AddToPlaylistButton(onClick: () -> Unit) {
+    IconButton(onClick = onClick) {
+        Icon(
+            painter = painterResource(R.drawable.add_circle),
+            contentDescription = "Añadir a una playlist",
+            tint = Color.White.copy(alpha = 0.8f),
+            modifier = Modifier.size(26.dp)
+        )
+    }
+}
 
 /**
- * Tarjeta SongDNA (estilo Spotify): las personas detrás de la canción. Muestra
- * el artista principal + un segundo contribuidor (compositor/productor real de
- * los créditos), el número de contribuidores, y un botón "Explorar" que abre la
- * pantalla de combinación de artistas.
+ * «Créditos y SongDNA» (boceto C): las personas detrás de la canción en una línea,
+ * «Explorar» abre SongDNA y «Ver créditos» despliega intérpretes, compositores y productores.
  */
 @Composable
-private fun SongDnaCard(
+private fun CreditsDnaCard(
     songTitle: String,
-    primaryArtistName: String,
-    primaryArtistThumbnail: String?,
-    secondContributor: String?,
-    contributorCount: Int,
+    artists: List<Pair<String, String?>>,
+    credits: SongCredits?,
     cardColor: Color,
-    onExplore: () -> Unit,
+    onExplore: (() -> Unit)?,
+    onArtistClick: (String?) -> Unit,
 ) {
+    var expanded by remember(songTitle) { mutableStateOf(false) }
+    val artistNames = artists.map { it.first.lowercase() }.toSet()
+    val writers = credits?.writers?.filter { it.lowercase() !in artistNames || credits.producers.isEmpty() }.orEmpty()
+    val producers = credits?.producers.orEmpty()
+    val people = (artists.map { it.first } + writers + producers).distinctBy { it.lowercase() }
+    val summary = when {
+        people.size <= 2 -> people.joinToString(", ")
+        else -> "${people.take(2).joinToString(", ")} y ${people.size - 2} más"
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(cardColor)
-            .clickable(onClick = onExplore)
             .padding(20.dp)
     ) {
-        // Cabecera: SongDNA + Beta
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 painter = painterResource(R.drawable.auto_awesome),
@@ -1680,45 +1781,10 @@ private fun SongDnaCard(
                 tint = SpotifyGreen,
                 modifier = Modifier.size(20.dp),
             )
-            Spacer(Modifier.width(6.dp))
-            Text("SongDNA", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.width(8.dp))
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(SpotifyGreen)
-                    .padding(horizontal = 6.dp, vertical = 1.dp),
-            ) {
-                Text("Beta", color = Color.Black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-            }
+            Text("Créditos y SongDNA", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         }
-
-        Spacer(Modifier.height(18.dp))
-
-        // Dos contribuidores: artista principal + compositor/productor
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.Top,
-        ) {
-            DnaContributor(
-                thumbnail = primaryArtistThumbnail,
-                name = primaryArtistName,
-                role = "Artista principal",
-                placeholderIcon = R.drawable.artist,
-                modifier = Modifier.weight(1f),
-            )
-            DnaContributor(
-                thumbnail = null,
-                name = secondContributor ?: "—",
-                role = if (contributorCount > 2) "Compositor y ${contributorCount - 2} más" else "Compositor",
-                placeholderIcon = R.drawable.edit,
-                modifier = Modifier.weight(1f),
-            )
-        }
-
-        Spacer(Modifier.height(18.dp))
-
+        Spacer(Modifier.height(12.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1728,86 +1794,65 @@ private fun SongDnaCard(
                 Text(
                     text = songTitle,
                     color = Color.White,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = "$contributorCount contribuidores",
-                    color = Color.White.copy(alpha = 0.6f),
+                    text = summary,
+                    color = Color.White.copy(alpha = 0.7f),
                     fontSize = 13.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
-            OutlinedButton(
-                onClick = onExplore,
-                shape = CircleShape,
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-            ) {
-                Text("Explorar", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            if (onExplore != null) {
+                Spacer(Modifier.width(12.dp))
+                OutlinedButton(
+                    onClick = onExplore,
+                    shape = CircleShape,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                ) {
+                    Text("Explorar", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                }
             }
         }
 
-        Spacer(Modifier.height(12.dp))
+        if (expanded) {
+            Spacer(Modifier.height(8.dp))
+            artists.forEachIndexed { index, (name, id) ->
+                CreditRow(
+                    name = name,
+                    role = if (index == 0) "Artista principal" else "Artista",
+                    clickable = id != null,
+                    onClick = { onArtistClick(id) },
+                )
+            }
+            writers.forEach { CreditRow(name = it, role = "Compositor", clickable = false, onClick = {}) }
+            producers.forEach { CreditRow(name = it, role = "Productor", clickable = false, onClick = {}) }
+            if (credits != null) {
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = "Fuente: ${credits.source}",
+                    color = Color.White.copy(alpha = 0.4f),
+                    fontSize = 11.sp
+                )
+            }
+        }
+
+        Spacer(Modifier.height(6.dp))
         Text(
-            text = "Descubre a las personas detrás de la canción y combina artistas.",
-            color = Color.White.copy(alpha = 0.5f),
-            fontSize = 12.sp,
-        )
-    }
-}
-
-@Composable
-private fun DnaContributor(
-    thumbnail: String?,
-    name: String,
-    role: String,
-    placeholderIcon: Int,
-    modifier: Modifier = Modifier,
-) {
-    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
-        Box(
+            text = if (expanded) "Ocultar créditos" else "Ver todos los créditos",
+            color = Color.White,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
             modifier = Modifier
-                .size(56.dp)
-                .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.10f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (thumbnail != null) {
-                AsyncImage(
-                    model = thumbnail,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize().clip(CircleShape),
-                )
-            } else {
-                Icon(
-                    painter = painterResource(placeholderIcon),
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.6f),
-                    modifier = Modifier.size(26.dp),
-                )
-            }
-        }
-        Spacer(Modifier.width(10.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = name,
-                color = Color.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = role,
-                color = Color.White.copy(alpha = 0.6f),
-                fontSize = 12.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
+                .clip(RoundedCornerShape(8.dp))
+                .clickable { expanded = !expanded }
+                .padding(vertical = 8.dp),
+        )
     }
 }
 

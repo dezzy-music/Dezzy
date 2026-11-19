@@ -16,6 +16,7 @@ import androidx.compose.material3.SliderColors
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.SliderState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.lerp
@@ -135,6 +136,13 @@ private fun calcFraction(a: Float, b: Float, pos: Float): Float {
 }
 
 /**
+ * Color base de la pista inactiva de las barras de reproducción. Por defecto blanco
+ * (fondos oscuros, como siempre); los reproductores con fondo claro (Mínimo «Papel»,
+ * Moderno/Cinemático/Expresivo en modo claro) lo cambian a su color de tinta.
+ */
+val LocalSliderTrackBase = staticCompositionLocalOf { Color.White }
+
+/**
  * Player slider color configuration for consistent styling across all slider types
  * 
  * This object provides standardized color schemes for Default, Squiggly, and Slim sliders
@@ -158,7 +166,7 @@ object PlayerSliderColors {
             activeTrackColor = activeColor,
             activeTickColor = activeColor,
             thumbColor = activeColor,
-            inactiveTrackColor = Color.White.copy(alpha = inactiveAlpha)
+            inactiveTrackColor = LocalSliderTrackBase.current.copy(alpha = inactiveAlpha)
         )
     }
 
@@ -188,8 +196,8 @@ object PlayerSliderColors {
             activeTrackColor = buttonColor,
             activeTickColor = buttonColor,
             thumbColor = Color.Transparent,
-            inactiveTrackColor = Color.White.copy(alpha = Config.INACTIVE_TRACK_ALPHA),
-            inactiveTickColor = Color.White.copy(alpha = Config.INACTIVE_TICK_ALPHA)
+            inactiveTrackColor = LocalSliderTrackBase.current.copy(alpha = Config.INACTIVE_TRACK_ALPHA),
+            inactiveTickColor = LocalSliderTrackBase.current.copy(alpha = Config.INACTIVE_TICK_ALPHA)
         )
     }
 
@@ -207,7 +215,7 @@ object PlayerSliderColors {
             activeTrackColor = buttonColor,
             activeTickColor = buttonColor,
             thumbColor = buttonColor,
-            inactiveTrackColor = Color.White.copy(alpha = Config.INACTIVE_TRACK_ALPHA)
+            inactiveTrackColor = LocalSliderTrackBase.current.copy(alpha = Config.INACTIVE_TRACK_ALPHA)
         )
     }
 
@@ -217,8 +225,8 @@ object PlayerSliderColors {
             activeTrackColor = buttonColor.copy(alpha = Config.SIMPLE_ACTIVE_TRACK_ALPHA),
             activeTickColor = buttonColor.copy(alpha = Config.SIMPLE_ACTIVE_TRACK_ALPHA),
             thumbColor = Color.Transparent,
-            inactiveTrackColor = Color.White.copy(alpha = Config.SIMPLE_INACTIVE_TRACK_ALPHA),
-            inactiveTickColor = Color.White.copy(alpha = Config.SIMPLE_INACTIVE_TRACK_ALPHA)
+            inactiveTrackColor = LocalSliderTrackBase.current.copy(alpha = Config.SIMPLE_INACTIVE_TRACK_ALPHA),
+            inactiveTickColor = LocalSliderTrackBase.current.copy(alpha = Config.SIMPLE_INACTIVE_TRACK_ALPHA)
         )
     }
 

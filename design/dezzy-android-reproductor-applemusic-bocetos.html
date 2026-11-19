@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reproductor Apple Music · bocetos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="reproductor-estilos-base.css">
+<style>
+/* ── Estilo Apple Music (DezzyPlayer, playerStyle = APPLE_MUSIC) ── */
+.am{background:#120A0E}
+.am-bg{position:absolute;inset:-40px;filter:blur(40px) saturate(1.2);opacity:.55}
+.am-dim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.15),rgba(10,4,8,.55) 55%,rgba(10,4,8,.85))}
+.am-hero{position:absolute;left:0;right:0;top:0;height:65%;-webkit-mask-image:linear-gradient(180deg,#000 60%,transparent);mask-image:linear-gradient(180deg,#000 60%,transparent)}
+.am-top{display:flex;align-items:center;justify-content:center;gap:4px;padding-top:24px}
+.seg{display:flex;height:34px;border-radius:17px;background:rgba(255,255,255,.16);padding:3px;backdrop-filter:blur(8px)}
+.seg span{padding:0 14px;display:grid;place-items:center;border-radius:14px;font-size:13px;font-weight:500;color:var(--on-var)}
+.seg span.on{background:rgba(255,255,255,.9);color:#111}
+.am-ctl{padding:0 24px}
+.am-title{display:flex;align-items:center;gap:10px}
+.am-title .tx{flex:1;min-width:0}
+.am-title b{display:block;font-size:24px;font-weight:700;line-height:30px}
+.am-title span{display:block;font-size:16px;color:var(--on-var);margin-top:1px}
+.circ{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.14);display:grid;place-items:center;flex:none}
+.am-seek{margin-top:22px}
+.am-seek .track{height:6px;border-radius:3px;background:rgba(255,255,255,.25)}
+.am-seek .track i{border-radius:3px;background:rgba(255,255,255,.85)}
+.am-times{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--on-dim);margin-top:8px}
+.qual{font-size:11px;color:var(--on-dim)}
+.am-trans{display:flex;align-items:center;justify-content:center;gap:40px;margin-top:18px}
+.am-bottom{display:flex;justify-content:space-around;align-items:center;margin:22px 0 10px;color:var(--on-var)}
+.grab{width:40px;height:5px;border-radius:3px;background:rgba(255,255,255,.45);margin:8px auto 0}
+.chip{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:11px;background:rgba(255,255,255,.14);font-size:11px;font-weight:500;color:var(--on)}
+.vol{display:flex;align-items:center;gap:10px;margin-top:22px;color:var(--on-dim)}
+.vol .track{flex:1;height:6px;border-radius:3px}
+.vol .track i{border-radius:3px;background:rgba(255,255,255,.75)}
+.ebadge{display:inline-block;text-align:center;line-height:15px;width:15px;height:15px;border-radius:3px;background:rgba(255,255,255,.55);color:#111;font-size:10px;font-weight:700;vertical-align:3px;margin-left:6px}
+.live{margin-top:10px;font-size:15px;font-weight:600;color:var(--on);opacity:.9;display:flex;gap:8px;align-items:center}
+.live .ms{color:var(--on-dim)}
+.tbadge{position:absolute;top:2px;right:-6px;font-size:9.5px;font-weight:700;background:#FF5C7A;color:#fff;border-radius:7px;padding:0 4px;line-height:14px}
+.sm{opacity:.55}
+.sm.on{opacity:1;color:#FF8FA8}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="styles">
+  <a class="on" href="dezzy-android-reproductor-applemusic-bocetos.html">Apple Music</a>
+  <a href="dezzy-android-reproductor-spotify-bocetos.html">Spotify</a>
+  <a href="dezzy-android-reproductor-ipod-bocetos.html">iPod</a>
+  <a href="dezzy-android-reproductor-dezzystyle-bocetos.html">Dezzy Style</a>
+</nav>
+<header class="top">
+  <h1>Reproductor · estilo Apple Music</h1>
+  <p class="lead">Se parte del reproductor actual y sólo se pulen detalles: la estructura (carátula a sangre arriba, controles abajo) se mantiene en los tres bocetos. Los círculos naranjas numerados marcan cada cambio y coinciden con la lista «Qué cambia».</p>
+  <div class="today">
+    <h4>Cómo está hoy (<code>ui/player/DezzyPlayer.kt</code> con <code>playerStyle = APPLE_MUSIC</code>)</h4>
+    <ul>
+      <li>Fondo: carátula o canvas a sangre en el 65 % superior con fundido, sobre la carátula desenfocada y oscurecida.</li>
+      <li>Arriba: compartir · pastilla Canción/Video · visualizador. En vertical no hay asa ni flecha para cerrar (sólo el gesto).</li>
+      <li>Título 24 sp negrita y artista 16 sp; a la derecha ⋮ y ♥ en círculos translúcidos de 40 dp.</li>
+      <li>Barra <code>StyledPlaybackSlider</code>; tiempos con la etiqueta de calidad en medio, en texto plano.</li>
+      <li>Transporte de 3 botones sin fondo (44 · 56 · 44). Aleatorio y repetir no aparecen en vertical.</li>
+      <li>Fila inferior: letras · volumen (abre un diálogo) · temporizador · cola. El temporizador no indica si está activo.</li>
+    </ul>
+  </div>
+</header>
+
+<!-- ───────────── ACTUAL ───────────── -->
+<section class="sketch now">
+  <div class="sk-head"><span class="sk-tag">ACTUAL</span><h3>Referencia: así se ve hoy</h3>
+    <p>Para comparar con los bocetos. No se elige.</p></div>
+  <div class="sk-body">
+    <div>
+      <div class="phone am">
+        <div class="am-bg art-a"></div><div class="am-hero art-a"></div><div class="am-dim"></div>
+        <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+        <div class="content"><div class="layer">
+          <div class="am-top"><div class="icon-btn"><span class="ms">share</span></div><div class="seg"><span class="on">Canción</span><span>Video</span></div><div class="icon-btn"><span class="ms">auto_awesome</span></div></div>
+          <div class="sp"></div>
+          <div class="am-ctl">
+            <div class="am-title"><div class="tx"><b class="ell">Luz de Neón</b><span class="ell">Marina Vega</span></div><div class="circ"><span class="ms s20">more_vert</span></div><div class="circ"><span class="ms s20">favorite</span></div></div>
+            <div class="am-seek"><div class="track"><i style="width:38%"></i></div></div>
+            <div class="am-times"><span>1:24</span><span class="qual">AAC 256</span><span>3:41</span></div>
+            <div class="am-trans"><span class="ms f s44">skip_previous</span><span class="ms f s56">pause</span><span class="ms f s44">skip_next</span></div>
+            <div class="am-bottom"><span class="ms s26">chat_bubble</span><span class="ms s26">volume_up</span><span class="ms s26">bedtime</span><span class="ms s26">list</span></div>
+          </div>
+        </div></div>
+        <div class="gesture"><i></i></div>
+      </div>
+      <p class="cap">Estado actual del estilo Apple Music.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────── A ───────────── -->
+<section class="sketch">
+  <div class="sk-head"><span class="sk-tag">BOCETO A</span><h3>Pulido fiel</h3>
+    <p>Lo más cerca del original de Apple: asa para cerrar, volumen en línea en vez de diálogo y una fila inferior más limpia.</p></div>
+  <div class="sk-body">
+    <div>
+      <div class="phone am">
+        <div class="am-bg art-a"></div><div class="am-hero art-a"></div><div class="am-dim"></div>
+        <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+        <div class="content"><div class="layer">
+          <div class="grab"></div><span class="mk" style="left:200px;top:2px">1</span>
+          <div class="am-top" style="padding-top:12px"><div class="icon-btn"><span class="ms">share</span></div><div class="seg"><span class="on">Canción</span><span>Video</span></div><div class="icon-btn"><span class="ms">auto_awesome</span></div></div>
+          <div class="sp"></div>
+          <div class="am-ctl">
+            <div class="am-title" style="position:relative"><div class="tx"><b class="ell">Luz de Neón<span class="ebadge">E</span></b><span class="ell">Marina Vega</span></div><div class="circ"><span class="ms s20">favorite</span></div><div class="circ"><span class="ms s20">more_horiz</span></div><span class="mk" style="left:150px;top:-14px">2</span></div>
+            <div class="am-seek" style="position:relative"><div class="track"><i style="width:38%"></i></div><span class="mk" style="right:-14px;top:-8px">3</span></div>
+            <div class="am-times" style="position:relative"><span>1:24</span><span class="chip"><span class="ms s14">graphic_eq</span>Lossless</span><span>−2:17</span><span class="mk" style="left:200px;top:-2px">4</span></div>
+            <div class="am-trans" style="margin-top:14px"><span class="ms f s44">fast_rewind</span><span class="ms f s56">pause</span><span class="ms f s44">fast_forward</span></div>
+            <div class="vol" style="position:relative"><span class="ms s18">volume_mute</span><div class="track"><i style="width:62%"></i></div><span class="ms s18">volume_up</span><span class="mk" style="left:150px;top:-16px">5</span></div>
+            <div class="am-bottom" style="position:relative;justify-content:space-between;padding:0 18px"><span class="ms s26">chat_bubble</span><span class="ms s26">cast</span><span class="ms s26">list</span><span class="mk" style="left:186px;top:-14px">6</span></div>
+          </div>
+        </div></div>
+        <div class="gesture"><i></i></div>
+      </div>
+      <p class="cap">Mismo fondo y misma jerarquía; sólo cambian los detalles marcados.</p>
+    </div>
+    <div class="notes">
+      <h4>Qué cambia respecto al actual</h4>
+      <ol class="chg">
+        <li><b>Asa de cierre</b> arriba (40×5 dp): ahora en vertical no hay nada que indique que se cierra deslizando.</li>
+        <li><b>Insignia «E»</b> de explícito junto al título, ♥ primero y <code>more_horiz</code> (⋯) en vez de ⋮, como el original.</li>
+        <li><b>Barra que crece</b>: 6 dp en reposo y 10 dp mientras arrastras, sin bolita; el tiempo de la derecha pasa a <b>restante (−2:17)</b>.</li>
+        <li><b>Calidad en chip</b> con icono (Lossless / Hi-Res / AAC 256) en vez de texto plano; al tocarlo muestra el códec.</li>
+        <li><b>Volumen en línea</b> con iconos a los lados: sustituye al botón que abre el diálogo de volumen.</li>
+        <li><b>Fila inferior de 3</b>: letras · dispositivos (Cast/salida) · cola. El temporizador pasa al menú ⋯.</li>
+      </ol>
+      <h4>Valoración</h4>
+      <ul><li class="pro">El más reconocible como «Apple Music».</li><li class="con">El temporizador queda un toque más lejos.</li></ul>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────── B ───────────── -->
+<section class="sketch">
+  <div class="sk-head"><span class="sk-tag">BOCETO B</span><h3>Todo a mano</h3>
+    <p>Mantiene la fila de 4 iconos de hoy, pero recupera aleatorio y repetir en vertical y hace visibles los estados (temporizador, letra en vivo).</p></div>
+  <div class="sk-body">
+    <div>
+      <div class="phone am">
+        <div class="am-bg art-b"></div><div class="am-hero art-b"></div><div class="am-dim"></div>
+        <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+        <div class="content"><div class="layer">
+          <div class="am-top"><div class="icon-btn"><span class="ms">keyboard_arrow_down</span><span class="mk" style="left:-4px;top:-4px">1</span></div><div class="sp"></div><div class="seg"><span class="on">Canción</span><span>Video</span></div><div class="sp"></div><div class="icon-btn"><span class="ms">share</span></div><div class="icon-btn"><span class="ms">auto_awesome</span></div></div>
+          <div class="sp"></div>
+          <div class="am-ctl">
+            <div class="am-title"><div class="tx"><b class="ell">Mar de Fondo</b><span class="ell">Los Ríos</span></div><div class="circ"><span class="ms s20">more_vert</span></div><div class="circ"><span class="ms f s20">favorite</span></div></div>
+            <div class="live" style="position:relative"><span class="ms s18">lyrics</span><span class="ell">y el agua sabe a sal cuando no estás</span><span class="mk" style="right:-12px;top:-2px">2</span></div>
+            <div class="am-seek"><div class="track"><i style="width:52%"></i></div></div>
+            <div class="am-times"><span>2:02</span><span class="qual">AAC 256</span><span>3:55</span></div>
+            <div class="am-trans" style="gap:0;justify-content:space-between;position:relative"><span class="ms s22 sm on">shuffle</span><span class="ms f s44">skip_previous</span><span class="ms f s56">pause</span><span class="ms f s44">skip_next</span><span class="ms s22 sm">repeat</span><span class="mk" style="left:-12px;top:-6px">3</span></div>
+            <div class="am-bottom" style="position:relative"><span class="ms s26">chat_bubble</span><span class="ms s26">volume_up</span><span style="position:relative;display:inline-flex;align-items:center;gap:4px;color:#FF8FA8"><span class="ms s26 f">bedtime</span><span style="font-size:12px;font-weight:700">12:30</span></span><span class="ms s26">list</span><span class="mk" style="left:206px;top:-14px">4</span></div>
+          </div>
+        </div></div>
+        <div class="gesture"><i></i></div>
+      </div>
+      <p class="cap">Funcional: nada nuevo que aprender, sólo se ve lo que hoy está oculto.</p>
+    </div>
+    <div class="notes">
+      <h4>Qué cambia respecto al actual</h4>
+      <ol class="chg">
+        <li><b>Flecha de cerrar</b> a la izquierda y compartir/visualizador juntos a la derecha; la pastilla queda centrada.</li>
+        <li><b>Letra en vivo</b> de una línea bajo el artista (sólo si hay letra sincronizada); al tocarla se abren las letras.</li>
+        <li><b>Aleatorio y repetir</b> vuelven en vertical, pequeños y atenuados a los lados del transporte; activos en el color de acento.</li>
+        <li><b>Temporizador visible</b>: cuando está activo, la luna se rellena y muestra la cuenta atrás (12:30).</li>
+      </ol>
+      <h4>Valoración</h4>
+      <ul><li class="pro">Cero funciones escondidas; útil para quien usa aleatorio a diario.</li><li class="con">Algo más cargado que el original.</li></ul>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────── C ───────────── -->
+<section class="sketch">
+  <div class="sk-head"><span class="sk-tag">BOCETO C</span><h3>Más inmersivo</h3>
+    <p>La carátula gana espacio y el color de la canción se nota en los textos; los controles se quedan como hoy.</p></div>
+  <div class="sk-body">
+    <div>
+      <div class="phone am" style="background:#0B1416">
+        <div class="am-bg art-b"></div><div class="am-hero art-b" style="height:76%"></div><div class="am-dim" style="background:linear-gradient(180deg,rgba(0,0,0,.45),transparent 14%,transparent 40%,rgba(4,14,15,.7) 64%,rgba(4,14,15,.92))"></div>
+        <span class="mk" style="left:20px;top:120px">1</span>
+        <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+        <div class="content"><div class="layer">
+          <div class="am-top"><div class="icon-btn"><span class="ms">share</span></div><div class="seg"><span class="on">Canción</span><span>Video</span></div><div class="icon-btn"><span class="ms">auto_awesome</span></div></div>
+          <div class="sp"></div>
+          <div class="am-ctl">
+            <div class="am-title" style="position:relative"><div class="tx"><b class="ell" style="font-size:28px;line-height:34px">Mar de Fondo</b><span class="ell" style="color:#9FE3D0">Los Ríos</span></div><div class="circ"><span class="ms s20">more_vert</span></div><div class="circ"><span class="ms f s20">favorite</span></div><span class="mk" style="left:110px;top:-12px">2</span></div>
+            <div class="am-seek"><div class="track"><i style="width:52%;background:#CFF3E8"></i></div></div>
+            <div class="am-times" style="position:relative"><span>2:02</span><span class="qual">AAC 256</span><span>−1:53</span><span class="mk" style="right:-14px;top:-4px">3</span></div>
+            <div class="am-trans" style="position:relative"><span class="ms f s44">skip_previous</span><span style="width:76px;height:76px;border-radius:50%;background:rgba(255,255,255,.12);display:grid;place-items:center"><span class="ms f s56">pause</span></span><span class="ms f s44">skip_next</span><span class="mk" style="left:206px;top:-4px">4</span></div>
+            <div class="am-bottom" style="position:relative;margin-top:16px"><span class="ms s26 f" style="color:#9FE3D0">chat_bubble</span><span class="ms s26">volume_up</span><span class="ms s26">bedtime</span><span class="ms s26">list</span><span class="mk" style="left:30px;top:-14px">5</span></div>
+          </div>
+        </div></div>
+        <div class="gesture"><i></i></div>
+      </div>
+      <p class="cap">El fundido de la carátula llega hasta el título.</p>
+    </div>
+    <div class="notes">
+      <h4>Qué cambia respecto al actual</h4>
+      <ol class="chg">
+        <li><b>Carátula al 76 %</b> (hoy 65 %) con un velo suave bajo la barra de estado para que la hora se lea siempre (edge-to-edge con <code>SystemBarScrims</code>).</li>
+        <li><b>Título 28 sp</b> y <b>artista en el color de la canción</b> (vibrante de la paleta); la barra también toma ese tono.</li>
+        <li><b>Tiempo restante</b> a la derecha (−1:53) en vez de la duración total.</li>
+        <li><b>Halo al pulsar</b> el play: círculo translúcido que aparece al tocar y se encoge con la animación de escala que ya existe.</li>
+        <li><b>Letras resaltada</b> (rellena y en color) cuando la canción tiene letra sincronizada.</li>
+      </ol>
+      <h4>Valoración</h4>
+      <ul><li class="pro">El más vistoso con portadas buenas.</li><li class="con">Con carátulas oscuras el color del artista pierde contraste (habría que forzar luminosidad mínima).</li></ul>
+    </div>
+  </div>
+</section>
+
+<div class="pick">Elige <b>A</b>, <b>B</b> o <b>C</b> para el estilo Apple Music (o combina detalles: por ejemplo «A con el temporizador visible de B»).</div>
+</div>
+</body>
+</html>

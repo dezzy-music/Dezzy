@@ -105,6 +105,7 @@ import com.dezzy.music.R
 import com.dezzy.music.constants.DezzyVinylSpeedKey
 import com.dezzy.music.constants.DezzyVinylStyleKey
 import com.dezzy.music.constants.DezzyVinylThemeKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import com.dezzy.music.extensions.togglePlayPause
 import com.dezzy.music.ui.component.BottomSheetState
 import com.dezzy.music.utils.makeTimeString
@@ -179,6 +180,16 @@ private val VinylSpeeds = listOf(
     "fast" to ("Rápida" to 1.7f),
 )
 
+/** Veces que se ha usado el brazo; el aviso «Arrastra el brazo» se oculta tras 3. */
+private val VinylArmHintCountKey = intPreferencesKey("dezzy_vinyl_arm_hint_count")
+
+/** Indicador de RPM (boceto C) según la velocidad de giro elegida. */
+private fun rpmLabel(speedKey: String) = when (speedKey) {
+    "slow" -> "16"
+    "fast" -> "45"
+    else -> "33⅓"
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VinylPlayer(
@@ -220,9 +231,11 @@ fun VinylPlayer(
             onSliderPositionChange(pos)
         }
     }
+    var armHintCount by rememberPreference(VinylArmHintCountKey, 0)
     val onArmScrubEnd: () -> Unit = {
         if (armSeekHolder[0] >= 0L) {
             playerConnection.player.seekTo(armSeekHolder[0])
+            if (armHintCount < 3) armHintCount = armHintCount + 1
         }
         armSeekHolder[0] = -1L
         onSliderPositionChange(null)
@@ -362,7 +375,14 @@ fun VinylPlayer(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(theme.background),
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        theme.background,
+                        androidx.compose.ui.graphics.lerp(theme.background, theme.subtle, 0.18f),
+                    )
+                )
+            ),
     ) {
         if (isLandscape) {
             Row(
@@ -395,13 +415,47 @@ fun VinylPlayer(
                         onPrevious = { playerConnection.seekToPrevious() },
                         onNext = { playerConnection.seekToNext() },
                         onSaveVinyl = onSaveVinyl,
+                        rpm = rpmLabel(speedKey),
+                        showArmHint = armHintCount < 3,
                     )
                 }
                 Column(
                     modifier = Modifier
                         .weight(1f)
+                        .fillMaxHeight()
                         .padding(end = 24.dp),
+                    verticalArrangement = Arrangement.Center,
                 ) {
+                    // Misma barra que en vertical: colapsar · canción/video · cola · ajustes
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 20.dp, bottom = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RoundIconButton(
+                            iconRes = R.drawable.expand_more,
+                            theme = theme,
+                            onClick = state::collapseSoft,
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        SongVideoToggle(
+                            playerConnection = playerConnection,
+                            canvas = canvasArtwork,
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        RoundIconButton(
+                            iconRes = R.drawable.list,
+                            theme = theme,
+                            onClick = onQueueClick,
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        RoundIconButton(
+                            iconRes = R.drawable.settings,
+                            theme = theme,
+                            onClick = { showStyleSheet = true },
+                        )
+                    }
                     InfoAndControls(
                         theme = theme,
                         title = mediaMetadata?.title.orEmpty(),
@@ -418,6 +472,10 @@ fun VinylPlayer(
                         onLyricsClick = onLyricsClick,
                         onShareClick = { showShareSheet = true },
                         onVisualizerClick = onVisualizerClick,
+                        onOpenListenTogether = {
+                            state.collapseSoft()
+                            navController.navigate("settings/music_together")
+                        },
                     )
                 }
             }
@@ -479,6 +537,8 @@ fun VinylPlayer(
                         onPrevious = { playerConnection.seekToPrevious() },
                         onNext = { playerConnection.seekToNext() },
                         onSaveVinyl = onSaveVinyl,
+                        rpm = rpmLabel(speedKey),
+                        showArmHint = armHintCount < 3,
                     )
                 }
 
@@ -498,18 +558,17 @@ fun VinylPlayer(
                     onLyricsClick = onLyricsClick,
                     onShareClick = { showShareSheet = true },
                     onVisualizerClick = onVisualizerClick,
+                    onOpenListenTogether = {
+                        state.collapseSoft()
+                        navController.navigate("settings/music_together")
+                    },
                 )
             }
         }
 
-        // Overlay de video (YouTube) — se dibuja por encima de todo el estilo.
-        VideoModeOverlay(
-            playerConnection = playerConnection,
-            modifier = Modifier.fillMaxSize(),
-            showFloatingToggle = false,
-            onCollapse = state::collapseSoft,
-            onQueueClick = onQueueClick,
-        )
+        // El overlay de video lo pone Player.kt encima de todos los estilos. Aquí había
+        // un segundo overlay: dos PlayerView se peleaban por el mismo ExoPlayer y la
+        // pantalla completa podía quedarse sin imagen o con la del overlay de debajo.
     }
 
     // ── Hoja de estilo: Theme + Vinyl + Velocidad ──
@@ -676,6 +735,8 @@ private fun TurntableSection(
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     onSaveVinyl: () -> Unit,
+    rpm: String = "33⅓",
+    showArmHint: Boolean = false,
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         // Los gestos van en este Box exterior (NO rota): dentro del disco
@@ -716,6 +777,8 @@ private fun TurntableSection(
                 rotation = rotation,
                 modifier = Modifier.fillMaxSize(),
             )
+            // Arco de progreso alrededor del disco (boceto A): no gira con él.
+            DiscProgressArc(progress = armProgress, theme = theme)
         }
         ToneArm(
             isPlaying = isPlaying,
@@ -729,6 +792,58 @@ private fun TurntableSection(
                 .padding(end = 6.dp, top = 4.dp)
                 .fillMaxWidth(0.30f)
                 .aspectRatio(0.34f),
+        )
+        // Indicador de RPM a la izquierda (boceto C)
+        Text(
+            text = "$rpm RPM",
+            color = theme.subtle,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.5.sp,
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = 20.dp, bottom = 6.dp),
+        )
+        // Aviso de las primeras veces: el brazo es la barra de progreso
+        if (showArmHint) {
+            Text(
+                text = "Arrastra el brazo para avanzar",
+                color = theme.content.copy(alpha = 0.75f),
+                fontSize = 11.sp,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 16.dp, bottom = 6.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(theme.button.copy(alpha = 0.85f))
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+            )
+        }
+    }
+}
+
+/** Arco de progreso alrededor del disco (boceto A). */
+@Composable
+private fun DiscProgressArc(progress: Float, theme: VinylTheme, modifier: Modifier = Modifier.fillMaxSize()) {
+    Canvas(modifier = modifier) {
+        val stroke = 3.dp.toPx()
+        val inset = stroke / 2f
+        drawArc(
+            color = theme.content.copy(alpha = 0.10f),
+            startAngle = -90f,
+            sweepAngle = 360f,
+            useCenter = false,
+            topLeft = Offset(inset, inset),
+            size = Size(size.width - stroke, size.height - stroke),
+            style = Stroke(width = stroke),
+        )
+        drawArc(
+            color = theme.content.copy(alpha = 0.55f),
+            startAngle = -90f,
+            sweepAngle = 360f * progress.coerceIn(0f, 1f),
+            useCenter = false,
+            topLeft = Offset(inset, inset),
+            size = Size(size.width - stroke, size.height - stroke),
+            style = Stroke(width = stroke, cap = StrokeCap.Round),
         )
     }
 }
@@ -756,6 +871,8 @@ private fun SleeveTurntableSection(
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     onSaveVinyl: () -> Unit,
+    rpm: String = "33⅓",
+    showArmHint: Boolean = false,
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         // Limitado por alto Y por ancho: funda + disco asomando caben siempre
@@ -805,6 +922,7 @@ private fun SleeveTurntableSection(
                 labelFg = theme.content,
                 modifier = Modifier.fillMaxSize(),
             )
+            DiscProgressArc(progress = armProgress, theme = theme)
         }
 
         // Funda: la carátula del álbum como portada cuadrada con sombra
@@ -838,6 +956,30 @@ private fun SleeveTurntableSection(
                 .fillMaxHeight(0.95f)
                 .aspectRatio(0.34f),
         )
+        // RPM bajo la funda y la pista del brazo, igual que en vertical (bocetos A y C)
+        Text(
+            text = "$rpm RPM",
+            color = theme.subtle,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.5.sp,
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = sleeveX, bottom = 4.dp),
+        )
+        if (showArmHint) {
+            Text(
+                text = "Arrastra el brazo para avanzar",
+                color = theme.content.copy(alpha = 0.75f),
+                fontSize = 11.sp,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 12.dp, bottom = 4.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(theme.button.copy(alpha = 0.85f))
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+            )
+        }
     }
 }
 
@@ -897,6 +1039,19 @@ private fun VinylDisc(
                         cap = StrokeCap.Round,
                     )
                 }
+            }
+            // Puntos estroboscópicos del borde (boceto C)
+            val strobeR = radius * 0.975f
+            for (i in 0 until 72) {
+                val a = Math.toRadians(i * 5.0)
+                drawCircle(
+                    color = Color.Black.copy(alpha = if (i % 2 == 0) 0.30f else 0.12f),
+                    radius = radius * 0.008f + 0.6f,
+                    center = Offset(
+                        c.x + (strobeR * kotlin.math.cos(a)).toFloat(),
+                        c.y + (strobeR * kotlin.math.sin(a)).toFloat(),
+                    ),
+                )
             }
             // Borde exterior
             drawCircle(Color.Black.copy(alpha = 0.25f), radius, c, style = Stroke(width = 2f))
@@ -1043,6 +1198,16 @@ private fun ToneArm(
         // Aro del pivote
         drawCircle(outline, radius = size.width * 0.46f, center = pivot, style = Stroke(width = 2f))
 
+        // Sombra del brazo proyectada sobre el disco
+        rotate(angle + 1.5f, Offset(pivot.x + size.width * 0.05f, pivot.y + size.height * 0.02f)) {
+            drawLine(
+                color = Color.Black.copy(alpha = 0.14f),
+                start = Offset(pivot.x + size.width * 0.05f, pivot.y + size.height * 0.02f),
+                end = Offset(pivot.x + size.width * 0.05f, size.height * 0.92f),
+                strokeWidth = size.width * 0.07f,
+                cap = StrokeCap.Round,
+            )
+        }
         rotate(angle, pivot) {
             val armEndY = size.height * 0.90f
             // Vástago plateado con brillo
@@ -1112,6 +1277,7 @@ private fun InfoAndControls(
 
     onShareClick: () -> Unit = {},
     onVisualizerClick: () -> Unit = {},
+    onOpenListenTogether: (() -> Unit)? = null,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         // Título y artista (alineados a la izquierda, como MDVinyl)
@@ -1137,15 +1303,17 @@ private fun InfoAndControls(
         // SIN barra deslizante: el brazo del vinilo ES el control de posición
         // (arrástralo sobre el disco). Solo se muestran los tiempos.
         Spacer(modifier = Modifier.height(8.dp))
-        Row(
+        Text(
+            text = "${makeTimeString(sliderPosition ?: position)} / ${makeTimeString(duration)}",
+            color = if (sliderPosition != null) theme.content else theme.subtle,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 28.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(makeTimeString(sliderPosition ?: position), color = theme.subtle, fontSize = 12.sp)
-            Text(makeTimeString(duration), color = theme.subtle, fontSize = 12.sp)
-        }
+                .padding(horizontal = 28.dp)
+                .clip(RoundedCornerShape(50))
+                .background(theme.button)
+                .padding(horizontal = 12.dp, vertical = 4.dp),
+        )
 
         Spacer(modifier = Modifier.height(14.dp))
 
@@ -1161,13 +1329,22 @@ private fun InfoAndControls(
                 fill = theme.button,
                 width = 110.dp,
             ) {
-                Text(
-                    text = if (isPlaying) "PAUSE" else "PLAY",
-                    color = theme.content,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 2.sp,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        painter = painterResource(if (isPlaying) R.drawable.pause else R.drawable.play),
+                        contentDescription = null,
+                        tint = theme.content,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (isPlaying) "PAUSE" else "PLAY",
+                        color = theme.content,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 2.sp,
+                    )
+                }
             }
             Spacer(modifier = Modifier.weight(1f))
             PillButton(onClick = onPrevious, fill = theme.button, width = 96.dp) {
@@ -1202,12 +1379,31 @@ private fun InfoAndControls(
                 iconRes = if (liked) R.drawable.favorite else R.drawable.favorite_border,
                 theme = theme,
                 onClick = onToggleLike,
+                // ♥ relleno y en color cuando te gusta (boceto A)
+                tint = if (liked) Color(0xFFE5484D) else null,
             )
             RoundIconButton(
                 iconRes = R.drawable.auto_awesome,
                 theme = theme,
                 onClick = onVisualizerClick,
             )
+            // Dispositivos en el centro de los 5 botones
+            PhysicalEdge(theme = theme, shape = CircleShape, width = 46.dp, height = 46.dp) {
+                Surface(
+                    shape = CircleShape,
+                    color = theme.button,
+                    shadowElevation = 6.dp,
+                    modifier = Modifier.size(46.dp),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        com.dezzy.music.ui.component.DevicesButton(
+                            tint = theme.content,
+                            iconSize = 22.dp,
+                            onOpenListenTogether = onOpenListenTogether,
+                        )
+                    }
+                }
+            }
             RoundIconButton(
                 iconRes = R.drawable.share,
                 theme = theme,
@@ -1234,13 +1430,15 @@ private fun PillButton(
     label: @Composable () -> Unit,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Surface(
-            onClick = onClick,
-            shape = RoundedCornerShape(50),
-            color = fill,
-            shadowElevation = 8.dp,
-            modifier = Modifier.size(width, 44.dp),
-        ) {}
+        PhysicalEdge(edge = fill, shape = RoundedCornerShape(50), width = width, height = 44.dp) {
+            Surface(
+                onClick = onClick,
+                shape = RoundedCornerShape(50),
+                color = fill,
+                shadowElevation = 8.dp,
+                modifier = Modifier.size(width, 44.dp),
+            ) {}
+        }
         Spacer(modifier = Modifier.height(8.dp))
         label()
     }
@@ -1251,22 +1449,50 @@ private fun RoundIconButton(
     iconRes: Int,
     theme: VinylTheme,
     onClick: () -> Unit,
+    tint: Color? = null,
 ) {
-    Surface(
-        onClick = onClick,
-        shape = CircleShape,
-        color = theme.button,
-        shadowElevation = 6.dp,
-        modifier = Modifier.size(46.dp),
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Icon(
-                painter = painterResource(iconRes),
-                contentDescription = null,
-                tint = theme.content,
-                modifier = Modifier.size(22.dp),
-            )
+    PhysicalEdge(theme = theme, shape = CircleShape, width = 46.dp, height = 46.dp) {
+        Surface(
+            onClick = onClick,
+            shape = CircleShape,
+            color = theme.button,
+            shadowElevation = 6.dp,
+            modifier = Modifier.size(46.dp),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    painter = painterResource(iconRes),
+                    contentDescription = null,
+                    tint = tint ?: theme.content,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
         }
+    }
+}
+
+/**
+ * Canto de 3 dp bajo un botón (boceto C): una copia más oscura asoma por debajo
+ * y el botón parece una tecla física del tocadiscos.
+ */
+@Composable
+private fun PhysicalEdge(
+    shape: androidx.compose.ui.graphics.Shape,
+    width: Dp,
+    height: Dp,
+    theme: VinylTheme? = null,
+    edge: Color = theme?.button ?: Color.LightGray,
+    content: @Composable () -> Unit,
+) {
+    Box(modifier = Modifier.size(width, height + 3.dp)) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .size(width, height)
+                .clip(shape)
+                .background(androidx.compose.ui.graphics.lerp(edge, Color.Black, 0.18f)),
+        )
+        Box(modifier = Modifier.align(Alignment.TopCenter)) { content() }
     }
 }
 

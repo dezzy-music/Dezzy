@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visualizadores nuevos · bocetos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="reproductor-estilos-base.css">
+<style>
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:48px 28px;margin-top:28px}
+.vis{display:flex;flex-direction:column;align-items:center}
+.vis .phone{width:340px;height:700px}
+.vis canvas{position:absolute;inset:0;width:100%;height:100%}
+.vis .over{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:0 20px 14px;background:linear-gradient(180deg,transparent,rgba(0,0,0,.75) 40%)}
+.vis .top{position:absolute;top:28px;left:0;right:0;z-index:2;display:flex;align-items:center;padding:0 8px}
+.vis h3{font-family:'Roboto Flex';font-size:22px;font-weight:800;margin-top:18px;display:flex;align-items:center;gap:10px}
+.vis p{font-size:14px;color:var(--muted);max-width:340px;text-align:center;margin-top:4px}
+.now .sk-tag{background:#6A6A6A}
+.chips{display:flex;gap:6px;overflow:hidden;margin-top:12px}
+.chips span{flex:none;height:28px;padding:0 11px;border-radius:14px;font-size:11.5px;font-weight:500;display:grid;place-items:center;background:rgba(255,255,255,.12);color:var(--on-var)}
+.chips span.on{background:#fff;color:#111}
+.picker{margin-top:56px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="styles"><a href="dezzy-android-reproductor-estilos-nuevos-bocetos.html">Reproductores</a><a class="on" href="dezzy-android-visualizadores-bocetos.html">Visualizadores</a><a href="dezzy-android-together-qr-bocetos.html">Listen Together · QR</a></nav>
+  <header class="top">
+    <h1>Visualizadores nuevos</h1>
+    <p class="lead">Hoy sólo existe la <b>Esfera</b> (✨ en el reproductor). Propongo seis más, todos con el audio real (el mismo motor de espectro) y con los colores de la carátula. Están animados aquí con un ritmo de prueba. Elige los que quieras: se pueden meter todos.</p>
+    <div class="today"><h4>Cómo se cambia de visualizador</h4>
+      <ul><li>Fila de fichas abajo (como en cada teléfono) y deslizar a izquierda/derecha sobre la pantalla.</li>
+      <li>Se recuerda el último elegido. Opción «Automático»: cambia en cada canción según su energía.</li>
+      <li>Todos se dibujan en Compose <code>Canvas</code>, sin librerías nuevas, a 60 fps y bajando a 30 con ahorro de batería.</li></ul></div>
+  </header>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="pick picker"><p><b>Para elegir:</b> dime cuáles entran (p. ej. «A, C, E y F») y si quieres el modo «Automático».</p></div>
+</div>
+
+<script>
+const VIS=[
+ {k:'esfera',tag:'Actual',name:'Esfera',d:'La de ahora: esfera de puntos con ondas, estrellas y barras abajo.'},
+ {k:'anillo',tag:'A',name:'Anillo',d:'Barras radiales alrededor de la carátula, que late con los graves. Simétrico y muy limpio.'},
+ {k:'cordillera',tag:'B',name:'Cordillera',d:'Líneas apiladas que forman montañas con el espectro; cada fila es un instante anterior.'},
+ {k:'tunel',tag:'C',name:'Túnel',d:'Anillos que vienen hacia ti; los graves aceleran el viaje y los agudos los deforman.'},
+ {k:'lava',tag:'D',name:'Lava',d:'Manchas de color que se funden y separan como una lámpara de lava; crecen con la energía.'},
+ {k:'espejo',tag:'E',name:'Espejo',d:'Espectro clásico en el centro con su reflejo, picos que caen despacio y brillo.'},
+ {k:'calei',tag:'F',name:'Caleidoscopio',d:'La carátula recortada en 8 gajos que giran; los golpes la hacen abrirse y cerrarse.'},
+];
+const PAL=['#FFC8D8','#F7C873','#C0507A','#7A2E4A'];
+const grid=document.getElementById('grid');
+VIS.forEach((v,i)=>{
+  const el=document.createElement('div');el.className='vis'+(v.tag==='Actual'?' now':'');
+  el.innerHTML=`<div class="phone"><canvas data-k="${v.k}"></canvas>
+   <div class="statusbar" style="z-index:2"><span>9:41</span><span class="ic"><span class="ms s14">signal_cellular_alt</span><span class="ms s14">battery_full</span></span></div>
+   <div class="top"><span class="icon-btn"><span class="ms">keyboard_arrow_down</span></span><span class="sp"></span><span class="icon-btn"><span class="ms">tune</span></span></div>
+   <div class="over"><div class="row" style="gap:10px"><div class="art-a" style="width:40px;height:40px;border-radius:8px;flex:none"></div><div class="sp" style="min-width:0"><b style="font-size:15px">Luces de neón</b><div style="font-size:12px;color:var(--on-var)">Aurora Vega</div></div><span class="ms f s32">pause_circle</span></div>
+   <div class="chips">${VIS.map(o=>`<span class="${o.k===v.k?'on':''}">${o.name}</span>`).join('')}</div><div class="gesture"><i></i></div></div></div>
+   <h3><span class="sk-tag">${v.tag}</span>${v.name}</h3><p>${v.d}</p>`;
+  grid.appendChild(el);
+});
+
+// ── Espectro de prueba: 64 bandas, golpe de bombo a ~120 bpm ──
+const N=64;let spec=new Float32Array(N),peaks=new Float32Array(N),bass=0;
+function fakeSpectrum(t){
+  const beat=Math.pow(Math.max(0,Math.sin(t*Math.PI*2/0.5)),12);
+  bass=bass*.82+beat*.18*5;
+  for(let i=0;i<N;i++){const f=i/N;
+    const base=(1-f)*.7*(.55+.45*beat)+.25*Math.abs(Math.sin(t*1.7+i*.35))*(1-f*.5)+.18*Math.abs(Math.sin(t*5.3+i*1.3))*f;
+    spec[i]=spec[i]*.6+Math.min(1,base)*.4; peaks[i]=Math.max(spec[i],peaks[i]-.008);}
+  return beat;
+}
+function rgba(h,a){const n=parseInt(h.slice(1),16);return `rgba(${n>>16},${n>>8&255},${n&255},${a})`}
+
+const canvases=[...document.querySelectorAll('canvas')].map(c=>{const r=devicePixelRatio||1;c.width=340*r;c.height=700*r;const x=c.getContext('2d');x.scale(r,r);return {c,x,k:c.dataset.k,st:{}}});
+const W=340,H=700;
+// textura de la carátula para el caleidoscopio
+const art=document.createElement('canvas');art.width=art.height=240;{const a=art.getContext('2d');const g=a.createLinearGradient(0,0,240,240);g.addColorStop(0,'#7A2E4A');g.addColorStop(.55,'#C0507A');g.addColorStop(1,'#3A1222');a.fillStyle=g;a.fillRect(0,0,240,240);
+ a.fillStyle='#FFC8D8';a.beginPath();a.arc(77,82,32,0,7);a.fill();a.fillStyle='#F7C873';a.beginPath();a.arc(163,149,50,0,7);a.fill();}
+
+const draw={
+ esfera(x,t,beat,st){x.fillStyle='#05030A';x.fillRect(0,0,W,H);const cx=W/2,cy=H*.4,R=110+bass*8;
+  for(let i=0;i<500;i++){const y=1-(i/499)*2,r=Math.sqrt(1-y*y),th=i*2.39996+t*.4;const px=Math.cos(th)*r,pz=Math.sin(th)*r;
+   const w=1+.12*Math.sin(y*6+t*3)*(.5+spec[(i%N)]);const sx=cx+px*R*w,sy=cy+y*R*w,s=(pz+1.3)*1.1;
+   x.fillStyle=rgba(PAL[i%2],.35+.5*(pz+1)/2);x.fillRect(sx,sy,s,s);}
+  const bw=W/N;for(let i=0;i<N;i++){const h=spec[i]*90;x.fillStyle=rgba(PAL[0],.55);x.fillRect(i*bw+1,H-190-h,bw-2,h);}},
+ anillo(x,t,beat,st){x.fillStyle='#120A0E';x.fillRect(0,0,W,H);const cx=W/2,cy=H*.4,r0=80+bass*6;
+  const g=x.createRadialGradient(cx,cy,r0,cx,cy,r0+140);g.addColorStop(0,rgba('#C0507A',.35*(.4+beat)));g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.fillRect(0,0,W,H);
+  const M=96;x.lineCap='round';for(let i=0;i<M;i++){const a=i/M*Math.PI*2-Math.PI/2;const v=spec[Math.floor((i<M/2?i:M-i)/(M/2)*(N-1))];const len=8+v*70;
+   x.strokeStyle=i%2?PAL[0]:PAL[1];x.lineWidth=3;x.beginPath();x.moveTo(cx+Math.cos(a)*(r0+8),cy+Math.sin(a)*(r0+8));x.lineTo(cx+Math.cos(a)*(r0+8+len),cy+Math.sin(a)*(r0+8+len));x.stroke();}
+  x.save();x.beginPath();x.arc(cx,cy,r0,0,7);x.clip();x.drawImage(art,cx-r0,cy-r0,r0*2,r0*2);x.restore();},
+ cordillera(x,t,beat,st){if(!st.rows){st.rows=[];for(let r=0;r<34;r++){fakeSpectrum(t-r*.07);st.rows.push(Array.from(spec))}}if(!st.last||t-st.last>.07){st.last=t;st.rows.unshift(Array.from(spec));if(st.rows.length>34)st.rows.pop();}
+  x.fillStyle='#000';x.fillRect(0,0,W,H);const base=520,gap=11,pad=40;
+  for(let r=st.rows.length-1;r>=0;r--){const row=st.rows[r],y0=base-r*gap;x.beginPath();x.moveTo(pad,y0);
+   for(let i=0;i<=60;i++){const f=i/60;const c=Math.exp(-Math.pow((f-.5)*2.6,2));const v=row[Math.floor(Math.abs(f-.5)*2*(N-1))]+.25*Math.abs(Math.sin(f*40+r));x.lineTo(pad+f*(W-pad*2),y0-v*c*150);}
+   x.lineTo(W-pad,y0);x.closePath();x.fillStyle='#000';x.fill();x.strokeStyle=r===0?PAL[1]:rgba(PAL[0],1-r/40);x.lineWidth=r===0?2:1.2;x.stroke();}},
+ tunel(x,t,beat,st){st.z=(st.z||0)+.012+bass*.01;x.fillStyle='rgba(10,4,16,.35)';x.fillRect(0,0,W,H);const cx=W/2+Math.sin(t*.7)*20,cy=H*.4+Math.cos(t*.5)*16;
+  for(let k=0;k<22;k++){const z=((k/22)+st.z)%1;const s=Math.pow(z,2.2);const r=10+s*420;const seg=48;x.beginPath();
+   for(let j=0;j<=seg;j++){const a=j/seg*Math.PI*2;const v=spec[Math.floor(j/seg*(N/2))]*s*30;const rr=r+v*Math.sin(a*6+t*2);j?x.lineTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr):x.moveTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr);}
+   x.strokeStyle=rgba(PAL[k%3],Math.min(1,s*1.6));x.lineWidth=1+s*3;x.stroke();}},
+ lava(x,t,beat,st){if(!st.b){st.b=Array.from({length:7},(_,i)=>({x:Math.random()*W,y:Math.random()*H*.7,vx:(Math.random()-.5)*.6,vy:(Math.random()-.5)*.6,r:50+Math.random()*40,c:PAL[i%4]}));}
+  x.fillStyle='#14060C';x.fillRect(0,0,W,H);x.filter='blur(26px) contrast(1.2)';
+  st.b.forEach((b,i)=>{b.x+=b.vx+Math.sin(t+i)*.4;b.y+=b.vy+Math.cos(t*.8+i)*.4;if(b.x<0||b.x>W)b.vx*=-1;if(b.y<40||b.y>H*.75)b.vy*=-1;
+   const r=b.r*(1+spec[i*6]*.6+bass*.05);x.fillStyle=b.c;x.beginPath();x.arc(b.x,b.y,r,0,7);x.fill();});x.filter='none';},
+ espejo(x,t,beat,st){x.fillStyle='#07070B';x.fillRect(0,0,W,H);const cy=H*.42,bw=(W-30)/40;
+  for(let i=0;i<40;i++){const v=spec[Math.floor(i/40*N*.8)],h=v*170,px=15+i*bw;const g=x.createLinearGradient(0,cy-h,0,cy);g.addColorStop(0,PAL[1]);g.addColorStop(1,PAL[2]);
+   x.fillStyle=g;x.fillRect(px+1,cy-h,bw-3,h);x.fillStyle=rgba(PAL[2],.25);x.fillRect(px+1,cy+4,bw-3,h*.55);
+   const p=peaks[Math.floor(i/40*N*.8)]*170;x.fillStyle='#fff';x.fillRect(px+1,cy-p-5,bw-3,2);}
+  const g2=x.createLinearGradient(0,cy,0,cy+120);g2.addColorStop(0,'rgba(7,7,11,0)');g2.addColorStop(1,'#07070B');x.fillStyle=g2;x.fillRect(0,cy+2,W,120);},
+ calei(x,t,beat,st){x.fillStyle='#0A0408';x.fillRect(0,0,W,H);const cx=W/2,cy=H*.4,R=150+bass*10,n=8;
+  for(let i=0;i<n;i++){x.save();x.translate(cx,cy);x.rotate(i*Math.PI*2/n+t*.15);if(i%2)x.scale(1,-1);
+   x.beginPath();x.moveTo(0,0);x.arc(0,0,R,0,Math.PI*2/n);x.closePath();x.clip();
+   const o=20+beat*18;x.rotate(-t*.3);x.drawImage(art,-120+o,-120+o*.5,240,240);x.restore();}
+  x.strokeStyle=rgba(PAL[0],.4+beat*.5);x.lineWidth=2;x.beginPath();x.arc(cx,cy,R+6,0,7);x.stroke();}
+};
+function loop(ms){const t=ms/1000;const beat=fakeSpectrum(t);canvases.forEach(o=>draw[o.k](o.x,t,beat,o.st));requestAnimationFrame(loop)}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

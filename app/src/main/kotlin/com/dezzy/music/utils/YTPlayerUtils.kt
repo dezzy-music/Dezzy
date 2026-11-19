@@ -48,6 +48,8 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withTimeoutOrNull
@@ -146,6 +148,7 @@ object YTPlayerUtils {
     )
 
     private const val PARALLEL_STREAM_CLIENTS = 3
+    private const val FAST_START_TIMEOUT_MS = 6_000L
     private const val RESULT_CACHE_SAFETY_MS = 10 * 60 * 1000L
     private const val RESULT_CACHE_MAX = 300
 
@@ -666,14 +669,37 @@ object YTPlayerUtils {
         // the happy path a single /player request with no signature timestamp and no web PoToken.
         // (WEB_REMIX metadata has nicer loudnessDb, but the extra request + JS-player download is
         // exactly the latency being cut here; the fallback path still reaches WEB_REMIX if needed.)
-        val metadataClient = ANDROID_VR_NO_AUTH
+        //
+        // Arranque rápido: ANDROID_VR y VISIONOS se piden A LA VEZ. Desde muchas IPs ANDROID_VR
+        // devuelve LOGIN_REQUIRED («no eres un bot») y antes eso obligaba a recorrer olas de
+        // clientes cifrados (JS de NewPipe + validación) => más de 10 s por canción. VISIONOS
+        // da URLs directas sin parámetro «n» y sin cifrar, así que es el respaldo inmediato.
+        // Los metadatos salen del primero que responda OK (VR primero: trae loudnessDb).
+        val fastStartClients =
+            listOf(ANDROID_VR_NO_AUTH, VISIONOS)
+                .filterNot { isClientBotBackedOff(it.clientName) || isStreamClientTemporarilyBlocked(videoId, it.clientName) }
+                .ifEmpty { listOf(VISIONOS) }
 
         if (isCancelled?.invoke() == true) throw kotlin.coroutines.cancellation.CancellationException("Playback was cancelled")
-        Timber.tag(logTag).i("Fetching metadata response using client: ${metadataClient.clientName}")
+        Timber.tag(logTag).i("Fetching fast-start responses: ${fastStartClients.joinToString { it.clientName }}")
+        val fastStartResponses: List<Pair<YouTubeClient, PlayerResponse?>> =
+            coroutineScope {
+                fastStartClients.map { client ->
+                    async(Dispatchers.IO) {
+                        client to withTimeoutOrNull(FAST_START_TIMEOUT_MS) {
+                            playerResponseMemoized(responseMemo, videoId, playlistId, client) { null }
+                        }
+                    }
+                }.awaitAll()
+            }
+        val metadataPick =
+            fastStartResponses.firstOrNull { it.second?.playabilityStatus?.status == "OK" }
+                ?: fastStartResponses.firstOrNull { it.second != null }
+        val metadataClient = metadataPick?.first ?: VISIONOS
         val metadataPlayerResponse =
-            responseMemo[metadataClient.clientName]
-                ?: YouTube.player(videoId, playlistId, metadataClient, signatureTimestampFor(metadataClient)).getOrThrow()
-                    .also { responseMemo[metadataClient.clientName] = it }
+            metadataPick?.second
+                ?: YouTube.player(videoId, playlistId, VISIONOS, null).getOrThrow()
+                    .also { responseMemo[VISIONOS.clientName] = it }
         val audioConfig = metadataPlayerResponse.playerConfig?.audioConfig
         val videoDetails = metadataPlayerResponse.videoDetails
         val playbackTracking = metadataPlayerResponse.playbackTracking
@@ -682,6 +708,7 @@ object YTPlayerUtils {
         val streamClients =
             buildList {
                 add(ANDROID_VR_NO_AUTH)        // primary/priority: fastest direct-URL path
+                add(VISIONOS)                  // direct URLs too; raced together with VR
                 add(preferredYouTubeClient)     // the user's configured client comes next
                 addAll(orderedFallbackClients)
                 add(MAIN_CLIENT)
@@ -779,17 +806,14 @@ object YTPlayerUtils {
         // extra). Si falla, el resto en paralelo de PARALLEL_STREAM_CLIENTS en
         // PARALLEL_STREAM_CLIENTS, empezando por el que ganó la última vez.
         val lastWinner = lastWinningStreamClient
-        val orderedClients =
-            streamClients.sortedBy {
-                when {
-                    it == ANDROID_VR_NO_AUTH -> 0
-                    it.clientName == lastWinner -> 1
-                    else -> 2
-                }
-            }
-        var pick: StreamPick? = orderedClients.firstOrNull()?.let { tryStreamClient(it) }
+        val (fastClients, slowClients) =
+            streamClients.partition { it == ANDROID_VR_NO_AUTH || it == VISIONOS }
+        val orderedSlowClients =
+            slowClients.sortedBy { if (it.clientName == lastWinner) 0 else 1 }
+        // VR y VISIONOS ya tienen la respuesta en memoria: la carrera entre ambos es instantánea.
+        var pick: StreamPick? = raceFirst(fastClients) { tryStreamClient(it) }
         if (pick == null) {
-            for (wave in orderedClients.drop(1).chunked(PARALLEL_STREAM_CLIENTS)) {
+            for (wave in orderedSlowClients.chunked(PARALLEL_STREAM_CLIENTS)) {
                 if (isCancelled?.invoke() == true) throw kotlin.coroutines.cancellation.CancellationException("Playback was cancelled")
                 Timber.tag(logTag).v("Racing stream clients: ${wave.joinToString { it.clientName }}")
                 pick = raceFirst(wave) { tryStreamClient(it) }
@@ -1003,7 +1027,8 @@ object YTPlayerUtils {
         format: PlayerResponse.StreamingData.Format,
     ): Boolean {
         // Only the ANDROID_VR fast path (real, ready-to-play direct URLs) is trusted without probing.
-        return client.clientName == "ANDROID_VR" && format.url != null
+        // VISIONOS también da URLs directas sin «n» (comprobado: 206 hasta el último byte).
+        return (client.clientName == "ANDROID_VR" || client.clientName == "VISIONOS") && format.url != null
     }
 
     private fun shouldSkipCipheredWebCandidate(

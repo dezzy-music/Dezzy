@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estilos de reproductor · Cinemático, Expresivo, Moderno, Mínimo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Flex:opsz,wdth,wght@8..144,25..151,100..1000&family=Roboto+Serif:opsz,wght@8..144,300..700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,200..600,0..1,0&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="reproductor-estilos-base.css">
+<style>
+.devbtn{position:relative}
+.devbtn::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:2px dashed var(--mark)}
+.stylehead{margin-top:72px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.stylehead h2{font-family:'Roboto Flex';font-size:40px;font-weight:800;letter-spacing:-1px}
+.stylehead span{font-size:15px;color:var(--muted);max-width:700px}
+.abs{position:absolute}
+.fill{position:absolute;inset:0}
+
+/* ════════ CINEMÁTICO ════════ */
+.cine{background:#000;font-family:'Roboto Flex'}
+.grain::before{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;opacity:.18;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E")}
+.kb{animation:kb 18s ease-in-out infinite alternate}
+@keyframes kb{from{transform:scale(1.05) translate(0,0)}to{transform:scale(1.22) translate(-14px,10px)}}
+.credits{font-family:'Roboto Flex';font-variation-settings:'wdth' 30;text-transform:uppercase;letter-spacing:6px}
+.cine .scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.65) 0%,transparent 22%,transparent 45%,rgba(0,0,0,.9) 78%,#000)}
+.cine .ctrls{display:flex;align-items:center;justify-content:space-between;padding:0 26px}
+.cine .ghost{width:64px;height:64px;border-radius:50%;border:1.5px solid rgba(255,255,255,.7);display:grid;place-items:center}
+.lyr{font-family:'Roboto Serif';font-style:italic;font-size:17px;text-align:center;color:#FFE9B8;text-shadow:0 2px 6px #000}
+.cA .bar{height:92px;background:#000;flex:none;position:relative;z-index:4}
+.cA .frame{flex:1;position:relative;overflow:hidden}
+.cB .tt{font-size:52px;line-height:46px;font-weight:900;font-variation-settings:'wdth' 25;text-transform:uppercase;letter-spacing:-1px}
+.chap{display:flex;gap:3px}
+.chap i{height:3px;flex:1;background:rgba(255,255,255,.25);border-radius:2px;position:relative}
+.chap i.d{background:#fff}.chap i.h{background:linear-gradient(90deg,#fff 40%,rgba(255,255,255,.25) 40%)}
+.chaplab{display:flex;font-size:9.5px;letter-spacing:1.5px;color:var(--on-dim);margin-top:6px}
+.chaplab span{flex:1}
+
+/* ════════ EXPRESIVO ════════ */
+.expr{font-family:'Roboto Flex'}
+.cookie{clip-path:url(#cookie12);animation:spin 26s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.wavy{height:14px;position:relative}
+.wavy svg{position:absolute;inset:0;width:100%;height:100%}
+.xbtn{display:grid;place-items:center;flex:none}
+.eA{background:#2A1220}
+.eA .tone{position:absolute;inset:0;background:radial-gradient(120% 70% at 50% 18%,#7A2E4A,#2A1220 70%)}
+.eA .tt{font-size:34px;font-weight:850;font-variation-settings:'wdth' 110;line-height:36px;letter-spacing:-.5px}
+.eB{background:#F3DDE4;color:#3A0F20}
+.eB .blk{border-radius:28px;background:#FFD8E4}
+.eC{background:#0F2A2B}
+.eC .huge{font-size:76px;line-height:64px;font-weight:950;font-variation-settings:'wdth' 75;letter-spacing:-3px;color:#9FE3D0;animation:pulseW 1.1s ease-in-out infinite}
+@keyframes pulseW{50%{font-variation-settings:'wdth' 90;letter-spacing:-2px}}
+
+/* ════════ MODERNO ════════ */
+.mod{background:#0D0D12}
+.mod .blur{position:absolute;inset:-60px;filter:blur(60px) saturate(1.4);opacity:.7}
+.glass{background:rgba(255,255,255,.09);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.12)}
+.mA .art{width:296px;height:296px;border-radius:24px;margin:26px auto 0;box-shadow:0 30px 60px -10px rgba(192,80,122,.65);flex:none}
+.mB .tabs{display:flex;gap:6px;padding:4px;border-radius:16px;background:rgba(255,255,255,.08)}
+.mB .tabs span{flex:1;text-align:center;height:30px;line-height:30px;font-size:12.5px;font-weight:500;border-radius:12px;color:var(--on-var)}
+.mB .tabs span.on{background:#fff;color:#111}
+.mC .car{position:relative;height:300px;margin-top:22px;flex:none}
+.mC .car div{position:absolute;top:30px;width:200px;height:200px;border-radius:20px;opacity:.45;filter:blur(1px)}
+.mC .car .c{left:60px;top:0;width:240px;height:240px;opacity:1;filter:none;z-index:2;box-shadow:0 24px 50px rgba(0,0,0,.55)}
+.fab{width:72px;height:72px;border-radius:24px;background:#fff;color:#111;display:grid;place-items:center;flex:none}
+
+/* ════════ MÍNIMO ════════ */
+.min{font-family:'Roboto'}
+.nA{background:#F6F3EE;color:#141414}
+.nB{background:#000}
+.nC{background:#EDEAE3;color:#151515}
+.hair{height:1px;background:currentColor;opacity:.25;position:relative}
+.hair i{position:absolute;left:0;top:-.5px;height:2px;background:currentColor}
+.hairwrap{position:relative}
+.txtbtn{font-size:13px;letter-spacing:2px;text-transform:uppercase;font-weight:500}
+.thin{font-variation-settings:'wght' 200}
+</style>
+</head>
+<body>
+<!-- Forma "galleta" de Material 3 Expressive (12 lóbulos) para recortar la carátula -->
+<svg width="0" height="0" style="position:absolute"><defs>
+  <clipPath id="cookie12" clipPathUnits="objectBoundingBox"><path id="ck" d=""/></clipPath>
+</defs></svg>
+<script>
+(function(){const n=12,pts=[];for(let i=0;i<=360;i++){const a=i/360*Math.PI*2,r=.45+.05*Math.cos(n*a);pts.push([.5+r*Math.cos(a),.5+r*Math.sin(a)])}
+document.getElementById('ck').setAttribute('d','M'+pts.map(p=>p[0].toFixed(4)+' '+p[1].toFixed(4)).join('L')+'Z')})();
+function wave(id,progress,color,amp){const el=document.getElementById(id);if(!el)return;const W=300,H=14,px=W*progress;let d='M0 7';for(let x=0;x<=px;x+=2)d+=` L${x} ${(7+amp*Math.sin(x/6)).toFixed(2)}`;
+el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><path d="${d}" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round"/><line x1="${px+8}" y1="7" x2="${W}" y2="7" stroke="${color}" stroke-opacity=".3" stroke-width="4" stroke-linecap="round"/><rect x="${px-2}" y="0" width="4" height="14" rx="2" fill="${color}"/></svg>`}
+</script>
+
+<div class="wrap">
+  <nav class="styles"><a class="on" href="dezzy-android-reproductor-estilos-nuevos-bocetos.html">Reproductores</a><a href="dezzy-android-visualizadores-bocetos.html">Visualizadores</a><a href="dezzy-android-together-qr-bocetos.html">Listen Together · QR</a></nav>
+  <header class="top">
+    <h1>Estilos de reproductor nuevos</h1>
+    <p class="lead">Cuatro estilos con nombre propio — <b>Cinemático</b>, <b>Expresivo</b>, <b>Moderno</b> y <b>Mínimo</b> — con tres variantes (A/B/C) de cada uno. Elige una (o una mezcla) por estilo.</p>
+    <div class="today">
+      <h4>En los cuatro</h4>
+      <ul>
+        <li>Sin botón de Chromecast. Queda <b>sólo el de dispositivos</b> (<span class="ms s16">devices</span>, marcado con línea naranja discontinua), que abre la hoja de dispositivos; los Chromecast ya salen ahí, en «En tu red».</li>
+        <li>Mismas funciones en todos: me gusta, letra, cola y el ✨ del visualizador.</li>
+        <li>Los colores salen de la carátula (aquí se usa una carátula de ejemplo).</li>
+      </ul>
+    </div>
+  </header>
+
+  <!-- ═════════════════ CINEMÁTICO ═════════════════ -->
+  <div class="stylehead"><h2>Cinemático</h2><span>Como una película: imagen a pantalla completa, grano de película, letra de créditos y la letra de la canción como subtítulo.</span></div>
+
+  <section class="sketch">
+    <div class="sk-head"><span class="sk-tag">A</span><h3>Formato panorámico</h3>
+      <p>Bandas negras arriba y abajo, como una pantalla de cine; la carátula (o el canvas) se mueve despacio dentro del encuadre. El título sale como créditos y la letra como subtítulo.</p></div>
+    <div class="sk-body">
+      <div>
+        <div class="phone cine cA grain">
+          <div class="bar"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s14">signal_cellular_alt</span><span class="ms s14">battery_full</span></span></div>
+            <div class="row" style="padding:6px 8px 0"><span class="icon-btn"><span class="ms">keyboard_arrow_down</span></span><span class="sp credits" style="text-align:center;font-size:10px;color:var(--on-dim)">Sonando · Night Drive</span><span class="icon-btn"><span class="ms">more_vert</span></span></div></div>
+          <div class="frame"><div class="fill art-a kb"></div>
+            <div class="abs lyr" style="left:20px;right:20px;bottom:22px">«y la ciudad se apaga detrás de nosotros»</div></div>
+          <div class="bar" style="height:auto;padding:16px 0 0">
+            <div style="text-align:center"><div class="credits" style="font-size:22px;font-weight:700;letter-spacing:8px">Luces de neón</div>
+              <div class="credits" style="font-size:11px;color:var(--on-var);margin-top:6px;letter-spacing:4px">Aurora Vega</div></div>
+            <div style="padding:18px 26px 0"><div class="track" style="height:2px"><i style="width:38%"></i></div><div class="times" style="font-size:11px"><span>1:24</span><span>−2:16</span></div></div>
+            <div class="ctrls" style="margin-top:10px"><span class="ms s22">favorite</span><span class="ms s32">skip_previous</span><span class="ghost"><span class="ms f s36">pause</span></span><span class="ms s32">skip_next</span><span class="ms s22">lyrics</span></div>
+            <div class="row" style="justify-content:space-between;padding:14px 26px 6px;color:var(--on-var)"><span class="ms s20">auto_awesome</span><span class="ms s20 devbtn">devices</span><span class="ms s20">queue_music</span></div>
+            <div class="gesture"><i></i></div></div>
+        </div>
+        <p class="cap">La imagen ocupa el centro; arriba y abajo, negro puro.</p>
+      </div>
+      <div class="notes"><h4>Detalles</h4><ul>
+        <li>Movimiento lento de cámara (zoom y paneo de 18 s) sobre la carátula; si hay canvas, el vídeo llena el encuadre.</li>
+        <li>Grano de película sutil encima (se puede apagar).</li>
+        <li>Título en mayúsculas espaciadas, como créditos.</li>
+        <li>La línea actual de la letra sale como subtítulo amarillo pálido.</li>
+        <li>Botón de play como anillo fino, sin relleno.</li>
+      </ul><h4>En horizontal</h4><p>El encuadre llena la pantalla; los controles aparecen al tocar.</p></div>
+    </div>
+  </section>
+
+  <section class="sketch">
+    <div class="sk-head"><span class="sk-tag">B</span><h3>Póster</h3>
+      <p>Carátula a sangre, de borde a borde, con degradado a negro. Título enorme en letra estrecha, como el póster de una película. Controles abajo.</p></div>
+    <div class="sk-body">
+      <div>
+        <div class="phone cine cB grain">
+          <div class="fill art-a kb"></div><div class="scrim"></div>
+          <div class="layer">
+            <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s14">signal_cellular_alt</span><span class="ms s14">battery_full</span></span></div>
+            <div class="row" style="padding:0 8px"><span class="icon-btn"><span class="ms">keyboard_arrow_down</span></span><span class="sp"></span><span class="icon-btn"><span class="ms devbtn">devices</span></span><span class="icon-btn"><span class="ms">more_vert</span></span></div>
+            <div class="sp"></div>
+            <div style="padding:0 24px">
+              <div class="credits" style="font-size:11px;color:#FFE9B8;letter-spacing:4px">Aurora Vega presenta</div>
+              <div class="tt" style="margin-top:8px">Luces<br>de neón</div>
+              <div class="credits" style="font-size:10px;color:var(--on-dim);letter-spacing:3px;margin-top:10px">Night Drive · 2026 · 3:40</div>
+              <div style="margin-top:22px"><div class="track" style="height:3px"><i style="width:38%"></i></div><div class="times" style="font-size:11px"><span>1:24</span><span>3:40</span></div></div>
+            </div>
+            <div class="ctrls" style="margin-top:8px"><span class="ms s22">shuffle</span><span class="ms s36">skip_previous</span><span class="ghost" style="background:#fff;color:#000;border:0;width:70px;height:70px"><span class="ms f s36">pause</span></span><span class="ms s36">skip_next</span><span class="ms s22">repeat</span></div>
+            <div class="row" style="justify-content:space-around;padding:18px 20px 6px;color:var(--on-var)"><span class="ms s20">favorite</span><span class="ms s20">lyrics</span><span class="ms s20">auto_awesome</span><span class="ms s20">queue_music</span></div>
+            <div class="gesture"><i></i></div>
+          </div>
+        </div>
+        <p class="cap">La carátula llena la pantalla; abajo, negro.</p>
+      </div>
+      <div class="notes"><h4>Detalles</h4><ul>
+        <li>Título en dos líneas, hasta 52 sp, letra estrecha y gruesa; se reduce si es largo.</li>
+        <li>Línea de «créditos» encima (artista «presenta») y debajo álbum · año · duración.</li>
+        <li>Dispositivos arriba a la derecha, junto al menú.</li>
+        <li>Play blanco sólido: el único elemento con relleno.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section class="sketch">
+    <div class="sk-head"><span class="sk-tag">C</span><h3>Escenas</h3>
+      <p>La barra de progreso se divide en «escenas» (intro, estrofa, estribillo…), como los capítulos de una película. La letra va en grande en el centro, con fundido.</p></div>
+    <div class="sk-body">
+      <div>
+        <div class="phone cine grain">
+          <div class="fill art-a kb" style="filter:brightness(.45) blur(2px)"></div>
+          <div class="fill" style="background:linear-gradient(180deg,#000 0%,transparent 18%,transparent 60%,#000 90%)"></div>
+          <div class="layer">
+            <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s14">signal_cellular_alt</span><span class="ms s14">battery_full</span></span></div>
+            <div class="row" style="padding:0 8px"><span class="icon-btn"><span class="ms">keyboard_arrow_down</span></span><span class="sp credits" style="font-size:10px;text-align:center;color:var(--on-dim)">Escena 3 · Estribillo</span><span class="icon-btn"><span class="ms">more_vert</span></span></div>
+            <div class="sp" style="display:flex;flex-direction:column;justify-content:center;gap:14px;padding:0 28px;font-family:'Roboto Serif'">
+              <div style="font-size:16px;color:var(--on-dim)">nadie nos busca esta noche</div>
+              <div style="font-size:26px;line-height:32px;font-weight:600">y la ciudad se apaga detrás de nosotros</div>
+              <div style="font-size:16px;color:var(--on-dim)">luces de neón en el retrovisor</div>
+            </div>
+            <div style="padding:0 24px">
+              <div class="row" style="gap:12px"><div class="art-a" style="width:44px;height:44px;border-radius:4px;flex:none"></div><div class="sp" style="min-width:0"><div class="credits ell" style="font-size:15px;font-weight:700;letter-spacing:3px">Luces de neón</div><div style="font-size:12px;color:var(--on-var)">Aurora Vega</div></div><span class="ms s22">favorite</span></div>
+              <div style="margin-top:18px" class="chap"><i class="d"></i><i class="d"></i><i class="h"></i><i></i><i></i></div>
+              <div class="chaplab credits"><span>Intro</span><span>Estrofa</span><span style="color:#fff">Estrib.</span><span>Puente</span><span>Final</span></div>
+            </div>
+            <div class="ctrls" style="margin-top:14px"><span class="ms s22">shuffle</span><span class="ms s32">skip_previous</span><span class="ghost"><span class="ms f s36">pause</span></span><span class="ms s32">skip_next</span><span class="ms s22">repeat</span></div>
+            <div class="row" style="justify-content:space-between;padding:16px 26px 6px;color:var(--on-var)"><span class="ms s20">auto_awesome</span><span class="ms s20 devbtn">devices</span><span class="ms s20">queue_music</span></div>
+            <div class="gesture"><i></i></div>
+          </div>
+        </div>
+        <p class="cap">Tocar una escena salta a ese momento.</p>
+      </div>
+      <div class="notes"><h4>Detalles</h4><ul>
+        <li>Las escenas salen de las secciones que ya detecta Song DNA; si no hay, la barra es continua.</li>
+        <li>Letra protagonista: línea actual grande con serifa, anterior y siguiente atenuadas.</li>
+        <li>Sin letra: la carátula sube al centro con el movimiento lento de A.</li>
+      </ul><p class="con" style="margin-top:10px">Luce mucho menos sin letra sincronizada.</p></div>
+    </div>
+  </section>
+
+  <!-- ═════════════════ EXPRESIVO ═════════════════ -->
+  <div class="stylehead"><h2>Expresivo</h2><span>Material 3 Expressive: formas que giran y cambian, barra de progreso ondulada, botones de tamaños distintos y color fuerte.</span></div>
+
+  <section class="sketch">
+    <div class="sk-head"><span class="sk-tag">A</span><h3>Galleta giratoria</h3>
+      <p>La carátula se recorta con la forma «galleta» de 12 lóbulos y gira despacio mientras suena. Barra ondulada que se aplana al pausar.</p></div>
+    <div class="sk-body">
+      <div>
+        <div class="phone expr eA">
+          <div class="tone"></div>
+          <div class="layer">
+            <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s14">signal_cellular_alt</span><span class="ms s14">battery_full</span></span></div>
+            <div class="row" style="padding:0 8px"><span class="icon-btn"><span class="ms">keyboard_arrow_down</span></span><span class="sp" style="text-align:center;font-size:12px;color:var(--on-var)">Night Drive</span><span class="icon-btn"><span class="ms">more_vert</span></span></div>
+            <div style="width:290px;height:290px;margin:18px auto 0;flex:none" class="art-a cookie"></div>
+            <div style="padding:26px 24px 0"><div class="tt">Luces de neón</div><div style="font-size:17px;color:#FFC8D8;margin-top:4px;font-weight:500">Aurora Vega</div></div>
+            <div style="padding:22px 24px 0"><div class="wavy" id="wA"></div><div class="times"><span>1:24</span><span>3:40</span></div></div>
+            <div class="row" style="justify-content:center;gap:10px;margin-top:14px">
+              <span class="xbtn" style="width:64px;height:64px;border-radius:50%;background:rgba(255,200,216,.16)"><span class="ms f s28">skip_previous</span></span>
+              <span class="xbtn" style="width:120px;height:76px;border-radius:24px;background:#FFC8D8;color:#3A0F20"><span class="ms f s44">pause</span></span>
+              <span class="xbtn" style="width:64px;height:64px;border-radius:50%;background:rgba(255,200,216,.16)"><span class="ms f s28">skip_next</span></span></div>
+            <div class="row" style="justify-content:space-around;padding:18px 18px 6px;color:#FFC8D8"><span class="ms s22">favorite</span><span class="ms s22">lyrics</span><span class="ms s22">auto_awesome</span><span class="ms s22 devbtn">devices</span><span class="ms s22">queue_music</span></div>
+            <div class="gesture"><i></i></div>
+          </div>
+        </div>
+        <p class="cap">Al pausar, la galleta se para y pasa a cuadrado redondeado.</p>
+      </div>
+      <div class="notes"><h4>Detalles</h4><ul>
+        <li>Forma de carátula con <code>MaterialShapes.Cookie12Sided</code>; al pausar se transforma en <code>Square</code>.</li>
+        <li>Barra ondulada (<code>LinearWavyProgressIndicator</code>) cuya amplitud sigue la energía real del audio.</li>
+        <li>Play ancho tipo píldora; anterior y siguiente circulares, en un tono más suave.</li>
+        <li>Título en letra ancha y gruesa.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section class="sketch">
+    <div class="sk-head"><span class="sk-tag">B</span><h3>Bloques de color</h3>
+      <p>Tema claro con bloques tonales. Cada control tiene una forma distinta (círculo, flor, píldora). Muy táctil y cómodo para el pulgar.</p></div>
+    <div class="sk-body">
+      <div>
+        <div class="phone expr eB">
+          <div class="layer">
+            <div class="statusbar dark"><span>9:41</span><span class="ic"><span class="ms s14">signal_cellular_alt</span><span class="ms s14">battery_full</span></span></div>
+            <div class="row" style="padding:0 8px"><span class="icon-btn"><span class="ms">keyboard_arrow_down</span></span><span class="sp"></span><span class="icon-btn" style="background:#FFD8E4;width:40px;height:40px"><span class="ms s20 devbtn">devices</span></span><span class="icon-btn"><span class="ms">more_vert</span></span></div>
+            <div style="margin:6px 16px 0;height:300px;border-radius:48px 48px 48px 12px;flex:none" class="art-a"></div>
+            <div class="blk" style="margin:12px 16px 0;padding:18px 20px">
+              <div style="font-size:28px;font-weight:800;line-height:32px">Luces de neón</div>
+              <div class="row" style="margin-top:4px"><span class="sp" style="font-size:16px;font-weight:500;color:#7A2E4A">Aurora Vega</span><span class="ms f s26" style="color:#B0264F">favorite</span></div>
+              <div style="margin-top:14px"><div class="wavy" id="wB"></div><div class="times" style="color:#7A2E4A"><span>1:24</span><span>3:40</span></div></div>
+            </div>
+            <div class="row" style="justify-content:center;gap:12px;margin-top:14px">
+              <span class="xbtn" style="width:62px;height:62px;border-radius:50%;background:#FFD8E4"><span class="ms f s28">skip_previous</span></span>
+              <span class="xbtn" style="width:96px;height:96px;background:#B0264F;color:#fff;clip-path:url(#cookie12)"><span class="ms f s44">pause</span></span>
+              <span class="xbtn" style="width:62px;height:62px;border-radius:50%;background:#FFD8E4"><span class="ms f s28">skip_next</span></span></div>
+            <div class="row" style="justify-content:center;gap:8px;padding:14px 0 6px">
+              <span class="chip" style="background:#FFD8E4;color:#3A0F20;height:34px;border-radius:17px;padding:0 14px;font-size:12.5px"><span class="ms s18">lyrics</span>Letra</span>
+              <span class="chip" style="background:#FFD8E4;color:#3A0F20;height:34px;border-radius:17px;padding:0 14px;font-size:12.5px"><span class="ms s18">auto_awesome</span>Visual</span>
+              <span class="chip" style="background:#FFD8E4;color:#3A0F20;height:34px;border-radius:17px;padding:0 14px;font-size:12.5px"><span class="ms s18">queue_music</span>Cola</span></div>
+            <div class="gesture dark"><i></i></div>
+          </div>
+        </div>
+        <p class="cap">Fondo y bloques en tonos de la carátula. También existe en oscuro.</p>
+      </div>
+      <div class="notes"><h4>Detalles</h4><ul>
+        <li>Carátula con una esquina pequeña (forma asimétrica).</li>
+        <li>Play con forma de flor: al tocarlo se encoge y rebota.</li>
+        <li>Letra, Visual y Cola como fichas con texto, no sólo iconos.</li>
+      </ul><p class="pro" style="margin-top:10px">El único estilo claro: buena opción de día.</p></div>
+    </div>
+  </section>
+
+  <section class="sketch">
+    <div class="sk-head"><span class="sk-tag">C</span><h3>Tipografía viva</h3>
+      <p>El título manda: letra variable enorme que «respira» con el ritmo (se ensancha en cada golpe). La carátula pasa a ser una píldora a un lado.</p></div>
+    <div class="sk-body">
+      <div>
+        <div class="phone expr eC">
+          <div class="layer">
+            <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s14">signal_cellular_alt</span><span class="ms s14">battery_full</span></span></div>
+            <div class="row" style="padding:0 8px"><span class="icon-btn"><span class="ms">keyboard_arrow_down</span></span><span class="sp"></span><span class="icon-btn"><span class="ms">more_vert</span></span></div>
+            <div class="row" style="padding:8px 20px 0;gap:14px;align-items:flex-end">
+              <div class="art-b" style="width:120px;height:210px;border-radius:60px;flex:none"></div>
+              <div style="flex:1;padding-bottom:6px"><div style="font-size:12px;letter-spacing:2px;color:#9FE3D0;font-weight:700">AHORA</div><div style="font-size:15px;color:var(--on-var);margin-top:4px">Lagos<br>2026 · FLAC</div></div></div>
+            <div class="huge" style="padding:22px 16px 0">MAREA<br>ALTA</div>
+            <div style="padding:4px 20px 0;font-size:18px;font-weight:600;color:var(--on-var)">Nadia Ríos</div>
+            <div class="sp"></div>
+            <div style="padding:0 20px"><div class="wavy" id="wC"></div><div class="times"><span>2:02</span><span>4:11</span></div></div>
+            <div class="row" style="padding:10px 20px 0;gap:10px">
+              <span class="xbtn" style="flex:1;height:72px;border-radius:36px;background:#9FE3D0;color:#0F2A2B"><span class="ms f s44">pause</span></span>
+              <span class="xbtn" style="width:72px;height:72px;border-radius:22px;background:rgba(159,227,208,.18);color:#9FE3D0"><span class="ms f s32">skip_previous</span></span>
+              <span class="xbtn" style="width:72px;height:72px;border-radius:22px;background:rgba(159,227,208,.18);color:#9FE3D0"><span class="ms f s32">skip_next</span></span></div>
+            <div class="row" style="justify-content:space-around;padding:16px 18px 6px;color:#9FE3D0"><span class="ms s22">favorite</span><span class="ms s22">lyrics</span><span class="ms s22">auto_awesome</span><span class="ms s22 devbtn">devices</span><span class="ms s22">queue_music</span></div>
+            <div class="gesture"><i></i></div>
+          </div>
+        </div>
+        <p class="cap">El ancho de la letra late con los graves.</p>
+      </div>
+      <div class="notes"><h4>Detalles</h4><ul>
+        <li>Roboto Flex con el eje de anchura animado según la energía del audio (el mismo motor de espectro del visualizador).</li>
+        <li>Títulos largos: se parten en 2–3 líneas y bajan de tamaño.</li>
+        <li>Play ocupa todo el ancho libre: muy fácil de tocar.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <!-- ═════════════════ MODERNO ═════════════════ -->
+  <div class="stylehead"><h2>Moderno</h2><span>Limpio y actual: cristal esmerilado, sombra del color de la carátula, esquinas suaves y paneles.</span></div>
+
+  <section class="sketch">
+    <div class="sk-head"><span class="sk-tag">A</span><h3>Cristal</h3>
+      <p>Fondo con la carátula muy desenfocada. La carátula flota con una sombra de su propio color; los controles van en un panel de cristal.</p></div>
+    <div class="sk-body">
+      <div>
+        <div class="phone mod mA">
+          <div class="blur art-a"></div><div class="fill" style="background:rgba(10,8,14,.35)"></div>
+          <div class="layer">
+            <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s14">signal_cellular_alt</span><span class="ms s14">battery_full</span></span></div>
+            <div class="row" style="padding:0 8px"><span class="icon-btn"><span class="ms">keyboard_arrow_down</span></span><span class="sp" style="text-align:center;font-size:12px;color:var(--on-var);line-height:15px">De la lista<br><b style="color:#fff;font-size:13px">Night Drive</b></span><span class="icon-btn"><span class="ms">more_vert</span></span></div>
+            <div class="art art-a"></div>
+            <div class="glass" style="margin:auto 14px 0;border-radius:28px;padding:18px 18px 14px">
+              <div class="row"><div class="sp" style="min-width:0"><div class="ell" style="font-size:22px;font-weight:700">Luces de neón</div><div style="font-size:15px;color:var(--on-var)">Aurora Vega</div></div><span class="icon-btn"><span class="ms s26">favorite</span></span></div>
+              <div style="margin-top:12px"><div class="track thumb"><i style="width:38%"></i></div><div class="times"><span>1:24</span><span>3:40</span></div></div>
+              <div class="row" style="justify-content:space-between;margin-top:6px"><span class="ms s22" style="color:var(--on-var)">shuffle</span><span class="ms f s36">skip_previous</span><span class="fab" style="width:64px;height:64px;border-radius:50%"><span class="ms f s36">pause</span></span><span class="ms f s36">skip_next</span><span class="ms s22" style="color:var(--on-var)">repeat</span></div>
+              <div class="row" style="justify-content:space-between;margin-top:14px;color:var(--on-var)">
+                <span class="dev devbtn" style="background:rgba(255,255,255,.1)"><span class="ms s18">devices</span>Este teléfono</span>
+                <span class="row" style="gap:18px"><span class="ms s22">lyrics</span><span class="ms s22">auto_awesome</span><span class="ms s22">queue_music</span></span></div>
+            </div>
+            <div class="gesture" style="margin-top:6px"><i></i></div>
+          </div>
+        </div>
+        <p class="cap">El botón de dispositivos dice dónde suena.</p>
+      </div>
+      <div class="notes"><h4>Detalles</h4><ul>
+        <li>Sombra del color de la carátula (no gris).</li>
+        <li>Panel de cristal con desenfoque real en Android 12+; en versiones anteriores, un velo translúcido.</li>
+        <li>Botón de dispositivos con texto: «Este teléfono», «Salón TV»…</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section class="sketch">
+    <div class="sk-head"><span class="sk-tag">B</span><h3>Panel con pestañas</h3>
+      <p>Carátula arriba y, debajo, una hoja que se desliza con pestañas Sonando / Letra / Cola / Info. Todo en la misma pantalla.</p></div>
+    <div class="sk-body">
+      <div>
+        <div class="phone mod mB">
+          <div class="blur art-a" style="opacity:.45"></div>
+          <div class="layer">
+            <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s14">signal_cellular_alt</span><span class="ms s14">battery_full</span></span></div>
+            <div class="row" style="padding:0 8px"><span class="icon-btn"><span class="ms">keyboard_arrow_down</span></span><span class="sp"></span><span class="icon-btn glass" style="width:40px;height:40px"><span class="ms s20 devbtn">devices</span></span><span class="icon-btn"><span class="ms">more_vert</span></span></div>
+            <div class="art-a" style="margin:6px 20px 0;height:280px;border-radius:28px;flex:none"></div>
+            <div class="glass" style="flex:1;margin-top:16px;border-radius:32px 32px 0 0;padding:10px 18px 0;display:flex;flex-direction:column;border-bottom:0">
+              <div class="grab" style="margin:0 auto 12px"></div>
+              <div class="tabs"><span class="on">Sonando</span><span>Letra</span><span>Cola</span><span>Info</span></div>
+              <div class="row" style="margin-top:16px"><div class="sp"><div style="font-size:22px;font-weight:700">Luces de neón</div><div style="font-size:15px;color:var(--on-var)">Aurora Vega · Night Drive</div></div><span class="ms s26">favorite</span></div>
+              <div style="margin-top:14px"><div class="track thumb"><i style="width:38%"></i></div><div class="times"><span>1:24</span><span>3:40</span></div></div>
+              <div class="row" style="justify-content:space-between;margin-top:6px"><span class="ms s22" style="color:var(--on-var)">shuffle</span><span class="ms f s36">skip_previous</span><span class="fab"><span class="ms f s44">pause</span></span><span class="ms f s36">skip_next</span><span class="ms s22" style="color:var(--on-var)">auto_awesome</span></div>
+              <div class="sp"></div><div class="gesture"><i></i></div>
+            </div>
+          </div>
+        </div>
+        <p class="cap">Al subir la hoja, la carátula se encoge a miniatura.</p>
+      </div>
+      <div class="notes"><h4>Detalles</h4><ul>
+        <li>Letra y Cola viven dentro de la misma hoja (sin cambiar de pantalla).</li>
+        <li>Info: créditos, Song DNA y calidad del audio juntos.</li>
+        <li>Play cuadrado con esquinas de 24 dp.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section class="sketch">
+    <div class="sk-head"><span class="sk-tag">C</span><h3>Carrusel</h3>
+      <p>Se ven la anterior y la siguiente a los lados; deslizar la carátula cambia de canción. Debajo, los controles flotan en una píldora de cristal.</p></div>
+    <div class="sk-body">
+      <div>
+        <div class="phone mod mC">
+          <div class="blur art-a" style="opacity:.5"></div><div class="fill" style="background:linear-gradient(180deg,transparent 40%,rgba(13,13,18,.85))"></div>
+          <div class="layer">
+            <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s14">signal_cellular_alt</span><span class="ms s14">battery_full</span></span></div>
+            <div class="row" style="padding:0 8px"><span class="icon-btn"><span class="ms">keyboard_arrow_down</span></span><span class="sp" style="text-align:center;font-size:12px;color:var(--on-var)">3 de 24</span><span class="icon-btn"><span class="ms">more_vert</span></span></div>
+            <div class="car"><div class="art-b" style="left:-150px"></div><div class="c art-a"></div><div class="art-c" style="left:310px"></div></div>
+            <div style="text-align:center;margin-top:-30px"><div style="font-size:24px;font-weight:700">Luces de neón</div><div style="font-size:15px;color:var(--on-var);margin-top:2px">Aurora Vega</div></div>
+            <div style="padding:20px 28px 0"><div class="track thumb"><i style="width:38%"></i></div><div class="times"><span>1:24</span><span>3:40</span></div></div>
+            <div class="glass row" style="margin:14px 22px 0;height:76px;border-radius:38px;justify-content:space-between;padding:0 8px 0 18px">
+              <span class="ms s22">favorite</span><span class="ms f s32">skip_previous</span><span class="fab" style="width:60px;height:60px;border-radius:50%"><span class="ms f s36">pause</span></span><span class="ms f s32">skip_next</span><span class="icon-btn"><span class="ms s22 devbtn">devices</span></span></div>
+            <div class="row" style="justify-content:center;gap:34px;padding:18px 0 6px;color:var(--on-var)"><span class="ms s22">lyrics</span><span class="ms s22">auto_awesome</span><span class="ms s22">queue_music</span></div>
+            <div class="sp"></div><div class="gesture"><i></i></div>
+          </div>
+        </div>
+        <p class="cap">Deslizar a la izquierda = siguiente.</p>
+      </div>
+      <div class="notes"><h4>Detalles</h4><ul>
+        <li>Carrusel con <code>HorizontalPager</code> sobre la cola; las laterales, más pequeñas y atenuadas.</li>
+        <li>La píldora de controles flota con cristal.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <!-- ═════════════════ MÍNIMO ═════════════════ -->
+  <div class="stylehead"><h2>Mínimo</h2><span>Lo justo: mucho espacio, un color, líneas finas y nada que distraiga.</span></div>
+
+  <section class="sketch">
+    <div class="sk-head"><span class="sk-tag">A</span><h3>Papel</h3>
+      <p>Fondo crema, carátula mediana, letra fina y una sola línea de progreso. Los iconos secundarios se encienden al tocar.</p></div>
+    <div class="sk-body">
+      <div>
+        <div class="phone min nA">
+          <div class="layer">
+            <div class="statusbar dark"><span>9:41</span><span class="ic"><span class="ms s14">signal_cellular_alt</span><span class="ms s14">battery_full</span></span></div>
+            <div class="row" style="padding:0 8px"><span class="icon-btn"><span class="ms thin">keyboard_arrow_down</span></span><span class="sp"></span><span class="icon-btn"><span class="ms thin devbtn">devices</span></span></div>
+            <div class="art-a" style="width:240px;height:240px;margin:56px auto 0;border-radius:4px;flex:none"></div>
+            <div style="text-align:center;margin-top:44px"><div style="font-size:22px;font-weight:300">Luces de neón</div><div style="font-size:14px;opacity:.55;margin-top:4px">Aurora Vega</div></div>
+            <div style="padding:40px 48px 0"><div class="hair"><i style="width:38%"></i></div><div class="times" style="color:rgba(0,0,0,.45);font-size:11px"><span>1:24</span><span>3:40</span></div></div>
+            <div class="row" style="justify-content:center;gap:48px;margin-top:26px"><span class="ms s28 thin">skip_previous</span><span class="ms s44 thin">pause</span><span class="ms s28 thin">skip_next</span></div>
+            <div class="sp"></div>
+            <div class="row" style="justify-content:center;gap:28px;padding-bottom:12px;opacity:.35"><span class="ms s20">favorite</span><span class="ms s20">lyrics</span><span class="ms s20">auto_awesome</span><span class="ms s20">queue_music</span></div>
+            <div class="gesture dark"><i></i></div>
+          </div>
+        </div>
+        <p class="cap">Iconos finos (peso 200). Hay versión oscura.</p>
+      </div>
+      <div class="notes"><h4>Detalles</h4><ul>
+        <li>Sin degradados ni sombras: un fondo plano.</li>
+        <li>Los iconos de abajo están atenuados y se encienden al tocar la pantalla.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section class="sketch">
+    <div class="sk-head"><span class="sk-tag">B</span><h3>Negro</h3>
+      <p>Negro puro (ahorra batería en OLED). Sin carátula grande: un punto con el color de la carátula y el título centrado. Los controles se atenúan y vuelven al tocar.</p></div>
+    <div class="sk-body">
+      <div>
+        <div class="phone min nB">
+          <div class="layer">
+            <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s14">signal_cellular_alt</span><span class="ms s14">battery_full</span></span></div>
+            <div class="row" style="padding:0 8px"><span class="icon-btn"><span class="ms" style="color:var(--on-dim)">keyboard_arrow_down</span></span><span class="sp"></span><span class="icon-btn"><span class="ms devbtn" style="color:var(--on-dim)">devices</span></span></div>
+            <div class="sp" style="display:flex;flex-direction:column;align-items:center;justify-content:center">
+              <div class="art-a" style="width:72px;height:72px;border-radius:50%;box-shadow:0 0 60px 10px rgba(192,80,122,.45)"></div>
+              <div style="font-size:26px;font-weight:300;margin-top:40px;letter-spacing:.5px">Luces de neón</div>
+              <div style="font-size:14px;color:var(--on-dim);margin-top:6px">Aurora Vega</div>
+              <div style="font-size:12px;color:#C0507A;margin-top:28px;letter-spacing:3px">1:24 / 3:40</div>
+            </div>
+            <div style="padding:0 40px;color:#fff"><div class="hair"><i style="width:38%;background:#C0507A"></i></div></div>
+            <div class="row" style="justify-content:space-between;padding:26px 40px 0"><span class="txtbtn" style="color:var(--on-dim)">Ant.</span><span class="txtbtn">Pausa</span><span class="txtbtn" style="color:var(--on-dim)">Sig.</span></div>
+            <div class="row" style="justify-content:center;gap:26px;padding:28px 0 12px;color:rgba(255,255,255,.3)"><span class="ms s20">favorite</span><span class="ms s20">lyrics</span><span class="ms s20">auto_awesome</span><span class="ms s20">queue_music</span></div>
+            <div class="gesture"><i style="background:rgba(255,255,255,.3)"></i></div>
+          </div>
+        </div>
+        <p class="cap">Controles con texto en lugar de iconos.</p>
+      </div>
+      <div class="notes"><h4>Detalles</h4><ul>
+        <li>El punto de color late suave con la música.</li>
+        <li>Tras 5 s sin tocar, todo menos título y punto baja al 15 %.</li>
+      </ul><p class="con" style="margin-top:10px">Controles con texto: hay que comprobar que se entienden en otros idiomas.</p></div>
+    </div>
+  </section>
+
+  <section class="sketch">
+    <div class="sk-head"><span class="sk-tag">C</span><h3>Editorial</h3>
+      <p>Como una página de revista: alineado a la izquierda, título grande con serifa, carátula rectangular y datos en columnas finas.</p></div>
+    <div class="sk-body">
+      <div>
+        <div class="phone min nC">
+          <div class="layer">
+            <div class="statusbar dark"><span>9:41</span><span class="ic"><span class="ms s14">signal_cellular_alt</span><span class="ms s14">battery_full</span></span></div>
+            <div class="row" style="padding:0 8px"><span class="icon-btn"><span class="ms">keyboard_arrow_down</span></span><span class="sp txtbtn" style="font-size:10px;opacity:.5">N.º 03 — Night Drive</span><span class="icon-btn"><span class="ms devbtn">devices</span></span></div>
+            <div style="padding:10px 24px 0">
+              <div class="art-a" style="height:250px"></div>
+              <div style="font-family:'Roboto Serif';font-size:38px;line-height:40px;font-weight:400;margin-top:22px;letter-spacing:-.5px">Luces de neón</div>
+              <div class="row" style="margin-top:14px;font-size:12px">
+                <div style="flex:1"><div style="opacity:.45;font-size:10px;letter-spacing:1.5px">ARTISTA</div>Aurora Vega</div>
+                <div style="flex:1"><div style="opacity:.45;font-size:10px;letter-spacing:1.5px">AÑO</div>2026</div>
+                <div style="flex:1"><div style="opacity:.45;font-size:10px;letter-spacing:1.5px">CALIDAD</div>FLAC</div></div>
+              <div style="margin-top:22px"><div class="hair"><i style="width:38%"></i></div><div class="times" style="color:rgba(0,0,0,.5);font-size:11px"><span>1:24</span><span>3:40</span></div></div>
+              <div class="row" style="margin-top:14px;gap:24px"><span class="ms f s32">pause</span><span class="ms s26">skip_previous</span><span class="ms s26">skip_next</span><span class="sp"></span><span class="ms s22">favorite</span></div>
+            </div>
+            <div class="sp"></div>
+            <div class="row" style="border-top:1px solid rgba(0,0,0,.15);margin:0 24px;padding:12px 0;justify-content:space-between;font-size:11px;letter-spacing:1.5px;font-weight:500"><span>LETRA</span><span>VISUAL</span><span>COLA</span></div>
+            <div class="gesture dark"><i></i></div>
+          </div>
+        </div>
+        <p class="cap">Columnas de datos y título con serifa.</p>
+      </div>
+      <div class="notes"><h4>Detalles</h4><ul>
+        <li>Play primero, a la izquierda, como el inicio de una línea de texto.</li>
+        <li>Las columnas cambian según lo que haya: calidad, BPM, año.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <div class="pick">
+    <p><b>Para elegir:</b> una variante por estilo (p. ej. «Cinemático B, Expresivo A, Moderno A+C, Mínimo B»). Y una duda: ¿estos cuatro <b>sustituyen</b> a Apple Music, Spotify, iPod y Dezzy Style, o se <b>añaden</b> a la lista?</p>
+  </div>
+</div>
+<script>wave('wA',.38,'#FFC8D8',3.5);wave('wB',.38,'#B0264F',3.5);wave('wC',.49,'#9FE3D0',3.5)</script>
+</body>
+</html>

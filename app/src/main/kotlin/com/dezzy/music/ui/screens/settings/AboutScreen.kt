@@ -72,6 +72,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -84,6 +85,7 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil3.compose.AsyncImage
 import com.dezzy.music.BuildConfig
 import com.dezzy.music.LocalPlayerAwareWindowInsets
 import com.dezzy.music.LocalPlayerConnection
@@ -152,6 +154,7 @@ private val DezzyContributors = listOf(
 )
 
 private const val UrlGitHub = "https://github.com/dezzy-music"
+private const val AvatarLead = "https://github.com/dezzy-music.png"
 private const val UrlInstagram = "https://www.instagram.com/dezzy_9n9_/?utm_source=ig_web_button_share_sheet"
 private const val UrlFacebook = "https://www.facebook.com/share/18nog3EfkG/"
 private const val UrlWebsite = "https://dezzy.space"
@@ -330,7 +333,7 @@ fun AboutScreen(
                     onClick = { uriHandler.openUri(UrlGitHub) },
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Face("JH", fill = Ink, content = Blush)
+                        Face("JH", fill = Ink, content = Blush, avatarUrl = AvatarLead)
                         Spacer(Modifier.size(12.dp))
                         Column(Modifier.weight(1f)) {
                             Text(
@@ -372,7 +375,7 @@ fun AboutScreen(
                     onClick = { uriHandler.openUri(contributor.profileUrl) },
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Face(contributor.name.take(1).uppercase(), fill = Ink, content = Acid)
+                        Face(contributor.name.take(1).uppercase(), fill = Ink, content = Acid, avatarUrl = contributor.avatarUrl)
                         Spacer(Modifier.size(12.dp))
                         Column(Modifier.weight(1f)) {
                             Text(
@@ -608,9 +611,12 @@ private fun Chip(
     }
 }
 
-/** «Cara» cuadrada con iniciales: sin fotos ni ilustraciones generadas. */
+/**
+ * «Cara» cuadrada con la foto de GitHub del creador. Las iniciales quedan debajo: se ven
+ * mientras carga la foto o si no hay conexión.
+ */
 @Composable
-private fun Face(initials: String, fill: Color, content: Color) {
+private fun Face(initials: String, fill: Color, content: Color, avatarUrl: String? = null) {
     Box(
         modifier = Modifier
             .size(48.dp)
@@ -625,6 +631,16 @@ private fun Face(initials: String, fill: Color, content: Color) {
             fontSize = 18.sp,
             color = content,
         )
+        if (avatarUrl != null) {
+            AsyncImage(
+                model = avatarUrl,
+                contentDescription = initials,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(EdgeWidth),
+            )
+        }
     }
 }
 

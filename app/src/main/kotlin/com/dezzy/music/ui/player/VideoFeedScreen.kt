@@ -6,6 +6,7 @@
 
 package com.dezzy.music.ui.player
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -80,6 +81,7 @@ import com.dezzy.music.playback.PlayerConnection
 import com.dezzy.music.ui.menu.AddToPlaylistDialog
 import com.dezzy.music.utils.makeTimeString
 import com.dezzy.music.utils.rememberEnumPreference
+import com.dezzy.music.video.VideoPipState
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
@@ -91,6 +93,10 @@ private val FeedBackground = Color(0xFF0C0C0F)
  * canción actual (radio + búsqueda de videos), con filtros. Al bajar, el video pasa a una
  * ventanita flotante; al llegar al final se cargan más. Tocar un video lo reproduce (radio
  * en modo video) y la lista se recalcula para el nuevo.
+ *
+ * Búsqueda (boceto B, como YouTube): la lupa de arriba convierte la barra en un campo; debajo
+ * salen búsquedas recientes y sugerencias, y al buscar, sólo videos. Mientras tanto el video
+ * sigue sonando en la ventanita flotante.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -122,10 +128,36 @@ internal fun VideoFeedScreen(
                 (videoHeightPx > 0 && listState.firstVisibleItemScrollOffset > videoHeightPx * 0.65f)
         }
     }
-    LaunchedEffect(scrolledPastVideo) {
-        if (!scrolledPastVideo) floatingDismissed = false
+
+    // ── Búsqueda ─────────────────────────────────────────────────────────
+    val searchResults = remember { VideoSearchResults(scope) }
+    var searchOpen by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    val (recentSearches, updateRecentSearches) = rememberVideoRecentSearches()
+    // Resultados sólo mientras el campo coincide con lo buscado; al editar, vuelven las sugerencias.
+    val showSearchResults = searchResults.query != null && searchQuery.trim() == searchResults.query
+    val runSearch: (String) -> Unit = { q ->
+        val text = q.trim()
+        if (text.isNotEmpty()) {
+            searchQuery = text
+            updateRecentSearches(text)
+            searchResults.search(text)
+        }
     }
-    val floatingShown = scrolledPastVideo && !floatingDismissed
+    val closeSearch: () -> Unit = {
+        searchOpen = false
+        searchQuery = ""
+    }
+    BackHandler(enabled = searchOpen) { closeSearch() }
+
+    // ── Pantalla completa (horizontal, como en el modo video) ────────────
+    var fullscreen by remember { mutableStateOf(false) }
+    val inPip by VideoPipState.inPip.collectAsState()
+
+    LaunchedEffect(scrolledPastVideo, searchOpen) {
+        if (!scrolledPastVideo || searchOpen) floatingDismissed = false
+    }
+    val floatingShown = (scrolledPastVideo || searchOpen) && !floatingDismissed && !fullscreen
 
     // Carga más al acercarse al final.
     LaunchedEffect(listState, recommendations) {
@@ -163,30 +195,126 @@ internal fun VideoFeedScreen(
                     .padding(horizontal = 4.dp, vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        painter = painterResource(R.drawable.arrow_back),
-                        contentDescription = "Volver al video",
-                        tint = Color.White,
+                if (searchOpen) {
+                    IconButton(onClick = closeSearch) {
+                        Icon(
+                            painter = painterResource(R.drawable.arrow_back),
+                            contentDescription = "Cerrar búsqueda",
+                            tint = Color.White,
+                        )
+                    }
+                    VideoSearchField(
+                        query = searchQuery,
+                        onQueryChange = { searchQuery = it },
+                        onSearch = runSearch,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 12.dp),
                     )
-                }
-                Text(
-                    text = "Solo videos",
-                    color = Color.White,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f),
-                )
-                com.dezzy.music.ui.component.CastButton(tint = Color.White)
-                IconButton(onClick = onQueueClick) {
-                    Icon(
-                        painter = painterResource(R.drawable.queue_music),
-                        contentDescription = "Cola de reproducción",
-                        tint = Color.White,
+                } else {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            painter = painterResource(R.drawable.arrow_back),
+                            contentDescription = "Volver al video",
+                            tint = Color.White,
+                        )
+                    }
+                    Text(
+                        text = "Solo videos",
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f),
                     )
+                    IconButton(onClick = { searchOpen = true }) {
+                        Icon(
+                            painter = painterResource(R.drawable.search),
+                            contentDescription = "Buscar videos",
+                            tint = Color.White,
+                        )
+                    }
+                    com.dezzy.music.ui.component.DevicesButton(tint = Color.White)
+                    IconButton(onClick = onQueueClick) {
+                        Icon(
+                            painter = painterResource(R.drawable.queue_music),
+                            contentDescription = "Cola de reproducción",
+                            tint = Color.White,
+                        )
+                    }
                 }
             }
 
+            if (searchOpen) {
+                if (showSearchResults) {
+                    val resultsState = rememberLazyListState()
+                    LaunchedEffect(resultsState, searchResults.query) {
+                        snapshotFlow {
+                            val info = resultsState.layoutInfo
+                            val last = info.visibleItemsInfo.lastOrNull()?.index ?: 0
+                            info.totalItemsCount > 0 && last >= info.totalItemsCount - 3
+                        }
+                            .distinctUntilChanged()
+                            .filter { it }
+                            .collect { searchResults.loadMore() }
+                    }
+                    LazyColumn(
+                        state = resultsState,
+                        contentPadding = PaddingValues(bottom = 140.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                    ) {
+                        item(key = "results_label") {
+                            Text(
+                                text = "Resultados para «${searchResults.query.orEmpty()}»",
+                                color = Color.White.copy(alpha = 0.62f),
+                                fontSize = 13.sp,
+                                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 2.dp),
+                            )
+                        }
+                        videoSearchStatus(searchResults)
+                        if (!searchResults.loading) {
+                            items(searchResults.items, key = { "q_" + it.id }, contentType = { "video" }) { item ->
+                                VideoFeedCard(
+                                    item = item,
+                                    onClick = {
+                                        playRelatedVideo(playerConnection, item)
+                                        closeSearch()
+                                        scope.launch { listState.scrollToItem(0) }
+                                    },
+                                    onPlayNext = {
+                                        playerConnection.playNext(item.toMediaItem())
+                                        android.widget.Toast.makeText(context, "Se reproducirá a continuación", android.widget.Toast.LENGTH_SHORT).show()
+                                    },
+                                    onAddToQueue = {
+                                        playerConnection.addToQueue(item.toMediaItem())
+                                        android.widget.Toast.makeText(context, "Añadido a la cola", android.widget.Toast.LENGTH_SHORT).show()
+                                    },
+                                    onSave = { playlistTarget = item },
+                                )
+                            }
+                        }
+                        if (searchResults.loadingMore) {
+                            item(key = "results_more") {
+                                Box(Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator(color = Color.White, strokeWidth = 2.5.dp, modifier = Modifier.size(28.dp))
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    VideoSearchSuggestions(
+                        query = searchQuery,
+                        recent = recentSearches,
+                        onClearRecent = { updateRecentSearches(null) },
+                        onSearch = runSearch,
+                        onFill = { searchQuery = "$it " },
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                    )
+                }
+            } else
             LazyColumn(
                 state = listState,
                 contentPadding = PaddingValues(bottom = 24.dp),
@@ -209,7 +337,7 @@ internal fun VideoFeedScreen(
                         ) {
                             VideoSurface(
                                 player = videoPlayer,
-                                active = !floatingShown,
+                                active = !floatingShown && !(fullscreen && !inPip),
                                 resizeMode = resizeModePref.toPlayerViewMode(),
                                 modifier = Modifier.fillMaxSize(),
                             )
@@ -220,6 +348,14 @@ internal fun VideoFeedScreen(
                                     modifier = Modifier.align(Alignment.Center).size(36.dp),
                                 )
                             }
+                            FloatingWindowButton(
+                                iconRes = R.drawable.fullscreen,
+                                contentDescription = "Pantalla completa",
+                                onClick = { fullscreen = true },
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(8.dp),
+                            )
                         }
                         Row(
                             modifier = Modifier
@@ -385,7 +521,9 @@ internal fun VideoFeedScreen(
                     .shadow(10.dp, RoundedCornerShape(12.dp))
                     .clip(RoundedCornerShape(12.dp))
                     .background(Color.Black)
-                    .clickable { scope.launch { listState.animateScrollToItem(0) } },
+                    .clickable {
+                        if (searchOpen) closeSearch() else scope.launch { listState.animateScrollToItem(0) }
+                    },
             ) {
                 VideoSurface(
                     player = videoPlayer,
@@ -413,6 +551,38 @@ internal fun VideoFeedScreen(
                     )
                 }
             }
+        }
+    }
+
+    if (fullscreen && !inPip) {
+        VideoFullscreenDialog(onDismiss = { fullscreen = false }) {
+            VideoStage(
+                player = videoPlayer,
+                surfaceActive = true,
+                loading = loading,
+                playback = playback,
+                resizeMode = resizeModePref.toPlayerViewMode(),
+                fullscreen = true,
+                title = mediaMetadata?.title,
+                onTogglePlay = { videoPlayer?.let { it.playWhenReady = !it.playWhenReady } },
+                onSeekTo = { ms -> videoPlayer?.seekTo(ms.coerceAtLeast(0L)) },
+                onPrevious = { playerConnection.seekToPrevious() },
+                onNext = { playerConnection.seekToNext() },
+                onCollapse = { fullscreen = false },
+                onToggleFullscreen = { fullscreen = false },
+                menuItems = { close ->
+                    DropdownMenuItem(
+                        text = { Text("Cola de reproducción") },
+                        leadingIcon = { Icon(painterResource(R.drawable.queue_music), null) },
+                        onClick = {
+                            close()
+                            fullscreen = false
+                            onQueueClick()
+                        },
+                    )
+                },
+                modifier = Modifier.fillMaxSize(),
+            )
         }
     }
 
@@ -459,9 +629,10 @@ private fun FloatingWindowButton(
     iconRes: Int,
     contentDescription: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .size(32.dp)
             .clip(CircleShape)
             .background(Color.Black.copy(alpha = 0.55f))

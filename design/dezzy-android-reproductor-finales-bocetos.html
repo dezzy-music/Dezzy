@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reproductores · bocetos finales</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="reproductor-estilos-base.css">
+<style>
+.phones{display:flex;gap:28px;flex-wrap:wrap}
+.devbtn{position:relative}
+.devbtn::after{content:"";position:absolute;inset:-4px;border-radius:999px;border:2px dashed var(--mark)}
+
+/* ── Apple Music ── */
+.am{background:#120A0E}
+.am .bg{position:absolute;inset:-40px;filter:blur(40px) saturate(1.2);opacity:.55}
+.am .dim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.15),rgba(10,4,8,.55) 55%,rgba(10,4,8,.85))}
+.am .hero{position:absolute;left:0;right:0;top:0;height:65%;-webkit-mask-image:linear-gradient(180deg,#000 60%,transparent);mask-image:linear-gradient(180deg,#000 60%,transparent)}
+.am .top{display:flex;align-items:center;justify-content:center;gap:4px;padding-top:12px}
+.seg{display:flex;height:34px;border-radius:17px;padding:3px}
+.seg span{padding:0 14px;display:grid;place-items:center;border-radius:14px;font-size:13px;font-weight:500}
+.am .seg{background:rgba(255,255,255,.16)}.am .seg span{color:var(--on-var)}.am .seg span.on{background:rgba(255,255,255,.9);color:#111}
+.am .ctl{padding:0 24px}
+.am .title{display:flex;align-items:center;gap:10px;position:relative}
+.am .title .tx{flex:1;min-width:0}
+.am .title b{display:block;font-size:24px;font-weight:700;line-height:30px;white-space:nowrap}
+.am .title span{display:block;font-size:16px;color:var(--on-var);margin-top:1px}
+.circ{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.14);display:grid;place-items:center;flex:none}
+.am .seek{margin-top:22px;position:relative}
+.am .seek .track{height:6px;border-radius:3px;background:rgba(255,255,255,.25)}
+.am .seek .track i{border-radius:3px;background:rgba(255,255,255,.85)}
+.am .times{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--on-dim);margin-top:8px}
+.am .trans{display:flex;align-items:center;justify-content:center;gap:40px;margin-top:14px}
+.am .bottom{display:flex;justify-content:space-between;align-items:center;margin:22px 0 10px;padding:0 18px;color:var(--on-var);position:relative}
+.grab{width:40px;height:5px;border-radius:3px;background:rgba(255,255,255,.45);margin:8px auto 0}
+.chip{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:11px;background:rgba(255,255,255,.14);font-size:11px;font-weight:500;color:var(--on)}
+.vol{display:flex;align-items:center;gap:10px;margin-top:22px;color:var(--on-dim)}
+.vol .track{flex:1;height:6px;border-radius:3px}.vol .track i{border-radius:3px;background:rgba(255,255,255,.75)}
+.am .title span.ebadge,.ebadge{display:inline-block;text-align:center;line-height:15px;width:15px;height:15px;border-radius:3px;background:rgba(255,255,255,.55);color:#111;font-size:10px;font-weight:700;vertical-align:3px;margin-left:6px}
+
+/* ── Spotify ── */
+.spt{background:#000;--green:#1DB954}
+.spt .grad{position:absolute;inset:0;background:linear-gradient(180deg,#7A2E4A 0%,#4A1C2E 42%,#1A0A11 70%,#000 86%)}
+.spt .head{display:flex;align-items:center;gap:4px;padding:4px 4px 0}
+.spt .ctx{flex:1;min-width:0;text-align:center;font-size:11px;letter-spacing:.6px;color:var(--on-var);line-height:15px}
+.spt .ctx b{display:block;font-size:14px;letter-spacing:0;font-weight:700;color:var(--on)}
+.spt .art{width:312px;height:312px;margin:22px auto 0;border-radius:12px;box-shadow:0 18px 40px rgba(0,0,0,.5);flex:none}
+.spt .trow{display:flex;align-items:center;gap:8px;padding:22px 16px 0 24px;position:relative}
+.spt .trow .tx{flex:1;min-width:0}
+.spt .trow b{display:block;font-size:24px;font-weight:700;line-height:30px}
+.spt .trow span{display:block;font-size:15px;color:var(--on-var);margin-top:2px}
+.chk{width:26px;height:26px;border-radius:50%;background:var(--green);display:grid;place-items:center;color:#000;flex:none}
+.spt .seek{padding:16px 24px 0;position:relative}
+.spt .ctrls{display:flex;align-items:center;justify-content:space-between;padding:8px 18px 0}
+.spt .ctrls .on{color:var(--green);position:relative}
+.spt .ctrls .on::after{content:"";position:absolute;bottom:-6px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--green)}
+.play{width:64px;height:64px;border-radius:50%;background:#fff;color:#111;display:grid;place-items:center}
+.spt .acts{display:flex;align-items:center;gap:2px;padding:14px 10px 0 16px;position:relative}
+.dev{display:flex;align-items:center;gap:6px;height:32px;padding:0 12px 0 10px;border-radius:16px;font-size:12px;font-weight:500;background:rgba(255,255,255,.12);color:var(--on-var)}
+.dev.on{color:var(--green);background:rgba(29,185,84,.14)}
+.act{width:40px;height:40px;display:grid;place-items:center;color:rgba(255,255,255,.8)}
+.spt .card{border-radius:16px;padding:16px;position:relative}
+.spt .card h5{display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700}
+.spt .canvas{position:absolute;inset:0;background:radial-gradient(ellipse at 30% 30%,rgba(255,200,216,.55),transparent 40%),radial-gradient(ellipse at 75% 55%,rgba(247,200,115,.45),transparent 45%),linear-gradient(170deg,#3A1222,#7A2E4A 40%,#C0507A 70%,#3A1222)}
+.spt .canvas::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.4) 0%,transparent 20%,transparent 42%,rgba(0,0,0,.85) 75%,#000 100%)}
+.spt .canvas .fig{position:absolute;left:96px;top:140px;width:170px;height:260px;border-radius:85px 85px 30px 30px;background:linear-gradient(180deg,rgba(255,220,230,.38),rgba(255,220,230,.08))}
+.pill{height:30px;border-radius:15px;padding:0 12px;display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;background:#fff;color:#111}
+.q-row{display:flex;align-items:center;gap:12px;min-height:52px}
+.q-row .a{width:44px;height:44px;border-radius:6px;flex:none}
+.q-row b{display:block;font-size:15px;font-weight:500}.q-row span{font-size:13px;color:var(--on-var)}
+.dna .n{width:40px;height:40px;border-radius:50%;border:2px solid #5A2238;margin-left:-8px;flex:none;display:inline-block}
+.dna .n:first-child{margin-left:0}
+.sticky{display:flex;align-items:center;gap:12px;height:60px;padding:0 10px 0 16px;background:#4A1C2E;flex:none;z-index:2;position:relative}
+.sticky .tx{flex:1;min-width:0;font-size:14px}
+.sticky b{display:block;font-weight:700}.sticky span{font-size:12px;color:var(--on-var)}
+.mini{width:36px;height:36px;border-radius:6px;flex:none}
+
+/* ── iPod ── */
+.ipod{background:#EAEDED;color:#1B2631}
+.ipod .top{display:flex;align-items:center;padding:4px 8px 0 4px;color:#2C3E50;position:relative}
+.ipod .top .name{font-size:18px;font-weight:700;margin-left:2px}
+.lcd-wrap{margin:16px 24px 0;border-radius:8px;border:1px solid #566573;padding:1px;box-shadow:0 6px 14px rgba(0,0,0,.18);position:relative;flex:none}
+.lcd{border:3px solid #BDC3C7;border-radius:7px;background:radial-gradient(circle at 50% 45%,#C2D9D2,#9FB2AB);overflow:hidden;position:relative;color:#1B2631}
+.lcd::after{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.28),transparent 38%);pointer-events:none}
+.lcd-bar{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;font-size:11px;font-weight:700;border-bottom:1px solid rgba(123,153,144,.6)}
+.batt{display:inline-flex;align-items:center;gap:3px}
+.batt i{display:inline-block;width:18px;height:9px;border:1px solid #000;border-radius:1px;padding:1px}
+.batt i::before{content:"";display:block;height:100%;width:70%;background:#1B2631}
+.lcd-body{display:flex;gap:14px;padding:14px 14px 6px;align-items:center}
+.lcd-cover{width:112px;height:112px;border-radius:3px;border:1px solid #7B9990;flex:none}
+.lcd-tx{flex:1;min-width:0}
+.lcd-tx b{display:block;font-size:15px;line-height:19px;font-weight:700}
+.lcd-tx span{display:block;font-size:13px;color:#2C3E50;margin-top:4px}
+.lbar{height:8px;border-radius:2px;border:1px solid #1B2631;background:rgba(255,255,255,.25);position:relative}
+.lbar i{position:absolute;left:0;top:0;bottom:0;background:#1B2631}
+.ltimes{display:flex;justify-content:space-between;font-size:11.5px;font-weight:600;color:#2C3E50;margin-top:4px}
+.wheel{width:240px;height:240px;border-radius:50%;background:#F2F4F4;border:1px solid #BDC3C7;margin:0 auto;position:relative;box-shadow:0 8px 18px rgba(0,0,0,.12);color:#5D6D7E;flex:none}
+.wheel .c{position:absolute;left:50%;top:50%;width:80px;height:80px;margin:-40px 0 0 -40px;border-radius:50%;background:#EAEDED;border:1px solid #BDC3C7}
+.wheel .m{position:absolute;left:0;right:0;top:16px;text-align:center;font-size:11px;font-weight:700;letter-spacing:.5px}
+.wheel .pp{position:absolute;left:0;right:0;bottom:16px;display:flex;justify-content:center;gap:2px}
+.wheel .l{position:absolute;left:14px;top:50%;margin-top:-14px}
+.wheel .r{position:absolute;right:14px;top:50%;margin-top:-14px}
+.menu-row{display:flex;align-items:center;justify-content:space-between;padding:4px 12px;font-size:13px;font-weight:600}
+.menu-row.sel{background:linear-gradient(180deg,#3A5A78,#1F3A55);color:#E9F2F0}
+
+/* ── Dezzy Style ── */
+.vin{background:linear-gradient(180deg,#F3F0E8 0%,#E6E1D4 100%);color:#141414;--subtle:#8C8A82;--btn:#F8F6EF}
+.vin .top{display:flex;align-items:center;padding:6px 12px;gap:8px;position:relative}
+.rbtn{width:46px;height:46px;border-radius:50%;background:var(--btn);display:grid;place-items:center;flex:none;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.vin .seg{background:rgba(0,0,0,.07)}.vin .seg span{color:#5a584f}.vin .seg span.on{background:#141414;color:#fff}
+.deck{flex:1;position:relative;min-height:0}
+.platter{position:absolute;left:-30px;top:50%;width:354px;height:354px;margin-top:-177px;border-radius:50%;background:radial-gradient(circle,#3a3a3e 0 60%,#2b2b2f 61%,#232326 100%);box-shadow:0 18px 36px rgba(0,0,0,.25)}
+.strobe{position:absolute;left:-30px;top:50%;width:354px;height:354px;margin-top:-177px;border-radius:50%;background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.55) 0 1.2deg,transparent 1.2deg 6deg);-webkit-mask:radial-gradient(circle,transparent 0 172px,#000 172px 177px);mask:radial-gradient(circle,transparent 0 172px,#000 172px 177px)}
+.disc{position:absolute;left:-18px;top:50%;width:330px;height:330px;margin-top:-165px;border-radius:50%;
+  background:radial-gradient(circle,transparent 0 30%,rgba(255,255,255,.05) 30.5%,transparent 31%),repeating-radial-gradient(circle,#17171A 0 2px,#202024 2px 3px);
+  box-shadow:0 4px 10px rgba(0,0,0,.35),inset 0 0 0 2px #0c0c0e}
+.disc::before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 20deg,transparent 0 40deg,rgba(255,255,255,.10) 55deg,transparent 70deg 220deg,rgba(255,255,255,.07) 235deg,transparent 250deg)}
+.label{position:absolute;left:50%;top:50%;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;box-shadow:0 0 0 4px #fff}
+.label::after{content:"";position:absolute;left:50%;top:50%;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:#EFECE3}
+.arm{position:absolute;right:26px;top:22px;width:40px;height:250px;transform-origin:20px 20px;transform:rotate(18deg);filter:drop-shadow(8px 10px 6px rgba(0,0,0,.28))}
+.arm .piv{position:absolute;left:4px;top:4px;width:32px;height:32px;border-radius:50%;background:radial-gradient(circle,#D6D9DC,#8E9398);box-shadow:0 2px 4px rgba(0,0,0,.25)}
+.arm .rod{position:absolute;left:17px;top:20px;width:6px;height:200px;border-radius:3px;background:linear-gradient(90deg,#B9BEC2,#ECEFF1,#9EA3A8)}
+.arm .head{position:absolute;left:8px;top:212px;width:24px;height:34px;border-radius:4px;background:#2A2A2D}
+.vin .info{padding:0 28px}
+.vin .info b{display:block;font:700 28px/36px Roboto}
+.vin .info span{display:block;font-size:16px;color:var(--subtle);margin-top:4px}
+.vt{display:flex;justify-content:space-between;font-size:12px;color:var(--subtle);padding:8px 28px 0;position:relative}
+.pills{display:flex;align-items:center;padding:14px 32px 0;gap:18px}
+.pb{height:44px;border-radius:22px;background:var(--btn);display:grid;place-items:center;font-size:13px;font-weight:600;letter-spacing:2px;box-shadow:0 3px 0 rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.1)}
+.brow{display:flex;justify-content:space-between;padding:14px 24px 8px;position:relative}
+.brow .rbtn{width:44px;height:44px}
+.tip{position:absolute;background:#141414;color:#fff;font-size:12px;font-weight:600;border-radius:8px;padding:3px 8px;white-space:nowrap}
+
+/* ── Hoja de dispositivos ── */
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:3}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#201A1C;border-radius:28px 28px 0 0;z-index:4;padding:0 0 24px;color:#F3E9EA}
+.handle{width:32px;height:4px;border-radius:2px;background:rgba(255,255,255,.4);margin:10px auto 6px}
+.sh-head{display:flex;align-items:center;padding:4px 12px 0 24px}
+.sh-head b{flex:1;font-size:20px;font-weight:500}
+.scan{display:flex;align-items:center;gap:8px;padding:2px 24px 10px;font-size:13px;color:rgba(255,255,255,.65)}
+.scan i{width:8px;height:8px;border-radius:50%;background:#5EE0B4;box-shadow:0 0 0 4px rgba(94,224,180,.2)}
+.nowon{margin:0 16px 8px;border-radius:24px;background:#3A2B30;padding:14px 16px}
+.nowon small{font-size:11px;font-weight:700;letter-spacing:1px;color:#FFB1C1;display:flex;align-items:center;gap:6px}
+.sec{display:flex;align-items:center;gap:8px;padding:12px 24px 4px;font-size:13px;font-weight:500;color:rgba(255,255,255,.65)}
+.drow{display:flex;align-items:center;gap:14px;min-height:60px;padding:0 24px;position:relative}
+.drow .ic{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.08);display:grid;place-items:center;flex:none}
+.drow .tx{flex:1;min-width:0}
+.drow b{display:block;font-size:15px;font-weight:500}
+.drow span{font-size:12.5px;color:rgba(255,255,255,.6)}
+.drow.live .ic{background:#FFB1C1;color:#3a0d18}
+.drow.live b{color:#FFB1C1}
+.bdg{font-size:10px;font-weight:700;letter-spacing:.5px;border-radius:6px;padding:2px 6px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.8)}
+.chips{display:flex;gap:8px;padding:12px 16px 8px;overflow:hidden;margin-top:-10px}
+.chips>span{height:32px;border-radius:8px;padding:0 12px;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;border:1px solid rgba(255,255,255,.3);white-space:nowrap}
+.chips>span.on{background:#FFB1C1;color:#3a0d18;border-color:#FFB1C1}
+.lt{margin:10px 16px 0;border-radius:20px;background:rgba(255,255,255,.06);display:flex;align-items:center;gap:12px;padding:12px 16px;font-size:15px;font-weight:500}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="styles">
+  <a href="dezzy-android-reproductor-applemusic-bocetos.html">Apple Music</a>
+  <a href="dezzy-android-reproductor-spotify-bocetos.html">Spotify</a>
+  <a href="dezzy-android-reproductor-ipod-bocetos.html">iPod</a>
+  <a href="dezzy-android-reproductor-dezzystyle-bocetos.html">Dezzy Style</a>
+  <a class="on" href="dezzy-android-reproductor-finales-bocetos.html">Finales</a>
+</nav>
+<header class="top">
+  <h1>Reproductores · bocetos finales</h1>
+  <p class="lead">Las combinaciones que elegiste, juntas en un solo diseño por estilo, más el botón de dispositivos que llevarán los cuatro. Los círculos naranjas numerados marcan lo que se suma o cambia respecto a los bocetos que elegiste, y el borde discontinuo señala el botón de dispositivos.</p>
+  <div class="today">
+    <h4>Dispositivos y Chromecast: lo que encontré en el código</h4>
+    <ul>
+      <li>La hoja «Conectar a un dispositivo» (<code>ui/component/ConnectDeviceBottomSheet.kt</code>) <b>ya busca Chromecast</b> (<code>rememberCastRoutes()</code>) y los muestra dentro de «En tu red» con la etiqueta CAST, junto a tus otros Dezzy, Bluetooth y Escuchar juntos.</li>
+      <li>Aparte, hay un botón suelto de Chromecast (<code>CastButton</code>) en Apple Music (un tercer círculo junto a ⋮ y ♥), en Spotify (en la cabecera) y en iPod (en la barra superior). Dezzy Style no tiene ninguno.</li>
+      <li><b>Plan:</b> quitar el <code>CastButton</code> de los 4 estilos y poner en cada uno un único botón de dispositivos que abra la hoja. Al final de la página hay 3 opciones (A/B/C) para mostrar los Chromecast dentro de la hoja.</li>
+    </ul>
+  </div>
+</header>
+
+<!-- ───────────── APPLE MUSIC ───────────── -->
+<section class="sketch">
+  <div class="sk-head"><span class="sk-tag">APPLE MUSIC</span><h3>Boceto A + botón de dispositivos</h3>
+    <p>Lo mismo que elegiste en A; el icono de Cast de la fila inferior pasa a ser el botón de dispositivos y desaparece el círculo de Cast junto al título.</p></div>
+  <div class="sk-body">
+    <div>
+      <div class="phone am">
+        <div class="bg art-a"></div><div class="hero art-a"></div><div class="dim"></div>
+        <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+        <div class="content"><div class="layer">
+          <div class="grab"></div>
+          <div class="top"><div class="icon-btn"><span class="ms">share</span></div><div class="seg"><span class="on">Canción</span><span>Video</span></div><div class="icon-btn"><span class="ms">auto_awesome</span></div></div>
+          <div class="sp"></div>
+          <div class="ctl">
+            <div class="title"><div class="tx"><b class="ell">Luz de Neón<span class="ebadge">E</span></b><span class="ell">Marina Vega</span></div><div class="circ"><span class="ms s20">favorite</span></div><div class="circ"><span class="ms s20">more_horiz</span></div><span class="mk" style="right:-10px;top:-12px">1</span></div>
+            <div class="seek"><div class="track"><i style="width:38%"></i></div></div>
+            <div class="times"><span>1:24</span><span class="chip"><span class="ms s14">graphic_eq</span>Lossless</span><span>−2:17</span></div>
+            <div class="trans"><span class="ms f s44">fast_rewind</span><span class="ms f s56">pause</span><span class="ms f s44">fast_forward</span></div>
+            <div class="vol"><span class="ms s18">volume_mute</span><div class="track"><i style="width:62%"></i></div><span class="ms s18">volume_up</span></div>
+            <div class="bottom"><span class="ms s26">chat_bubble</span><span class="devbtn"><span class="ms s26">devices</span></span><span class="ms s26">list</span><span class="mk" style="left:186px;top:-16px">2</span></div>
+          </div>
+        </div></div>
+        <div class="gesture"><i></i></div>
+      </div>
+      <p class="cap">Apple Music final.</p>
+    </div>
+    <div class="notes">
+      <h4>Respecto al boceto A</h4>
+      <ol class="chg">
+        <li><b>Fuera el círculo de Cast</b> que hoy está junto a ⋮ y ♥: se quedan sólo ♥ y ⋯.</li>
+        <li><b>Botón de dispositivos</b> (icono <code>devices</code>) en el centro de la fila inferior: abre «Conectar a un dispositivo». Si suena en otro aparato, el icono se pinta del color de acento y cambia a <code>cast_connected</code> / altavoz.</li>
+      </ol>
+      <h4>Se mantiene de A</h4>
+      <ul><li>Asa de cierre, «E» de explícito, barra que crece al arrastrar y tiempo restante, chip de calidad, volumen en línea y temporizador en el menú ⋯.</li></ul>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────── SPOTIFY ───────────── -->
+<section class="sketch">
+  <div class="sk-head"><span class="sk-tag">SPOTIFY</span><h3>A + B + C con fondo negro puro al bajar</h3>
+    <p>Tres estados de la misma pantalla: sin canvas, con canvas y al hacer scroll. El degradado arranca con el color de la carátula y termina en <b>negro puro</b>; todo lo que rodea a las tarjetas es negro y sólo las tarjetas llevan color.</p></div>
+  <div class="sk-body" style="flex-direction:column">
+    <div class="phones">
+      <div>
+        <div class="phone spt">
+          <div class="grad"></div>
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content"><div class="layer">
+            <div class="head" style="position:relative"><div class="icon-btn"><span class="ms s28">expand_more</span></div><div class="ctx">PLAYLIST<b class="ell">Mix diario 2</b></div><div class="icon-btn"><span class="ms s22">auto_awesome</span></div><div class="icon-btn"><span class="ms">more_vert</span></div><span class="mk" style="right:96px;top:2px">1</span></div>
+            <div class="art art-a"></div>
+            <div class="trow"><div class="tx"><b class="ell">Luz de Neón</b><span>Marina Vega</span></div><div class="icon-btn" style="width:40px"><span class="ms s26">add_circle</span></div><div class="chk"><span class="ms s16">check</span></div></div>
+            <div style="padding:8px 24px 0;font-size:14px;font-weight:600;opacity:.9" class="ell">♪ y la ciudad se apaga sin ti</div>
+            <div class="seek"><div class="track thumb"><i style="width:38%"></i></div><div class="times" style="font-size:11px"><span>1:24</span><span>3:41</span></div></div>
+            <div class="ctrls"><span class="ms s26 on">shuffle</span><span class="ms f s36">skip_previous</span><span class="play"><span class="ms f s32">pause</span></span><span class="ms f s36">skip_next</span><span class="ms s26">repeat</span></div>
+            <div class="acts"><span class="dev devbtn" style="border-radius:16px"><span class="ms s18">devices</span>Este teléfono</span><div class="sp"></div><span class="act"><span class="ms s20">share</span></span><span class="act"><span class="ms s22">queue_music</span></span></div>
+            <div style="position:absolute;left:0;right:0;bottom:0;height:40px;display:flex;align-items:center;justify-content:center"><span class="mk" style="position:static">2</span><span style="font-size:11px;color:rgba(255,255,255,.5);margin-left:6px">aquí el degradado ya es #000</span></div>
+          </div></div>
+          <div class="gesture"><i></i></div>
+        </div>
+        <p class="cap">1 · Sin canvas: A completo.</p>
+      </div>
+      <div>
+        <div class="phone spt">
+          <div class="canvas"><div class="fig"></div></div>
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content"><div class="layer">
+            <div class="head"><div class="icon-btn"><span class="ms s28">expand_more</span></div><div class="ctx">PLAYLIST<b class="ell">Mix diario 2</b></div><div class="icon-btn"><span class="ms s22">auto_awesome</span></div><div class="icon-btn"><span class="ms">more_vert</span></div></div>
+            <div class="sp"></div>
+            <div class="trow"><div class="art-a" style="width:48px;height:48px;border-radius:6px;flex:none"></div><div class="tx"><b class="ell" style="font-size:22px">Luz de Neón</b><span>Marina Vega</span></div><div class="icon-btn" style="width:40px"><span class="ms s26">add_circle</span></div><div class="chk"><span class="ms s16">check</span></div></div>
+            <div class="seek" style="padding-top:18px"><div class="track" style="height:6px;border-radius:3px"><i style="width:38%;border-radius:3px"></i></div><div class="times" style="font-size:11px"><span>1:24</span><span>3:41</span></div></div>
+            <div class="ctrls"><span class="ms s26 on">shuffle</span><span class="ms f s36">skip_previous</span><span class="play"><span class="ms f s32">pause</span></span><span class="ms f s36">skip_next</span><span class="ms s26">repeat</span></div>
+            <div class="acts"><span class="dev on devbtn"><span class="ms s18">cast_connected</span>Salón</span><div class="sp"></div><span class="act"><span class="ms s22">volume_off</span></span><span class="act"><span class="ms s20">share</span></span><span class="act"><span class="ms s22">queue_music</span></span><span class="mk" style="left:12px;top:2px">3</span></div>
+            <div style="margin:16px 12px 0;height:60px;border-radius:16px 16px 0 0;background:#5A2238;padding:14px 16px;flex:none"><div class="row" style="font-weight:700;font-size:16px">Letras<div class="sp"></div><span class="ms s20">open_in_full</span></div></div>
+          </div></div>
+        </div>
+        <p class="cap">2 · Con canvas: B (mini carátula, barra de 6 dp, silenciar canvas, tarjeta que asoma).</p>
+      </div>
+      <div>
+        <div class="phone spt">
+          <div class="statusbar" style="background:#4A1C2E"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+          <div class="sticky"><div class="mini art-a"></div><div class="tx"><b class="ell">Luz de Neón</b><span>Marina Vega</span></div><div class="chk" style="width:22px;height:22px"><span class="ms s14">check</span></div><span class="ms f s28" style="margin-left:6px">pause_circle</span><i style="position:absolute;left:0;bottom:0;height:2px;width:38%;background:#fff"></i></div>
+          <div class="content" style="background:#000"><div class="layer" style="padding:12px 12px 0;gap:12px">
+            <div class="card" style="background:#2A1820"><h5>Siguiente en la cola<div class="sp"></div><span style="font-size:13px;font-weight:500;color:var(--on-var)">Abrir cola</span></h5>
+              <div class="q-row" style="margin-top:6px"><div class="a art-b"></div><div style="flex:1;min-width:0"><b class="ell">Mar de Fondo</b><span>Los Ríos</span></div><span class="ms">drag_handle</span></div></div>
+            <div class="card" style="background:#E2879F;color:#2a0b17"><h5>Letras<div class="sp"></div><span class="ms s18">share</span></h5>
+              <div style="font:700 20px/1.35 Roboto;margin-top:10px">y la ciudad se apaga sin ti<br><span style="color:rgba(0,0,0,.45)">luces de neón sobre el asfalto</span></div>
+              <div style="margin-top:12px"><span class="pill" style="background:#2a0b17;color:#fff">Mostrar la letra</span></div></div>
+            <div class="card" style="background:#5A2238"><h5><span class="ms s20">auto_awesome</span>Créditos y SongDNA</h5>
+              <div class="row" style="margin-top:12px;gap:12px"><div class="dna"><span class="n art-a"></span><span class="n art-d"></span><span class="n art-c"></span></div><div style="flex:1;font-size:13px;color:var(--on-var)">Marina Vega, J. Ortiz y 3 más</div><span class="pill">Explorar</span></div></div>
+            <div class="card" style="background:#3A2430;height:140px"><h5>Acerca del artista</h5></div>
+          </div>
+          <span class="mk" style="left:2px;top:150px">4</span><span class="mk" style="right:2px;top:330px">4</span></div>
+          <div class="gesture" style="background:#000"><i></i></div>
+        </div>
+        <p class="cap">3 · Al bajar: C, con negro puro alrededor de las tarjetas.</p>
+      </div>
+    </div>
+    <div class="notes" style="max-width:980px">
+      <h4>Qué se suma a la combinación A + B + C</h4>
+      <ol class="chg">
+        <li><b>Fuera el botón de Cast</b> de la cabecera: queda ⌄ · origen · visualizador · ⋮.</li>
+        <li><b>Degradado que acaba en negro puro</b> (<code>#000</code>): color de la carátula arriba → se oscurece → negro antes de que empiecen las tarjetas. El tono final ya no sale de la paleta (hoy <code>targetBgBottomColor</code>).</li>
+        <li><b>Botón de dispositivos</b> = la pastilla de abajo a la izquierda, con icono <code>devices</code> (hoy <code>speaker</code>). Abre la hoja. En verde y con el nombre cuando suena en otro aparato (Chromecast, PC, Escuchar juntos).</li>
+        <li><b>Negro alrededor de las tarjetas</b>: márgenes, huecos entre tarjetas y fondo del scroll en <code>#000</code>. Las tarjetas siguen en color (Letras en el tono vivo, el resto en tonos de la carátula). La cabecera fija mantiene el color de la carátula.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────── iPOD ───────────── -->
+<section class="sketch">
+  <div class="sk-head"><span class="sk-tag">iPOD</span><h3>A + B: pantalla legible y menú en la LCD</h3>
+    <p>La pantalla «Reproduciendo» es la de A. MENU abre la lista de B dentro de la LCD; la rueda se gira para moverse por el menú y, en la pantalla de la canción, para el volumen.</p></div>
+  <div class="sk-body" style="flex-direction:column">
+    <div class="phones">
+      <div>
+        <div class="phone ipod">
+          <div class="statusbar dark"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content"><div class="layer" style="padding:0 0 16px">
+            <div class="top"><span class="ms s32">expand_more</span><span class="name">iPod Classic</span><div class="sp"></div><span class="devbtn" style="display:grid;place-items:center;width:36px;height:36px"><span class="ms">devices</span></span>&nbsp;<span class="mk" style="right:46px;top:8px">1</span></div>
+            <div class="lcd-wrap"><div class="lcd">
+              <div class="lcd-bar"><span class="ms f" style="font-size:12px">play_arrow</span><span>Reproduciendo</span><span>3 de 12</span></div>
+              <div class="lcd-body"><div class="lcd-cover art-c"></div><div class="lcd-tx"><b>Verano Eléctrico</b><span>Club Tropical</span><span style="font-size:12px;opacity:.8;margin-top:2px">Noches de Julio</span></div></div>
+              <div style="padding:6px 14px 12px"><div class="lbar"><i style="width:40%"></i></div><div class="ltimes"><span>1:31</span><span>−2:17</span></div></div>
+            </div></div>
+            <div class="sp"></div>
+            <div class="wheel"><span class="m">MENU</span><span class="ms f s28 l">skip_previous</span><span class="ms f s28 r">skip_next</span><span class="pp"><span class="ms f s14">play_arrow</span><span class="ms f s14">pause</span></span><div class="c"></div></div>
+            <div class="sp" style="flex:1.2"></div>
+          </div></div>
+          <div class="gesture dark"><i></i></div>
+        </div>
+        <p class="cap">Pantalla «Reproduciendo» (A).</p>
+      </div>
+      <div>
+        <div class="phone ipod">
+          <div class="statusbar dark"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+          <div class="content"><div class="layer" style="padding:0 0 16px">
+            <div class="top"><span class="ms s32">expand_more</span><span class="name">iPod Classic</span><div class="sp"></div><span class="devbtn" style="display:grid;place-items:center;width:36px;height:36px"><span class="ms">devices</span></span>&nbsp;</div>
+            <div class="lcd-wrap"><div class="lcd">
+              <div class="lcd-bar"><span class="ms f" style="font-size:12px">play_arrow</span><span>Dezzy</span><span class="batt">82%<i></i></span></div>
+              <div style="padding:4px 0 8px;position:relative">
+                <div class="menu-row sel"><span>Letras</span><span class="ms s18">chevron_right</span></div>
+                <div class="menu-row"><span>Cola</span><span class="ms s18">chevron_right</span></div>
+                <div class="menu-row"><span>Dispositivos</span><span class="ms s18">chevron_right</span></div>
+                <div class="menu-row"><span>Video</span><span class="ms s18">chevron_right</span></div>
+                <div class="menu-row"><span>Visualizador</span><span class="ms s18">chevron_right</span></div>
+                <div class="menu-row"><span>Compartir</span><span class="ms s18">chevron_right</span></div>
+                <div class="menu-row"><span>Más opciones…</span><span class="ms s18">chevron_right</span></div>
+                <div class="menu-row"><span>Reproduciendo</span><span class="ms s18">chevron_right</span></div>
+                <span class="mk" style="right:40px;top:62px">2</span><span class="mk" style="right:40px;top:170px">3</span>
+              </div>
+            </div></div>
+            <div class="sp"></div>
+            <div class="wheel"><span class="m">MENU</span><span class="ms f s28 l">skip_previous</span><span class="ms f s28 r">skip_next</span><span class="pp"><span class="ms f s14">play_arrow</span><span class="ms f s14">pause</span></span><div class="c"></div>
+              <svg width="240" height="240" style="position:absolute;inset:0" viewBox="0 0 240 240"><path d="M 196 72 A 92 92 0 0 1 206 150" fill="none" stroke="#F6A04D" stroke-width="3" stroke-dasharray="4 5"/></svg></div>
+            <div class="sp" style="flex:1.2"></div>
+          </div></div>
+          <div class="gesture dark"><i></i></div>
+        </div>
+        <p class="cap">MENU abierto (B), con «Dispositivos» y «Más opciones…».</p>
+      </div>
+    </div>
+    <div class="notes" style="max-width:980px">
+      <h4>Qué se suma a la combinación A + B</h4>
+      <ol class="chg">
+        <li><b>Barra superior</b>: ⌄ · nombre · <b>botón de dispositivos</b> (sustituye al botón de Cast de hoy). Desaparecen letras y ⋯ de A, porque ahora viven en el menú de la LCD.</li>
+        <li><b>«Dispositivos» en el menú</b> de la LCD: abre la misma hoja, para quien prefiera ir con la rueda.</li>
+        <li><b>«Más opciones…»</b> abre la hoja de opciones de la canción de siempre (la que hoy abre MENU), para no perder nada.</li>
+      </ol>
+      <h4>Se mantiene</h4>
+      <ul><li>De A: texto de 15/13 sp, álbum, «3 de 12», barra a lo ancho y tiempo restante. De B: menú con selección en azul, giro de la rueda con vibración (menú / volumen), botón central para elegir y play/pausa en la pantalla de la canción.</li></ul>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────── DEZZY STYLE ───────────── -->
+<section class="sketch">
+  <div class="sk-head"><span class="sk-tag">DEZZY STYLE</span><h3>A + C: el brazo se explica y acabados de plato</h3>
+    <p>Arco de progreso, burbuja de tiempo y pista de uso (A) sobre el plato estroboscópico con sombra del brazo, piloto y botones físicos (C).</p></div>
+  <div class="sk-body">
+    <div>
+      <div class="phone vin">
+        <div class="statusbar dark"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+        <div class="content"><div class="layer">
+          <div class="top"><div class="rbtn"><span class="ms">expand_more</span></div><div class="sp"></div><div class="seg"><span class="on">Canción</span><span>Video</span></div><div class="sp"></div><div class="rbtn"><span class="ms">list</span></div><div class="rbtn"><span class="ms">settings</span></div></div>
+          <div class="deck">
+            <div class="platter"></div><div class="strobe"></div>
+            <div class="disc"><div class="label art-d"></div>
+              <svg width="330" height="330" viewBox="0 0 330 330" style="position:absolute;inset:0;transform:rotate(-90deg)"><circle cx="165" cy="165" r="158" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="3"/><circle cx="165" cy="165" r="158" fill="none" stroke="#F2B66B" stroke-width="3" stroke-linecap="round" stroke-dasharray="356 993"/></svg></div>
+            <div class="arm"><div class="rod"></div><div class="head"></div><div class="piv"></div></div>
+            <div class="tip" style="right:6px;top:268px">1:12 / 3:20</div>
+            <div style="position:absolute;left:20px;bottom:8px;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:1px;color:#5a584f"><i style="width:8px;height:8px;border-radius:50%;background:#F2B66B;box-shadow:0 0 8px #F2B66B"></i>33⅓</div>
+            <span class="mk" style="left:78px;bottom:6px">1</span>
+          </div>
+          <div class="info"><b class="ell">Satélite</b><span class="ell">Nora Azul</span></div>
+          <div class="vt"><span>1:12</span><span style="font-size:11.5px;color:#5a584f"><span class="ms s14" style="vertical-align:-2px">swipe_vertical</span> Arrastra el brazo para avanzar</span><span>3:20</span></div>
+          <div class="pills"><div class="pb" style="width:120px;display:flex;gap:6px;justify-content:center"><span class="ms f s20">pause</span>PAUSE</div><div class="sp"></div><div class="pb" style="width:88px"><span class="ms f s20">skip_previous</span></div><div class="pb" style="width:88px"><span class="ms f s20">skip_next</span></div></div>
+          <div class="brow"><div class="rbtn"><span class="ms f" style="color:#C2410C">favorite</span></div><div class="rbtn"><span class="ms">auto_awesome</span></div><div class="rbtn devbtn"><span class="ms">devices</span></div><div class="rbtn"><span class="ms">share</span></div><div class="rbtn"><span class="ms">lyrics</span></div><span class="mk" style="left:150px;top:2px">2</span></div>
+        </div></div>
+        <div class="gesture dark"><i></i></div>
+      </div>
+      <p class="cap">Dezzy Style final (tema crema).</p>
+    </div>
+    <div class="notes">
+      <h4>Qué se suma a la combinación A + C</h4>
+      <ol class="chg">
+        <li><b>Piloto a la izquierda</b>, bajo el plato: en C estaba a la derecha y chocaba con la burbuja de tiempo de A.</li>
+        <li><b>Botón de dispositivos</b> en el centro de la fila inferior, que pasa de 4 a 5 botones de 44 dp: me gusta · visualizador · dispositivos · compartir · letras. Hoy este estilo no tiene ninguno.</li>
+      </ol>
+      <h4>Se mantiene</h4>
+      <ul><li>De A: arco de progreso, burbuja «1:12 / 3:20» al arrastrar, pista de uso las 3 primeras veces, PAUSE con icono y ♥ relleno. De C: plato con puntos estroboscópicos, sombra del brazo, botones con canto y fondo en degradado leve del tema.</li></ul>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────── HOJA DE DISPOSITIVOS ───────────── -->
+<section class="sketch">
+  <div class="sk-head"><span class="sk-tag">DISPOSITIVOS</span><h3>Chromecast dentro de «Conectar a un dispositivo»: A / B / C</h3>
+    <p>La hoja que abrirán los 4 botones. La estructura de hoy se mantiene (Escuchando en · En tu red · Bluetooth y otras salidas · Escuchar juntos); cambia cómo se ven los Chromecast. Elige una.</p></div>
+  <div class="sk-body" style="flex-direction:column">
+    <div class="phones">
+      <!-- A -->
+      <div>
+        <div class="phone" style="background:#120A0E">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+          <div class="scrim"></div>
+          <div class="sheet">
+            <div class="handle"></div>
+            <div class="sh-head"><b>Conectar a un dispositivo</b><div class="icon-btn"><span class="ms">cached</span></div></div>
+            <div class="scan"><i></i>Buscando en tu red…</div>
+            <div class="nowon"><small><span class="ms s14">graphic_eq</span>ESCUCHANDO EN</small><div class="row" style="gap:12px;margin-top:8px"><span class="ms s28">smartphone</span><div><b style="font-size:16px">Este teléfono</b><div style="font-size:12.5px;opacity:.7">Luz de Neón · Marina Vega</div></div></div></div>
+            <div class="sec"><span class="ms s18">wifi</span>En tu red</div>
+            <div class="drow"><div class="ic"><span class="ms s22">desktop_windows</span></div><div class="tx"><b>PC del estudio</b><span>Dezzy Desktop</span></div></div>
+            <div class="drow"><div class="ic"><span class="ms s22">tv</span></div><div class="tx"><b>Tele del salón</b><span>Chromecast con Google TV</span></div><span class="bdg">CAST</span><span class="mk" style="left:10px;top:4px">1</span></div>
+            <div class="drow"><div class="ic"><span class="ms s22">speaker</span></div><div class="tx"><b>Altavoz cocina</b><span>Google Nest Mini</span></div><span class="bdg">CAST</span></div>
+            <div class="sec"><span class="ms s18">bluetooth</span>Bluetooth y otras salidas</div>
+            <div class="drow"><div class="ic"><span class="ms s22">headphones</span></div><div class="tx"><b>Auriculares</b><span>Vinculado</span></div></div>
+            <div class="lt"><span class="ms">group</span>Escuchar juntos<div class="sp"></div><span class="ms">navigate_next</span></div>
+          </div>
+        </div>
+        <p class="cap"><b>A · Mezclados en «En tu red»</b> (como hoy), con icono por tipo.</p>
+      </div>
+      <!-- B -->
+      <div>
+        <div class="phone" style="background:#120A0E">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+          <div class="scrim"></div>
+          <div class="sheet">
+            <div class="handle"></div>
+            <div class="sh-head"><b>Conectar a un dispositivo</b><div class="icon-btn"><span class="ms">cached</span></div></div>
+            <div class="scan"><i></i>Buscando en tu red…</div>
+            <div class="nowon"><small><span class="ms s14">graphic_eq</span>ESCUCHANDO EN</small><div class="row" style="gap:12px;margin-top:8px"><span class="ms s28">smartphone</span><div><b style="font-size:16px">Este teléfono</b><div style="font-size:12.5px;opacity:.7">Luz de Neón · Marina Vega</div></div></div></div>
+            <div class="sec"><span class="ms s18">wifi</span>Tus Dezzy</div>
+            <div class="drow"><div class="ic"><span class="ms s22">desktop_windows</span></div><div class="tx"><b>PC del estudio</b><span>Dezzy Desktop</span></div></div>
+            <div class="sec" style="position:relative"><span class="ms s18">cast</span>Chromecast y TV<span class="bdg" style="margin-left:4px">BETA</span><span class="mk" style="left:200px;top:10px">1</span></div>
+            <div class="drow live"><div class="ic"><span class="ms s22">cast_connected</span></div><div class="tx"><b>Tele del salón</b><span>Transmitiendo · toca para detener</span></div></div>
+            <div class="drow"><div class="ic"><span class="ms s22">speaker</span></div><div class="tx"><b>Altavoz cocina</b><span>Google Nest Mini</span></div></div>
+            <div class="sec"><span class="ms s18">bluetooth</span>Bluetooth y otras salidas</div>
+            <div class="drow"><div class="ic"><span class="ms s22">headphones</span></div><div class="tx"><b>Auriculares</b><span>Vinculado</span></div></div>
+          </div>
+        </div>
+        <p class="cap"><b>B · Sección propia «Chromecast y TV»</b> entre tus Dezzy y Bluetooth.</p>
+      </div>
+      <!-- C -->
+      <div>
+        <div class="phone" style="background:#120A0E">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s16">signal_cellular_alt</span><span class="ms s16">battery_full</span></span></div>
+          <div class="scrim"></div>
+          <div class="sheet">
+            <div class="handle"></div>
+            <div class="sh-head"><b>Conectar a un dispositivo</b><div class="icon-btn"><span class="ms">cached</span></div></div>
+            <div class="scan"><i></i>Buscando en tu red…</div>
+            <div class="chips" style="position:relative"><span class="on">Todos</span><span><span class="ms s16">cast</span>Chromecast</span><span><span class="ms s16">desktop_windows</span>Dezzy</span><span><span class="ms s16">bluetooth</span>BT</span><span class="mk" style="left:96px;top:0">1</span></div>
+            <div class="nowon"><small><span class="ms s14">graphic_eq</span>ESCUCHANDO EN</small><div class="row" style="gap:12px;margin-top:8px"><span class="ms s28">smartphone</span><div><b style="font-size:16px">Este teléfono</b><div style="font-size:12.5px;opacity:.7">Luz de Neón · Marina Vega</div></div></div></div>
+            <div class="sec"><span class="ms s18">wifi</span>En tu red</div>
+            <div class="drow"><div class="ic"><span class="ms s22">desktop_windows</span></div><div class="tx"><b>PC del estudio</b><span>Dezzy Desktop</span></div></div>
+            <div class="drow"><div class="ic"><span class="ms s22">tv</span></div><div class="tx"><b>Tele del salón</b><span>Chromecast con Google TV</span></div><span class="bdg">CAST</span></div>
+            <div class="drow"><div class="ic"><span class="ms s22">speaker</span></div><div class="tx"><b>Altavoz cocina</b><span>Google Nest Mini</span></div><span class="bdg">CAST</span></div>
+            <div class="sec"><span class="ms s18">bluetooth</span>Bluetooth y otras salidas</div>
+            <div class="drow"><div class="ic"><span class="ms s22">headphones</span></div><div class="tx"><b>Auriculares</b><span>Vinculado</span></div></div>
+          </div>
+        </div>
+        <p class="cap"><b>C · Filtros arriba</b> (Todos · Chromecast · Dezzy · BT).</p>
+      </div>
+    </div>
+    <div class="notes" style="max-width:980px">
+      <h4>Diferencias</h4>
+      <ul>
+        <li><b>A · Mezclados (1)</b>: el cambio más pequeño. Los Chromecast siguen en «En tu red», pero con icono según el tipo (tele <code>tv</code>, altavoz <code>speaker</code>) en vez del icono genérico de Cast.</li>
+        <li><b>B · Sección propia (1)</b>: «Chromecast y TV» con la etiqueta BETA en el título. Aquí se ve también cómo queda uno <b>transmitiendo</b>, en color de acento y con «toca para detener». Más claro cuando hay muchos aparatos.</li>
+        <li><b>C · Filtros (1)</b>: chips para quedarte sólo con un tipo. Útil en casas con muchos aparatos; con pocos sobran.</li>
+        <li>En las tres se mantiene el aviso «Chromecast (Beta)» la primera vez que eliges uno, y la búsqueda arranca al abrir la hoja.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<div class="pick">Confirma los 4 finales (Apple Music, Spotify, iPod, Dezzy Style) y elige <b>A</b>, <b>B</b> o <b>C</b> para cómo se ven los Chromecast en la hoja de dispositivos.</div>
+</div>
+</body>
+</html>

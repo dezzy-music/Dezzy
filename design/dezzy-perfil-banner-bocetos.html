@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dezzy · Perfil con portada en video</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dezzy-desktop-base.css">
+<style>
+h3.v{font:700 19px 'Roboto Flex',Roboto;margin:30px 0 4px;display:flex;align-items:center;gap:10px}
+h3.v .tag{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--ink);color:#fff;font-size:14px}
+p.vd{color:var(--muted);font-size:14.5px;margin:0 0 14px;max-width:980px}
+.duo{display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap}
+.duo .win{zoom:.62}
+.cap2{font-size:13px;color:var(--muted);margin:6px 0 0;text-align:center}
+
+/* Teléfono */
+.phone{width:340px;height:720px;border-radius:38px;background:#000;border:10px solid #1b1b1f;position:relative;overflow:hidden;color:#fff;flex:none;box-shadow:0 20px 50px rgba(0,0,0,.25);font-family:Roboto}
+.phone .sb{position:absolute;top:0;left:0;right:0;height:28px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:12px;z-index:9}
+.phone .scrollp{position:absolute;inset:0;overflow:hidden}
+.phone .navb{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:18px;padding:12px 20px;border-radius:30px;background:rgba(30,30,34,.85);border:1px solid rgba(255,255,255,.08);z-index:9}
+.phone .navb .ms{font-size:22px;color:rgba(255,255,255,.75)}
+.phone .navb .ms.on{color:#fff}
+.topbtns{position:absolute;top:34px;left:12px;right:12px;display:flex;justify-content:space-between;z-index:8}
+.topbtns span{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.35);backdrop-filter:blur(8px)}
+.topbtns .ms{font-size:20px}
+
+/* "Video" de portada */
+.vid{position:absolute;inset:0;overflow:hidden;background:#100818}
+.vid::before,.vid::after{content:"";position:absolute;inset:-30%;background:
+  radial-gradient(28% 34% at 30% 40%,#25F4EE,transparent 70%),radial-gradient(30% 36% at 72% 45%,#FE2C55,transparent 70%),radial-gradient(34% 30% at 50% 80%,#6A5CFF,transparent 70%);
+  filter:blur(22px);animation:drift 9s ease-in-out infinite alternate}
+.vid::after{animation-duration:6s;animation-direction:alternate-reverse;mix-blend-mode:screen;opacity:.65}
+.vid i{position:absolute;left:38%;right:38%;top:18%;bottom:6%;border-radius:45% 45% 12% 12%;background:linear-gradient(180deg,rgba(10,5,20,.55),rgba(5,2,10,.9));filter:blur(2px);z-index:1;animation:sway 2.6s ease-in-out infinite alternate}
+@keyframes drift{0%{transform:translate(-6%,-4%) rotate(0)}100%{transform:translate(6%,5%) rotate(22deg)}}
+@keyframes sway{0%{transform:translateX(-10%) rotate(-3deg)}100%{transform:translateX(10%) rotate(3deg)}}
+.vbadge{position:absolute;z-index:3;font-size:10.5px;background:rgba(0,0,0,.45);border-radius:10px;padding:3px 8px;display:flex;align-items:center;gap:4px;color:#fff}
+.vbadge .ms{font-size:14px}
+
+.av{border-radius:50%;background:linear-gradient(135deg,#FFB067,#E8577E);display:grid;place-items:center;font:800 34px 'Roboto Flex',Roboto;color:#fff;flex:none}
+.ring{padding:3px;border-radius:50%;background:conic-gradient(#25F4EE,#FE2C55,#6A5CFF,#25F4EE)}
+.ring .av{border:3px solid #000}
+.stats{display:flex;justify-content:center;gap:26px;text-align:center}
+.stats b{display:block;font:800 18px 'Roboto Flex',Roboto}
+.stats small{font-size:12px;color:rgba(255,255,255,.65)}
+.btnrow{display:flex;gap:8px;justify-content:center}
+.pbtn{height:38px;border-radius:10px;padding:0 18px;display:inline-flex;align-items:center;gap:6px;font-weight:500;font-size:14px;background:rgba(255,255,255,.12)}
+.pbtn.pri{background:#FE2C55}
+.pbtn.ico{padding:0 10px}
+.fp{font-family:monospace;font-size:11px;color:rgba(255,255,255,.5)}
+.ptabs{display:flex;border-bottom:1px solid rgba(255,255,255,.12);margin-top:14px}
+.ptabs span{flex:1;text-align:center;padding:10px 0;color:rgba(255,255,255,.55);font-size:13px}
+.ptabs span.on{color:#fff;border-bottom:2px solid #fff}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
+.grid3 i{aspect-ratio:3/4;display:block}
+
+/* Variante A: portada que se funde (TikTok) */
+.A .ban{position:relative;height:250px}
+.A .ban::after{content:"";position:absolute;inset:0;z-index:2;background:linear-gradient(180deg,rgba(0,0,0,.35) 0%,rgba(0,0,0,0) 30%,rgba(0,0,0,0) 45%,rgba(0,0,0,.7) 78%,#000 100%)}
+.A .head{position:relative;z-index:3;margin-top:-70px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:0 16px}
+/* Variante B: portada alta inmersiva */
+.B .ban{position:relative;height:430px}
+.B .ban::after{content:"";position:absolute;inset:0;z-index:2;background:linear-gradient(180deg,rgba(0,0,0,.3),rgba(0,0,0,0) 25%,rgba(0,0,0,0) 40%,rgba(0,0,0,.85) 85%,#000)}
+.B .head{position:absolute;z-index:3;left:16px;right:16px;top:300px;display:flex;flex-direction:column;gap:8px}
+/* Variante C: color de la portada que baja */
+.C .ban{position:relative;height:190px;margin:34px 12px 0;border-radius:18px;overflow:hidden}
+.C .glow{position:absolute;left:0;right:0;top:0;height:520px;background:radial-gradient(80% 50% at 25% 10%,rgba(37,244,238,.45),transparent 70%),radial-gradient(80% 50% at 80% 15%,rgba(254,44,85,.5),transparent 70%),linear-gradient(180deg,#24102e,#000 90%);z-index:0}
+.C .head{position:relative;z-index:3;margin-top:-50px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:0 16px}
+
+/* Escritorio */
+.dprof{flex:1;margin:0 8px 8px;border-radius:12px;overflow:hidden;position:relative;background:#000;color:#fff}
+.dprof .scroll{padding:0}
+.dA .ban{position:relative;height:340px}
+.dA .ban::after{content:"";position:absolute;inset:0;z-index:2;background:linear-gradient(180deg,rgba(0,0,0,0) 35%,rgba(0,0,0,.75) 80%,#000)}
+.dA .head{position:relative;z-index:3;margin-top:-110px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+.dB .ban{position:relative;height:520px}
+.dB .ban::after{content:"";position:absolute;inset:0;z-index:2;background:linear-gradient(90deg,rgba(0,0,0,.85),rgba(0,0,0,0) 55%),linear-gradient(0deg,#000,rgba(0,0,0,0) 40%)}
+.dB .head{position:absolute;z-index:3;left:48px;bottom:60px;display:flex;flex-direction:column;gap:12px;max-width:520px}
+.dC .glow{position:absolute;inset:0 0 auto;height:640px;background:radial-gradient(60% 50% at 20% 10%,rgba(37,244,238,.4),transparent 70%),radial-gradient(60% 50% at 85% 10%,rgba(254,44,85,.45),transparent 70%),linear-gradient(180deg,#24102e,#000 90%)}
+.dC .ban{position:relative;height:250px;margin:24px 32px 0;border-radius:22px;overflow:hidden}
+.dC .head{position:relative;z-index:3;display:flex;align-items:flex-end;gap:22px;margin:-60px 56px 0}
+.postsd{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:18px 32px}
+.postsd i{aspect-ratio:1;border-radius:12px;display:block}
+
+/* Editor */
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#1c1a1f;border-radius:24px 24px 0 0;padding:14px 16px 24px;z-index:10;display:flex;flex-direction:column;gap:12px}
+.sheet .handle{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.3);margin:0 auto}
+.sheet h5{font:700 18px 'Roboto Flex',Roboto}
+.sprev{height:150px;border-radius:14px;position:relative;overflow:hidden}
+.sprev::after{content:"";position:absolute;inset:0;z-index:2;background:linear-gradient(180deg,rgba(0,0,0,0) 45%,rgba(28,26,31,1))}
+.segp{display:flex;border:1px solid rgba(255,255,255,.2);border-radius:20px;overflow:hidden}
+.segp span{flex:1;height:36px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px}
+.segp span+span{border-left:1px solid rgba(255,255,255,.2)}
+.segp span.on{background:rgba(254,44,85,.25)}
+.trim{height:44px;border-radius:8px;display:flex;overflow:hidden;position:relative;border:2px solid #fff}
+.trim i{flex:1;background:linear-gradient(135deg,#25F4EE,#6A5CFF,#FE2C55);opacity:.7;border-right:1px solid rgba(0,0,0,.4)}
+.small{font-size:12px;color:rgba(255,255,255,.6)}
+.sbtn{height:44px;border-radius:22px;background:#FE2C55;display:grid;place-items:center;font-weight:500}
+</style>
+</head>
+<body>
+<main class="doc">
+<header>
+  <div class="kicker">Dezzy · Perfil (Android y escritorio)</div>
+  <h1>Portada con degradado tipo TikTok, en foto o en video: 3 bocetos</h1>
+  <p class="lead">La portada se puede poner con una foto, un video corto o uno de los degradados de siempre. El video va en bucle y sin sonido. Cada variante se ve igual en el móvil y en el escritorio, que estrena pantalla de perfil (ahora mismo allí no existe). Los fondos de colores que se mueven hacen de «video» en el boceto.</p>
+</header>
+
+<section>
+  <h2><span class="n">A</span>La portada se funde con el fondo</h2>
+  <p class="vd">Como en TikTok: la portada ocupa el ancho de arriba y baja en degradado hasta el negro del fondo, sin borde. La foto de perfil queda centrada encima del degradado con un aro de colores, y debajo van el nombre, los números y los botones, todo centrado.</p>
+  <div class="duo">
+    <div><div class="phone A"><div class="sb"><span>10:37</span><span>▾ ◢ ▮</span></div><div class="scrollp">
+      <div class="ban"><div class="vid"><i></i></div><span class="vbadge" style="right:12px;top:212px"><span class="ms">play_circle</span>Video</span></div>
+      <div class="topbtns"><span><span class="ms">arrow_back</span></span><span><span class="ms">more_vert</span></span></div>
+      <div class="head">
+        <div class="ring"><div class="av" style="width:92px;height:92px">D</div></div>
+        <div><b style="font:800 20px 'Roboto Flex',Roboto">Dezzy</b><div class="fp">npub1dezzy…7k2q</div></div>
+        <div class="stats"><div><b>12</b><small>Publicaciones</small></div><div><b>148</b><small>Seguidores</small></div><div><b>93</b><small>Siguiendo</small></div></div>
+        <div class="btnrow"><span class="pbtn">Editar perfil</span><span class="pbtn ico"><span class="ms">share</span></span><span class="pbtn ico"><span class="ms">qr_code</span></span></div>
+        <small style="color:rgba(255,255,255,.8)">Escuchando shoegaze a las 3 a. m.</small>
+      </div>
+      <div class="ptabs"><span class="on">Publicaciones</span><span>Escuchando</span><span>Gustos</span></div>
+      <div class="grid3"><i class="c1"></i><i class="c3"></i><i class="c6"></i></div>
+    </div><div class="navb"><span class="ms">home</span><span class="ms">search</span><span class="ms">library_music</span><span class="ms on">group</span></div></div><p class="cap2">Android</p></div>
+    <div><div class="win" data-nav="Social" data-full2><div class="body"><div class="dprof dA"><div class="scroll">
+      <div class="ban"><div class="vid"><i></i></div><span class="vbadge" style="right:20px;top:20px"><span class="ms">play_circle</span>Video en bucle</span></div>
+      <div class="head">
+        <div class="ring"><div class="av" style="width:140px;height:140px;font-size:52px">D</div></div>
+        <div><b style="font:800 32px 'Roboto Flex',Roboto">Dezzy</b><div class="fp" style="font-size:13px">npub1dezzy…7k2q</div></div>
+        <div class="stats" style="gap:40px"><div><b>12</b><small>Publicaciones</small></div><div><b>148</b><small>Seguidores</small></div><div><b>93</b><small>Siguiendo</small></div></div>
+        <div class="btnrow"><span class="pbtn">Editar perfil</span><span class="pbtn ico"><span class="ms">share</span></span></div>
+      </div>
+      <div class="ptabs" style="margin:18px 32px 0"><span class="on">Publicaciones</span><span>Escuchando</span><span>Gustos</span></div>
+      <div class="postsd"><i class="c1"></i><i class="c3"></i><i class="c6"></i><i class="c4"></i><i class="c8"></i></div>
+    </div></div></div></div><p class="cap2">Escritorio</p></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">B</span>Portada alta, inmersiva</h2>
+  <p class="vd">La portada ocupa casi media pantalla y el nombre va encima de ella, abajo a la izquierda, sobre el degradado. Luce mucho con video. En el escritorio la portada llena la parte de arriba y el texto queda a la izquierda, como la cabecera de un artista.</p>
+  <div class="duo">
+    <div><div class="phone B"><div class="sb"><span>10:37</span><span>▾ ◢ ▮</span></div><div class="scrollp">
+      <div class="ban"><div class="vid"><i></i></div><span class="vbadge" style="right:12px;top:44px;top:80px"><span class="ms">volume_off</span>Video</span></div>
+      <div class="topbtns"><span><span class="ms">arrow_back</span></span><span><span class="ms">more_vert</span></span></div>
+      <div class="head">
+        <div style="display:flex;align-items:center;gap:12px"><div class="ring"><div class="av" style="width:62px;height:62px;font-size:26px">D</div></div><div><b style="font:800 24px 'Roboto Flex',Roboto">Dezzy</b><div class="fp">npub1dezzy…7k2q</div></div></div>
+        <small style="color:rgba(255,255,255,.85)">Escuchando shoegaze a las 3 a. m.</small>
+        <div style="display:flex;gap:18px;font-size:13px"><span><b>12</b> publicaciones</span><span><b>148</b> seguidores</span><span><b>93</b> siguiendo</span></div>
+        <div class="btnrow" style="justify-content:flex-start"><span class="pbtn" style="flex:1;justify-content:center">Editar perfil</span><span class="pbtn ico"><span class="ms">share</span></span></div>
+      </div>
+      <div style="position:absolute;top:520px;left:0;right:0"><div class="ptabs" style="margin-top:0"><span class="on">Publicaciones</span><span>Escuchando</span><span>Gustos</span></div><div class="grid3"><i class="c1"></i><i class="c3"></i><i class="c6"></i></div></div>
+    </div><div class="navb"><span class="ms">home</span><span class="ms">search</span><span class="ms">library_music</span><span class="ms on">group</span></div></div><p class="cap2">Android</p></div>
+    <div><div class="win" data-nav="Social" data-full2><div class="body"><div class="dprof dB"><div class="scroll">
+      <div class="ban"><div class="vid"><i style="left:55%;right:22%"></i></div></div>
+      <div class="head">
+        <div style="display:flex;align-items:center;gap:18px"><div class="ring"><div class="av" style="width:110px;height:110px;font-size:44px">D</div></div><div><b style="font:800 54px 'Roboto Flex',Roboto;line-height:1">Dezzy</b><div class="fp" style="font-size:13px;margin-top:6px">npub1dezzy…7k2q</div></div></div>
+        <span style="opacity:.85">Escuchando shoegaze a las 3 a. m.</span>
+        <div style="display:flex;gap:22px"><span><b>12</b> publicaciones</span><span><b>148</b> seguidores</span><span><b>93</b> siguiendo</span></div>
+        <div class="btnrow" style="justify-content:flex-start"><span class="pbtn">Editar perfil</span><span class="pbtn ico"><span class="ms">share</span></span></div>
+      </div>
+      <div class="postsd" style="padding-top:4px"><i class="c1"></i><i class="c3"></i><i class="c6"></i><i class="c4"></i><i class="c8"></i></div>
+    </div></div></div></div><p class="cap2">Escritorio</p></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">C</span>Portada en tarjeta y su color baja por la página</h2>
+  <p class="vd">La portada va en una tarjeta con esquinas redondas y sus colores se extienden como un resplandor que baja por todo el perfil hasta fundirse con el negro. La foto de perfil queda centrada medio encima de la tarjeta.</p>
+  <div class="duo">
+    <div><div class="phone C"><div class="sb"><span>10:37</span><span>▾ ◢ ▮</span></div><div class="scrollp"><div class="glow"></div>
+      <div class="ban"><div class="vid"><i></i></div><span class="vbadge" style="right:10px;top:10px"><span class="ms">play_circle</span>Video</span></div>
+      <div class="topbtns" style="top:44px;left:22px;right:22px"><span><span class="ms">arrow_back</span></span><span><span class="ms">more_vert</span></span></div>
+      <div class="head">
+        <div class="ring"><div class="av" style="width:92px;height:92px">D</div></div>
+        <div><b style="font:800 20px 'Roboto Flex',Roboto">Dezzy</b><div class="fp">npub1dezzy…7k2q</div></div>
+        <small style="color:rgba(255,255,255,.8)">Escuchando shoegaze a las 3 a. m.</small>
+        <div class="stats"><div><b>12</b><small>Publicaciones</small></div><div><b>148</b><small>Seguidores</small></div><div><b>93</b><small>Siguiendo</small></div></div>
+        <div class="btnrow"><span class="pbtn">Editar perfil</span><span class="pbtn ico"><span class="ms">share</span></span></div>
+      </div>
+      <div class="ptabs" style="position:relative"><span class="on">Publicaciones</span><span>Escuchando</span><span>Gustos</span></div>
+    </div><div class="navb"><span class="ms">home</span><span class="ms">search</span><span class="ms">library_music</span><span class="ms on">group</span></div></div><p class="cap2">Android</p></div>
+    <div><div class="win" data-nav="Social" data-full2><div class="body"><div class="dprof dC"><div class="glow"></div><div class="scroll" style="position:relative">
+      <div class="ban"><div class="vid"><i></i></div><span class="vbadge" style="right:14px;top:14px"><span class="ms">play_circle</span>Video en bucle</span></div>
+      <div class="head">
+        <div class="ring"><div class="av" style="width:130px;height:130px;font-size:50px">D</div></div>
+        <div style="flex:1;padding-bottom:6px"><b style="font:800 36px 'Roboto Flex',Roboto">Dezzy</b><div class="fp" style="font-size:13px">npub1dezzy…7k2q · Escuchando shoegaze a las 3 a. m.</div></div>
+        <div class="stats" style="gap:30px;padding-bottom:8px"><div><b>12</b><small>Publicaciones</small></div><div><b>148</b><small>Seguidores</small></div><div><b>93</b><small>Siguiendo</small></div></div>
+        <div class="btnrow" style="padding-bottom:10px"><span class="pbtn">Editar perfil</span></div>
+      </div>
+      <div class="postsd"><i class="c1"></i><i class="c3"></i><i class="c6"></i><i class="c4"></i><i class="c8"></i></div>
+    </div></div></div></div><p class="cap2">Escritorio</p></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">+</span>Cómo se cambia la portada (igual en las tres)</h2>
+  <p class="vd">«Editar portada» abre esta hoja. Eliges Foto, Video o Degradado. Con video eliges el trozo (hasta 15 segundos), se baja a 720p y se sube sin sonido al mismo almacén de fotos de la red social. En el escritorio es el mismo panel, en una ventana.</p>
+  <div class="duo">
+    <div class="phone"><div class="sb"><span>10:37</span><span>▾ ◢ ▮</span></div>
+      <div class="scrollp" style="background:#000;opacity:.5"><div class="ban" style="position:relative;height:250px"><div class="vid"><i></i></div></div></div>
+      <div class="sheet"><div class="handle"></div><h5>Portada</h5>
+        <div class="sprev"><div class="vid"><i></i></div></div>
+        <div class="segp"><span><span class="ms s18">image</span>Foto</span><span class="on"><span class="ms s18">movie</span>Video</span><span><span class="ms s18">gradient</span>Degradado</span></div>
+        <div class="trim"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="small">Elige hasta 15 s. Se ve en bucle y sin sonido. Se sube en 720p.</div>
+        <div class="sbtn">Guardar</div>
+      </div>
+    </div>
+  </div>
+  <div class="notes" style="margin-top:18px">
+    <div><span class="ms s18">info</span><span>Quien use otra app de la red verá tu foto o un fotograma del video; en Dezzy verá el video.</span></div>
+    <div><span class="ms s18">battery_saver</span><span>El video se pausa al bajar del perfil, con ahorro de batería o con «reducir movimiento».</span></div>
+  </div>
+</section>
+</main>
+<script>
+const NAV = [['home','Inicio'],['search','Buscar'],['library_music','Biblioteca'],['public','Mapa musical'],['leaderboard','Rankings'],['group','Social'],['download','Descargas']];
+document.querySelectorAll('.win').forEach((win) => {
+  win.insertAdjacentHTML('afterbegin', '<div class="titlebar"><span class="logo"></span>Dezzy<span class="sp"></span><span class="wc"><span class="ms s16">remove</span><span class="ms s16">crop_square</span><span class="ms s16">close</span></span></div>');
+  const body = win.querySelector('.body');
+  body.insertAdjacentHTML('afterbegin', '<aside class="panel side"><nav class="nav">' + NAV.map(([i, l]) => `<a class="${l === win.dataset.nav ? 'on' : ''}" href="#"><span class="ms">${i}</span>${l}</a>`).join('') + '</nav></aside>');
+  win.insertAdjacentHTML('beforeend', '<div class="player"><div class="np"><i class="c2"></i><div style="min-width:0"><b>Si Antes Te Hubiera Conocido</b><small>Karol G</small></div></div><div class="ctrl"><div class="btns"><span class="ms s20">shuffle</span><span class="ms">skip_previous</span><span class="play"><span class="ms f s28">pause</span></span><span class="ms">skip_next</span><span class="ms s20">repeat</span></div><div class="bar">1:02<span class="track" style="--p:30%"></span>3:15</div></div><div class="extra"><span class="ms s20">lyrics</span><span class="ms s20">volume_up</span><span class="vol"></span></div></div>');
+});
+</script>
+</body>
+</html>

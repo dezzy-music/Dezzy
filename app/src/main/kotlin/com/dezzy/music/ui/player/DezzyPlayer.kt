@@ -786,8 +786,12 @@ fun DezzyPlayer(
                             modifier = Modifier.size(32.dp),
                         )
                     }
-                    com.dezzy.music.ui.component.CastButton(
+                    com.dezzy.music.ui.component.DevicesButton(
                         tint = Color.White.copy(alpha = 0.8f),
+                        onOpenListenTogether = {
+                            state.collapseSoft()
+                            navController.navigate("settings/music_together")
+                        },
                     )
                     Spacer(modifier = Modifier.weight(1f))
                     IconButton(onClick = { showShareSheet = true }) {
@@ -808,8 +812,9 @@ fun DezzyPlayer(
                     Spacer(modifier = Modifier.weight(1f))
                 }
             } else {
-                // Spacer to balance the top area status bar
-                Spacer(modifier = Modifier.height(24.dp))
+                // Asa de cierre (boceto A): sustituye al hueco bajo la barra de estado.
+                Spacer(modifier = Modifier.height(8.dp))
+                AppleGrabHandle(onClick = { state.collapseSoft() })
                 // Pill Canción/Video flanqueado por compartir y visualizador —
                 // presente en todos los estilos de este player (Apple Music incluido).
                 Row(
@@ -1220,16 +1225,29 @@ fun DezzyPlayer(
                         Column(
                             modifier = Modifier.weight(1f),
                         ) {
-                            Text(
-                                text = mediaMetadata?.title ?: "—",
-                                color = Color.White,
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = MaterialTheme.typography.bodyLarge.fontFamily,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.basicMarquee(),
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = mediaMetadata?.title ?: "—",
+                                    color = Color.White,
+                                    fontSize = 24.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = MaterialTheme.typography.bodyLarge.fontFamily,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier
+                                        .weight(1f, fill = false)
+                                        .basicMarquee(),
+                                )
+                                if (mediaMetadata?.explicit == true) {
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Icon(
+                                        painter = painterResource(R.drawable.explicit),
+                                        contentDescription = "Explícito",
+                                        tint = Color.White.copy(alpha = 0.6f),
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                }
+                            }
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = mediaMetadata?.artists?.joinToString { it.name } ?: "—",
@@ -1249,52 +1267,11 @@ fun DezzyPlayer(
                             )
                         }
 
-                        // Menu + like buttons (right, with circular translucent background)
+                        // Like + more buttons (right, with circular translucent background)
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            com.dezzy.music.ui.component.CastButton(
-                                tint = Color.White,
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .background(Color.White.copy(alpha = 0.15f)),
-                            )
-
-                            // More options button
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .background(Color.White.copy(alpha = 0.15f))
-                                    .clickable {
-                                        mediaMetadata?.let { meta ->
-                                            menuState.show {
-                                                PlayerMenu(
-                                                    mediaMetadata = meta,
-                                                    navController = navController,
-                                                    playerBottomSheetState = state,
-                                                    onShowDetailsDialog = {
-                                                        bottomSheetPageState.show {
-                                                            ShowMediaInfo(meta.id)
-                                                        }
-                                                    },
-                                                    onDismiss = menuState::dismiss,
-                                                )
-                                            }
-                                        }
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.more_vert),
-                                    contentDescription = "Más opciones",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(20.dp),
-                                )
-                            }
-
                             // Like button
                             Box(
                                 modifier = Modifier
@@ -1326,6 +1303,40 @@ fun DezzyPlayer(
                                         },
                                 )
                             }
+
+                            // More options button
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.15f))
+                                    .clickable {
+                                        mediaMetadata?.let { meta ->
+                                            menuState.show {
+                                                PlayerMenu(
+                                                    mediaMetadata = meta,
+                                                    navController = navController,
+                                                    playerBottomSheetState = state,
+                                                    onShowDetailsDialog = {
+                                                        bottomSheetPageState.show {
+                                                            ShowMediaInfo(meta.id)
+                                                        }
+                                                    },
+                                                    onDismiss = menuState::dismiss,
+                                                    onSleepTimerClick = onSleepTimerClick,
+                                                )
+                                            }
+                                        }
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.more_horiz),
+                                    contentDescription = "Más opciones",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
                         }
                     }
 
@@ -1335,7 +1346,15 @@ fun DezzyPlayer(
                     // ── Seek slider ────────────────────────────────────────────
                     val safeDuration = if (duration <= 0L) 0f else duration.toFloat()
                     val safeValue = (sliderPosition ?: position).toFloat().coerceIn(0f, maxOf(0f, safeDuration))
-                    StyledPlaybackSlider(
+                    if (playerStyle == PlayerDesignStyle.APPLE_MUSIC) AppleSeekBar(
+                        value = safeValue,
+                        max = maxOf(1f, safeDuration),
+                        onValueChange = { onSliderPositionChange(it.toLong()) },
+                        onValueChangeFinished = {
+                            playerConnection.player.seekTo(it.toLong())
+                            onSliderPositionChange(null)
+                        },
+                    ) else StyledPlaybackSlider(
                         sliderStyle = sliderStyle,
                         value = safeValue,
                         valueRange = 0f..maxOf(1f, safeDuration),
@@ -1365,15 +1384,11 @@ fun DezzyPlayer(
                             fontSize = 12.sp,
                         )
                         if (showCodecOnPlayer && qualityLabel != null) {
-                            Text(
-                                text = qualityLabel,
-                                color = Color.White.copy(alpha = 0.55f),
-                                fontFamily = MaterialTheme.typography.bodyLarge.fontFamily,
-                                fontSize = 11.sp,
-                            )
+                            AppleQualityChip(label = qualityLabel)
                         }
+                        // Tiempo restante, como en Apple Music.
                         Text(
-                            text = makeTimeString(duration),
+                            text = "−" + makeTimeString((duration - (sliderPosition ?: position)).coerceAtLeast(0L)),
                             color = Color.White.copy(alpha = 0.7f),
                             fontFamily = MaterialTheme.typography.bodyLarge.fontFamily,
                             fontSize = 12.sp,
@@ -1431,20 +1446,21 @@ fun DezzyPlayer(
                         }
                     }
 
-                    val spacer3 = if (playerStyle == PlayerDesignStyle.APPLE_MUSIC) 32.dp else 20.dp
+                    val spacer3 = if (playerStyle == PlayerDesignStyle.APPLE_MUSIC) 22.dp else 20.dp
                     Spacer(modifier = Modifier.height(spacer3))
 
                     // ── Bottom action row ──────────────────────────────────────────
                     if (playerStyle == PlayerDesignStyle.APPLE_MUSIC) {
-                        // ── Apple Music Bottom action row (4 separate buttons spaced evenly) ──
+                        // ── Apple Music: volumen en línea + letras · dispositivos · cola ──
+                        AppleInlineVolume()
+                        Spacer(modifier = Modifier.height(12.dp))
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 24.dp, vertical = 8.dp),
+                                .padding(horizontal = 18.dp, vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            // 1. Lyrics
                             IconButton(
                                 onClick = onLyricsClick,
                                 modifier = Modifier.size(48.dp)
@@ -1457,33 +1473,17 @@ fun DezzyPlayer(
                                 )
                             }
 
-                            // 2. Volume Dialog
-                            IconButton(
-                                onClick = { showVolumeDialog = true },
-                                modifier = Modifier.size(48.dp)
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.volume_up),
-                                    contentDescription = "Volumen",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(26.dp),
-                                )
-                            }
+                            com.dezzy.music.ui.component.DevicesButton(
+                                tint = Color.White,
+                                activeTint = Color(0xFFFF3B5C),
+                                iconSize = 26.dp,
+                                modifier = Modifier.size(48.dp),
+                                onOpenListenTogether = {
+                                    state.collapseSoft()
+                                    navController.navigate("settings/music_together")
+                                },
+                            )
 
-                            // 3. Sleep timer
-                            IconButton(
-                                onClick = onSleepTimerClick,
-                                modifier = Modifier.size(48.dp)
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.bedtime),
-                                    contentDescription = "Temporizador",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(26.dp),
-                                )
-                            }
-
-                            // 4. Queue list
                             IconButton(
                                 onClick = onQueueClick,
                                 modifier = Modifier.size(48.dp)

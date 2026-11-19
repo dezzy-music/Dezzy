@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dezzy escritorio · Fase 3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..800&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dezzy-desktop-base.css">
+<style>
+/* Índice */
+.toc{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
+.toc a{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--doc-line);border-radius:20px;padding:8px 14px;color:var(--ink);text-decoration:none;font-weight:500;font-size:14px}
+.toc a .ms{color:var(--doc-accent);font-size:18px}
+.android{display:flex;gap:10px;background:#fff;border:1px dashed var(--doc-accent);border-radius:12px;padding:12px 14px;margin-top:12px;font-size:14px;color:var(--muted)}
+.android b{color:var(--ink)}
+.android .ms{color:var(--doc-accent)}
+
+/* Común */
+.h3{font:700 30px 'Roboto Flex',Roboto}
+.row{display:flex;align-items:center;gap:10px}
+.grow{flex:1}
+.muted{color:var(--on-sv)}
+.tabs-m3{display:flex;gap:4px;border-bottom:1px solid var(--ov);margin:14px 0 16px}
+.tabs-m3 span{padding:10px 16px 12px;color:var(--on-sv);font-weight:500;position:relative}
+.tabs-m3 span.on{color:var(--primary)}
+.tabs-m3 span.on::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:3px;border-radius:3px 3px 0 0;background:var(--primary)}
+.iconbtn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:var(--on-sv)}
+.iconbtn.on{background:var(--sc2);color:var(--on-sc2)}
+.seg{display:inline-flex;border:1px solid var(--outline);border-radius:20px;overflow:hidden}
+.seg span{height:36px;display:inline-flex;align-items:center;gap:6px;padding:0 14px;font-size:13px;font-weight:500;color:var(--on-s)}
+.seg span+span{border-left:1px solid var(--outline)}
+.seg span.on{background:var(--sc2);color:var(--on-sc2)}
+.flag{font-size:18px;line-height:1}
+.badge{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:11px;font-size:12px;font-weight:500;background:var(--s-highest);color:var(--on-sv)}
+.badge.new{background:var(--pc);color:var(--on-pc)}
+.badge.ok{background:rgba(155,211,166,.16);color:var(--ok)}
+.badge.err{background:rgba(255,180,171,.16);color:#FFB4AB}
+.up{color:var(--ok)}.down{color:#FFB4AB}
+
+/* 1 · Biblioteca */
+.lpills{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:6px}
+.lpill{height:64px;border-radius:16px;display:flex;align-items:center;gap:12px;padding:0 16px;font-weight:500;font-size:15px}
+.lpill small{display:block;font-weight:400;font-size:12px;opacity:.85}
+.lp1{background:var(--pc);color:var(--on-pc)}
+.lp2{background:var(--sc2);color:var(--on-sc2)}
+.lp3{background:#5B4423;color:#FFDDB3}
+.lp4{background:var(--s-highest);color:var(--on-sv)}
+.libgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:18px}
+.libgrid .card i{border-radius:12px}
+.libgrid .card.round i{border-radius:50%}
+.libgrid .card small{display:flex;align-items:center;gap:4px}
+
+/* 2 · Mapa musical */
+.mapview{flex:1;display:flex;gap:8px;min-height:0}
+.mapcanvas{flex:1;position:relative;overflow:hidden;border-radius:12px;background:radial-gradient(120% 100% at 50% 40%,#2A1C1E,#140D0E)}
+.mapcanvas svg{position:absolute;inset:0;width:100%;height:100%}
+.mapbar{position:absolute;top:16px;left:16px;right:16px;display:flex;gap:10px;align-items:center}
+.mapbar .search{background:rgba(49,40,40,.92);backdrop-filter:blur(8px);max-width:420px}
+.mapbar .chip{background:rgba(49,40,40,.92);border-color:transparent}
+.mapbar .chip.on{background:var(--sc2)}
+.pin{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;gap:6px}
+.pin .dot{width:14px;height:14px;border-radius:50%;background:var(--primary);box-shadow:0 0 0 6px rgba(255,178,185,.18),0 0 0 14px rgba(255,178,185,.08)}
+.pin .lbl{background:rgba(26,17,18,.85);border-radius:10px;padding:3px 8px;font-size:12px;white-space:nowrap}
+.pin.sel .dot{background:#fff;box-shadow:0 0 0 6px rgba(255,255,255,.25),0 0 0 16px rgba(255,178,185,.25)}
+.pin.me .dot{background:#8AB4F8;box-shadow:0 0 0 6px rgba(138,180,248,.2)}
+.mapfab{position:absolute;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px}
+.mapfab span{width:44px;height:44px;border-radius:14px;background:var(--s-high);display:grid;place-items:center;color:var(--on-s)}
+.privacy{position:absolute;left:16px;bottom:16px;display:flex;align-items:center;gap:8px;background:rgba(26,17,18,.85);border-radius:16px;padding:8px 12px;font-size:12px;color:var(--on-sv)}
+.sheet{width:380px;flex:none;padding:18px;display:flex;flex-direction:column;gap:12px;overflow:hidden}
+.sheet h5{font:700 24px 'Roboto Flex',Roboto;display:flex;align-items:center;gap:10px}
+.genres{display:flex;flex-wrap:wrap;gap:6px}
+.genres span{background:var(--s-high);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--on-sv)}
+.toplist .t{display:flex;align-items:center;gap:12px;padding:7px 4px;border-radius:10px}
+.toplist .t .pos{width:22px;text-align:right;font:700 15px 'Roboto Flex';color:var(--on-sv)}
+.toplist .t i{width:44px;height:44px;border-radius:8px;flex:none}
+.toplist .t b{display:block;font-weight:500;font-size:14px}
+.toplist .t small{color:var(--on-sv);font-size:12px}
+
+/* 3 · Rankings */
+.rk-head{display:flex;align-items:flex-end;justify-content:space-between;margin:4px 0 4px}
+.rk-cover{display:grid;grid-template-columns:220px 1fr;gap:22px;align-items:end;padding:20px;border-radius:20px;margin:6px 0 14px;
+  background:linear-gradient(120deg,#7D2833,#3A1D22 60%,#261D1E)}
+.rk-cover i{width:220px;height:220px;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.45)}
+.rk-cover .tag{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--on-pc)}
+.rk-cover h5{font:800 40px/1.05 'Roboto Flex',Roboto;margin:6px 0}
+.rktable{width:100%;border-collapse:collapse}
+.rktable th{font-weight:500;font-size:12px;color:var(--outline);text-align:left;padding:6px 8px;border-bottom:1px solid var(--ov)}
+.rktable td{padding:7px 8px;font-size:14px}
+.rktable td.pos{width:42px;font:700 16px 'Roboto Flex';text-align:right;color:var(--on-s)}
+.rktable td.mv{width:44px;font-size:12px}
+.rktable td .ti{display:flex;align-items:center;gap:12px}
+.rktable td .ti i{width:40px;height:40px;border-radius:6px;flex:none}
+.rktable td .ti b{display:block;font-weight:500}
+.rktable td .ti small{color:var(--on-sv);font-size:12px}
+.rktable tr.hl td{background:rgba(255,178,185,.07)}
+.rktable tr.hl td:first-child{border-radius:10px 0 0 10px}.rktable tr.hl td:last-child{border-radius:0 10px 10px 0}
+
+/* 4 · Social */
+.soc{flex:1;display:grid;grid-template-columns:1fr 320px;gap:8px;min-height:0}
+.soc .feed{padding:16px 24px;overflow:hidden}
+.compose{display:flex;align-items:center;gap:12px;background:var(--s-high);border-radius:24px;padding:10px 12px 10px 14px;margin:6px 0 16px}
+.compose .avatar{width:32px;height:32px;font-size:13px}
+.post{background:var(--s);border-radius:16px;padding:14px 16px;margin-bottom:12px}
+.post .who2{display:flex;align-items:center;gap:10px}
+.post .who2 .avatar{width:36px;height:36px;font-size:14px}
+.post .who2 b{font-weight:500}
+.post .who2 small{color:var(--on-sv);font-size:12px}
+.post p{margin:10px 0}
+.song{display:flex;align-items:center;gap:12px;background:var(--s-high);border-radius:12px;padding:8px}
+.song i{width:48px;height:48px;border-radius:8px;flex:none}
+.song b{display:block;font-weight:500}
+.song small{color:var(--on-sv);font-size:12px}
+.post .acts2{display:flex;gap:18px;margin-top:10px;color:var(--on-sv);font-size:13px}
+.post .acts2 span{display:inline-flex;align-items:center;gap:6px}
+.rail{padding:16px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.rail h6{font:500 12px Roboto;letter-spacing:.06em;text-transform:uppercase;color:var(--outline);margin:6px 2px 0}
+.live{display:flex;align-items:center;gap:10px;padding:8px;border-radius:12px;background:var(--s)}
+.live .avatar{width:40px;height:40px;position:relative}
+.live .avatar::after{content:"";position:absolute;right:-1px;bottom:-1px;width:12px;height:12px;border-radius:50%;background:var(--ok);border:2px solid var(--s)}
+.live .t{flex:1;min-width:0}
+.live .t b{display:block;font-weight:500;font-size:14px}
+.live .t small{display:flex;align-items:center;gap:4px;color:var(--on-sv);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chatrow{display:flex;align-items:center;gap:10px;padding:6px 4px}
+.chatrow .avatar{width:36px;height:36px;font-size:13px}
+.chatrow .t{flex:1;min-width:0}
+.chatrow .t b{display:block;font-weight:500;font-size:14px}
+.chatrow .t small{display:block;color:var(--on-sv);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.unread{min-width:20px;height:20px;border-radius:10px;background:var(--primary);color:var(--on-primary);font-size:11px;font-weight:700;display:grid;place-items:center}
+.a1{background:linear-gradient(135deg,#4DB6AC,#1A237E)}.a2{background:linear-gradient(135deg,#FFB74D,#BF360C)}.a3{background:linear-gradient(135deg,#CE93D8,#4A0072)}.a4{background:linear-gradient(135deg,#AED581,#33691E)}
+
+/* 5 · Escuchar juntos */
+.room{flex:1;display:grid;grid-template-columns:1fr 340px;gap:8px;min-height:0}
+.room .stagecol{padding:20px 24px;overflow:hidden;display:flex;flex-direction:column;gap:14px}
+.roomhead{display:flex;align-items:center;gap:14px}
+.code{font:500 26px 'Roboto Mono',monospace;letter-spacing:.12em;background:var(--s-high);border-radius:12px;padding:6px 14px}
+.nowroom{display:grid;grid-template-columns:150px 1fr;gap:18px;align-items:center;background:linear-gradient(120deg,#3A1D22,#261D1E);border-radius:20px;padding:16px}
+.nowroom i{width:150px;height:150px;border-radius:14px}
+.nowroom h5{font:800 26px 'Roboto Flex',Roboto}
+.sync{display:inline-flex;align-items:center;gap:6px;color:var(--ok);font-size:13px;font-weight:500}
+.q{display:flex;align-items:center;gap:12px;padding:6px 6px;border-radius:10px}
+.q i{width:40px;height:40px;border-radius:6px;flex:none}
+.q .t{flex:1}
+.q .t b{display:block;font-weight:500;font-size:14px}
+.q .t small{color:var(--on-sv);font-size:12px}
+.votes{display:inline-flex;align-items:center;gap:4px;background:var(--s-high);border-radius:14px;padding:4px 10px;font-size:13px}
+.votes.on{background:var(--pc);color:var(--on-pc)}
+.people{padding:16px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+.person{display:flex;align-items:center;gap:10px;padding:4px}
+.person .avatar{width:34px;height:34px;font-size:13px}
+.person .t{flex:1}
+.person .t b{font-weight:500;font-size:14px;display:block}
+.person .t small{color:var(--on-sv);font-size:12px}
+.msgs{flex:1;display:flex;flex-direction:column;gap:6px;justify-content:flex-end;font-size:13px}
+.msg{background:var(--s);border-radius:12px;padding:6px 10px;max-width:90%}
+.msg b{font-weight:500;color:var(--primary);font-size:12px;display:block}
+.msg.me{align-self:flex-end;background:var(--pc);color:var(--on-pc)}
+.chatin{height:40px;border-radius:20px;background:var(--s-high);display:flex;align-items:center;padding:0 8px 0 14px;color:var(--on-sv);gap:8px}
+.lobby{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.lobbycard{background:var(--s);border-radius:16px;padding:16px}
+.lobbycard b{font-size:16px;font-weight:500;display:block;margin:8px 0 2px}
+
+/* 6 · Descargas */
+.dlhead{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:8px 0 6px}
+.stat{background:var(--s);border-radius:16px;padding:14px 16px}
+.stat small{color:var(--on-sv);font-size:12px;display:block}
+.stat b{font:700 24px 'Roboto Flex',Roboto}
+.meter{height:6px;border-radius:3px;background:var(--s-highest);margin-top:8px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--primary);border-radius:3px}
+.dl{display:flex;align-items:center;gap:14px;padding:8px 6px;border-radius:10px}
+.dl i.cv{width:44px;height:44px;border-radius:8px;flex:none}
+.dl .t{flex:1;min-width:0}
+.dl .t b{display:block;font-weight:500;font-size:14px}
+.dl .t small{color:var(--on-sv);font-size:12px}
+.dl .prog{width:180px;height:4px;border-radius:2px;background:var(--s-highest);overflow:hidden}
+.dl .prog i{display:block;height:100%;background:var(--primary)}
+.q-hi{font-weight:700;color:var(--tertiary);font-size:12px;border:1px solid rgba(232,192,142,.4);border-radius:6px;padding:1px 6px}
+</style>
+</head>
+<body>
+<main class="doc">
+<header>
+  <div class="kicker">Dezzy · escritorio · bocetos fase 3</div>
+  <h1>Biblioteca, mapa musical, rankings, social, escuchar juntos y descargas</h1>
+  <p class="lead">Seis pantallas, cada una con la misma estructura y los mismos nombres que en Dezzy para Android, adaptadas a ventana ancha. Lo que en el móvil es una hoja inferior aquí va en un panel lateral. Al ir vinculado al móvil, nada habla de YouTube ni de Spotify: tu música, a secas.</p>
+  <div class="alert">
+    <span class="ms s28" style="color:var(--doc-accent)">palette</span>
+    <div>
+      <b>Apariencia, más adelante</b>
+      <p>Estos bocetos usan el tema rosa por defecto. Los temas, Dezzy Style y el fondo que se tiñe con la portada llegan con la sección Apariencia, en otra fase.</p>
+    </div>
+  </div>
+  <nav class="toc">
+    <a href="#biblioteca"><span class="ms">library_music</span>1 · Biblioteca</a>
+    <a href="#mapa"><span class="ms">public</span>2 · Mapa musical</a>
+    <a href="#rankings"><span class="ms">leaderboard</span>3 · Rankings</a>
+    <a href="#social"><span class="ms">group</span>4 · Social</a>
+    <a href="#juntos"><span class="ms">groups</span>5 · Escuchar juntos</a>
+    <a href="#descargas"><span class="ms">download</span>6 · Descargas</a>
+  </nav>
+</header>
+
+<!-- 1 · Biblioteca -->
+<section id="biblioteca">
+  <h2><span class="n">1</span>Biblioteca</h2>
+  <p class="sub">Igual que en Android: arriba los cuatro accesos (Me gusta, Sin conexión, Mi top 50, En caché) y debajo las pestañas Listas de reproducción, Álbumes, Artistas, Canciones y Géneros. En escritorio se añade el cambio entre cuadrícula y lista, y el orden.</p>
+  <div class="stage"><div class="win" data-nav="Biblioteca">
+    <div class="body">
+      <div class="panel main">
+        <div class="topbar" data-top></div>
+        <div class="scroll">
+          <div class="rk-head"><span class="h3">Biblioteca</span>
+            <span class="row"><span class="btn tonal"><span class="ms s20">add</span>Nueva playlist</span></span></div>
+          <div class="lpills" style="margin-top:14px">
+            <div class="lpill lp1"><span class="ms f">favorite</span><div>Me gusta<small>842 canciones</small></div></div>
+            <div class="lpill lp2"><span class="ms">offline_pin</span><div>Sin conexión<small>37 canciones</small></div></div>
+            <div class="lpill lp3"><span class="ms">trending_up</span><div>Mi top 50<small>Lo que más escuchas</small></div></div>
+            <div class="lpill lp4"><span class="ms">cached</span><div>En caché<small>Escuchadas hace poco</small></div></div>
+          </div>
+          <div class="row" style="justify-content:space-between">
+            <div class="tabs-m3" style="flex:1;margin-right:16px"><span class="on">Listas de reproducción</span><span>Álbumes</span><span>Artistas</span><span>Canciones</span><span>Géneros</span></div>
+            <span class="row"><span class="chip"><span class="ms s18">sort</span>Fecha añadida</span><span class="iconbtn on"><span class="ms">grid_view</span></span><span class="iconbtn"><span class="ms">view_list</span></span></span>
+          </div>
+          <div class="libgrid">
+            <div class="card"><i class="c3"></i><b>Noche de shoegaze</b><small>Playlist, 64</small></div>
+            <div class="card"><i class="c2"></i><b>Para manejar</b><small>Playlist, 120</small></div>
+            <div class="card"><i class="c7"></i><b>Domingo</b><small>Playlist, 31</small></div>
+            <div class="card"><i class="c5"></i><b>Para entrenar</b><small><span class="ms s16">offline_pin</span>Playlist, 48</small></div>
+            <div class="card"><i class="c1"></i><b>Mix diario 1</b><small>Mix, se renueva cada día</small></div>
+            <div class="card"><i class="c8"></i><b>Descubrimiento</b><small>Mix, novedades para ti</small></div>
+            <div class="card"><i class="c6"></i><b>Lo-fi para estudiar</b><small>Playlist, 210</small></div>
+            <div class="card"><i class="c4"></i><b>Bocanada</b><small>Álbum guardado</small></div>
+            <div class="card"><i class="c3"></i><b>Signos</b><small>Álbum guardado</small></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+  <div class="notes">
+    <div><span class="ms s18">sync</span><span>Las playlists, los me gusta y los álbumes guardados de tus cuentas vinculadas salen juntos, sin decir de qué servicio vienen.</span></div>
+    <div><span class="ms s18">mouse</span><span>Clic derecho en una tarjeta abre el mismo menú que el «⋮» de Android: reproducir, en cola, descargar, compartir, editar o borrar.</span></div>
+    <div><span class="ms s18">drag_indicator</span><span>Arrastrar una canción a una playlist de la barra lateral la añade, como «Añadir a esta playlist» del móvil.</span></div>
+  </div>
+  <div class="android"><span class="ms">phone_android</span><span><b>Conexión con Android:</b> mismos accesos y pestañas que <code>LibraryDezzyHeader</code> y <code>LibraryScreen</code>. «Mi top 50» y «En caché» se calculan del historial local del escritorio; «Sin conexión» son las descargas de este ordenador.</span></div>
+</section>
+
+<!-- 2 · Mapa musical -->
+<section id="mapa">
+  <h2><span class="n">2</span>Mapa musical</h2>
+  <p class="sub">El mapa manda y el panel acompaña, como en el boceto aprobado de Android. Arriba se busca un artista, una canción o un país y se filtra entre Todo, Países, Personas y Canciones. Al tocar un país, el panel lateral muestra su top, sus géneros y «Reproducir el top».</p>
+  <div class="stage"><div class="win" data-nav="Mapa musical">
+    <div class="body">
+      <div class="mapview">
+        <div class="mapcanvas">
+          <svg viewBox="0 0 1000 560" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <defs><pattern id="dots" width="9" height="9" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r="2.2" fill="#8A6B6E"/></pattern>
+            <radialGradient id="heat"><stop offset="0" stop-color="#FFB2B9" stop-opacity=".55"/><stop offset="1" stop-color="#FFB2B9" stop-opacity="0"/></radialGradient></defs>
+            <g fill="url(#dots)">
+              <path d="M90 120 Q150 70 260 90 Q330 110 320 170 Q300 220 250 250 Q230 290 200 300 Q160 280 140 230 Q100 200 90 120Z"/>
+              <path d="M230 310 Q290 300 320 350 Q330 420 290 480 Q270 520 255 500 Q240 430 225 380 Q215 340 230 310Z"/>
+              <path d="M450 110 Q520 80 570 110 Q560 160 520 175 Q480 170 455 150Z"/>
+              <path d="M460 200 Q540 190 580 240 Q590 320 545 390 Q510 410 495 360 Q470 300 455 260Z"/>
+              <path d="M580 100 Q720 60 860 110 Q900 170 840 220 Q760 250 700 240 Q640 220 600 190 Q570 150 580 100Z"/>
+              <path d="M800 360 Q860 350 890 390 Q880 430 830 430 Q795 410 800 360Z"/>
+            </g>
+            <circle cx="215" cy="265" r="70" fill="url(#heat)"/>
+            <circle cx="275" cy="400" r="60" fill="url(#heat)"/>
+            <circle cx="480" cy="140" r="50" fill="url(#heat)"/>
+            <circle cx="740" cy="180" r="44" fill="url(#heat)"/>
+          </svg>
+          <div class="mapbar">
+            <span class="search"><span class="ms">search</span>Artista, canción o país</span>
+            <span class="chip on">Todo</span><span class="chip">Países</span><span class="chip">Personas</span><span class="chip">Canciones</span>
+          </div>
+          <span class="pin sel" style="left:21.5%;top:47%"><span class="dot"></span><span class="lbl">🇲🇽 México</span></span>
+          <span class="pin" style="left:27.5%;top:71%"><span class="dot"></span><span class="lbl">🇦🇷 Argentina</span></span>
+          <span class="pin" style="left:48%;top:25%"><span class="dot"></span><span class="lbl">🇪🇸 España</span></span>
+          <span class="pin" style="left:74%;top:32%"><span class="dot"></span><span class="lbl">🇯🇵 Japón</span></span>
+          <span class="pin" style="left:19%;top:31%"><span class="dot"></span><span class="lbl">🇺🇸 Estados Unidos</span></span>
+          <span class="pin me" style="left:22.6%;top:50%"><span class="dot"></span><span class="lbl">Tú · 3 cerca de ti</span></span>
+          <span class="privacy"><span class="ms s18">location_on</span>Compartes tu zona · zona aproximada, nunca tu punto exacto</span>
+          <span class="mapfab"><span class="ms">add</span><span class="ms">remove</span><span class="ms">my_location</span></span>
+        </div>
+        <aside class="panel sheet">
+          <div class="row"><span class="badge">Top por país</span><span class="grow"></span><span class="ms muted">close</span></div>
+          <h5><span class="flag">🇲🇽</span>México</h5>
+          <div class="genres"><span>Regional mexicano</span><span>Corridos tumbados</span><span>Pop latino</span><span>Reguetón</span></div>
+          <div class="row"><span class="btn fill"><span class="ms f s20">play_arrow</span>Reproducir el top</span><span class="btn tonal"><span class="ms s20">radio</span>Radio</span></div>
+          <div class="toplist">
+            <div class="t"><span class="pos">1</span><i class="c2"></i><div class="grow"><b>Si Antes Te Hubiera Conocido</b><small>Karol G</small></div><span class="badge new">Nuevo</span></div>
+            <div class="t"><span class="pos">2</span><i class="c4"></i><div class="grow"><b>Tu Boda</b><small>Óscar Maydon, Fuerza Regida</small></div></div>
+            <div class="t"><span class="pos">3</span><i class="c3"></i><div class="grow"><b>El Amor de Su Vida</b><small>Grupo Frontera, Grupo Firme</small></div></div>
+            <div class="t"><span class="pos">4</span><i class="c8"></i><div class="grow"><b>Qlona</b><small>Karol G, Peso Pluma</small></div></div>
+            <div class="t"><span class="pos">5</span><i class="c6"></i><div class="grow"><b>Bellakeo</b><small>Peso Pluma, Anitta</small></div></div>
+          </div>
+          <span class="btn txt" style="align-self:flex-start">Ver todos los países</span>
+        </aside>
+      </div>
+    </div>
+  </div></div>
+  <div class="notes">
+    <div><span class="ms s18">travel_explore</span><span>La búsqueda «En toda la música» responde «Dónde se escucha más» una canción o un artista y lo pinta en el mapa.</span></div>
+    <div><span class="ms s18">person_pin_circle</span><span>«Personas» y «Cerca de ti» salen de la red social: sólo gente que comparte su zona aproximada, y «Ver perfil» lleva a Social.</span></div>
+    <div><span class="ms s18">keyboard</span><span>Rueda del ratón para acercar, arrastrar para moverse y flechas para pasar de un país a otro.</span></div>
+  </div>
+  <div class="android"><span class="ms">phone_android</span><span><b>Conexión con Android:</b> mismos datos que <code>MusicMapScreen</code> y <code>MusicMapSections</code>: el top por país, los géneros del top y la búsqueda global. Las personas en el mapa usan la misma red P2P (Nostr) que el móvil.</span></div>
+</section>
+
+<!-- 3 · Rankings -->
+<section id="rankings">
+  <h2><span class="n">3</span>Rankings</h2>
+  <p class="sub">Las mismas listas que en Android: Top mundial, Top por país, Tendencias y Top videos musicales, más «Tus canciones en los rankings». Al elegir una canción se ve en qué países ha estado en el top y cuántas reproducciones lleva.</p>
+  <div class="stage"><div class="win" data-nav="Rankings">
+    <div class="body">
+      <div class="panel main">
+        <div class="topbar" data-top></div>
+        <div class="scroll">
+          <div class="rk-head"><span class="h3">Rankings</span>
+            <span class="row"><span class="chip"><span class="flag">🌎</span>Mundial<span class="ms s18">expand_more</span></span><span class="chip"><span class="ms s18">search</span>Busca cualquier canción</span></span></div>
+          <div class="tabs-m3"><span class="on">Top mundial</span><span>Top por país</span><span>Tendencias</span><span>Top videos musicales</span><span>Tus canciones</span></div>
+          <div style="display:grid;grid-template-columns:1fr 340px;gap:20px">
+            <table class="rktable">
+              <tr><th style="text-align:right">#</th><th></th><th>Canción</th><th>Semanas</th><th>Mejor puesto</th></tr>
+              <tr><td class="pos">1</td><td class="mv">–</td><td><span class="ti"><i class="c1"></i><span><b>Die With A Smile</b><small>Lady Gaga, Bruno Mars</small></span></span></td><td>34</td><td>1</td></tr>
+              <tr class="hl"><td class="pos">2</td><td class="mv up">▲ 3</td><td><span class="ti"><i class="c4"></i><span><b>APT.</b><small>ROSÉ, Bruno Mars</small></span></span></td><td>21</td><td>1</td></tr>
+              <tr><td class="pos">3</td><td class="mv down">▼ 1</td><td><span class="ti"><i class="c3"></i><span><b>Birds of a Feather</b><small>Billie Eilish</small></span></span></td><td>48</td><td>1</td></tr>
+              <tr><td class="pos">4</td><td class="mv"><span class="badge new">Nuevo</span></td><td><span class="ti"><i class="c2"></i><span><b>Si Antes Te Hubiera Conocido</b><small>Karol G</small></span></span></td><td>1</td><td>4</td></tr>
+              <tr><td class="pos">5</td><td class="mv down">▼ 2</td><td><span class="ti"><i class="c7"></i><span><b>Espresso</b><small>Sabrina Carpenter</small></span></span></td><td>40</td><td>2</td></tr>
+              <tr><td class="pos">6</td><td class="mv up">▲ 1</td><td><span class="ti"><i class="c5"></i><span><b>Luther</b><small>Kendrick Lamar, SZA</small></span></span></td><td>16</td><td>5</td></tr>
+            </table>
+            <aside class="panel" style="background:var(--s);padding:16px;border-radius:16px;display:flex;flex-direction:column;gap:10px">
+              <div class="row"><i class="c4" style="width:56px;height:56px;border-radius:8px;display:block"></i><div><b style="font-size:16px;font-weight:500;display:block">APT.</b><small class="muted">ROSÉ, Bruno Mars</small></div></div>
+              <div class="dlhead" style="grid-template-columns:1fr 1fr;margin:0">
+                <div class="stat" style="background:var(--s-high)"><small>Reproducciones</small><b>2.104 M</b></div>
+                <div class="stat" style="background:var(--s-high)"><small>Países en el top</small><b>71</b></div>
+              </div>
+              <small class="muted">Dónde está en el top ahora</small>
+              <div class="toplist">
+                <div class="t"><span class="flag">🇰🇷</span><div class="grow"><b>Corea del Sur</b><small>Puesto 1, 21 semanas</small></div></div>
+                <div class="t"><span class="flag">🇲🇽</span><div class="grow"><b>México</b><small>Puesto 3, 18 semanas</small></div></div>
+                <div class="t"><span class="flag">🇪🇸</span><div class="grow"><b>España</b><small>Puesto 6, 15 semanas</small></div></div>
+              </div>
+              <div class="row"><span class="btn fill"><span class="ms f s20">play_arrow</span>Escuchar</span><span class="btn out"><span class="ms s20">public</span>Ver en el mapa</span></div>
+            </aside>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+  <div class="notes">
+    <div><span class="ms s18">play_circle</span><span>«Reproducir el top» pone la lista entera en la cola. Doble clic en una fila reproduce desde ahí.</span></div>
+    <div><span class="ms s18">person</span><span>«Tus canciones» muestra las que más escuchas y su mejor puesto en las listas, igual que en el móvil.</span></div>
+    <div><span class="ms s18">public</span><span>«Ver en el mapa» abre el Mapa musical con los países de esa canción encendidos.</span></div>
+  </div>
+  <div class="android"><span class="ms">phone_android</span><span><b>Conexión con Android:</b> mismas fuentes que <code>ChartsScreen</code>, <code>RankingsSections</code> y <code>SongStatsScreen</code>. Las listas reales usan la sesión vinculada desde el móvil; sin ella, se ve el top general.</span></div>
+</section>
+
+<!-- 4 · Social -->
+<section id="social">
+  <h2><span class="n">4</span>Social</h2>
+  <p class="sub">La red social sin servidores de Android: Comunidad, Siguiendo, Descubrir y Chats. En pantalla ancha, el feed va en el centro y a la derecha están «Escuchando ahora» y tus chats. Tu identidad sigue viviendo en el móvil: el escritorio se vincula a ella con el mismo QR.</p>
+  <div class="stage"><div class="win" data-nav="Social">
+    <div class="body">
+      <div class="soc">
+        <div class="panel feed">
+          <div class="rk-head"><span class="h3">Social</span><span class="row"><span class="btn tonal"><span class="ms s20">person_add</span>Añadir amigo</span><span class="iconbtn"><span class="ms">search</span></span></span></div>
+          <div class="tabs-m3" style="margin-bottom:10px"><span class="on">Comunidad</span><span>Siguiendo</span><span>Descubrir</span><span>Chats</span></div>
+          <div class="compose"><span class="avatar">D</span><span class="grow muted">¿Qué estás escuchando?</span><span class="ms muted">music_note</span><span class="ms muted">image</span><span class="btn fill" style="height:34px">Publicar</span></div>
+          <div class="post">
+            <div class="who2"><span class="avatar a1">M</span><div class="grow"><b>Marta</b><small> · hace 12 min</small></div><span class="ms muted">more_horiz</span></div>
+            <p>No puedo dejar de escuchar este disco, el final de la cara B es otra cosa.</p>
+            <div class="song"><i class="c6"></i><div class="grow"><b>Alison</b><small>Slowdive, Souvlaki</small></div><span class="btn tonal" style="height:34px"><span class="ms f s18">play_arrow</span>Escuchar</span></div>
+            <div class="acts2"><span><span class="ms s18">favorite</span>24</span><span><span class="ms s18">chat_bubble</span>5</span><span><span class="ms s18">share</span>Compartir</span></div>
+          </div>
+          <div class="post">
+            <div class="who2"><span class="avatar a2">L</span><div class="grow"><b>Luis</b><small> · hace 1 h</small></div><span class="ms muted">more_horiz</span></div>
+            <p>Sala abierta para escuchar el disco nuevo juntos, pasen.</p>
+            <div class="song"><i class="c2"></i><div class="grow"><b>Sala: estreno de viernes</b><small>4 personas escuchando</small></div><span class="btn tonal" style="height:34px"><span class="ms s18">groups</span>Unirme</span></div>
+          </div>
+        </div>
+        <aside class="panel rail">
+          <h6>Escuchando ahora</h6>
+          <div class="live"><span class="avatar a1">M</span><div class="t"><b>Marta</b><small><span class="ms s16">graphic_eq</span>Alison, Slowdive</small></div><span class="iconbtn" title="Escuchar lo mismo"><span class="ms">headphones</span></span></div>
+          <div class="live"><span class="avatar a3">S</span><div class="t"><b>Sofi</b><small><span class="ms s16">graphic_eq</span>Espresso, Sabrina Carpenter</small></div><span class="iconbtn"><span class="ms">headphones</span></span></div>
+          <h6>Solicitudes para seguirte</h6>
+          <div class="chatrow"><span class="avatar a4">R</span><div class="t"><b>Rodri</b><small>Quiere seguirte · 3 amigos en común</small></div></div>
+          <div class="row" style="justify-content:flex-end;margin-top:-6px"><span class="btn txt" style="height:32px">Rechazar</span><span class="btn tonal" style="height:32px">Aceptar</span></div>
+          <h6>Chats</h6>
+          <div class="chatrow"><span class="avatar a1">M</span><div class="t"><b>Marta</b><small>jajaja esa canción es lo máximo</small></div><span class="unread">2</span></div>
+          <div class="chatrow"><span class="avatar a2">L</span><div class="t"><b>Luis</b><small>Te mandó una canción</small></div></div>
+          <div class="chatrow"><span class="avatar a3">S</span><div class="t"><b>Sofi</b><small><span class="ms s16" style="vertical-align:-3px">lock</span> Cifrado de extremo a extremo</small></div></div>
+        </aside>
+      </div>
+    </div>
+  </div></div>
+  <div class="notes">
+    <div><span class="ms s18">key</span><span>Las 12 palabras no se escriben en el ordenador: el QR de vincular también pasa tu identidad social, cifrada, si lo permites en el móvil.</span></div>
+    <div><span class="ms s18">bluetooth_disabled</span><span>«Cerca» (el radar por Bluetooth) se queda en el móvil; en el escritorio la gente cercana se ve en el Mapa musical.</span></div>
+    <div><span class="ms s18">headphones</span><span>«Escuchar lo mismo» pone en tu ordenador la canción que suena en el de tu amigo, en el mismo segundo.</span></div>
+  </div>
+  <div class="android"><span class="ms">phone_android</span><span><b>Conexión con Android:</b> mismos relés y mismos eventos que <code>P2PSocial</code>, <code>P2PMessaging</code> y <code>SocialHubScreen</code>: publicaciones, chats NIP-44 y seguir a gente se ven igual en los dos. Sin Supabase.</span></div>
+</section>
+
+<!-- 5 · Escuchar juntos -->
+<section id="juntos">
+  <h2><span class="n">5</span>Escuchar juntos</h2>
+  <p class="sub">Las salas de Listen Together con el mismo servidor que Android. A la izquierda lo que suena, sincronizado, y la cola con votos del Modo DJ. A la derecha, la gente y el chat. El código y el QR de la sala siempre están a la vista para invitar.</p>
+  <div class="stage"><div class="win" data-nav="Escuchar juntos">
+    <div class="body">
+      <div class="room">
+        <div class="panel stagecol">
+          <div class="roomhead">
+            <div class="grow"><span class="badge new"><span class="ms s16">public</span>Sala pública</span> <span class="badge"><span class="ms s16">how_to_vote</span>DJ Mode · los invitados votan</span>
+              <div class="h3" style="margin-top:6px">Estreno de viernes</div></div>
+            <span class="code">K7PX-2M</span><span class="qr" style="width:72px;height:72px;border-width:4px"></span>
+          </div>
+          <div class="nowroom">
+            <i class="c2"></i>
+            <div>
+              <span class="sync"><span class="ms s18 f">sync</span>Sincronizado con la sala</span>
+              <h5>Si Antes Te Hubiera Conocido</h5>
+              <span class="muted">Karol G · la puso Luis</span>
+              <div class="bar" style="margin-top:12px;max-width:none">1:02<span class="track" style="--p:30%"></span>3:15</div>
+            </div>
+          </div>
+          <div class="rowh" style="margin:0"><h4 style="font-size:18px">A continuación</h4><span class="btn tonal" style="height:34px"><span class="ms s18">add</span>Añadir canción</span></div>
+          <div class="q"><i class="c4"></i><div class="t"><b>Tu Boda</b><small>Óscar Maydon · la propuso Sofi</small></div><span class="votes on"><span class="ms s16 f">thumb_up</span>4</span></div>
+          <div class="q"><i class="c7"></i><div class="t"><b>Espresso</b><small>Sabrina Carpenter · la propuso Marta</small></div><span class="votes"><span class="ms s16">thumb_up</span>2</span></div>
+          <div class="q"><i class="c5"></i><div class="t"><b>Luther</b><small>Kendrick Lamar, SZA · la propusiste tú</small></div><span class="votes"><span class="ms s16">thumb_up</span>1</span></div>
+        </div>
+        <aside class="panel people">
+          <div class="row"><b style="font-weight:500">Participantes · 4</b><span class="grow"></span><span class="ms muted">tune</span></div>
+          <div class="person"><span class="avatar a2">L</span><div class="t"><b>Luis</b><small>Anfitrión</small></div><span class="ms s18 muted">star</span></div>
+          <div class="person"><span class="avatar">D</span><div class="t"><b>Tú</b><small>Invitado, desde el ordenador</small></div></div>
+          <div class="person"><span class="avatar a3">S</span><div class="t"><b>Sofi</b><small>Invitada</small></div></div>
+          <div class="person"><span class="avatar a1">M</span><div class="t"><b>Marta</b><small>Pendiente de aprobación</small></div><span class="btn tonal" style="height:30px;padding:0 12px">Aceptar</span></div>
+          <div class="msgs">
+            <div class="msg"><b>Sofi</b>esta ya la tengo en repeat</div>
+            <div class="msg"><b>Luis</b>voten la siguiente 👀</div>
+            <div class="msg me">¡voto por Luther!</div>
+          </div>
+          <div class="chatin"><span class="grow">Escribe en la sala…</span><span class="ms">send</span></div>
+          <span class="btn out" style="justify-content:center"><span class="ms s20">logout</span>Dejar la sala</span>
+        </aside>
+      </div>
+    </div>
+  </div></div>
+  <div class="lobby" style="margin-top:16px;max-width:1240px">
+    <div class="lobbycard" style="background:#fff;border:1px solid var(--doc-line);color:var(--ink)"><span class="ms" style="color:var(--doc-accent)">add_circle</span><b>Antes de entrar: organizar una sesión</b><span style="color:var(--muted);font-size:14px">Nombre, tipo de sala o género, pública o privada, Modo DJ y permisos (los invitados pueden añadir canciones, controlar la reproducción, requiere aprobación). Mismas opciones que la pantalla de Android.</span></div>
+    <div class="lobbycard" style="background:#fff;border:1px solid var(--doc-line);color:var(--ink)"><span class="ms" style="color:var(--doc-accent)">login</span><b>Unirse a la sesión</b><span style="color:var(--muted);font-size:14px">Pega un enlace o escribe el código, o elige en «Explorar salas públicas». En el escritorio no hace falta escanear: se escribe el código que enseña el otro.</span></div>
+  </div>
+  <div class="android"><span class="ms">phone_android</span><span><b>Conexión con Android:</b> mismo servidor de Hugging Face (v2.3 con panel de anfitrión) y mismo protocolo que <code>ListenTogetherDashboardScreen</code> y <code>MusicTogetherScreen</code>, así que una sala mezcla móviles y ordenadores.</span></div>
+</section>
+
+<!-- 6 · Descargas -->
+<section id="descargas">
+  <h2><span class="n">6</span>Descargas</h2>
+  <p class="sub">Lo que guardas para escuchar sin conexión en este ordenador y la cola de descargas, con los mismos estados que Android: Resolviendo, En cola, Guardando, Descargado y Error. Arriba se ve cuánto ocupa y la calidad elegida.</p>
+  <div class="stage"><div class="win" data-nav="Descargas">
+    <div class="body">
+      <div class="panel main">
+        <div class="topbar" data-top></div>
+        <div class="scroll">
+          <div class="rk-head"><span class="h3">Descargas</span><span class="row"><span class="btn txt">Limpiar terminadas</span><span class="btn out"><span class="ms s20">folder_open</span>Abrir carpeta</span></span></div>
+          <div class="dlhead">
+            <div class="stat"><small>Guardado en este ordenador</small><b>4,2 GB</b><div class="meter"><i style="width:42%"></i></div></div>
+            <div class="stat"><small>Calidad de descarga</small><b style="display:flex;align-items:center;gap:8px">Lossless <span class="q-hi">FLAC</span></b><small style="margin-top:6px">Si no hay lossless, la mejor disponible</small></div>
+            <div class="stat"><small>Canciones sin conexión</small><b>37</b><small style="margin-top:6px">3 playlists completas</small></div>
+          </div>
+          <div class="tabs-m3"><span>Descargado</span><span class="on">Cola de descargas · 4</span></div>
+          <div class="dl"><i class="cv c5"></i><div class="t"><b>Luther</b><small>Kendrick Lamar, SZA</small></div><span class="q-hi">FLAC 24 bit</span><span class="prog"><i style="width:64%"></i></span><span class="badge"><span class="ms s16">downloading</span>Guardando 64 %</span></div>
+          <div class="dl"><i class="cv c3"></i><div class="t"><b>Alison</b><small>Slowdive</small></div><span class="q-hi">FLAC</span><span class="prog"><i style="width:8%"></i></span><span class="badge"><span class="ms s16">manage_search</span>Resolviendo</span></div>
+          <div class="dl"><i class="cv c7"></i><div class="t"><b>Espresso</b><small>Sabrina Carpenter</small></div><span class="prog"><i style="width:0"></i></span><span class="badge"><span class="ms s16">schedule</span>En cola</span></div>
+          <div class="dl"><i class="cv c1"></i><div class="t"><b>Die With A Smile</b><small>Lady Gaga, Bruno Mars</small></div><span class="prog"><i style="width:0"></i></span><span class="badge err"><span class="ms s16">error</span>Error</span><span class="btn txt" style="height:32px">Reintentar</span></div>
+          <div class="dl"><i class="cv c4"></i><div class="t"><b>APT.</b><small>ROSÉ, Bruno Mars</small></div><span class="q-hi">FLAC</span><span class="prog"><i style="width:100%"></i></span><span class="badge ok"><span class="ms s16">offline_pin</span>Descargado</span></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+  <div class="notes">
+    <div><span class="ms s18">download_for_offline</span><span>Se descarga desde cualquier menú (canción, álbum o playlist entera), como en el móvil. Las playlists descargadas se actualizan solas.</span></div>
+    <div><span class="ms s18">high_quality</span><span>El lossless sale del resolver propio de Dezzy. Mientras no esté desplegado, se guarda la mejor calidad normal y la etiqueta lo dice.</span></div>
+    <div><span class="ms s18">lock</span><span>Las descargas sólo se reproducen dentro de Dezzy; «Abrir carpeta» muestra dónde están y cuánto ocupan.</span></div>
+  </div>
+  <div class="android"><span class="ms">phone_android</span><span><b>Conexión con Android:</b> mismos estados y textos que <code>LosslessDownloadsScreen</code> y el acceso «Sin conexión» de la biblioteca. El escritorio tiene su propia carpeta; las descargas no se copian entre dispositivos.</span></div>
+</section>
+</main>
+
+<template id="shell-top">
+  <span class="search"><span class="ms">search</span>Canciones, artistas, letras…<span class="kbd">Ctrl K</span></span>
+  <span style="flex:1"></span>
+  <span class="ms" style="color:var(--on-sv)">notifications</span>
+  <span class="avatar">D</span>
+</template>
+<script>
+// Monta la ventana común (barra de título, barra lateral y reproductor) en cada boceto.
+const NAV = [['home','Inicio'],['search','Buscar'],['library_music','Biblioteca'],['public','Mapa musical'],['leaderboard','Rankings'],['group','Social'],['groups','Escuchar juntos'],['download','Descargas']];
+document.querySelectorAll('.win[data-nav]').forEach((win) => {
+  const active = win.dataset.nav;
+  win.insertAdjacentHTML('afterbegin', '<div class="titlebar"><span class="logo"></span>Dezzy<span class="sp"></span><span class="wc"><span class="ms s16">remove</span><span class="ms s16">crop_square</span><span class="ms s16">close</span></span></div>');
+  const side = '<aside class="panel side"><nav class="nav">' +
+    NAV.map(([i, l]) => `<a class="${l === active ? 'on' : ''}" href="#"><span class="ms">${i}</span>${l}</a>`).join('') +
+    '</nav><h4>Tus playlists</h4>' +
+    '<div class="pl"><i class="c4"></i><div><b>Me gusta</b><small>842 canciones</small></div></div>' +
+    '<div class="pl"><i class="c3"></i><div><b>Noche de shoegaze</b><small>Playlist, 64</small></div></div>' +
+    '<div class="pl"><i class="c2"></i><div><b>Para manejar</b><small>Playlist, 120</small></div></div></aside>';
+  win.querySelector('.body').insertAdjacentHTML('afterbegin', side);
+  win.querySelectorAll('[data-top]').forEach((t) => (t.innerHTML = document.getElementById('shell-top').innerHTML));
+  win.insertAdjacentHTML('beforeend', '<div class="player"><div class="np"><i class="c2"></i><div style="min-width:0"><b>Si Antes Te Hubiera Conocido</b><small>Karol G</small></div><span class="ms f" style="color:var(--primary)">favorite</span></div><div class="ctrl"><div class="btns"><span class="ms s20">shuffle</span><span class="ms">skip_previous</span><span class="play"><span class="ms f s28">pause</span></span><span class="ms">skip_next</span><span class="ms s20">repeat</span></div><div class="bar">1:02<span class="track" style="--p:30%"></span>3:15</div></div><div class="extra"><span class="ms s20">lyrics</span><span class="ms s20">queue_music</span><span class="ms s20">devices</span><span class="ms s20' + (active === 'Escuchar juntos' ? ' on' : '') + '">groups</span><span class="ms s20">volume_up</span><span class="vol"></span><span class="ms s20">open_in_full</span></div></div>');
+});
+</script>
+</body>
+</html>

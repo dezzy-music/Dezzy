@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Búsqueda en Solo videos · Dispositivos en PC</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<style>
+:root{--doc:#F4F1EC;--ink:#1D1B20;--muted:#5E5A63;--line:#DDD6CC;--accent:#B5482E;
+  --feed:#0C0C0F;--card:#1A1A20;--chip:rgba(255,255,255,.12);--w62:rgba(255,255,255,.62);
+  --s:#141218;--s-high:#2B2930;--s-highest:#36343B;--on-s:#E6E0E9;--on-sv:#CAC4D0;--primary:#D0BCFF;--on-primary:#381E72;--sc2:#4A4458;--ov:#49454F;--ok:#7DD99A}
+*{box-sizing:border-box}
+body{margin:0;background:var(--doc);color:var(--ink);font:15px/1.5 Roboto,system-ui,sans-serif}
+.ms{font-family:'Material Symbols Outlined';font-weight:400;font-size:22px;line-height:1;display:inline-block;vertical-align:middle;font-variation-settings:'FILL' 0,'wght' 400}
+.ms.f{font-variation-settings:'FILL' 1,'wght' 400}
+main{max-width:1240px;margin:0 auto;padding:40px 16px 80px}
+h1{font:800 34px 'Roboto Flex',Roboto;margin:0}
+h2{font:800 26px 'Roboto Flex',Roboto;margin:56px 0 4px}
+.lead{color:var(--muted);max-width:760px}
+.row{display:flex;flex-wrap:wrap;gap:28px;margin-top:22px}
+.opt{flex:1 1 340px;min-width:0}
+.opt h3{font:700 19px 'Roboto Flex',Roboto;margin:0 0 4px}
+.opt p{color:var(--muted);font-size:14px;margin:0 0 12px}
+.tag{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;margin-right:8px;font-size:14px}
+.note{background:#fff;border:1px dashed var(--accent);border-radius:12px;padding:12px 14px;margin-top:16px;font-size:14px;color:var(--muted)}
+.note b{color:var(--ink)}
+
+/* ── Teléfono ─────────────────────────────── */
+.phone{width:340px;height:700px;border-radius:38px;background:var(--feed);border:10px solid #111;overflow:hidden;position:relative;color:#fff;margin:0 auto}
+.sb{height:26px;display:flex;justify-content:space-between;padding:6px 22px 0;font-size:12px;color:#ddd}
+.top{display:flex;align-items:center;gap:4px;padding:2px 6px}
+.top .t{flex:1;font:700 19px Roboto}
+.ib{width:40px;height:40px;display:grid;place-items:center;border-radius:50%;color:#fff}
+.vid{aspect-ratio:16/9;background:linear-gradient(135deg,#5a2e7a,#d2694a);position:relative}
+.vid .fs{position:absolute;right:8px;bottom:8px;width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.5);display:grid;place-items:center}
+.vid .fs .ms{font-size:20px}
+.vid .bar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.25)}
+.vid .bar::before{content:"";position:absolute;left:0;top:0;bottom:0;width:38%;background:#ff3b5c}
+.info{display:flex;align-items:center;padding:8px 4px 6px 14px}
+.info .tx{flex:1;min-width:0}
+.info b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.info small{color:var(--w62);font-size:12px}
+.chips{display:flex;gap:8px;padding:8px 14px;overflow:hidden}
+.chip{flex:none;padding:7px 14px;border-radius:18px;background:var(--chip);font-size:13px}
+.chip.on{background:#fff;color:#000;font-weight:500}
+.search{display:flex;align-items:center;gap:10px;margin:6px 14px;height:44px;border-radius:22px;background:rgba(255,255,255,.1);padding:0 8px 0 14px;color:var(--w62);font-size:14px}
+.search.act{background:#26262e;color:#fff;outline:2px solid rgba(255,255,255,.35)}
+.search .grow{flex:1}
+.caret{display:inline-block;width:1.5px;height:17px;background:#fff;vertical-align:middle;margin-left:1px}
+.vc{padding:8px 14px}
+.vc .th{aspect-ratio:16/9;border-radius:12px;position:relative}
+.vc .dur{position:absolute;right:6px;bottom:6px;background:rgba(0,0,0,.75);font-size:11px;padding:1px 5px;border-radius:4px}
+.vc b{display:block;font-size:13.5px;margin-top:8px}
+.vc small{color:var(--w62);font-size:12px}
+.res{display:flex;gap:10px;padding:7px 14px}
+.res .th{width:132px;flex:none;aspect-ratio:16/9;border-radius:10px;position:relative}
+.res b{display:block;font-size:13px;line-height:1.3}
+.res small{color:var(--w62);font-size:11.5px}
+.lbl{padding:10px 14px 4px;font-size:12.5px;color:var(--w62);display:flex;align-items:center;justify-content:space-between}
+.sug{display:flex;align-items:center;gap:14px;padding:9px 16px;font-size:14px}
+.sug .ms{color:var(--w62);font-size:20px}
+.sug .grow{flex:1}
+.sug .arr{transform:rotate(-45deg)}
+.mini{position:absolute;right:12px;bottom:14px;width:150px;aspect-ratio:16/9;border-radius:10px;background:linear-gradient(135deg,#5a2e7a,#d2694a);box-shadow:0 8px 24px rgba(0,0,0,.6)}
+.g1{background:linear-gradient(135deg,#1d4e89,#5fb3d9)}.g2{background:linear-gradient(135deg,#6b1f2b,#e0a458)}
+.g3{background:linear-gradient(135deg,#2c5d3f,#a7d46f)}.g4{background:linear-gradient(135deg,#3d2a6b,#e46dbb)}
+.g5{background:linear-gradient(135deg,#594a2b,#f2d16b)}
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.55)}
+.sheet{position:absolute;left:0;right:0;top:26px;bottom:0;background:var(--feed)}
+
+/* pantalla completa horizontal */
+.land{width:640px;max-width:100%;aspect-ratio:19.5/9;border-radius:30px;border:10px solid #111;background:#000;position:relative;overflow:hidden;color:#fff;margin:0 auto}
+.land .v{position:absolute;inset:0;background:linear-gradient(135deg,#5a2e7a,#d2694a)}
+.land .ctl{position:absolute;left:0;right:0;bottom:0;padding:16px 22px;background:linear-gradient(transparent,rgba(0,0,0,.7));display:flex;align-items:center;gap:14px;font-size:13px}
+.land .ctl .sk{flex:1;height:4px;background:rgba(255,255,255,.3);border-radius:2px;position:relative}
+.land .ctl .sk::before{content:"";position:absolute;left:0;top:0;bottom:0;width:38%;background:#ff3b5c;border-radius:2px}
+.land .tt{position:absolute;left:22px;top:16px;font-weight:500;display:flex;gap:10px;align-items:center}
+.land .mid{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:56px}
+.land .mid .ms{font-size:40px}.land .mid .pp{font-size:60px}
+
+/* ── Escritorio ───────────────────────────── */
+.win{background:var(--s);border-radius:14px;overflow:hidden;color:var(--on-s);box-shadow:0 20px 50px rgba(0,0,0,.25);position:relative;height:540px}
+.np{position:absolute;inset:0;background:radial-gradient(120% 90% at 30% 20%,#5a2e7a 0%,#1d1530 55%,#141218 100%)}
+.np .bar{display:flex;align-items:center;gap:6px;padding:12px 14px}
+.np .bar .grow{flex:1}
+.dzib{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:#fff;background:rgba(255,255,255,.08)}
+.dzib.on{background:var(--primary);color:var(--on-primary)}
+.svpill{display:flex;background:rgba(0,0,0,.35);border-radius:20px;padding:3px;font-size:13px}
+.svpill span{padding:6px 14px;border-radius:16px}.svpill .on{background:#fff;color:#000}
+.np .art{position:absolute;left:44px;top:84px;width:230px;aspect-ratio:1;border-radius:14px;background:linear-gradient(135deg,#8a3fbf,#f08a5d)}
+.np .meta{position:absolute;left:44px;top:330px;width:300px}
+.np .meta b{font:700 22px 'Roboto Flex'}.np .meta small{display:block;color:var(--on-sv)}
+.np .ctrls{position:absolute;left:44px;top:400px;display:flex;gap:10px;align-items:center}
+.np .ctrls .pp{width:52px;height:52px;border-radius:50%;background:#fff;color:#000;display:grid;place-items:center}
+.np .lyr{position:absolute;left:400px;right:30px;top:110px;font:700 22px/1.7 'Roboto Flex';color:rgba(255,255,255,.35)}
+.np .lyr .on{color:#fff}
+.pbar{position:absolute;left:0;right:0;bottom:0;height:72px;background:#1d1b20;display:flex;align-items:center;gap:12px;padding:0 16px;font-size:13px}
+.pbar .c{width:46px;height:46px;border-radius:8px;background:linear-gradient(135deg,#8a3fbf,#f08a5d)}
+.pbar .grow{flex:1}
+.pbar .x{display:flex;gap:4px;color:var(--on-sv)}
+.pbar .x .ms{width:36px;height:36px;display:grid;place-items:center;border-radius:50%}
+.pbar .x .on{background:var(--primary);color:var(--on-primary)}
+.dev{position:absolute;right:16px;width:360px;background:var(--s-high);border-radius:22px;box-shadow:0 18px 50px rgba(0,0,0,.55);padding:16px 0 10px;z-index:3}
+.dev h5{font:700 18px 'Roboto Flex';margin:0;padding:0 20px;display:flex;align-items:center}
+.dev h5 .grow{flex:1}
+.dev .st{font-size:12.5px;color:var(--on-sv);padding:2px 20px 8px}
+.dev .sec{font-size:12.5px;font-weight:500;color:var(--on-sv);padding:10px 20px 4px}
+.drow{display:flex;align-items:center;gap:12px;margin:0 8px;padding:8px 12px;border-radius:14px}
+.drow .ic{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:var(--s-highest);color:var(--on-sv);flex:none}
+.drow .t{flex:1;min-width:0}.drow b{display:block;font-weight:500;font-size:14px}
+.drow small{display:block;font-size:12px;color:var(--on-sv)}
+.drow.here{background:var(--sc2)}.drow.here .ic{background:var(--primary);color:var(--on-primary)}
+.drow.cast .ic{background:#1f3a4d;color:#9ad1ff}
+.drow.casting{background:#1f3a4d}.drow.casting .ic{background:#9ad1ff;color:#0b2233}
+.badge{font-size:10.5px;font-weight:500;padding:1px 7px;border-radius:9px;background:rgba(154,209,255,.15);color:#9ad1ff;margin-left:6px;vertical-align:1px}
+.dfoot{border-top:1px solid var(--ov);margin-top:8px;padding:8px 14px 0;font-size:13px;color:var(--on-sv);display:flex;gap:6px;align-items:center}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:6px 20px 10px}
+.tile{background:var(--s-highest);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.tile .ms{font-size:28px;color:var(--on-sv)}
+.tile.here{background:var(--sc2)}.tile.here .ms{color:var(--primary)}
+.tile.cast .ms{color:#9ad1ff}
+.tile small{color:var(--on-sv);font-size:11.5px}
+.strip{position:absolute;left:8px;right:8px;bottom:72px;height:30px;border-radius:10px 10px 0 0;background:#9ad1ff;color:#0b2233;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;padding:0 16px}
+.strip .grow{flex:1}
+</style>
+</head>
+<body>
+<main>
+<h1>Búsqueda en «Solo videos» y dispositivos en la PC</h1>
+<p class="lead">Dos piezas. En el <b>celular</b>, una barra para buscar cualquier video dentro de «Solo videos». En la <b>computadora</b>, el mismo botón de dispositivos que ahora tienen los 4 reproductores del móvil. Elige A, B o C de cada una, o mezcla.</p>
+
+<div class="note"><b>Giro a horizontal (arreglado, sin boceto):</b> al pulsar pantalla completa, el video ahora se ve horizontal siempre, como en YouTube. Si el sistema gira la pantalla, se usa ese giro. Si no puede (giro bloqueado, ventana múltiple…), el video se gira por dentro. Abajo tienes cómo queda. Además, en «Solo videos» el video pequeño tendrá su propio botón <span class="ms">fullscreen</span> para ir a pantalla completa (sale en los tres bocetos).</div>
+
+<div class="row" style="margin-top:18px">
+  <div class="opt">
+    <div class="land">
+      <div class="v"></div>
+      <div class="tt"><span class="ms">keyboard_arrow_down</span>Blinding Lights · The Weeknd</div>
+      <div class="mid"><span class="ms">skip_previous</span><span class="ms f pp">pause_circle</span><span class="ms">skip_next</span></div>
+      <div class="ctl">1:12<div class="sk"></div>3:20<span class="ms">fullscreen_exit</span></div>
+    </div>
+  </div>
+</div>
+
+<h2>1 · Celular: buscar en «Solo videos»</h2>
+<p class="lead">Los resultados son solo videos. Al tocar uno se reproduce arriba y los recomendados se recalculan para él, igual que hoy. El video de arriba sigue sonando mientras buscas.</p>
+
+<div class="row">
+  <!-- A -->
+  <div class="opt">
+    <h3><span class="tag">A</span>Barra fija bajo el video</h3>
+    <p>La barra siempre visible entre el video y los filtros. Al escribir, los filtros pasan a ser los del resultado (Todo · Videoclips · En vivo · Covers) y la lista cambia. La X vuelve a los recomendados.</p>
+    <div class="phone">
+      <div class="sb"><span>9:41</span><span>▴ ▮</span></div>
+      <div class="top"><span class="ib ms">arrow_back</span><span class="t">Solo videos</span><span class="ib ms">devices</span><span class="ib ms">queue_music</span></div>
+      <div class="vid"><span class="fs"><span class="ms">fullscreen</span></span><div class="bar"></div></div>
+      <div class="info"><div class="tx"><b>Blinding Lights</b><small>The Weeknd</small></div><span class="ib ms f">pause</span><span class="ib ms f">skip_next</span></div>
+      <div class="search act"><span class="ms">search</span><span class="grow">daft punk live<span class="caret"></span></span><span class="ib ms" style="width:30px;height:30px">close</span></div>
+      <div class="chips"><span class="chip on">Todo</span><span class="chip">Videoclips</span><span class="chip">En vivo</span><span class="chip">Covers</span></div>
+      <div class="lbl"><span>Resultados para «daft punk live»</span></div>
+      <div class="res"><div class="th g1"><span class="dur" style="position:absolute;right:5px;bottom:5px;background:rgba(0,0,0,.75);font-size:10.5px;padding:0 4px;border-radius:3px">8:47</span></div><div><b>Daft Punk – Alive 2007 (Live)</b><small>Daft Punk · 12 M vistas</small></div></div>
+      <div class="res"><div class="th g2"></div><div><b>One More Time / Aerodynamic (Live)</b><small>Daft Punk · 4,1 M vistas</small></div></div>
+      <div class="res"><div class="th g3"></div><div><b>Around the World – Coachella</b><small>Coachella · 2,3 M vistas</small></div></div>
+    </div>
+  </div>
+
+  <!-- B -->
+  <div class="opt">
+    <h3><span class="tag">B</span>Lupa en la barra de arriba, como YouTube</h3>
+    <p>Arriba hay una <span class="ms">search</span>. Al tocarla, la barra superior se convierte en el campo y se abre una hoja con tus búsquedas recientes y sugerencias. El video sigue sonando en la ventanita flotante.</p>
+    <div class="phone">
+      <div class="sb"><span>9:41</span><span>▴ ▮</span></div>
+      <div class="top"><span class="ib ms">arrow_back</span><div class="search act" style="flex:1;margin:0 4px"><span class="grow">daft p<span class="caret"></span></span><span class="ms" style="font-size:20px">close</span></div></div>
+      <div style="position:absolute;left:0;right:0;top:76px;bottom:0;background:var(--feed)">
+        <div class="lbl"><span>Búsquedas recientes</span><span>Borrar</span></div>
+        <div class="sug"><span class="ms">history</span><span class="grow">daft punk get lucky</span><span class="ms arr">arrow_upward</span></div>
+        <div class="sug"><span class="ms">history</span><span class="grow">tame impala live</span><span class="ms arr">arrow_upward</span></div>
+        <div class="lbl"><span>Sugerencias</span></div>
+        <div class="sug"><span class="ms">search</span><span class="grow"><b>daft p</b>unk live</span><span class="ms arr">arrow_upward</span></div>
+        <div class="sug"><span class="ms">search</span><span class="grow"><b>daft p</b>unk one more time</span><span class="ms arr">arrow_upward</span></div>
+        <div class="sug"><span class="ms">search</span><span class="grow"><b>daft p</b>unk instant crush</span><span class="ms arr">arrow_upward</span></div>
+        <div class="sug"><span class="ms">search</span><span class="grow"><b>daft p</b>unk tron legacy</span><span class="ms arr">arrow_upward</span></div>
+        <div class="mini"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- C -->
+  <div class="opt">
+    <h3><span class="tag">C</span>Buscador como primer filtro</h3>
+    <p>La barra va pegada arriba, junto a los filtros, y sigue a la vista al bajar por la lista. Las sugerencias salen como tarjetas con miniatura mientras escribes, para tocar directamente.</p>
+    <div class="phone">
+      <div class="sb"><span>9:41</span><span>▴ ▮</span></div>
+      <div class="top"><span class="ib ms">arrow_back</span><span class="t">Solo videos</span><span class="ib ms">devices</span><span class="ib ms">queue_music</span></div>
+      <div class="vid"><span class="fs"><span class="ms">fullscreen</span></span><div class="bar"></div></div>
+      <div class="chips" style="padding-top:12px"><span class="chip" style="display:flex;align-items:center;gap:6px;background:#26262e;outline:2px solid rgba(255,255,255,.35);flex:1"><span class="ms" style="font-size:18px">search</span>tame im<span class="caret"></span></span><span class="chip">Para ti</span></div>
+      <div class="lbl"><span>Toca para reproducir</span></div>
+      <div class="res"><div class="th g4"></div><div><b>Tame Impala – The Less I Know The Better</b><small>Videoclip · 4:20</small></div></div>
+      <div class="res"><div class="th g5"></div><div><b>Tame Impala – Let It Happen (Live)</b><small>En vivo · 7:46</small></div></div>
+      <div class="res"><div class="th g1"></div><div><b>Tame Impala – Borderline</b><small>Videoclip · 3:57</small></div></div>
+      <div class="sug"><span class="ms">search</span><span class="grow">Ver todos los resultados de «tame im»</span></div>
+    </div>
+  </div>
+</div>
+
+<h2>2 · Computadora: botón de dispositivos</h2>
+<p class="lead">Hoy la PC solo tiene el botón en la barra de abajo y el panel solo encuentra tus otros Dezzy. Igual que en el móvil: el botón también va en «Reproduciendo» a pantalla completa, y el panel encuentra los <b>Chromecast, teles y altavoces</b> de tu red. Va hecho en casa, sin descargar paquetes nuevos: búsqueda mDNS y el protocolo de Cast. La música sigue sonando desde tu PC y la tele la recibe por la red local.</p>
+
+<div class="row">
+  <!-- A -->
+  <div class="opt">
+    <h3><span class="tag">A</span>Mezclados en «En tu red» (como elegiste en el móvil)</h3>
+    <p>Un solo listado con un icono según el tipo: <span class="ms">computer</span> PC, <span class="ms">smartphone</span> móvil, <span class="ms">tv</span> tele, <span class="ms">speaker</span> altavoz. Una etiqueta pequeña «Cast» los distingue. El botón aparece arriba a la derecha en Reproduciendo.</p>
+    <div class="win">
+      <div class="np">
+        <div class="bar"><span class="dzib ms">keyboard_arrow_down</span><span class="grow"></span><span class="dzib ms">share</span><span class="svpill"><span class="on">Canción</span><span>Video</span></span><span class="dzib ms">auto_awesome</span><span class="dzib ms on">devices</span><span class="dzib ms">picture_in_picture_alt</span></div>
+        <div class="art"></div>
+      </div>
+      <div class="dev" style="top:62px">
+        <h5><span class="grow">Conectar a un dispositivo</span><span class="ms" style="color:var(--on-sv)">refresh</span></h5>
+        <div class="st">4 dispositivos en tu red</div>
+        <div class="drow here"><span class="ic ms f">computer</span><div class="t"><b>Este ordenador</b><small>Suena aquí</small></div><span class="ms" style="color:var(--primary)">volume_up</span></div>
+        <div class="sec">En tu red</div>
+        <div class="drow"><span class="ic ms">smartphone</span><div class="t"><b>Pixel de Dezzy</b><small>Dezzy para Android</small></div><span class="ms" style="color:var(--on-sv)">more_vert</span></div>
+        <div class="drow cast"><span class="ic ms">tv</span><div class="t"><b>Tele del salón<span class="badge">Cast</span></b><small>Chromecast con Google TV</small></div></div>
+        <div class="drow cast"><span class="ic ms">speaker</span><div class="t"><b>Nest Audio cocina<span class="badge">Cast</span></b><small>Altavoz</small></div></div>
+        <div class="drow"><span class="ic ms">computer</span><div class="t"><b>Portátil</b><small>Dezzy para PC</small></div><span class="ms" style="color:var(--on-sv)">more_vert</span></div>
+        <div class="dfoot"><span class="ms">groups</span>Escuchar juntos con amigos</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- B -->
+  <div class="opt">
+    <h3><span class="tag">B</span>Secciones separadas</h3>
+    <p>Mismo panel, pero en dos bloques: «Tus Dezzy» (con los modos Sólo allí / En ambos) y «Teles y altavoces». En la barra de abajo, mientras transmites, una franja azul dice dónde suena.</p>
+    <div class="win">
+      <div class="np" style="background:#141218">
+        <div style="padding:22px;color:var(--on-sv);font-size:14px">Inicio · Para ti</div>
+      </div>
+      <div class="dev" style="top:22px">
+        <h5><span class="grow">Conectar a un dispositivo</span><span class="ms" style="color:var(--on-sv)">refresh</span></h5>
+        <div class="st">Transmitiendo a Tele del salón</div>
+        <div class="drow"><span class="ic ms">computer</span><div class="t"><b>Este ordenador</b><small>Toca para traer la música aquí</small></div></div>
+        <div class="sec">Tus Dezzy</div>
+        <div class="drow"><span class="ic ms">smartphone</span><div class="t"><b>Pixel de Dezzy</b><small>Dezzy para Android</small></div></div>
+        <div class="sec">Teles y altavoces</div>
+        <div class="drow casting"><span class="ic ms f">cast_connected</span><div class="t"><b>Tele del salón</b><small>Transmitiendo · toca para detener</small></div><span class="ms">close</span></div>
+        <div class="drow cast"><span class="ic ms">speaker</span><div class="t"><b>Nest Audio cocina</b><small>Altavoz</small></div></div>
+      </div>
+      <div class="strip"><span class="ms">cast_connected</span><span class="grow">Suena en Tele del salón</span><span>Traer aquí</span><span>Desconectar</span></div>
+      <div class="pbar"><div class="c"></div><div class="grow"><b>Blinding Lights</b><br><small style="color:var(--on-sv)">The Weeknd</small></div><div class="x"><span class="ms">lyrics</span><span class="ms">queue_music</span><span class="ms on">cast_connected</span><span class="ms">groups</span><span class="ms">volume_up</span></div></div>
+    </div>
+  </div>
+
+  <!-- C -->
+  <div class="opt">
+    <h3><span class="tag">C</span>Mosaico grande en Reproduciendo</h3>
+    <p>En pantalla completa, el botón abre un mosaico de tarjetas encima de la letra, cómodo de tocar desde lejos. Desde la barra de abajo se abre el panel de lista (como A).</p>
+    <div class="win">
+      <div class="np">
+        <div class="bar"><span class="dzib ms">keyboard_arrow_down</span><span class="grow"></span><span class="dzib ms">share</span><span class="dzib ms">auto_awesome</span><span class="dzib ms on">devices</span></div>
+        <div class="art" style="opacity:.35"></div>
+      </div>
+      <div class="dev" style="top:62px;left:30px;right:30px;width:auto">
+        <h5><span class="grow">¿Dónde suena?</span><span class="ms" style="color:var(--on-sv)">close</span></h5>
+        <div class="st">Toca uno para pasar la música</div>
+        <div class="grid">
+          <div class="tile here"><span class="ms f">computer</span><b>Este ordenador</b><small>Suena aquí</small></div>
+          <div class="tile"><span class="ms">smartphone</span><b>Pixel de Dezzy</b><small>Android</small></div>
+          <div class="tile cast"><span class="ms">tv</span><b>Tele del salón</b><small>Cast · Google TV</small></div>
+          <div class="tile cast"><span class="ms">speaker</span><b>Nest Audio</b><small>Cast · Altavoz</small></div>
+          <div class="tile"><span class="ms">computer</span><b>Portátil</b><small>PC</small></div>
+          <div class="tile" style="background:transparent;border:1px dashed var(--ov)"><span class="ms">groups</span><b>Escuchar juntos</b><small>Con amigos</small></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="note"><b>Límite de Cast en la PC:</b> la tele o el altavoz reciben solo el audio, igual que con un Chromecast desde el móvil. Mientras transmites, los controles de Dezzy (play, pausa, saltar, volumen) mandan sobre el Chromecast. Si cierras Dezzy en la PC, la música para.</div>
+</main>
+</body>
+</html>

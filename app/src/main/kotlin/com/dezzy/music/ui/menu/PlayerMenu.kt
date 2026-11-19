@@ -145,6 +145,8 @@ fun ColumnScope.PlayerMenu(
     onShowDetailsDialog: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Si se pasa, el menú muestra «Temporizador» (Apple Music lo saca de la fila inferior). */
+    onSleepTimerClick: (() -> Unit)? = null,
 ) {
     mediaMetadata ?: return
     val context = LocalContext.current
@@ -653,6 +655,20 @@ fun ColumnScope.PlayerMenu(
                         },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     )
+
+                    if (onSleepTimerClick != null) {
+                        HorizontalDivider(modifier = Modifier.padding(start = 56.dp), color = MaterialTheme.colorScheme.outlineVariant)
+
+                        ListItem(
+                            headlineContent = { Text(text = "Temporizador") },
+                            leadingContent = { Icon(painter = painterResource(R.drawable.bedtime), contentDescription = null) },
+                            modifier = Modifier.clickable {
+                                onDismiss()
+                                onSleepTimerClick()
+                            },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                        )
+                    }
 
                     if (isQueueTrigger != true) {
                         HorizontalDivider(modifier = Modifier.padding(start = 56.dp), color = MaterialTheme.colorScheme.outlineVariant)

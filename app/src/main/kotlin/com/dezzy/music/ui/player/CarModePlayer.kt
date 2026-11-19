@@ -89,7 +89,7 @@ fun CarModePlayer(
                     style = MaterialTheme.typography.labelLarge
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    com.dezzy.music.ui.component.CastButton(tint = Color.White)
+                    com.dezzy.music.ui.component.DevicesButton(tint = Color.White)
                     IconButton(onClick = { playerConnection.enableVideoMode() }) {
                         Icon(
                             painter = painterResource(R.drawable.slow_motion_video),

@@ -741,7 +741,7 @@ private fun VideoModeScreen(
  * completa (llena la capa girada).
  */
 @Composable
-private fun VideoStage(
+internal fun VideoStage(
     player: ExoPlayer?,
     surfaceActive: Boolean,
     loading: Boolean,
@@ -919,7 +919,7 @@ private fun VideoStage(
                                 }
                             }
                         }
-                        com.dezzy.music.ui.component.CastButton(tint = Color.White)
+                        com.dezzy.music.ui.component.DevicesButton(tint = Color.White)
                         Box {
                             IconButton(onClick = { menuOpen = true }) {
                                 Icon(
@@ -1362,7 +1362,7 @@ private fun VideoActionChip(
  * el contenido 90° (no se rota la Activity). Atrás o el botón la cierran.
  */
 @Composable
-private fun VideoFullscreenDialog(
+internal fun VideoFullscreenDialog(
     onDismiss: () -> Unit,
     content: @Composable () -> Unit,
 ) {
@@ -1412,14 +1412,29 @@ private fun VideoFullscreenDialog(
             controller?.hide(WindowInsetsCompat.Type.systemBars())
             onDispose { controller?.show(WindowInsetsCompat.Type.systemBars()) }
         }
-        val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
-        Box(
+        // Tras girar la Activity, la ventana del diálogo tiene que volver a ocupar toda la
+        // pantalla con las medidas nuevas; si no, se queda con el tamaño vertical de antes.
+        val dialogConfiguration = LocalConfiguration.current
+        LaunchedEffect(window, dialogConfiguration.orientation, dialogConfiguration.screenWidthDp) {
+            window?.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
+        }
+        // El giro se decide por la forma REAL de la ventana, no por la configuración: si el
+        // sistema no ha girado (giro bloqueado, ventana múltiple, tablet que ignora la
+        // petición…) o la configuración llega tarde, la capa se gira 90° y el video se ve
+        // horizontal igualmente, como en YouTube.
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black)
-                .rotateQuarterTurn(enabled = !landscape),
+                .background(Color.Black),
         ) {
-            content()
+            val windowIsPortrait = maxHeight > maxWidth
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .rotateQuarterTurn(enabled = windowIsPortrait),
+            ) {
+                content()
+            }
         }
     }
 }

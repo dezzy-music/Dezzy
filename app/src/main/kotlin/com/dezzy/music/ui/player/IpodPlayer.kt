@@ -41,6 +41,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
@@ -144,6 +147,50 @@ fun IpodPlayer(
     val isLocalSong = mediaMetadata?.id?.startsWith("local_") == true
     var showLyrics by remember { mutableStateOf(false) }
 
+    // Boceto B: las acciones viven en un menú dentro de la LCD; la rueda lo recorre.
+    var lcdMode by remember { mutableStateOf(IpodLcdMode.NOW_PLAYING) }
+    var menuIndex by remember { mutableIntStateOf(0) }
+    var showDevices by remember { mutableStateOf(false) }
+    val haptic = LocalHapticFeedback.current
+    val queueWindows by playerConnection.queueWindows.collectAsState()
+    val currentWindowIndex by playerConnection.currentWindowIndex.collectAsState()
+    val menuItems = remember(isLocalSong) {
+        IpodMenuItem.entries.filter { !(isLocalSong && it == IpodMenuItem.LYRICS) }
+    }
+    if (showDevices) {
+        com.dezzy.music.ui.component.ConnectDeviceBottomSheet(
+            onDismissRequest = { showDevices = false },
+            onOpenListenTogether = {
+                showDevices = false
+                state.collapseSoft()
+                navController.navigate("settings/music_together")
+            },
+        )
+    }
+    val selectMenuItem: (IpodMenuItem) -> Unit = { item ->
+        lcdMode = IpodLcdMode.NOW_PLAYING
+        when (item) {
+            IpodMenuItem.LYRICS -> showLyrics = true
+            IpodMenuItem.QUEUE -> onQueueClick()
+            IpodMenuItem.DEVICES -> showDevices = true
+            IpodMenuItem.VIDEO -> playerConnection.enableVideoMode()
+            IpodMenuItem.VISUALIZER -> onVisualizerClick()
+            IpodMenuItem.SHARE -> showShareSheet = true
+            IpodMenuItem.MORE -> onMenuClick()
+            IpodMenuItem.NOW_PLAYING -> showLyrics = false
+        }
+    }
+    // Girar la rueda: recorre el menú o, en la canción, sube/baja el volumen.
+    val onWheelStep: (Int) -> Unit = { step ->
+        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        if (lcdMode == IpodLcdMode.MENU) {
+            menuIndex = (menuIndex + step).coerceIn(0, menuItems.lastIndex)
+        } else {
+            val vol = playerConnection.service.playerVolume
+            vol.value = (vol.value + step * 0.05f).coerceIn(0f, 1f)
+        }
+    }
+
     // Auto-disable lyrics if a local song starts
     LaunchedEffect(mediaMetadata?.id) {
         if (isLocalSong) {
@@ -159,7 +206,7 @@ fun IpodPlayer(
     // Dynamic LCD height transition — clamped to the screen so it never overflows
     // on short/small devices while keeping the tuned size on typical phones.
     val lcdHeight by animateDpAsState(
-        targetValue = (if (isLandscape) 190.dp else if (showLyrics) 245.dp else 210.dp)
+        targetValue = (if (isLandscape) 190.dp else if (showLyrics || lcdMode == IpodLcdMode.MENU) 245.dp else 210.dp)
             .coerceAtMost(screenHeightDp * 0.42f),
         animationSpec = tween(durationMillis = 300),
         label = "LcdHeightAnimation"
@@ -194,58 +241,14 @@ fun IpodPlayer(
                 fontFamily = MaterialTheme.typography.bodyLarge.fontFamily
             )
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                com.dezzy.music.ui.component.CastButton(tint = topBarColor)
-
-                // Video musical · visualizador · compartir
-                IconButton(onClick = { playerConnection.enableVideoMode() }) {
-                    Icon(
-                        painter = painterResource(R.drawable.slow_motion_video),
-                        contentDescription = "Video",
-                        tint = topBarColor,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-                IconButton(onClick = onVisualizerClick) {
-                    Icon(
-                        painter = painterResource(R.drawable.auto_awesome),
-                        contentDescription = "Visualizador",
-                        tint = topBarColor,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-                IconButton(onClick = { showShareSheet = true }) {
-                    Icon(
-                        painter = painterResource(R.drawable.share),
-                        contentDescription = "Compartir",
-                        tint = topBarColor,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-
-                // Lyrics Button (Only visible for online songs)
-                if (!isLocalSong) {
-                    IconButton(onClick = { showLyrics = !showLyrics }) {
-                        Icon(
-                            painter = painterResource(R.drawable.lyrics),
-                            contentDescription = "Lyrics",
-                            tint = if (showLyrics) (if (isDarkBody) Color(0xFFC2D9D2) else Color(0xFF1B2631)) else topBarColor,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                }
-
-                IconButton(onClick = onQueueClick) {
-                    Icon(
-                        painter = painterResource(R.drawable.queue_music),
-                        contentDescription = "Queue",
-                        tint = topBarColor,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
+            // Boceto A: sólo ⌄ · nombre · dispositivos; el resto está en el menú de la LCD.
+            com.dezzy.music.ui.component.DevicesButton(
+                tint = topBarColor,
+                onOpenListenTogether = {
+                    state.collapseSoft()
+                    navController.navigate("settings/music_together")
+                },
+            )
         }
     }
 
@@ -294,9 +297,13 @@ fun IpodPlayer(
                             modifier = Modifier.size(10.dp)
                         )
 
-                        // Center Now Playing title
+                        // Centro: «Reproduciendo · N de M», o «Dezzy» en el menú
+                        val queuePos = if (queueWindows.isNotEmpty() && currentWindowIndex >= 0) {
+                            "  ·  ${currentWindowIndex + 1} de ${queueWindows.size}"
+                        } else ""
                         Text(
-                            text = stringResource(R.string.now_playing),
+                            text = if (lcdMode == IpodLcdMode.MENU) "Dezzy"
+                                else stringResource(R.string.now_playing) + queuePos,
                             color = Color.Black,
                             fontSize = 8.5.sp,
                             fontWeight = FontWeight.Bold,
@@ -325,14 +332,25 @@ fun IpodPlayer(
                             .weight(1f)
                     ) {
                         AnimatedContent(
-                            targetState = showLyrics,
+                            // null = menú; true = letra; false = canción
+                            targetState = if (lcdMode == IpodLcdMode.MENU) null else showLyrics,
                             transitionSpec = {
                                 androidx.compose.animation.fadeIn(animationSpec = tween(300)) togetherWith
                                 androidx.compose.animation.fadeOut(animationSpec = tween(300))
                             },
                             label = "LcdContentTransition"
                         ) { targetShowLyrics ->
-                            if (targetShowLyrics) {
+                            if (targetShowLyrics == null) {
+                                IpodLcdMenu(
+                                    items = menuItems,
+                                    selected = menuIndex,
+                                    onClick = { i ->
+                                        menuIndex = i
+                                        selectMenuItem(menuItems[i])
+                                    },
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            } else if (targetShowLyrics) {
                                 // Split Dual-Pane layout: Cover/Metadata/Time (Left) + Sync Lyrics (Right)
                                 Row(
                                     modifier = Modifier
@@ -468,7 +486,7 @@ fun IpodPlayer(
                                         contentDescription = null,
                                         contentScale = ContentScale.Crop,
                                         modifier = Modifier
-                                            .size(if (isLandscape) 90.dp else 105.dp)
+                                            .size(if (isLandscape) 84.dp else 96.dp)
                                             .clip(RoundedCornerShape(3.dp))
                                             .border(1.dp, Color(0xFF7B9990), RoundedCornerShape(3.dp))
                                     )
@@ -486,7 +504,7 @@ fun IpodPlayer(
                                             color = Color.Black,
                                             fontWeight = FontWeight.Bold,
                                             fontFamily = MaterialTheme.typography.bodyLarge.fontFamily,
-                                            fontSize = if (isLandscape) 9.sp else 10.5.sp,
+                                            fontSize = if (isLandscape) 12.sp else 15.sp,
                                             maxLines = if (isLandscape) 1 else 2,
                                             overflow = TextOverflow.Ellipsis
                                         )
@@ -498,10 +516,21 @@ fun IpodPlayer(
                                             color = Color(0xFF2C3E50),
                                             fontWeight = FontWeight.SemiBold,
                                             fontFamily = MaterialTheme.typography.bodyLarge.fontFamily,
-                                            fontSize = if (isLandscape) 7.5.sp else 8.5.sp,
+                                            fontSize = if (isLandscape) 11.sp else 13.sp,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
+
+                                        mediaMetadata?.album?.title?.let { albumTitle ->
+                                            Text(
+                                                text = albumTitle,
+                                                color = Color(0xFF2C3E50).copy(alpha = 0.75f),
+                                                fontFamily = MaterialTheme.typography.bodyLarge.fontFamily,
+                                                fontSize = if (isLandscape) 10.sp else 12.sp,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
 
                                         Spacer(modifier = Modifier.height(if (isLandscape) 8.dp else 14.dp))
 
@@ -529,13 +558,13 @@ fun IpodPlayer(
                                             Text(
                                                 text = makeTimeString(position),
                                                 color = Color(0xFF2C3E50),
-                                                fontSize = if (isLandscape) 7.5.sp else 8.5.sp,
+                                                fontSize = if (isLandscape) 9.sp else 11.sp,
                                                 fontFamily = MaterialTheme.typography.bodyLarge.fontFamily
                                             )
                                             Text(
-                                                text = makeTimeString(duration),
+                                                text = "-" + makeTimeString((duration - position).coerceAtLeast(0L)),
                                                 color = Color(0xFF2C3E50),
-                                                fontSize = if (isLandscape) 7.5.sp else 8.5.sp,
+                                                fontSize = if (isLandscape) 9.sp else 11.sp,
                                                 fontFamily = MaterialTheme.typography.bodyLarge.fontFamily
                                             )
                                         }
@@ -572,10 +601,12 @@ fun IpodPlayer(
     val centerButtonBodyColor = if (isDarkBody) Color.White.copy(alpha = 0.22f) else Color(0xFFEAEDED)
     val wheelTextColor = if (isDarkBody) Color.White else Color(0xFF5D6D7E)
 
+    val wheelInnerRadiusPx = with(LocalDensity.current) { (if (isLandscape) 32.dp else 40.dp).toPx() }
     val clickWheel = @Composable {
         Box(
             modifier = Modifier
                 .size(clickWheelSize)
+                .ipodWheelRotationUpdated(wheelInnerRadiusPx, onWheelStep)
                 .drawBehind {
                     // Draw a completely smooth circular circular shadow
                     drawCircle(
@@ -634,7 +665,11 @@ fun IpodPlayer(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = ripple(bounded = true, color = if (isDarkBody) Color.White.copy(alpha = 0.3f) else Color(0xFFBDC3C7), radius = if (isLandscape) 32.dp else 40.dp)
                     ) {
-                        playerConnection.player.togglePlayPause()
+                        if (lcdMode == IpodLcdMode.MENU) {
+                            menuItems.getOrNull(menuIndex)?.let(selectMenuItem)
+                        } else {
+                            playerConnection.player.togglePlayPause()
+                        }
                     }
             )
 
@@ -654,7 +689,7 @@ fun IpodPlayer(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null
                         ) {
-                            onMenuClick()
+                            lcdMode = if (lcdMode == IpodLcdMode.MENU) IpodLcdMode.NOW_PLAYING else IpodLcdMode.MENU
                         }
                 )
 
