@@ -68,6 +68,10 @@ sealed class Screens(
     )
 
     companion object {
-        val MainScreens = listOf(Home, Search, Library, Together, Social)
+        val MainScreens = if (com.dezzy.music.constants.SocialFeatures.ENABLED) {
+            listOf(Home, Search, Library, Together, Social)
+        } else {
+            listOf(Home, Search, Library, Together)
+        }
     }
 }

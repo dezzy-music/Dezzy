@@ -107,7 +107,7 @@ fun NavGraphBuilder.navigationBuilder(
     latestVersionName: String,
 ) {
 
-    
+
     composable(Screens.Home.route) {
         // Share the Activity-scoped HomeViewModel that MainActivity already creates
         // (for the shuffle button and account avatar). Scoping this one to the nav
@@ -171,6 +171,26 @@ fun NavGraphBuilder.navigationBuilder(
     }
     composable("music_map") {
         com.dezzy.music.ui.screens.musicmap.MusicMapScreen(navController)
+    }
+    // Estadísticas de ranking de cualquier canción (kworb + Spotify).
+    composable(
+        route = com.dezzy.music.ui.screens.musicmap.SongStatsRoutePattern,
+        arguments = listOf("title", "artist", "thumb", "videoId", "artistId").map { name ->
+            navArgument(name) {
+                type = NavType.StringType
+                defaultValue = ""
+            }
+        },
+    ) { entry ->
+        val args = entry.arguments
+        com.dezzy.music.ui.screens.musicmap.SongStatsScreen(
+            navController = navController,
+            title = args?.getString("title").orEmpty(),
+            artist = args?.getString("artist").orEmpty(),
+            thumbnail = args?.getString("thumb")?.takeIf { it.isNotBlank() },
+            videoId = args?.getString("videoId")?.takeIf { it.isNotBlank() },
+            artistId = args?.getString("artistId")?.takeIf { it.isNotBlank() },
+        )
     }
     // Red social P2P (Nostr, cifrado de extremo a extremo, sin servidores propios).
     composable("social") {
@@ -406,6 +426,9 @@ fun NavGraphBuilder.navigationBuilder(
     }
     composable("settings/accounts") {
         com.dezzy.music.ui.screens.settings.AccountsServicesScreen(navController)
+    }
+    composable("settings/desktop_link") {
+        com.dezzy.music.ui.screens.settings.DesktopLinkScreen(navController)
     }
     composable("settings/appearance") {
         AppearanceSettings(navController, scrollBehavior)

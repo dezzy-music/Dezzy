@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bandera de Turquía (simplificada, 3:2). Generada por flags_gen.py: no editar a mano. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="36dp"
+    android:height="24dp"
+    android:viewportWidth="36"
+    android:viewportHeight="24">
+    <group>
+        <clip-path android:pathData="M3,0h30a3,3 0 0,1 3,3v18a3,3 0 0,1 -3,3h-30a3,3 0 0,1 -3,-3v-18a3,3 0 0,1 3,-3z" />
+        <path android:fillColor="#E30A17" android:pathData="M0,0h36v24h-36z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M7.5,12a6,6 0 1,0 12,0a6,6 0 1,0 -12,0z" />
+        <path android:fillColor="#E30A17" android:pathData="M10.2,12a4.8,4.8 0 1,0 9.6,0a4.8,4.8 0 1,0 -9.6,0z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M18.2,12L19.82,11.44L19.86,9.72L20.9,11.09L22.54,10.59L21.56,12L22.54,13.41L20.9,12.91L19.86,14.28L19.82,12.56z" />
+    </group>
+    <path
+        android:pathData="M3,0h30a3,3 0 0,1 3,3v18a3,3 0 0,1 -3,3h-30a3,3 0 0,1 -3,-3v-18a3,3 0 0,1 3,-3z"
+        android:strokeColor="#33000000"
+        android:strokeWidth="0.6" />
+</vector>

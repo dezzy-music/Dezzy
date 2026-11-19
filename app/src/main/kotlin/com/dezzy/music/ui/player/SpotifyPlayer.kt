@@ -337,12 +337,17 @@ fun SpotifyPlayer(
     val configuration = LocalConfiguration.current
 
     // Bloquear orientación horizontal para este reproductor SpotifyPlayer (forzar modo vertical/portrait)
-    DisposableEffect(Unit) {
+    // Mientras el video está en pantalla completa manda él (horizontal); no se toca.
+    val videoFullscreen by VideoFullscreenOrientation.active.collectAsState()
+    DisposableEffect(videoFullscreen) {
         val activity = context as? android.app.Activity
-        val originalOrientation = activity?.requestedOrientation ?: android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-        activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        if (!videoFullscreen) {
+            activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        }
         onDispose {
-            activity?.requestedOrientation = originalOrientation
+            if (!VideoFullscreenOrientation.active.value) {
+                activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            }
         }
     }
 

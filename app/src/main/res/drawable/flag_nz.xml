@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bandera de Nueva Zelanda (simplificada, 3:2). Generada por flags_gen.py: no editar a mano. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="36dp"
+    android:height="24dp"
+    android:viewportWidth="36"
+    android:viewportHeight="24">
+    <group>
+        <clip-path android:pathData="M3,0h30a3,3 0 0,1 3,3v18a3,3 0 0,1 -3,3h-30a3,3 0 0,1 -3,-3v-18a3,3 0 0,1 3,-3z" />
+        <path android:fillColor="#012169" android:pathData="M0,0h36v24h-36z" />
+        <path android:fillColor="#012169" android:pathData="M0,0h18v12h-18z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M-0.67,1L17.33,13L18.67,11L0.67,-1z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M0.67,13L18.67,1L17.33,-1L-0.67,11z" />
+        <path android:fillColor="#C8102E" android:pathData="M-0.22,0.33L17.78,12.33L18.22,11.67L0.22,-0.33z" />
+        <path android:fillColor="#C8102E" android:pathData="M0.22,12.33L18.22,0.33L17.78,-0.33L-0.22,11.67z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M7,0h4v12h-4z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M0,4h18v4h-18z" />
+        <path android:fillColor="#C8102E" android:pathData="M7.8,0h2.4v12h-2.4z" />
+        <path android:fillColor="#C8102E" android:pathData="M0,4.8h18v2.4h-18z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M27,17.1L27.45,18.39L28.81,18.41L27.72,19.23L28.12,20.54L27,19.76L25.88,20.54L26.28,19.23L25.19,18.41L26.55,18.39z" />
+        <path android:fillColor="#C8102E" android:pathData="M27,17.67L27.31,18.57L28.26,18.59L27.51,19.16L27.78,20.08L27,19.53L26.22,20.08L26.49,19.16L25.74,18.59L26.69,18.57z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M23,8.9L23.38,9.98L24.52,10.01L23.61,10.7L23.94,11.79L23,11.14L22.06,11.79L22.39,10.7L21.48,10.01L22.62,9.98z" />
+        <path android:fillColor="#C8102E" android:pathData="M23,9.38L23.26,10.14L24.07,10.15L23.43,10.64L23.66,11.41L23,10.95L22.34,11.41L22.57,10.64L21.93,10.15L22.74,10.14z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M27,2.9L27.38,3.98L28.52,4.01L27.61,4.7L27.94,5.79L27,5.14L26.06,5.79L26.39,4.7L25.48,4.01L26.62,3.98z" />
+        <path android:fillColor="#C8102E" android:pathData="M27,3.38L27.26,4.14L28.07,4.15L27.43,4.64L27.66,5.41L27,4.95L26.34,5.41L26.57,4.64L25.93,4.15L26.74,4.14z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M31,8L31.35,9.01L32.43,9.04L31.57,9.69L31.88,10.71L31,10.1L30.12,10.71L30.43,9.69L29.57,9.04L30.65,9.01z" />
+        <path android:fillColor="#C8102E" android:pathData="M31,8.45L31.25,9.16L32,9.18L31.4,9.63L31.62,10.35L31,9.92L30.38,10.35L30.6,9.63L30,9.18L30.75,9.16z" />
+    </group>
+    <path
+        android:pathData="M3,0h30a3,3 0 0,1 3,3v18a3,3 0 0,1 -3,3h-30a3,3 0 0,1 -3,-3v-18a3,3 0 0,1 3,-3z"
+        android:strokeColor="#33000000"
+        android:strokeWidth="0.6" />
+</vector>

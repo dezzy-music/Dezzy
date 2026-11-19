@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bandera de Honduras (simplificada, 3:2). Generada por flags_gen.py: no editar a mano. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="36dp"
+    android:height="24dp"
+    android:viewportWidth="36"
+    android:viewportHeight="24">
+    <group>
+        <clip-path android:pathData="M3,0h30a3,3 0 0,1 3,3v18a3,3 0 0,1 -3,3h-30a3,3 0 0,1 -3,-3v-18a3,3 0 0,1 3,-3z" />
+        <path android:fillColor="#0073CF" android:pathData="M0,0h36v8.02h-36z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M0,8h36v8.02h-36z" />
+        <path android:fillColor="#0073CF" android:pathData="M0,16h36v8.02h-36z" />
+        <path android:fillColor="#0073CF" android:pathData="M18,10.8L18.28,11.61L19.14,11.63L18.46,12.15L18.71,12.97L18,12.48L17.29,12.97L17.54,12.15L16.86,11.63L17.72,11.61z" />
+        <path android:fillColor="#0073CF" android:pathData="M14,9.2L14.28,10.01L15.14,10.03L14.46,10.55L14.71,11.37L14,10.88L13.29,11.37L13.54,10.55L12.86,10.03L13.72,10.01z" />
+        <path android:fillColor="#0073CF" android:pathData="M14,12.4L14.28,13.21L15.14,13.23L14.46,13.75L14.71,14.57L14,14.08L13.29,14.57L13.54,13.75L12.86,13.23L13.72,13.21z" />
+        <path android:fillColor="#0073CF" android:pathData="M22,9.2L22.28,10.01L23.14,10.03L22.46,10.55L22.71,11.37L22,10.88L21.29,11.37L21.54,10.55L20.86,10.03L21.72,10.01z" />
+        <path android:fillColor="#0073CF" android:pathData="M22,12.4L22.28,13.21L23.14,13.23L22.46,13.75L22.71,14.57L22,14.08L21.29,14.57L21.54,13.75L20.86,13.23L21.72,13.21z" />
+    </group>
+    <path
+        android:pathData="M3,0h30a3,3 0 0,1 3,3v18a3,3 0 0,1 -3,3h-30a3,3 0 0,1 -3,-3v-18a3,3 0 0,1 3,-3z"
+        android:strokeColor="#33000000"
+        android:strokeWidth="0.6" />
+</vector>

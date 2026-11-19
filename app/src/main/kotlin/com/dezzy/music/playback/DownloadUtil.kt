@@ -67,6 +67,13 @@ constructor(
     private val songUrlCache = ConcurrentHashMap<String, Pair<String, Long>>()
     // Stable scope for post-download processing — survives across DownloadManager listener calls (P5 fix)
     private val internalScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    // Post-proceso de descargas terminadas: como mucho 2 a la vez y sin repetir canción.
+    private val postProcessor = DownloadPostProcessor(internalScope, maxConcurrent = 2) { songId ->
+        val exportEnabled = context.dataStore.get(
+            com.dezzy.music.constants.ExportDownloadsToMusicKey, false
+        )
+        downloadExporter.get().processDownload(songId, exportEnabled)
+    }
     private val avoidStreamCodecs: Set<String> by lazy {
         if (deviceSupportsMimeType("audio/opus")) emptySet() else setOf("opus")
     }
@@ -228,6 +235,11 @@ constructor(
             val streamUrl = playbackData.streamUrl
 
             songUrlCache[mediaId] = streamUrl to (System.currentTimeMillis() + (playbackData.streamExpiresInSeconds * 1000L))
+            // En descargas masivas el mapa crecía sin fin: se tiran las URLs caducadas.
+            if (songUrlCache.size > 500) {
+                val now = System.currentTimeMillis()
+                songUrlCache.entries.removeIf { it.value.second <= now }
+            }
             dataSpec.withUri(streamUrl.toUri())
         }
 
@@ -263,19 +275,18 @@ constructor(
                         downloadsMap[download.request.id] = download
                         downloadsDirty.tryEmit(Unit)
                         if (download.state == Download.STATE_COMPLETED) {
+                            // Mark dateDownload ONLY now that the download truly completed.
+                            // Es barato y va al momento; lo pesado (letra, portada, canvas,
+                            // exportar) pasa por la cola acotada para no saturar red ni CPU.
                             internalScope.launch {
-                                // Mark dateDownload ONLY now that the download truly completed
                                 database.query {
                                     val song = getSongByIdBlocking(download.request.id)?.song
                                     if (song != null && song.dateDownload == null) {
                                         upsert(song.copy(dateDownload = LocalDateTime.now()))
                                     }
                                 }
-                                val exportEnabled = context.dataStore.get(
-                                    com.dezzy.music.constants.ExportDownloadsToMusicKey, false
-                                )
-                                downloadExporter.get().processDownload(download.request.id, exportEnabled)
                             }
+                            postProcessor.submit(download.request.id)
                         }
                     }
 

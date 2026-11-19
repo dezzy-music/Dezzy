@@ -39,6 +39,18 @@ import okhttp3.OkHttpClient
 import timber.log.Timber
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.withTimeoutOrNull
 
 object YTPlayerUtils {
     private const val logTag = "YTPlayerUtils"
@@ -116,10 +128,126 @@ object YTPlayerUtils {
     private const val BOT_DETECTION_BACKOFF_MS = 5 * 60 * 1000L
     private val botDetectedClientsUntil = ConcurrentHashMap<String, Long>()
 
+    // ── Resolvedor rápido ───────────────────────────────────────────────
+    // 1) Resultado completo en memoria: una canción ya resuelta (o pre-resuelta mientras
+    //    sonaba la anterior) arranca sin ninguna petición a /player.
+    // 2) Una sola resolución en curso por canción: la precarga y el reproductor comparten.
+    // 3) Si el cliente principal falla, los demás se prueban en paralelo (de 3 en 3) y gana
+    //    el primero que da una URL buena, en lugar de esperar uno detrás de otro.
+    // 4) El cliente que ganó la última vez se prueba antes.
+    private data class CachedPlayback(val data: PlaybackData, val expiresAtMs: Long)
+    private data class CachedVideoPlayback(val data: VideoPlaybackData, val expiresAtMs: Long)
+    private data class StreamPick(
+        val clientName: String,
+        val format: PlayerResponse.StreamingData.Format,
+        val url: String,
+        val expiresInSeconds: Int,
+        val response: PlayerResponse,
+    )
+
+    private const val PARALLEL_STREAM_CLIENTS = 3
+    private const val RESULT_CACHE_SAFETY_MS = 10 * 60 * 1000L
+    private const val RESULT_CACHE_MAX = 300
+
+    private val resolverScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val playbackResultCache = ConcurrentHashMap<String, CachedPlayback>()
+    private val videoResultCache = ConcurrentHashMap<String, CachedVideoPlayback>()
+    private val inFlightPlayback = ConcurrentHashMap<String, Deferred<PlaybackData>>()
+
+    @Volatile
+    private var lastWinningStreamClient: String? = null
+
+    @Volatile
+    private var lastWinningVideoClient: String? = null
+
     fun invalidateCachedStreamUrls(videoId: String) {
         val prefix = "$videoId:"
         streamUrlCache.keys.removeIf { it.startsWith(prefix) }
         failedStreamClientsUntil.keys.removeIf { it.startsWith(prefix) }
+        dropResolvedResults(videoId)
+    }
+
+    private fun dropResolvedResults(videoId: String) {
+        val prefix = "$videoId|"
+        playbackResultCache.keys.removeIf { it.startsWith(prefix) }
+        videoResultCache.keys.removeIf { it.startsWith(prefix) }
+    }
+
+    private fun trimResultCaches() {
+        val now = System.currentTimeMillis()
+        if (playbackResultCache.size > RESULT_CACHE_MAX) {
+            playbackResultCache.entries.removeIf { it.value.expiresAtMs <= now }
+            if (playbackResultCache.size > RESULT_CACHE_MAX) playbackResultCache.clear()
+        }
+        if (videoResultCache.size > RESULT_CACHE_MAX / 3) {
+            videoResultCache.entries.removeIf { it.value.expiresAtMs <= now }
+            if (videoResultCache.size > RESULT_CACHE_MAX / 3) videoResultCache.clear()
+        }
+    }
+
+    private fun resultExpiry(expiresInSeconds: Int): Long =
+        System.currentTimeMillis() +
+            (expiresInSeconds * 1000L - RESULT_CACHE_SAFETY_MS).coerceAtLeast(60_000L)
+
+    /**
+     * Lanza [attempt] para todos los elementos a la vez y devuelve el primer resultado no
+     * nulo. Los perdedores se cancelan sin esperarlos, así una petición lenta no retrasa.
+     */
+    private suspend fun <T, R : Any> raceFirst(items: List<T>, attempt: suspend (T) -> R?): R? {
+        if (items.isEmpty()) return null
+        if (items.size == 1) return runCatching { attempt(items[0]) }.getOrNull()
+        val winner = CompletableDeferred<R?>()
+        val remaining = AtomicInteger(items.size)
+        val jobs = items.map { item ->
+            resolverScope.launch {
+                try {
+                    val result = try { attempt(item) } catch (_: Throwable) { null }
+                    if (result != null) winner.complete(result)
+                } finally {
+                    if (remaining.decrementAndGet() == 0) winner.complete(null)
+                }
+            }
+        }
+        return try {
+            winner.await()
+        } finally {
+            jobs.forEach { it.cancel() }
+        }
+    }
+
+    private suspend fun playerResponseMemoized(
+        memo: ConcurrentHashMap<String, PlayerResponse>,
+        videoId: String,
+        playlistId: String?,
+        client: YouTubeClient,
+        signatureTimestamp: () -> Int?,
+    ): PlayerResponse? {
+        memo[client.clientName]?.let { return it }
+        val response = YouTube.player(videoId, playlistId, client, signatureTimestamp()).getOrNull() ?: return null
+        memo[client.clientName] = response
+        return response
+    }
+
+    /**
+     * Pre-resuelve una canción en segundo plano (la siguiente de la cola) para que, al
+     * llegar, el reproductor encuentre la URL ya lista.
+     */
+    fun prefetchPlayback(
+        videoId: String,
+        audioQuality: AudioQuality,
+        connectivityManager: ConnectivityManager,
+        preferredStreamClient: PlayerStreamClient,
+        avoidCodecs: Set<String>,
+    ) {
+        resolverScope.launch {
+            playerResponseForPlayback(
+                videoId = videoId,
+                audioQuality = audioQuality,
+                connectivityManager = connectivityManager,
+                preferredStreamClient = preferredStreamClient,
+                avoidCodecs = avoidCodecs,
+            ).onFailure { Timber.tag(logTag).d("Prefetch failed for $videoId: ${it.message}") }
+        }
     }
 
     private fun markClientBotDetected(clientName: String) {
@@ -146,6 +274,7 @@ object YTPlayerUtils {
 
     fun markStreamClientFailed(videoId: String, clientKey: String?, httpStatusCode: Int?) {
         if (httpStatusCode != 403) return
+        dropResolvedResults(videoId)
         val normalizedClientKey = normalizeStreamClientKey(clientKey)
         if (normalizedClientKey.isEmpty()) return
         failedStreamClientsUntil[buildFailedClientKey(videoId, normalizedClientKey)] =
@@ -231,27 +360,37 @@ object YTPlayerUtils {
         maxHeight: Int = 720,
         isValidUrl: suspend (String) -> Boolean = { true },
     ): Result<VideoPlaybackData> = runCatching {
-        var lastError: Throwable? = null
-        for (client in VIDEO_MODE_CLIENTS) {
+        val cacheKey = "$videoId|$maxHeight"
+        videoResultCache[cacheKey]?.let { cached ->
+            if (cached.expiresAtMs > System.currentTimeMillis()) {
+                Timber.tag(logTag).i("videoPlaybackDataForPlayback: cache hit for $videoId")
+                return@runCatching cached.data
+            }
+            videoResultCache.remove(cacheKey, cached)
+        }
+        val lastError = AtomicReference<Throwable?>(null)
+
+        suspend fun tryVideoClient(client: YouTubeClient): Pair<String, VideoPlaybackData>? {
             try {
                 Timber.tag(logTag).i("videoPlaybackDataForPlayback: Trying client ${client.clientName}")
                 val signatureTimestamp = if (client.useSignatureTimestamp) getSignatureTimestampOrNull(videoId) else null
                 val response = YouTube.player(videoId, playlistId, client, signatureTimestamp).getOrNull()
                 if (response == null) {
                     Timber.tag(logTag).w("videoPlaybackDataForPlayback: Response is null for ${client.clientName}")
-                    continue
+                    return null
                 }
                 if (response.playabilityStatus.status != "OK") {
                     Timber.tag(logTag).w("videoPlaybackDataForPlayback: Status is ${response.playabilityStatus.status} for ${client.clientName}")
-                    continue
+                    return null
                 }
+                val expiresIn = response.streamingData?.expiresInSeconds ?: return null
 
                 val candidates = selectMuxedFormatCandidates(response, maxHeight)
                 Timber.tag(logTag).i("videoPlaybackDataForPlayback: Found ${candidates.size} muxed candidates for ${client.clientName}")
                 if (candidates.isNotEmpty()) {
                     for (candidate in candidates.take(4)) {
-                        val cacheKey = buildCacheKey(videoId, candidate.itag)
-                        val cached = streamUrlCache[cacheKey]
+                        val urlKey = buildCacheKey(videoId, candidate.itag)
+                        val cached = streamUrlCache[urlKey]
                         val url =
                             if (cached != null && cached.expiresAtMs > System.currentTimeMillis()) {
                                 cached.url
@@ -259,48 +398,61 @@ object YTPlayerUtils {
                                 findUrlOrNull(candidate, videoId, client) ?: continue
                             }
                         if (!isValidUrl(url)) continue
-                        val expiresIn = response.streamingData?.expiresInSeconds ?: continue
-                        streamUrlCache[cacheKey] = CachedStreamUrl(url, System.currentTimeMillis() + expiresIn * 1000L)
-                        return@runCatching VideoPlaybackData(candidate, url, expiresIn)
+                        streamUrlCache[urlKey] = CachedStreamUrl(url, System.currentTimeMillis() + expiresIn * 1000L)
+                        return client.clientName to VideoPlaybackData(candidate, url, expiresIn)
                     }
-                } else {
-                    // Fallback to adaptive
-                    val videoCandidates = selectAdaptiveVideoFormatCandidates(response, maxHeight)
-                    val audioCandidates = selectAudioFormatCandidates(response, com.dezzy.music.constants.AudioQuality.HIGH, false)
-                    Timber.tag(logTag).i("videoPlaybackDataForPlayback: Found ${videoCandidates.size} adaptive video candidates, ${audioCandidates.size} adaptive audio candidates for ${client.clientName}")
-                    
-                    if (videoCandidates.isNotEmpty() && audioCandidates.isNotEmpty()) {
-                        var resolvedVideoUrl: String? = null
-                        var resolvedVideoCandidate: PlayerResponse.StreamingData.Format? = null
-                        for (vc in videoCandidates.take(4)) {
-                            val vUrl = findUrlOrNull(vc, videoId, client)
-                            if (vUrl != null && isValidUrl(vUrl)) {
-                                resolvedVideoUrl = vUrl
-                                resolvedVideoCandidate = vc
-                                break
-                            }
-                        }
-                        
-                        var resolvedAudioUrl: String? = null
-                        for (ac in audioCandidates.take(4)) {
-                            val aUrl = findUrlOrNull(ac, videoId, client)
-                            if (aUrl != null && isValidUrl(aUrl)) {
-                                resolvedAudioUrl = aUrl
-                                break
-                            }
-                        }
-                        
-                        if (resolvedVideoUrl != null && resolvedAudioUrl != null && resolvedVideoCandidate != null) {
-                            val expiresIn = response.streamingData?.expiresInSeconds ?: continue
-                            return@runCatching VideoPlaybackData(resolvedVideoCandidate, null, expiresIn, resolvedVideoUrl, resolvedAudioUrl)
-                        }
+                    return null
+                }
+
+                // Sin muxed (p. ej. videos oficiales): video y audio adaptativos.
+                val videoCandidates = selectAdaptiveVideoFormatCandidates(response, maxHeight)
+                val audioCandidates = selectAudioFormatCandidates(response, com.dezzy.music.constants.AudioQuality.HIGH, false)
+                Timber.tag(logTag).i("videoPlaybackDataForPlayback: Found ${videoCandidates.size} adaptive video candidates, ${audioCandidates.size} adaptive audio candidates for ${client.clientName}")
+                if (videoCandidates.isEmpty() || audioCandidates.isEmpty()) return null
+
+                var resolvedVideoUrl: String? = null
+                var resolvedVideoCandidate: PlayerResponse.StreamingData.Format? = null
+                for (vc in videoCandidates.take(4)) {
+                    val vUrl = findUrlOrNull(vc, videoId, client)
+                    if (vUrl != null && isValidUrl(vUrl)) {
+                        resolvedVideoUrl = vUrl
+                        resolvedVideoCandidate = vc
+                        break
                     }
                 }
+                if (resolvedVideoUrl == null || resolvedVideoCandidate == null) return null
+
+                var resolvedAudioUrl: String? = null
+                for (ac in audioCandidates.take(4)) {
+                    val aUrl = findUrlOrNull(ac, videoId, client)
+                    if (aUrl != null && isValidUrl(aUrl)) {
+                        resolvedAudioUrl = aUrl
+                        break
+                    }
+                }
+                if (resolvedAudioUrl == null) return null
+                return client.clientName to
+                    VideoPlaybackData(resolvedVideoCandidate, null, expiresIn, resolvedVideoUrl, resolvedAudioUrl)
+            } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                throw e
             } catch (e: Exception) {
-                lastError = e
+                lastError.set(e)
+                return null
             }
         }
-        throw lastError ?: IllegalStateException("No video stream available for $videoId")
+
+        // Antes se probaban los seis clientes uno detrás de otro (WEB espera además a su
+        // poToken). Ahora van de 3 en 3 a la vez, empezando por el que ganó la última vez.
+        val lastWinner = lastWinningVideoClient
+        val ordered = VIDEO_MODE_CLIENTS.sortedBy { if (it.clientName == lastWinner) 0 else 1 }
+        for (wave in ordered.chunked(PARALLEL_STREAM_CLIENTS)) {
+            val won = raceFirst(wave) { tryVideoClient(it) } ?: continue
+            lastWinningVideoClient = won.first
+            videoResultCache[cacheKey] = CachedVideoPlayback(won.second, resultExpiry(won.second.streamExpiresInSeconds))
+            trimResultCaches()
+            return@runCatching won.second
+        }
+        throw lastError.get() ?: IllegalStateException("No video stream available for $videoId")
     }
 
     private fun selectMuxedFormatCandidates(
@@ -354,6 +506,79 @@ object YTPlayerUtils {
         isCancelled: (() -> Boolean)? = null,
     ): Result<PlaybackData> = runCatching {
         if (isCancelled?.invoke() == true) throw kotlin.coroutines.cancellation.CancellationException("Playback was cancelled")
+        val isMetered = networkMetered ?: connectivityManager.isActiveNetworkMetered
+        val key = "$videoId|$audioQuality|${preferredStreamClient.name}|${avoidCodecs.sorted().joinToString(",")}|$isMetered|${playlistId.orEmpty()}"
+
+        playbackResultCache[key]?.let { cached ->
+            if (cached.expiresAtMs > System.currentTimeMillis()) {
+                Timber.tag(logTag).i("Playback cache hit for $videoId (no /player request)")
+                return@runCatching cached.data
+            }
+            playbackResultCache.remove(key, cached)
+        }
+
+        // Ya se está resolviendo (p. ej. la precarga): esperar ese resultado en vez de repetirlo.
+        inFlightPlayback[key]?.let { shared ->
+            val sharedResult = awaitSharedPlayback(shared, isCancelled)
+            sharedResult.getOrNull()?.let { return@runCatching it }
+            val error = sharedResult.exceptionOrNull()
+            if (error !is kotlin.coroutines.cancellation.CancellationException) throw error ?: IllegalStateException("Failed to resolve stream")
+            inFlightPlayback.remove(key, shared)
+        }
+
+        val job =
+            resolverScope.async(start = CoroutineStart.LAZY) {
+                resolvePlaybackUncached(
+                    videoId = videoId,
+                    playlistId = playlistId,
+                    audioQuality = audioQuality,
+                    connectivityManager = connectivityManager,
+                    preferredStreamClient = preferredStreamClient,
+                    networkMetered = isMetered,
+                    avoidCodecs = avoidCodecs,
+                    isCancelled = isCancelled,
+                )
+            }
+        val existing = inFlightPlayback.putIfAbsent(key, job)
+        val target =
+            if (existing != null) {
+                job.cancel()
+                existing
+            } else {
+                job.invokeOnCompletion { inFlightPlayback.remove(key, job) }
+                job.start()
+                job
+            }
+        val data = awaitSharedPlayback(target, isCancelled).getOrThrow()
+        playbackResultCache[key] = CachedPlayback(data, resultExpiry(data.streamExpiresInSeconds))
+        trimResultCaches()
+        data
+    }
+
+    /** Espera una resolución compartida, soltándola en cuanto el que pide cambia de canción. */
+    private suspend fun awaitSharedPlayback(
+        deferred: Deferred<PlaybackData>,
+        isCancelled: (() -> Boolean)?,
+    ): Result<PlaybackData> {
+        while (!deferred.isCompleted) {
+            if (isCancelled?.invoke() == true) {
+                throw kotlin.coroutines.cancellation.CancellationException("Playback was cancelled")
+            }
+            withTimeoutOrNull(100) { deferred.join() }
+        }
+        return runCatching { deferred.await() }
+    }
+
+    private suspend fun resolvePlaybackUncached(
+        videoId: String,
+        playlistId: String?,
+        audioQuality: AudioQuality,
+        connectivityManager: ConnectivityManager,
+        preferredStreamClient: PlayerStreamClient,
+        networkMetered: Boolean,
+        avoidCodecs: Set<String>,
+        isCancelled: (() -> Boolean)?,
+    ): PlaybackData {
         val attempts =
             when (audioQuality) {
                 AudioQuality.HIGHEST -> listOf(AudioQuality.HIGHEST, AudioQuality.HIGH)
@@ -361,6 +586,9 @@ object YTPlayerUtils {
                 else -> listOf(audioQuality)
             }.distinct()
 
+        // Las respuestas de /player se reutilizan entre intentos de calidad: el segundo
+        // intento sólo vuelve a elegir formato, sin repetir peticiones.
+        val responseMemo = ConcurrentHashMap<String, PlayerResponse>()
         var lastError: Throwable? = null
         for (attempt in attempts) {
             if (isCancelled?.invoke() == true) throw kotlin.coroutines.cancellation.CancellationException("Playback was cancelled")
@@ -375,10 +603,13 @@ object YTPlayerUtils {
                         networkMetered = networkMetered,
                         avoidCodecs = avoidCodecs,
                         isCancelled = isCancelled,
+                        responseMemo = responseMemo,
                     )
                 }
-            if (attemptResult.isSuccess) return@runCatching attemptResult.getOrThrow()
+            if (attemptResult.isSuccess) return attemptResult.getOrThrow()
             lastError = attemptResult.exceptionOrNull()
+            if (lastError is kotlin.coroutines.cancellation.CancellationException) throw lastError
+            if (lastError is LoginRequiredForPlaybackException) throw lastError
         }
         throw lastError ?: IllegalStateException("Failed to resolve stream")
     }
@@ -392,6 +623,7 @@ object YTPlayerUtils {
         networkMetered: Boolean?,
         avoidCodecs: Set<String>,
         isCancelled: (() -> Boolean)? = null,
+        responseMemo: ConcurrentHashMap<String, PlayerResponse> = ConcurrentHashMap(),
     ): PlaybackData {
         if (isCancelled?.invoke() == true) throw kotlin.coroutines.cancellation.CancellationException("Playback was cancelled")
         Timber.tag(logTag).i("Fetching player response for videoId: $videoId, playlistId: $playlistId")
@@ -439,7 +671,9 @@ object YTPlayerUtils {
         if (isCancelled?.invoke() == true) throw kotlin.coroutines.cancellation.CancellationException("Playback was cancelled")
         Timber.tag(logTag).i("Fetching metadata response using client: ${metadataClient.clientName}")
         val metadataPlayerResponse =
-            YouTube.player(videoId, playlistId, metadataClient, signatureTimestampFor(metadataClient)).getOrThrow()
+            responseMemo[metadataClient.clientName]
+                ?: YouTube.player(videoId, playlistId, metadataClient, signatureTimestampFor(metadataClient)).getOrThrow()
+                    .also { responseMemo[metadataClient.clientName] = it }
         val audioConfig = metadataPlayerResponse.playerConfig?.audioConfig
         val videoDetails = metadataPlayerResponse.videoDetails
         val playbackTracking = metadataPlayerResponse.playbackTracking
@@ -463,69 +697,52 @@ object YTPlayerUtils {
                 blocked || botBackedOff
             }
 
-        val botDetectedClients = mutableSetOf<String>()
-        var gateFailure: PlaybackGateFailure? = null
+        val botDetectedClients: MutableSet<String> = ConcurrentHashMap.newKeySet()
+        val gateFailureRef = AtomicReference<PlaybackGateFailure?>(null)
+        val isMetered = networkMetered ?: connectivityManager.isActiveNetworkMetered
 
-        for ((index, client) in streamClients.withIndex()) {
-            if (isCancelled?.invoke() == true) throw kotlin.coroutines.cancellation.CancellationException("Playback was cancelled")
-            format = null
-            streamUrl = null
-            streamExpiresInSeconds = null
-            streamPlayerResponse = null
-
-            Timber.tag(logTag).v(
-                "Trying ${if (client == MAIN_CLIENT) "MAIN_CLIENT" else "fallback client"} ${index + 1}/${streamClients.size}: ${client.clientName}"
-            )
-
+        suspend fun tryStreamClient(client: YouTubeClient): StreamPick? {
+            if (isCancelled?.invoke() == true) return null
             if (client != MAIN_CLIENT && client.loginRequired && !isLoggedIn) {
                 Timber.tag(logTag).w("Skipping client ${client.clientName} - requires login but user is not logged in")
-                continue
+                return null
             }
-
-            streamPlayerResponse =
+            val response =
                 if (client == metadataClient) {
                     metadataPlayerResponse
                 } else {
                     Timber.tag(logTag).i("Fetching player response for fallback client: ${client.clientName}")
-                    YouTube.player(videoId, playlistId, client, signatureTimestampFor(client)).getOrNull()
-                }
+                    playerResponseMemoized(responseMemo, videoId, playlistId, client) { signatureTimestampFor(client) }
+                } ?: return null
 
-            if (streamPlayerResponse == null) continue
-
-            if (streamPlayerResponse.playabilityStatus.status != "OK") {
-                val reason = streamPlayerResponse.playabilityStatus.reason.orEmpty()
+            if (response.playabilityStatus.status != "OK") {
+                val reason = response.playabilityStatus.reason.orEmpty()
                 val isLoginRecovery = isLoginRecoveryError(reason)
                 val isBotDetection = isBotDetectionError(reason)
                 Timber.tag(logTag).w(
-                    "Player response status not OK: ${streamPlayerResponse.playabilityStatus.status}, reason: $reason, loginRecovery: $isLoginRecovery, botDetection: $isBotDetection"
+                    "Player response status not OK (${client.clientName}): ${response.playabilityStatus.status}, reason: $reason, loginRecovery: $isLoginRecovery, botDetection: $isBotDetection"
                 )
                 if (isLoginRecovery) {
-                    gateFailure = PlaybackGateFailure(
-                        clientName = client.clientName,
-                        status = streamPlayerResponse.playabilityStatus.status,
-                        reason = streamPlayerResponse.playabilityStatus.reason,
+                    gateFailureRef.compareAndSet(
+                        null,
+                        PlaybackGateFailure(
+                            clientName = client.clientName,
+                            status = response.playabilityStatus.status,
+                            reason = response.playabilityStatus.reason,
+                        ),
                     )
                 } else if (isBotDetection) {
                     botDetectedClients.add(client.clientName)
                     markClientBotDetected(client.clientName)
                 }
-                continue
+                return null
             }
 
-            val isMetered = networkMetered ?: connectivityManager.isActiveNetworkMetered
-            val candidates =
-                selectAudioFormatCandidates(
-                    streamPlayerResponse,
-                    audioQuality,
-                    isMetered,
-                    avoidCodecs = avoidCodecs,
-                )
-
-            if (candidates.isEmpty()) continue
+            val candidates = selectAudioFormatCandidates(response, audioQuality, isMetered, avoidCodecs = avoidCodecs)
+            if (candidates.isEmpty()) return null
 
             var selectedFormat: PlayerResponse.StreamingData.Format? = null
             var selectedUrl: String? = null
-
             for (candidate in candidates.asSequence().take(6)) {
                 if (isLoggedIn && expectedDurationMs != null && isLikelyPreview(candidate, expectedDurationMs)) continue
                 if (shouldSkipCipheredWebCandidate(client, candidate)) continue
@@ -541,37 +758,53 @@ object YTPlayerUtils {
                 selectedUrl = candidateUrl
                 break
             }
-
-            if (selectedFormat == null || selectedUrl == null) continue
-
-            format = selectedFormat
-            streamUrl = selectedUrl
-            streamExpiresInSeconds = streamPlayerResponse.streamingData?.expiresInSeconds
-
-            if (streamExpiresInSeconds == null) continue
-
-            Timber.tag(logTag).i("Format found: ${format.mimeType}, bitrate: ${format.bitrate}")
-            Timber.tag(logTag).v("Stream expires in: $streamExpiresInSeconds seconds")
+            val chosenFormat = selectedFormat ?: return null
+            val chosenUrl = selectedUrl ?: return null
+            val expiresIn = response.streamingData?.expiresInSeconds ?: return null
 
             // ANDROID_VR direct URLs are reliable and are the primary fast path, so skip the extra
             // validation round-trip. If such a URL does 403 at playback time, MusicService marks the
             // client failed and re-extracts, so this stays recoverable.
-            if (canSkipStreamValidation(client, format)) {
-                Timber.tag(logTag).i("Skipping stream validation for fast direct-URL client: ${client.clientName}")
-                break
+            if (!canSkipStreamValidation(client, chosenFormat)) {
+                val valid = runInterruptible(Dispatchers.IO) { validateStatus(chosenUrl, client.userAgent) }
+                if (!valid) {
+                    Timber.tag(logTag).w("Stream validation failed with client: ${client.clientName}")
+                    return null
+                }
             }
+            return StreamPick(client.clientName, chosenFormat, chosenUrl, expiresIn, response)
+        }
 
-            val valid = validateStatus(streamUrl, client.userAgent)
-            if (valid) {
-                Timber.tag(logTag).i("Stream validated successfully with client: ${client.clientName}")
-                break
+        // Primero el cliente principal (reutiliza la respuesta de metadatos: cero peticiones
+        // extra). Si falla, el resto en paralelo de PARALLEL_STREAM_CLIENTS en
+        // PARALLEL_STREAM_CLIENTS, empezando por el que ganó la última vez.
+        val lastWinner = lastWinningStreamClient
+        val orderedClients =
+            streamClients.sortedBy {
+                when {
+                    it == ANDROID_VR_NO_AUTH -> 0
+                    it.clientName == lastWinner -> 1
+                    else -> 2
+                }
             }
-
-            Timber.tag(logTag).w("Stream validation failed with client: ${client.clientName}, trying next fallback")
-            format = null
-            streamUrl = null
-            streamExpiresInSeconds = null
-            streamPlayerResponse = null
+        var pick: StreamPick? = orderedClients.firstOrNull()?.let { tryStreamClient(it) }
+        if (pick == null) {
+            for (wave in orderedClients.drop(1).chunked(PARALLEL_STREAM_CLIENTS)) {
+                if (isCancelled?.invoke() == true) throw kotlin.coroutines.cancellation.CancellationException("Playback was cancelled")
+                Timber.tag(logTag).v("Racing stream clients: ${wave.joinToString { it.clientName }}")
+                pick = raceFirst(wave) { tryStreamClient(it) }
+                if (pick != null) break
+            }
+        }
+        if (isCancelled?.invoke() == true) throw kotlin.coroutines.cancellation.CancellationException("Playback was cancelled")
+        val gateFailure = gateFailureRef.get()
+        if (pick != null) {
+            lastWinningStreamClient = pick.clientName
+            format = pick.format
+            streamUrl = pick.url
+            streamExpiresInSeconds = pick.expiresInSeconds
+            streamPlayerResponse = pick.response
+            Timber.tag(logTag).i("Stream resolved with ${pick.clientName}: ${pick.format.mimeType}, bitrate: ${pick.format.bitrate}")
         }
 
         if (streamPlayerResponse == null) {

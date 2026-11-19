@@ -80,6 +80,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -110,6 +111,7 @@ import com.dezzy.music.LocalPlayerAwareWindowInsets
 import com.dezzy.music.LocalPlayerConnection
 import com.dezzy.music.R
 import com.dezzy.music.constants.MusicMapShareLocationKey
+import com.dezzy.music.constants.SocialFeatures
 import com.dezzy.music.extensions.toMediaItem
 import com.dezzy.music.extensions.togglePlayPause
 import com.dezzy.music.innertube.YouTube
@@ -125,6 +127,7 @@ import com.dezzy.music.p2p.P2PSocial
 import com.dezzy.music.playback.OmegaMathIntegration
 import com.dezzy.music.playback.queues.ListQueue
 import com.dezzy.music.playback.queues.YouTubeQueue
+import com.dezzy.music.ui.component.CountryFlag
 import com.dezzy.music.ui.component.LocalMenuState
 import com.dezzy.music.ui.menu.YouTubeSongMenu
 import com.dezzy.music.ui.utils.highRes
@@ -135,6 +138,7 @@ import kotlinx.coroutines.withContext
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import kotlin.math.asin
@@ -261,6 +265,9 @@ private fun distanceKm(a: Pair<Double, Double>, b: Pair<Double, Double>): Double
     return 2 * r * asin(sqrt(h))
 }
 
+private const val MAP_PREFS = "music_map_ui"
+private const val KEY_SPOTIFY_PROMPT_SHOWN = "spotify_prompt_shown"
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MusicMapScreen(navController: NavController, embedded: Boolean = false) {
@@ -277,7 +284,49 @@ fun MusicMapScreen(navController: NavController, embedded: Boolean = false) {
     }
     val mediaMetadata by metadataFlow.collectAsState()
 
-    val (shareLocation, setShareLocation) = rememberPreference(MusicMapShareLocationKey, false)
+    // La primera vez que se entra al mapa sin sesión de Spotify se sugiere iniciarla (rankings reales).
+    var showSpotifyPrompt by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        val prefs = context.getSharedPreferences(MAP_PREFS, Context.MODE_PRIVATE)
+        if (prefs.getBoolean(KEY_SPOTIFY_PROMPT_SHOWN, false)) return@LaunchedEffect
+        val hasSession = withContext(Dispatchers.IO) { com.dezzy.music.spotify.SpotifyFeatures.hasSession(context) }
+        if (hasSession) {
+            prefs.edit().putBoolean(KEY_SPOTIFY_PROMPT_SHOWN, true).apply()
+        } else {
+            showSpotifyPrompt = true
+        }
+    }
+    if (showSpotifyPrompt) {
+        fun dismissPrompt() {
+            showSpotifyPrompt = false
+            context.getSharedPreferences(MAP_PREFS, Context.MODE_PRIVATE)
+                .edit().putBoolean(KEY_SPOTIFY_PROMPT_SHOWN, true).apply()
+        }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { dismissPrompt() },
+            icon = { Icon(painterResource(R.drawable.stats), contentDescription = null) },
+            title = { Text("Rankings reales con Spotify") },
+            text = {
+                Text(
+                    "Busca cualquier canción y mira en qué países ha estado en el top, cuántos streams lleva y su mejor puesto. " +
+                        "Para eso necesito que inicies sesión con Spotify una vez.",
+                )
+            },
+            confirmButton = {
+                androidx.compose.material3.Button(onClick = {
+                    dismissPrompt()
+                    navController.navigate("settings/spotify/login")
+                }) { Text("Conectar Spotify") }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { dismissPrompt() }) { Text("Ahora no") }
+            },
+        )
+    }
+
+    val (shareLocationPref, setShareLocation) = rememberPreference(MusicMapShareLocationKey, false)
+    // Compartir la ubicación es parte de «Personas»: sin red social no se comparte.
+    val shareLocation = SocialFeatures.ENABLED && shareLocationPref
 
     var presences by remember { mutableStateOf<List<MapPresence>>(emptyList()) }
     var countryCharts by remember { mutableStateOf<List<CountryChart>>(emptyList()) }
@@ -312,6 +361,8 @@ fun MusicMapScreen(navController: NavController, embedded: Boolean = false) {
         MapView(context).apply {
             setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
+            // Sin botones +/- flotantes: aparecían al mover el mapa. Se hace zoom con dos dedos.
+            zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
             setUseDataConnection(true)
             isHorizontalMapRepetitionEnabled = false
             isVerticalMapRepetitionEnabled = false
@@ -406,6 +457,7 @@ fun MusicMapScreen(navController: NavController, embedded: Boolean = false) {
     }
 
     LaunchedEffect(Unit) {
+        if (!SocialFeatures.ENABLED) return@LaunchedEffect
         while (true) {
             presences = MusicMapRepository.fetchPresences()
             kotlinx.coroutines.delay(20_000L)
@@ -536,8 +588,30 @@ fun MusicMapScreen(navController: NavController, embedded: Boolean = false) {
         countryCharts.associate { it.country.code to MusicMapCharts.previousRanks(context, it.country.code) }
     }
 
-    val search = remember(query, countryCharts) {
-        if (query.isBlank()) null else searchCharts(query, countryCharts)
+    // Búsqueda en todo el catálogo (cualquier canción, aunque no esté en ningún top de hoy).
+    var catalog by remember { mutableStateOf<Pair<String, List<SongItem>>?>(null) }
+    LaunchedEffect(query) {
+        val q = query.trim()
+        if (q.length < 2) {
+            catalog = null
+            return@LaunchedEffect
+        }
+        kotlinx.coroutines.delay(400)
+        val items = YouTube.search(q, YouTube.SearchFilter.FILTER_SONG).getOrNull()
+            ?.items?.filterIsInstance<SongItem>().orEmpty().take(15)
+        catalog = q to items
+    }
+    val catalogLoading = query.trim().length >= 2 && catalog?.first != query.trim()
+
+    val search = remember(query, countryCharts, catalog) {
+        if (query.isBlank()) {
+            null
+        } else {
+            val inCharts = searchCharts(query, countryCharts)
+            val extra = catalog?.takeIf { it.first == query.trim() }?.second.orEmpty()
+            val known = inCharts.songs.mapTo(HashSet()) { it.song.id }
+            inCharts.copy(catalog = extra.filter { it.id !in known })
+        }
     }
 
     fun playSong(song: SongItem) {
@@ -762,7 +836,7 @@ fun MusicMapScreen(navController: NavController, embedded: Boolean = false) {
                 val tab = searchTab?.takeIf {
                     when (it) {
                         SearchTab.ARTIST -> search.artist != null
-                        SearchTab.SONGS -> search.songs.isNotEmpty()
+                        SearchTab.SONGS -> search.hasSongs
                         SearchTab.COUNTRIES -> search.countries.isNotEmpty()
                     }
                 } ?: search.firstTab()
@@ -805,21 +879,36 @@ fun MusicMapScreen(navController: NavController, embedded: Boolean = false) {
                     onSearchEverywhere = {
                         navController.navigate("search/${java.net.URLEncoder.encode(query.trim(), "UTF-8")}")
                     },
+                    onStats = { song ->
+                        keyboard?.hide()
+                        navController.navigate(
+                            songStatsRoute(
+                                title = song.title,
+                                artist = song.artists.joinToString { it.name },
+                                thumbnail = song.thumbnail,
+                                videoId = song.id,
+                                artistId = song.artists.firstOrNull()?.id,
+                            )
+                        )
+                    },
+                    catalogLoading = catalogLoading,
                     bottomPadding = bottomInset,
                 )
             } else {
                 val focus = countryCharts.firstOrNull { it.country.code == focusCountry }?.country
                 val songsShown = rows.filterIsInstance<ListRow.Song>().map { it.song }
                 TopSheetHeader(
+                    flagCode = focus?.code,
                     title = when {
-                        focus != null -> "${flagEmoji(focus.code)} Top en ${focus.name}"
+                        focus != null -> "Top en ${focus.name}"
                         countryCharts.singleOrNull()?.country == WORLD -> "Top mundial"
                         else -> "Top por país"
                     },
                     subtitle = when {
                         !chartsLoaded && countryCharts.isEmpty() -> stringResource(R.string.music_map_loading_songs)
-                        focus != null && genreFilter != null -> "${songsShown.size} canciones de ${genreFilter}, toca una para escucharla"
-                        focus != null -> "Top de hoy, ${songsShown.size} canciones"
+                        focus != null && genreFilter != null -> "${cancionesLabel(songsShown.size)} de ${genreFilter}, " +
+                            if (songsShown.size == 1) "toca para escucharla" else "toca una para escucharla"
+                        focus != null -> "Top de hoy, ${cancionesLabel(songsShown.size)}"
                         else -> "Toca un país en el mapa para ver su top"
                     },
                     showClear = focus != null,
@@ -870,7 +959,7 @@ fun MusicMapScreen(navController: NavController, embedded: Boolean = false) {
                         ) { i ->
                             when (val r = rows[i]) {
                                 is ListRow.Header -> if (focusCountry == null) {
-                                    CountryHeader("${flagEmoji(r.country.code)} ${r.country.name}") {
+                                    CountryHeader(r.country.code, r.country.name) {
                                         focusCountry = r.country.code
                                         if (r.country != WORLD) {
                                             mapView.controller.animateTo(
@@ -903,9 +992,10 @@ fun MusicMapScreen(navController: NavController, embedded: Boolean = false) {
             }
         },
     ) {
-        BoxWithConstraints(Modifier.fillMaxSize()) {
+        // clipToBounds: osmdroid pinta fuera de su caja al moverlo y asomaba detrás de las pestañas de Social.
+        BoxWithConstraints(Modifier.fillMaxSize().clipToBounds()) {
             val containerHeightPx = constraints.maxHeight
-            AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize())
+            AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize().clipToBounds())
 
             // ── Búsqueda flotante, filtros y barra de ubicación ─────────────
             Column(
@@ -938,7 +1028,7 @@ fun MusicMapScreen(navController: NavController, embedded: Boolean = false) {
                         TextField(
                             value = query,
                             onValueChange = { query = it },
-                            placeholder = { Text("Busca un artista, canción o país") },
+                            placeholder = { Text("Artista, canción o país", maxLines = 1, overflow = TextOverflow.Ellipsis) },
                             singleLine = true,
                             colors = TextFieldDefaults.colors(
                                 focusedContainerColor = ComposeColor.Transparent,
@@ -963,21 +1053,25 @@ fun MusicMapScreen(navController: NavController, embedded: Boolean = false) {
                     }
                 }
 
+                // Relleno de inicio y fin como Spacer dentro del scroll: así los chips empiezan
+                // alineados con el buscador y no se ven cortados por la izquierda.
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(vertical = 8.dp)
+                        .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    Spacer(Modifier.width(8.dp))
                     MapModeChip("Países", R.drawable.location_on, mode == MapMode.COUNTRIES) {
                         mode = MapMode.COUNTRIES
                     }
-                    MapModeChip("Personas", R.drawable.group, mode == MapMode.PEOPLE) {
+                    if (SocialFeatures.ENABLED) MapModeChip("Personas", R.drawable.group, mode == MapMode.PEOPLE) {
                         mode = MapMode.PEOPLE
                         focusCountry = null
                     }
-                    ElevatedAssistChip(
+                    if (SocialFeatures.ENABLED) ElevatedAssistChip(
                         onClick = {
                             mode = MapMode.PEOPLE
                             focusCountry = null
@@ -988,6 +1082,7 @@ fun MusicMapScreen(navController: NavController, embedded: Boolean = false) {
                             Icon(painterResource(R.drawable.near_me), contentDescription = null, modifier = Modifier.size(18.dp))
                         },
                     )
+                    Spacer(Modifier.width(8.dp))
                 }
 
                 if (mode == MapMode.PEOPLE) {
@@ -1033,6 +1128,7 @@ private sealed interface ListRow {
 
 @Composable
 private fun TopSheetHeader(
+    flagCode: String? = null,
     title: String,
     subtitle: String,
     showClear: Boolean,
@@ -1047,13 +1143,19 @@ private fun TopSheetHeader(
             .padding(start = 24.dp, end = 12.dp, bottom = 4.dp),
     ) {
         Column(Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.semantics { heading() },
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (flagCode != null) {
+                    CountryFlag(flagCode, height = 20.dp)
+                    Spacer(Modifier.width(10.dp))
+                }
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.semantics { heading() },
+                )
+            }
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodyMedium,
@@ -1074,7 +1176,7 @@ private fun TopSheetHeader(
 }
 
 @Composable
-private fun CountryHeader(name: String, onClick: () -> Unit) {
+private fun CountryHeader(code: String, name: String, onClick: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -1083,13 +1185,8 @@ private fun CountryHeader(name: String, onClick: () -> Unit) {
             .clickable(onClickLabel = "Ver el top de $name", onClick = onClick)
             .padding(horizontal = 24.dp),
     ) {
-        Icon(
-            painter = painterResource(R.drawable.location_on),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(18.dp),
-        )
-        Spacer(Modifier.width(8.dp))
+        CountryFlag(code, height = 16.dp)
+        Spacer(Modifier.width(10.dp))
         Text(
             text = name,
             style = MaterialTheme.typography.titleSmall,

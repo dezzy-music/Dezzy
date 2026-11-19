@@ -5,6 +5,24 @@
 
 package com.dezzy.music.ui.screens.p2p
 
+import android.graphics.Matrix
+import android.view.TextureView
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.common.VideoSize
+import androidx.media3.exoplayer.ExoPlayer
+import android.os.PowerManager
+import android.provider.Settings
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -146,14 +164,45 @@ fun DrawScope.drawP2PBannerPreset(preset: P2PBannerPreset) {
     }
 }
 
-/** Portada: la foto subida (recortada) o el degradado elegido. Es decorativa para TalkBack. */
+/**
+ * Portada: la foto subida (recortada), el video en bucle o el degradado elegido. Es decorativa
+ * para TalkBack. Con [fade] se desvanece por abajo y se funde con cualquier fondo (tema claro,
+ * oscuro o cristal), igual que en el escritorio.
+ */
 @Composable
-fun P2PProfileBanner(banner: String?, modifier: Modifier = Modifier) {
+fun P2PProfileBanner(
+    banner: String?,
+    modifier: Modifier = Modifier,
+    video: String? = null,
+    fade: Boolean = false,
+) {
     val preset = remember(banner) { P2PBannerPreset.of(banner) }
     val url = banner?.takeIf { it.startsWith("https://") }
+    val context = LocalContext.current
+    // Sin animaciones del sistema o con ahorro de batería se queda el fotograma fijo.
+    val playVideo = remember(video) {
+        video?.startsWith("https://") == true &&
+            Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f &&
+            (context.getSystemService(Context.POWER_SERVICE) as? PowerManager)?.isPowerSaveMode != true
+    }
     Box(
         modifier
             .clipToBounds()
+            .then(
+                if (fade) {
+                    Modifier
+                        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                        .drawWithContent {
+                            drawContent()
+                            drawRect(
+                                Brush.verticalGradient(0.34f to Color.Black, 1f to Color.Transparent),
+                                blendMode = BlendMode.DstIn,
+                            )
+                        }
+                } else {
+                    Modifier
+                },
+            )
             .drawBehind { drawP2PBannerPreset(preset) },
     ) {
         if (url != null) {
@@ -164,7 +213,69 @@ fun P2PProfileBanner(banner: String?, modifier: Modifier = Modifier) {
                 modifier = Modifier.matchParentSize(),
             )
         }
+        if (playVideo && video != null) {
+            BannerVideoLoop(video, Modifier.matchParentSize())
+        }
     }
+}
+
+/**
+ * Video de portada silenciado y en bucle. Va en un TextureView (no SurfaceView) para que el
+ * desvanecido y las esquinas redondeadas también le afecten. No pide el foco de audio, así que
+ * no corta la música; se pausa cuando la app pasa a segundo plano.
+ */
+@Composable
+private fun BannerVideoLoop(url: String, modifier: Modifier) {
+    val context = LocalContext.current
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val player = remember(url) {
+        ExoPlayer.Builder(context).build().apply {
+            volume = 0f
+            repeatMode = Player.REPEAT_MODE_ALL
+            setMediaItem(MediaItem.fromUri(url))
+            prepare()
+        }
+    }
+    DisposableEffect(player, lifecycle) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> player.play()
+                Lifecycle.Event.ON_PAUSE -> player.pause()
+                else -> Unit
+            }
+        }
+        lifecycle.addObserver(observer)
+        if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) player.play()
+        onDispose {
+            lifecycle.removeObserver(observer)
+            player.release()
+        }
+    }
+    AndroidView(
+        factory = { ctx ->
+            TextureView(ctx).also { view ->
+                player.setVideoTextureView(view)
+                player.addListener(
+                    object : Player.Listener {
+                        override fun onVideoSizeChanged(videoSize: VideoSize) = cropTexture(view, videoSize)
+                    },
+                )
+                view.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> cropTexture(view, player.videoSize) }
+            }
+        },
+        modifier = modifier,
+    )
+}
+
+/** Escala el video para cubrir la portada sin deformarse (como ContentScale.Crop). */
+private fun cropTexture(view: TextureView, size: VideoSize) {
+    val vw = view.width.toFloat()
+    val vh = view.height.toFloat()
+    if (vw <= 0f || vh <= 0f || size.width == 0 || size.height == 0) return
+    val videoW = size.width * size.pixelWidthHeightRatio
+    val videoH = size.height.toFloat()
+    val scale = maxOf(vw / videoW, vh / videoH)
+    view.setTransform(Matrix().apply { setScale(videoW * scale / vw, videoH * scale / vh, vw / 2f, vh / 2f) })
 }
 
 /** Avatar con foto o iniciales sobre un color estable derivado de la clave. */

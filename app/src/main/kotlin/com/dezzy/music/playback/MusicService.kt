@@ -3386,15 +3386,10 @@ class MusicService :
                     com.dezzy.music.listentogether.ListenTogetherClient.setInstance(it)
                 }
                 
-            client.createRoom(
-                displayName.trim().ifBlank { getString(R.string.app_name) },
-                isPublic = settings.isPublic,
-                theme = settings.customTheme?.ifBlank { null } ?: settings.theme.name
-            )
-            startListenTogetherReportJob(client)
-            
             togetherClientEventsJob?.cancel()
-            togetherClientEventsJob = ioScope.launch(SilentHandler) {
+            // Suscrito ANTES de crear/unirse: el flujo de eventos no guarda copia y una respuesta
+            // rápida del servidor (JOIN_APPROVED / ROOM_CREATED) se perdía.
+            togetherClientEventsJob = ioScope.launch(SilentHandler, start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) {
                 client.events.collect { event ->
                     when (event) {
                         is com.dezzy.music.listentogether.ListenTogetherEvent.RoomCreated -> {
@@ -3456,28 +3451,34 @@ class MusicService :
                             // the source of truth, so apply here (its own relay hooks then
                             // broadcast the authoritative result). Echoes of the host's own
                             // actions are no-ops thanks to applyListenTogetherSync's guards.
-                            val hosting = togetherSessionState.value
-                                as? com.dezzy.music.together.TogetherSessionState.HostingOnline
-                            val roomSettings = hosting?.settings ?: settings
-                            val permitted = when (event.action.action) {
-                                com.dezzy.music.listentogether.PlaybackActions.QUEUE_ADD ->
-                                    roomSettings.allowGuestsToAddTracks
-                                com.dezzy.music.listentogether.PlaybackActions.PLAY,
-                                com.dezzy.music.listentogether.PlaybackActions.PAUSE,
-                                com.dezzy.music.listentogether.PlaybackActions.SEEK,
-                                com.dezzy.music.listentogether.PlaybackActions.CHANGE_TRACK ->
-                                    roomSettings.allowGuestsToControlPlayback
-                                else -> false
-                            }
-                            if (permitted && !isListenTogetherHostEcho(event.action)) {
+                            // Si pasó el rol a otro, ahora es invitado: refleja al nuevo anfitrión.
+                            if (client.isHost) {
+                                handleListenTogetherGuestRequest(event.action, settings)
+                            } else {
                                 applyListenTogetherSync(event.action)
                             }
+                        }
+                        is com.dezzy.music.listentogether.ListenTogetherEvent.SyncStateReceived -> {
+                            if (!client.isHost) {
+                                event.state.currentTrack?.let { track ->
+                                    applyListenTogetherRoomState(track, event.state.isPlaying, event.state.position)
+                                }
+                            }
+                        }
+                        is com.dezzy.music.listentogether.ListenTogetherEvent.HostChanged -> {
+                            onListenTogetherHostChanged(settings)
                         }
                         // Handle other ListenTogetherEvent as needed
                         else -> {}
                     }
                 }
             }
+            client.createRoom(
+                displayName.trim().ifBlank { getString(R.string.app_name) },
+                isPublic = settings.isPublic,
+                theme = settings.customTheme?.ifBlank { null } ?: settings.theme.name
+            )
+            startListenTogetherReportJob(client)
         }
     }
 
@@ -3677,11 +3678,10 @@ class MusicService :
                     com.dezzy.music.listentogether.ListenTogetherClient.setInstance(it)
                 }
                 
-            client.joinRoom(trimmedCode, displayName.trim().ifBlank { getString(R.string.together_role_guest) })
-            startListenTogetherReportJob(client)
-            
             togetherClientEventsJob?.cancel()
-            togetherClientEventsJob = ioScope.launch(SilentHandler) {
+            // Suscrito ANTES de crear/unirse: el flujo de eventos no guarda copia y una respuesta
+            // rápida del servidor (JOIN_APPROVED / ROOM_CREATED) se perdía.
+            togetherClientEventsJob = ioScope.launch(SilentHandler, start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) {
                 client.events.collect { event ->
                     when (event) {
                         is com.dezzy.music.listentogether.ListenTogetherEvent.JoinApproved -> {
@@ -3714,35 +3714,24 @@ class MusicService :
                                     )
                                 )
                             }
-                            // Initial sync: mirror whatever the room is already playing,
-                            // extrapolating the position for the time since the host reported it.
+                            // Estado inicial: la canción del anfitrión sustituye a la que suene aquí. El
+                            // servidor (v2.4) manda la posición en vivo con su hora, sin sumar nada.
                             event.state.currentTrack?.let { track ->
-                                togetherTargetHostPositionMs = event.state.position
-                                togetherTargetHostTimestampMs = event.state.lastUpdate
-                                togetherTargetHostIsPlaying = event.state.isPlaying
-                                togetherPendingInitialSync = true
-                                val extra = if (event.state.isPlaying) {
-                                    (System.currentTimeMillis() - event.state.lastUpdate)
-                                        .coerceIn(0L, 60_000L)
-                                } else 0L
-                                applyListenTogetherSync(
-                                    com.dezzy.music.listentogether.PlaybackActionPayload(
-                                        action = com.dezzy.music.listentogether.PlaybackActions.CHANGE_TRACK,
-                                        trackInfo = track,
-                                        position = event.state.position + extra,
-                                        repeatMode = event.state.repeatMode,
-                                        shuffleEnabled = event.state.shuffleEnabled,
-                                    )
+                                applyListenTogetherRoomState(
+                                    track,
+                                    isPlaying = event.state.isPlaying,
+                                    position = event.state.position,
+                                    repeatMode = event.state.repeatMode,
+                                    shuffleEnabled = event.state.shuffleEnabled,
                                 )
-                                if (!event.state.isPlaying) {
-                                    applyListenTogetherSync(
-                                        com.dezzy.music.listentogether.PlaybackActionPayload(
-                                            action = com.dezzy.music.listentogether.PlaybackActions.PAUSE,
-                                            position = event.state.position,
-                                            repeatMode = event.state.repeatMode,
-                                            shuffleEnabled = event.state.shuffleEnabled,
-                                        )
-                                    )
+                            }
+                        }
+                        is com.dezzy.music.listentogether.ListenTogetherEvent.SyncStateReceived -> {
+                            // Resincronizar del anfitrión, request_sync o el cortacircuitos: el estado
+                            // autoritativo de la sala manda sobre lo que suene aquí.
+                            if (com.dezzy.music.listentogether.ListenTogetherClient.getInstance()?.isHost != true) {
+                                event.state.currentTrack?.let { track ->
+                                    applyListenTogetherRoomState(track, event.state.isPlaying, event.state.position)
                                 }
                             }
                         }
@@ -3751,7 +3740,13 @@ class MusicService :
                             // guards inside make our own echoed requests no-ops).
                             if (com.dezzy.music.listentogether.ListenTogetherClient.getInstance()?.isHost != true) {
                                 applyListenTogetherSync(event.action)
+                            } else {
+                                // Lo ascendieron a anfitrión: las peticiones de los demás se atienden aquí.
+                                handleListenTogetherGuestRequest(event.action, null)
                             }
+                        }
+                        is com.dezzy.music.listentogether.ListenTogetherEvent.HostChanged -> {
+                            onListenTogetherHostChanged(null)
                         }
                         is com.dezzy.music.listentogether.ListenTogetherEvent.JoinRejected -> {
                             scope.launch(SilentHandler) {
@@ -3777,6 +3772,8 @@ class MusicService :
                     }
                 }
             }
+            client.joinRoom(trimmedCode, displayName.trim().ifBlank { getString(R.string.together_role_guest) })
+            startListenTogetherReportJob(client)
         }
     }
 
@@ -4534,6 +4531,107 @@ class MusicService :
     // incoming SYNC_PLAYBACK with echo guards. Without them, rooms connected but never synced.
 
     /** The active WS client while this device hosts a Listen Together room, or null. */
+    /**
+     * Petición de un invitado que recibe el anfitrión (play, pausa, salto, cambiar o añadir
+     * canción): se aplica sólo si la sala lo permite y no es el eco de lo que acaba de mandar.
+     */
+    private fun handleListenTogetherGuestRequest(
+        action: com.dezzy.music.listentogether.PlaybackActionPayload,
+        fallbackSettings: com.dezzy.music.together.TogetherRoomSettings?,
+    ) {
+        val hosting = togetherSessionState.value as? com.dezzy.music.together.TogetherSessionState.HostingOnline
+        val roomSettings = hosting?.settings ?: fallbackSettings ?: com.dezzy.music.together.TogetherRoomSettings()
+        val permitted = when (action.action) {
+            com.dezzy.music.listentogether.PlaybackActions.QUEUE_ADD -> roomSettings.allowGuestsToAddTracks
+            com.dezzy.music.listentogether.PlaybackActions.PLAY,
+            com.dezzy.music.listentogether.PlaybackActions.PAUSE,
+            com.dezzy.music.listentogether.PlaybackActions.SEEK,
+            com.dezzy.music.listentogether.PlaybackActions.CHANGE_TRACK -> roomSettings.allowGuestsToControlPlayback
+            else -> false
+        }
+        if (permitted && !isListenTogetherHostEcho(action)) {
+            applyListenTogetherSync(action)
+        }
+    }
+
+    /**
+     * El servidor cambió de anfitrión («Hacer anfitrión»). El cliente ya actualizó su rol, pero
+     * la sesión del servicio seguía igual: el anterior se quedaba como anfitrión (el servidor
+     * le rechazaba todo) y el nuevo como invitado (sin mandar nada), y la sala quedaba sin
+     * nadie al mando. Aquí cada uno cambia de papel y el nuevo publica lo que suena.
+     */
+    private fun onListenTogetherHostChanged(previousSettings: com.dezzy.music.together.TogetherRoomSettings?) {
+        val client = com.dezzy.music.listentogether.ListenTogetherClient.getInstance() ?: return
+        val room = client.roomState.value ?: return
+        val selfId = client.userId.value ?: togetherSelfParticipantId ?: return
+        val code = room.roomCode.ifBlank {
+            com.dezzy.music.together.currentTogetherRoom(togetherSessionState.value)?.code.orEmpty()
+        }
+        if (code.isBlank()) return
+        val participants = room.users.map {
+            com.dezzy.music.together.TogetherParticipant(
+                id = it.userId,
+                name = it.username,
+                isHost = it.userId == room.hostId,
+                isConnected = it.isConnected,
+            )
+        }
+        scope.launch(SilentHandler) {
+            val current = togetherSessionState.value
+            if (client.isHost) {
+                val settings = (current as? com.dezzy.music.together.TogetherSessionState.HostingOnline)?.settings
+                    ?: previousSettings
+                    ?: com.dezzy.music.together.TogetherRoomSettings()
+                togetherSessionState.value = com.dezzy.music.together.TogetherSessionState.HostingOnline(
+                    sessionId = code,
+                    code = code,
+                    settings = settings,
+                    roomState = com.dezzy.music.together.TogetherRoomState(
+                        sessionId = code,
+                        hostId = selfId,
+                        participants = participants,
+                        settings = settings,
+                    ),
+                )
+                // El nuevo anfitrión manda lo que suena para que todos sigan desde aquí.
+                withContext(Dispatchers.Main) {
+                    currentMediaMetadata.value?.let { meta ->
+                        relayListenTogetherPlayback(
+                            com.dezzy.music.listentogether.PlaybackActions.CHANGE_TRACK,
+                            position = player.currentPosition,
+                            trackId = meta.id,
+                            trackInfo = meta.toListenTogetherTrackInfo(),
+                        )
+                        relayListenTogetherPlayback(
+                            if (player.playWhenReady) com.dezzy.music.listentogether.PlaybackActions.PLAY
+                            else com.dezzy.music.listentogether.PlaybackActions.PAUSE,
+                            position = player.currentPosition,
+                        )
+                    }
+                }
+            } else {
+                val settings = (current as? com.dezzy.music.together.TogetherSessionState.HostingOnline)?.settings
+                    ?: com.dezzy.music.together.TogetherRoomSettings()
+                togetherSessionState.value = com.dezzy.music.together.TogetherSessionState.Joined(
+                    role = com.dezzy.music.together.TogetherRole.Guest,
+                    sessionId = code,
+                    selfParticipantId = selfId,
+                    roomState = com.dezzy.music.together.TogetherRoomState(
+                        sessionId = code,
+                        hostId = room.hostId,
+                        participants = participants,
+                        // Igual que al unirse: permisivo aquí; el anfitrión decide al recibir.
+                        settings = settings.copy(
+                            allowGuestsToAddTracks = true,
+                            allowGuestsToControlPlayback = true,
+                        ),
+                    ),
+                )
+                client.requestSync()
+            }
+        }
+    }
+
     private fun listenTogetherHostClient(): com.dezzy.music.listentogether.ListenTogetherClient? =
         com.dezzy.music.listentogether.ListenTogetherClient.getInstance()
             ?.takeIf { it.isInRoom && it.isHost }
@@ -4554,6 +4652,37 @@ class MusicService :
             com.dezzy.music.listentogether.PlaybackActions.PAUSE -> !player.playWhenReady && posOk
             com.dezzy.music.listentogether.PlaybackActions.SEEK -> posOk
             else -> false
+        }
+    }
+
+    /** Invitado: pone la canción y el estado de la sala (al entrar o al resincronizar). */
+    private fun applyListenTogetherRoomState(
+        track: com.dezzy.music.listentogether.TrackInfo,
+        isPlaying: Boolean,
+        position: Long,
+        repeatMode: Int? = null,
+        shuffleEnabled: Boolean? = null,
+    ) {
+        togetherTargetHostPositionMs = position
+        togetherTargetHostTimestampMs = System.currentTimeMillis()
+        togetherTargetHostIsPlaying = isPlaying
+        togetherPendingInitialSync = true
+        applyListenTogetherSync(
+            com.dezzy.music.listentogether.PlaybackActionPayload(
+                action = com.dezzy.music.listentogether.PlaybackActions.CHANGE_TRACK,
+                trackInfo = track,
+                position = position,
+                repeatMode = repeatMode,
+                shuffleEnabled = shuffleEnabled,
+            )
+        )
+        if (!isPlaying) {
+            applyListenTogetherSync(
+                com.dezzy.music.listentogether.PlaybackActionPayload(
+                    action = com.dezzy.music.listentogether.PlaybackActions.PAUSE,
+                    position = position,
+                )
+            )
         }
     }
 
@@ -5140,6 +5269,8 @@ class MusicService :
     publishSocialPresence()
 
     crossfadeAudio?.onMediaItemTransition(mediaItem, reason)
+
+    prefetchUpcomingStreams()
 
     // Pre-load lyrics for upcoming songs in queue
     val currentIndex = player.currentMediaItemIndex
@@ -6239,6 +6370,40 @@ class MusicService :
         }
     }
 
+    /**
+     * Pre-resuelve las 2 siguientes canciones de la cola (respetando aleatorio y repetir)
+     * mientras suena la actual: al pasar de canción la URL ya está en la caché del
+     * resolvedor y empieza a sonar sin esperar a YouTube.
+     */
+    private fun prefetchUpcomingStreams() {
+        if (!isNetworkConnected.value) return
+        val timeline = player.currentTimeline
+        if (timeline.isEmpty) return
+        val nextRepeatMode = player.repeatMode.let { if (it == Player.REPEAT_MODE_ONE) Player.REPEAT_MODE_OFF else it }
+        val now = System.currentTimeMillis()
+        val ids = mutableListOf<String>()
+        var index = player.currentMediaItemIndex
+        repeat(2) {
+            index = timeline.getNextWindowIndex(index, nextRepeatMode, player.shuffleModeEnabled)
+            if (index == C.INDEX_UNSET || index >= player.mediaItemCount) return@repeat
+            val id = player.getMediaItemAt(index).mediaId
+            if (id.isBlank() || id.startsWith("LOCAL_") || id.startsWith(FLAC_STREAM_PREFIX)) return@repeat
+            if ((playbackUrlCache[id]?.second ?: 0L) > now) return@repeat
+            if (runCatching { downloadCache.getCachedSpans(id).isNotEmpty() }.getOrDefault(false)) return@repeat
+            ids += id
+        }
+        if (ids.isEmpty()) return
+        val quality = audioQuality
+        val client = preferredStreamClient
+        scope.launch(Dispatchers.IO) {
+            // Deja respirar al arranque de la canción actual antes de pedir las siguientes.
+            delay(1_500)
+            ids.distinct().forEach { id ->
+                YTPlayerUtils.prefetchPlayback(id, quality, connectivityManager, client, avoidStreamCodecs)
+            }
+        }
+    }
+
     fun retryCurrentFromFreshStream() {
         val mediaId = player.currentMediaItem?.mediaId ?: return
         clearStreamRefreshGuards(mediaId)
@@ -7033,6 +7198,8 @@ class MusicService :
      * en cada evento del reproductor.
      */
     private fun publishSocialPresence() {
+        // Con la red social oculta no se publica nada que nadie de la app pueda ver.
+        if (!com.dezzy.music.constants.SocialFeatures.ENABLED) return
         val shareLocation = dataStore.get(MusicMapShareLocationKey, false)
         if (shareLocation) com.dezzy.music.musicmap.MusicMapLocation.ensureRestored(this)
         val mapLat = OmegaMathIntegration.latitude

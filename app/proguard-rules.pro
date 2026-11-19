@@ -145,3 +145,9 @@
 
 # Red social P2P (Nostr / Bouncy Castle)
 -dontwarn org.bouncycastle.**
+
+# ML Kit (escáner QR, idioma y traducción): R8 fusionaba clases internas de varias
+# librerías de ML Kit y el escáner QR crasheaba en release con un NullPointerException.
+-keep class com.google.mlkit.** { *; }
+-keep class com.google.android.gms.internal.mlkit_** { *; }
+-dontwarn com.google.mlkit.**

@@ -64,6 +64,8 @@ import androidx.mediarouter.media.MediaRouter
 import com.dezzy.music.LocalPlayerConnection
 import com.dezzy.music.R
 import com.dezzy.music.connect.ConnectState
+import com.dezzy.music.connect.DezzyConnect
+import com.dezzy.music.connect.DezzyConnectSession
 import com.dezzy.music.connect.DiscoveredDevice
 import com.dezzy.music.connect.LinerConnectManager
 import com.dezzy.music.constants.CastBetaNoticeShownKey
@@ -72,12 +74,14 @@ import com.dezzy.music.utils.rememberPreference
 import com.google.android.gms.cast.CastMediaControlIntent
 import com.google.android.gms.cast.framework.CastContext
 import com.google.common.util.concurrent.MoreExecutors
+import kotlin.math.roundToInt
 
 /**
  * Hoja «Conectar a un dispositivo» (estilo Connect), rediseñada según
  * design/dispositivos-bocetos.html:
  *  - Arriba, «Escuchando en»: dónde suena la música, por qué salida y su volumen.
- *  - «En tu red»: PCs con Dezzy (Liner) y Google Cast en una sola lista.
+ *  - «En tu red»: tus otros Dezzy (Dezzy Connect: sólo allí o en ambos a la vez), PCs con
+ *    Liner y Google Cast en una sola lista.
  *  - «Bluetooth y otras salidas»: abre el selector de salida del sistema.
  *  - «Escuchar juntos»: entrada a las salas compartidas.
  * El teléfono NO se pausa hasta que la PC confirma la conexión.
@@ -99,6 +103,20 @@ fun ConnectDeviceBottomSheet(
     val desktopState by linerManager.desktopState.collectAsState()
     val isScanning by linerManager.isScanning.collectAsState()
     val lastError by linerManager.lastError.collectAsState()
+
+    // Dezzy Connect: tus otros Dezzy (PC o móvil) con la misma clave de grupo.
+    val dzDevices by DezzyConnect.devices.collectAsState()
+    val dzPeer by DezzyConnect.peer.collectAsState()
+    val dzSearching by DezzyConnect.searching.collectAsState()
+    val dzRole by DezzyConnectSession.role.collectAsState()
+    val dzRemote by DezzyConnectSession.remote.collectAsState()
+    val dzBusy by DezzyConnectSession.busy.collectAsState()
+    val dzNotice by DezzyConnectSession.notice.collectAsState()
+    val dzDrift by DezzyConnectSession.drift.collectAsState()
+    val dzOffset by DezzyConnectSession.offset.collectAsState()
+    val dzPeerVolume by DezzyConnectSession.peerVolume.collectAsState()
+    var dzChoosing by remember { mutableStateOf<DezzyConnect.Device?>(null) }
+    val dzActive = dzRole != null && dzPeer != null
 
     val isConnectedToDesktop = connectionState == ConnectState.CONNECTED
     val isConnecting = connectionState == ConnectState.CONNECTING
@@ -122,6 +140,7 @@ fun ConnectDeviceBottomSheet(
     DisposableEffect(Unit) {
         linerManager.clearError()
         linerManager.discoverDevices()
+        DezzyConnectSession.search()
         onDispose { linerManager.stopDiscovery() }
     }
 
@@ -143,7 +162,8 @@ fun ConnectDeviceBottomSheet(
     }
 
     val linerDevices = discoveredDevices
-    val nothingFound = !isScanning && linerDevices.none { it.isAvailable } && cast.routes.isEmpty()
+    val nothingFound = !isScanning && !dzSearching && linerDevices.none { it.isAvailable } &&
+        cast.routes.isEmpty() && dzDevices.none { it.available }
 
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
@@ -170,17 +190,21 @@ fun ConnectDeviceBottomSheet(
                             .semantics { heading() },
                     )
                     IconButton(
-                        onClick = { linerManager.discoverDevices() },
-                        enabled = !isScanning,
+                        onClick = {
+                            linerManager.discoverDevices()
+                            DezzyConnectSession.search()
+                        },
+                        enabled = !isScanning && !dzSearching,
                     ) {
                         Icon(painterResource(R.drawable.cached), contentDescription = "Buscar de nuevo")
                     }
                 }
                 ScanStatusLine(
-                    isScanning = isScanning,
-                    isConnecting = isConnecting,
-                    isConnected = isConnectedToDesktop,
-                    deviceName = connectedDeviceName ?: lastAttempt?.name,
+                    isScanning = isScanning || dzSearching,
+                    isConnecting = isConnecting || dzBusy != null,
+                    isConnected = isConnectedToDesktop || dzActive,
+                    deviceName = connectedDeviceName ?: dzPeer?.name
+                        ?: dzDevices.firstOrNull { it.id == dzBusy }?.name ?: lastAttempt?.name,
                     modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 12.dp),
                 )
             }
@@ -197,9 +221,33 @@ fun ConnectDeviceBottomSheet(
                 }
             }
 
+            dzNotice?.let { notice ->
+                item(key = "dz_notice") {
+                    ErrorBanner(
+                        message = notice,
+                        onRetry = null,
+                        onDismiss = { DezzyConnectSession.clearNotice() },
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    )
+                }
+            }
+
             // ── Escuchando en ──
             item(key = "now") {
-                if (isConnectedToDesktop) {
+                val role = dzRole
+                val peer = dzPeer
+                if (role != null && peer != null) {
+                    DezzyActiveCard(
+                        role = role,
+                        peer = peer,
+                        remote = dzRemote,
+                        drift = dzDrift,
+                        offset = dzOffset,
+                        peerVolume = dzPeerVolume,
+                        phoneName = exactPhoneName,
+                        onOpenOutput = { openSystemOutputSwitcher(context) },
+                    )
+                } else if (isConnectedToDesktop) {
                     NowPlayingOnCard(
                         icon = R.drawable.desktop_windows,
                         title = connectedDeviceName ?: linerManager.lastDeviceName,
@@ -230,7 +278,7 @@ fun ConnectDeviceBottomSheet(
             }
 
             // ── Volver al teléfono (si suena en la PC) ──
-            if (isConnectedToDesktop) {
+            if (isConnectedToDesktop || dzRole == DezzyConnectSession.Role.REMOTE) {
                 item(key = "phone_header") { SectionHeader(R.drawable.smartphone, "Este teléfono") }
                 item(key = "phone_row") {
                     DeviceRow(
@@ -238,7 +286,10 @@ fun ConnectDeviceBottomSheet(
                         title = exactPhoneName,
                         subtitle = "Toca para traer la música aquí",
                         state = DeviceRowState.Idle,
-                        onClick = { bringBackToPhone() },
+                        onClick = {
+                            if (dzRole == DezzyConnectSession.Role.REMOTE) DezzyConnectSession.bringHere()
+                            else bringBackToPhone()
+                        },
                     )
                 }
             }
@@ -253,6 +304,56 @@ fun ConnectDeviceBottomSheet(
                         onConnectByIp = { showIpDialog = true },
                     )
                 }
+            }
+
+            items(
+                items = dzDevices.filterNot { it.connected && dzActive },
+                key = { "dezzy_${it.id}" },
+            ) { device ->
+                val connectingThis = dzBusy == device.id
+                var menuOpen by remember { mutableStateOf(false) }
+                DeviceRow(
+                    icon = if (device.kind == "phone") R.drawable.smartphone else R.drawable.desktop_windows,
+                    title = device.name,
+                    subtitle = when {
+                        connectingThis -> "Conectando…"
+                        !device.available -> "No disponible ahora"
+                        device.kind == "phone" -> "Dezzy en otro móvil"
+                        else -> "Dezzy para PC"
+                    },
+                    badge = if (device.kind == "phone") "MÓVIL" else "PC",
+                    state = when {
+                        connectingThis -> DeviceRowState.Connecting
+                        !device.available || dzBusy != null -> DeviceRowState.Unavailable
+                        else -> DeviceRowState.Idle
+                    },
+                    onClick = {
+                        if (device.available && dzBusy == null) {
+                            val saved = DezzyConnectSession.rememberedMode(device.id)
+                            if (saved != null) DezzyConnectSession.connectTo(device.id, saved, remember = false)
+                            else {
+                                dzChoosing = device
+                            }
+                        }
+                    },
+                    trailing = {
+                        Box {
+                            IconButton(onClick = { menuOpen = true }) {
+                                Icon(painterResource(R.drawable.more_vert), contentDescription = "Opciones de ${device.name}")
+                            }
+                            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                                DropdownMenuItem(
+                                    text = { Text("Olvidar este dispositivo") },
+                                    leadingIcon = { Icon(painterResource(R.drawable.delete), contentDescription = null) },
+                                    onClick = {
+                                        menuOpen = false
+                                        DezzyConnectSession.forget(device.id)
+                                    },
+                                )
+                            }
+                        }
+                    },
+                )
             }
 
             items(
@@ -441,6 +542,17 @@ fun ConnectDeviceBottomSheet(
             },
             dismissButton = {
                 TextButton(onClick = { pendingCastRoute = null }) { Text("Ahora no") }
+            },
+        )
+    }
+
+    dzChoosing?.let { device ->
+        DezzyModeDialog(
+            name = device.name,
+            onDismiss = { dzChoosing = null },
+            onChoose = { mode, keep ->
+                dzChoosing = null
+                DezzyConnectSession.connectTo(device.id, mode, keep)
             },
         )
     }
@@ -1216,4 +1328,289 @@ private fun rememberCastRoutes(): CastRoutes {
         selected = selected,
         stop = { mediaRouter.unselect(MediaRouter.UNSELECT_REASON_STOPPED) },
     )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Dezzy Connect (tus otros Dezzy en la red de casa)
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun DezzyActiveCard(
+    role: DezzyConnectSession.Role,
+    peer: DezzyConnect.Peer,
+    remote: DezzyConnectSession.Playback?,
+    drift: Int?,
+    offset: Int,
+    peerVolume: Float?,
+    phoneName: String,
+    onOpenOutput: () -> Unit,
+) {
+    val peerIcon = if (peer.kind == "phone") R.drawable.smartphone else R.drawable.desktop_windows
+    Column { when (role) {
+        DezzyConnectSession.Role.REMOTE -> {
+            val track = remote?.track
+            NowPlayingOnCard(
+                icon = peerIcon,
+                title = peer.name,
+                subtitle = track?.let { "${it.title} · ${it.artists}".trimEnd(' ', '·') }
+                    ?: "Dezzy · controlas desde aquí",
+                trailing = {
+                    IconButton(onClick = { DezzyConnectSession.dropPeer() }) {
+                        Icon(painterResource(R.drawable.close), contentDescription = "Traer la música aquí y desconectar")
+                    }
+                },
+                output = null,
+                volume = remote?.vol?.toFloat() ?: 1f,
+                onVolumeChange = { DezzyConnectSession.remoteVolume(it) },
+            )
+            DezzyRemoteControls(
+                playing = remote?.playing == true,
+                enabled = remote != null,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            )
+        }
+        DezzyConnectSession.Role.LEADER, DezzyConnectSession.Role.FOLLOWER -> {
+            val output = rememberAudioOutput()
+            val volume = rememberMusicVolume()
+            NowPlayingOnCard(
+                icon = R.drawable.smartphone,
+                title = phoneName,
+                subtitle = "Suena en este teléfono y en ${peer.name}",
+                trailing = null,
+                output = output,
+                onOutputClick = onOpenOutput,
+                volume = volume.value,
+                onVolumeChange = { volume.value = it },
+            )
+            DezzyPeerCard(
+                icon = peerIcon,
+                name = peer.name,
+                // El volumen del otro sólo lo mueve quien marca el paso.
+                volume = if (role == DezzyConnectSession.Role.LEADER) peerVolume else null,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            )
+            DezzySyncCard(
+                drift = drift,
+                offset = offset,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            )
+            TextButton(
+                onClick = { DezzyConnectSession.stopHere() },
+                modifier = Modifier.padding(start = 12.dp),
+            ) { Text("Dejar de sonar en este teléfono") }
+        }
+        DezzyConnectSession.Role.HOST -> {
+            val output = rememberAudioOutput()
+            val volume = rememberMusicVolume()
+            NowPlayingOnCard(
+                icon = R.drawable.smartphone,
+                title = phoneName,
+                subtitle = "Lo controla ${peer.name}",
+                trailing = {
+                    IconButton(onClick = { DezzyConnectSession.release() }) {
+                        Icon(painterResource(R.drawable.close), contentDescription = "Dejar de compartir el control")
+                    }
+                },
+                output = output,
+                onOutputClick = onOpenOutput,
+                volume = volume.value,
+                onVolumeChange = { volume.value = it },
+            )
+        }
+    } }
+}
+
+@Composable
+private fun DezzyRemoteControls(playing: Boolean, enabled: Boolean, modifier: Modifier = Modifier) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        IconButton(onClick = { DezzyConnectSession.remotePrev() }, enabled = enabled) {
+            Icon(painterResource(R.drawable.skip_previous), contentDescription = "Anterior")
+        }
+        FilledIconButton(
+            onClick = { DezzyConnectSession.remoteToggle() },
+            enabled = enabled,
+            modifier = Modifier.size(56.dp),
+        ) {
+            Icon(
+                painterResource(if (playing) R.drawable.pause else R.drawable.play),
+                contentDescription = if (playing) "Pausar" else "Reproducir",
+            )
+        }
+        IconButton(onClick = { DezzyConnectSession.remoteNext() }, enabled = enabled) {
+            Icon(painterResource(R.drawable.skip_next), contentDescription = "Siguiente")
+        }
+        Spacer(Modifier.width(8.dp))
+        TextButton(onClick = { DezzyConnectSession.alsoHere() }, enabled = enabled) {
+            Text("Sonar también aquí")
+        }
+    }
+}
+
+@Composable
+private fun DezzyPeerCard(icon: Int, name: String, volume: Float?, modifier: Modifier = Modifier) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(painterResource(icon), contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        "Suena a la vez",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                IconButton(onClick = { DezzyConnectSession.dropPeer() }) {
+                    Icon(painterResource(R.drawable.close), contentDescription = "Quitar $name; aquí sigue sonando")
+                }
+            }
+            if (volume != null) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(end = 12.dp)) {
+                    Icon(
+                        painterResource(R.drawable.volume_up),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    var value by remember { mutableFloatStateOf(volume) }
+                    LaunchedEffect(volume) { value = volume }
+                    Slider(
+                        value = value,
+                        onValueChange = { value = it },
+                        onValueChangeFinished = { DezzyConnectSession.setPeerVolume(value) },
+                        modifier = Modifier
+                            .weight(1f)
+                            .semantics { stateDescription = "Volumen de $name ${(value * 100).toInt()} %" },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DezzySyncCard(drift: Int?, offset: Int, modifier: Modifier = Modifier) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(painterResource(R.drawable.sync), contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(12.dp))
+                Text("Sincronía", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                val warn = drift != null && kotlin.math.abs(drift) > 40
+                Surface(
+                    shape = CircleShape,
+                    color = if (warn) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = if (warn) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onSecondaryContainer,
+                ) {
+                    Text(
+                        text = drift?.let { "${if (it > 0) "+" else ""}$it ms" } ?: "Midiendo…",
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp),
+                    )
+                }
+            }
+            var value by remember { mutableFloatStateOf(offset.toFloat()) }
+            LaunchedEffect(offset) { value = offset.toFloat() }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Ajuste", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Slider(
+                    value = value,
+                    onValueChange = { value = (it / 10f).roundToInt() * 10f },
+                    onValueChangeFinished = { DezzyConnectSession.setOffset(value.roundToInt()) },
+                    valueRange = -300f..300f,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 8.dp)
+                        .semantics { stateDescription = "Ajuste de sincronía ${value.roundToInt()} milisegundos" },
+                )
+                Text(
+                    "${value.roundToInt()} ms",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.widthIn(min = 56.dp),
+                    textAlign = TextAlign.End,
+                )
+            }
+            Text(
+                "Si oyes eco entre los dos, mueve el ajuste hasta que desaparezca.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun DezzyModeDialog(
+    name: String,
+    onDismiss: () -> Unit,
+    onChoose: (DezzyConnectSession.Mode, Boolean) -> Unit,
+) {
+    var keep by remember { mutableStateOf(false) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("¿Dónde quieres oírla?") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                DezzyModeOption(
+                    icon = R.drawable.desktop_windows,
+                    title = "Sólo en $name",
+                    subtitle = "Este teléfono se calla y lo controlas desde aquí",
+                    onClick = { onChoose(DezzyConnectSession.Mode.THERE, keep) },
+                )
+                DezzyModeOption(
+                    icon = R.drawable.graphic_eq,
+                    title = "En ambos a la vez",
+                    subtitle = "Suena en los dos, sincronizado",
+                    onClick = { onChoose(DezzyConnectSession.Mode.BOTH, keep) },
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { keep = !keep }
+                        .semantics(mergeDescendants = true) {},
+                ) {
+                    Checkbox(checked = keep, onCheckedChange = null, modifier = Modifier.padding(12.dp))
+                    Text("Recordar mi elección", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },
+    )
+}
+
+@Composable
+private fun DezzyModeOption(icon: Int, title: String, subtitle: String, onClick: () -> Unit) {
+    OutlinedCard(
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(16.dp)) {
+            Icon(painterResource(icon), contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(16.dp))
+            Column {
+                Text(title, style = MaterialTheme.typography.titleSmall)
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
 }

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bandera de Australia (simplificada, 3:2). Generada por flags_gen.py: no editar a mano. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="36dp"
+    android:height="24dp"
+    android:viewportWidth="36"
+    android:viewportHeight="24">
+    <group>
+        <clip-path android:pathData="M3,0h30a3,3 0 0,1 3,3v18a3,3 0 0,1 -3,3h-30a3,3 0 0,1 -3,-3v-18a3,3 0 0,1 3,-3z" />
+        <path android:fillColor="#012169" android:pathData="M0,0h36v24h-36z" />
+        <path android:fillColor="#012169" android:pathData="M0,0h18v12h-18z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M-0.67,1L17.33,13L18.67,11L0.67,-1z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M0.67,13L18.67,1L17.33,-1L-0.67,11z" />
+        <path android:fillColor="#C8102E" android:pathData="M-0.22,0.33L17.78,12.33L18.22,11.67L0.22,-0.33z" />
+        <path android:fillColor="#C8102E" android:pathData="M0.22,12.33L18.22,0.33L17.78,-0.33L-0.22,11.67z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M7,0h4v12h-4z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M0,4h18v4h-18z" />
+        <path android:fillColor="#C8102E" android:pathData="M7.8,0h2.4v12h-2.4z" />
+        <path android:fillColor="#C8102E" android:pathData="M0,4.8h18v2.4h-18z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M9,15.6L9.47,17.03L10.88,16.5L10.05,17.76L11.34,18.53L9.84,18.67L10.04,20.16L9,19.08L7.96,20.16L8.16,18.67L6.66,18.53L7.95,17.76L7.12,16.5L8.53,17.03z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M27,18.1L27.27,18.93L28.09,18.63L27.61,19.36L28.36,19.81L27.49,19.89L27.61,20.76L27,20.13L26.39,20.76L26.51,19.89L25.64,19.81L26.39,19.36L25.91,18.63L26.73,18.93z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M22.5,9.1L22.77,9.93L23.59,9.63L23.11,10.36L23.86,10.81L22.99,10.89L23.11,11.76L22.5,11.13L21.89,11.76L22.01,10.89L21.14,10.81L21.89,10.36L21.41,9.63L22.23,9.93z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M27,3.1L27.27,3.93L28.09,3.63L27.61,4.36L28.36,4.81L27.49,4.89L27.61,5.76L27,5.13L26.39,5.76L26.51,4.89L25.64,4.81L26.39,4.36L25.91,3.63L26.73,3.93z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M31,8.1L31.27,8.93L32.09,8.63L31.61,9.36L32.36,9.81L31.49,9.89L31.61,10.76L31,10.13L30.39,10.76L30.51,9.89L29.64,9.81L30.39,9.36L29.91,8.63L30.73,8.93z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M29,12.2L29.19,12.74L29.76,12.75L29.3,13.1L29.47,13.65L29,13.32L28.53,13.65L28.7,13.1L28.24,12.75L28.81,12.74z" />
+    </group>
+    <path
+        android:pathData="M3,0h30a3,3 0 0,1 3,3v18a3,3 0 0,1 -3,3h-30a3,3 0 0,1 -3,-3v-18a3,3 0 0,1 3,-3z"
+        android:strokeColor="#33000000"
+        android:strokeWidth="0.6" />
+</vector>

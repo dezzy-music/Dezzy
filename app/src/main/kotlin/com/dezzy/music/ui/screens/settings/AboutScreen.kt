@@ -3,64 +3,60 @@
  * Dezzy (github.com/dezzy-music)
  * Licensed Under GPL-3.0 | see git history for contributors
  *
- * Rediseñado con sistema de diseño Dezzy + Material 3 Expressive
+ * «Acerca de» brutalista — boceto B «Tablero de bloques»: rejilla de 6 columnas,
+ * bordes de 3dp, sombras duras desplazadas y sólo iconos vectoriales de trazo recto.
  */
 
 package com.dezzy.music.ui.screens.settings
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Animatable
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ElevatedButton
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -68,39 +64,36 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import coil3.compose.AsyncImage
 import com.dezzy.music.BuildConfig
 import com.dezzy.music.LocalPlayerAwareWindowInsets
 import com.dezzy.music.LocalPlayerConnection
 import com.dezzy.music.R
-import com.dezzy.music.ui.component.IconButton
 import com.dezzy.music.ui.utils.backToMain
+import com.dezzy.music.utils.Updater
 import com.dezzy.music.viewmodels.AboutViewModel
 import com.dezzy.music.viewmodels.Contributor
-import kotlinx.coroutines.delay
 
-// ── Shimmer brush (Material 3 Expressive) ──────────────────────────────────
+// ── Shimmer brush (lo usan otras pantallas de carga) ────────────────────────
 
 @Composable
 fun shimmerEffect(): Brush {
@@ -126,17 +119,47 @@ fun shimmerEffect(): Brush {
     )
 }
 
-// ── Data ───────────────────────────────────────────────────────────────────
+// ── Paleta y tipos del tablero ──────────────────────────────────────────────
 
-private data class SocialLink(
-    val iconRes: Int,
-    val url: String,
-    val label: String,
+private val Ink = Color(0xFF0D0D0D)
+private val Acid = Color(0xFFE4FF3A)
+private val Sky = Color(0xFF9FD3FF)
+private val Blush = Color(0xFFE9C9CD)
+private val Paper = Color(0xFFF3EFE6)
+
+private val BlockGap = 10.dp
+private val EdgeWidth = 3.dp
+private val ShadowOffset = 4.dp
+
+private val DisplayFont = FontFamily(Font(R.font.sfprodisplaybold, FontWeight.Black))
+private val MonoFont = FontFamily.Monospace
+
+private fun mono(size: TextUnit, weight: FontWeight = FontWeight.Bold) = TextStyle(
+    fontFamily = MonoFont,
+    fontWeight = weight,
+    fontSize = size,
+    letterSpacing = 0.08.em,
 )
 
-// ── Main screen ────────────────────────────────────────────────────────────
+/** Contribuidores reconocidos en «Acerca de» (además del autor). */
+private val DezzyContributors = listOf(
+    Contributor(
+        avatarUrl = "https://github.com/dani36652.png",
+        name = "dani36652",
+        role = "Contribuidor",
+        profileUrl = "https://github.com/dani36652",
+    ),
+)
 
-@OptIn(ExperimentalMaterial3Api::class)
+private const val UrlGitHub = "https://github.com/dezzy-music"
+private const val UrlInstagram = "https://www.instagram.com/dezzy_9n9_/?utm_source=ig_web_button_share_sheet"
+private const val UrlFacebook = "https://www.facebook.com/share/18nog3EfkG/"
+private const val UrlWebsite = "https://dezzy.space"
+private const val UrlLicense = "https://github.com/dezzy-music/Dezzy/blob/master/LICENSE"
+
+// ── Pantalla ────────────────────────────────────────────────────────────────
+
+@Suppress("UNUSED_PARAMETER")
 @Composable
 fun AboutScreen(
     navController: NavController,
@@ -144,887 +167,493 @@ fun AboutScreen(
     viewModel: AboutViewModel = viewModel()
 ) {
     val uriHandler = LocalUriHandler.current
-    val contributors by viewModel.contributors.collectAsStateWithLifecycle()
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
-    val error by viewModel.error.collectAsStateWithLifecycle()
-
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val context = LocalContext.current
     val playerConnection = LocalPlayerConnection.current
-    val configuration = LocalConfiguration.current
-    val isTablet = configuration.screenWidthDp >= 600
+    val edge = MaterialTheme.colorScheme.onSurface
+    val surface = MaterialTheme.colorScheme.surface
 
-    Scaffold(
-        modifier = Modifier
-            .fillMaxSize()
-            .nestedScroll(scrollBehavior.nestedScrollConnection),
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            LargeTopAppBar(
-                title = {
-                    Text(
-                        stringResource(R.string.about),
-                        fontWeight = FontWeight.Bold,
-                    )
-                },
-                navigationIcon = {
-                    IconButton(
-                        onClick = navController::navigateUp,
-                        onLongClick = navController::backToMain,
-                    ) {
-                        Icon(
-                            painterResource(R.drawable.arrow_back),
-                            contentDescription = null,
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    navigationIconContentColor = Color.Unspecified,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    actionIconContentColor = Color.Unspecified
-                ),
-                scrollBehavior = scrollBehavior,
-            )
-        },
-    ) { innerPadding ->
+    // Última versión publicada (Updater la cachea varias horas: no cuesta red cada vez).
+    var latestVersion by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        Updater.getLatestVersionName().onSuccess { latestVersion = it }
+    }
+    val upToDate = latestVersion?.let { Updater.isSameVersion(it, BuildConfig.VERSION_NAME) }
 
-        LazyColumn(
+    val versionLabel = "Dezzy ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
+    val copyVersion = {
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        clipboard.setPrimaryClip(ClipData.newPlainText("Dezzy", versionLabel))
+        Toast.makeText(context, "Versión copiada", Toast.LENGTH_SHORT).show()
+    }
+
+    CompositionLocalProvider(LocalBoardEdge provides edge) {
+        Column(
             modifier = Modifier
-                .nestedScroll(scrollBehavior.nestedScrollConnection)
-                .padding(innerPadding)
+                .fillMaxSize()
+                .background(surface)
+                .verticalScroll(rememberScrollState())
+                .windowInsetsPadding(WindowInsets.statusBars)
                 .windowInsetsPadding(
                     LocalPlayerAwareWindowInsets.current.only(
                         WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
                     )
+                )
+                .padding(horizontal = 16.dp)
+                .padding(
+                    top = 10.dp,
+                    bottom = if (playerConnection?.player?.isPlaying == true) 96.dp else 32.dp,
                 ),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-            contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
-                top = 8.dp,
-                bottom = if (playerConnection?.player?.isPlaying == true) 96.dp else 32.dp,
-            ),
+            verticalArrangement = Arrangement.spacedBy(BlockGap),
         ) {
-
-            // ── Hero card (Expresivo con morphing) ─────────────────────────
-            item(key = "hero") {
-                HeroCardExpressive(shimmerBrush = shimmerEffect())
-            }
-
-            // ── Social card ───────────────────────────────────────────────
-            item(key = "social") {
-                SocialCardExpressive(
-                    links = listOf(
-                        SocialLink(
-                            R.drawable.github,
-                            "https://github.com/dezzy-music",
-                            "GitHub"
-                        ),
-                        SocialLink(
-                            R.drawable.facebook,
-                            "https://www.facebook.com/share/18nog3EfkG/",
-                            "Facebook"
-                        ),
-                        SocialLink(
-                            R.drawable.instagram,
-                            "https://www.instagram.com/dezzy_9n9_/?utm_source=ig_web_button_share_sheet",
-                            "Instagram"
-                        ),
-                        SocialLink(
-                            R.drawable.resource_public,
-                            "https://dezzy.space",
-                            "Website"
-                        ),
-                    ),
-                    onLinkClick = { uriHandler.openUri(it) },
-                    columns = if (isTablet) 4 else 3,
-                )
-            }
-
-            // ── Contributors section header ───────────────────────────────
-            item(key = "contributors_header") {
-                SectionHeaderExpressive(
-                    title = stringResource(R.string.contributors),
-                    iconRes = R.drawable.person,
-                    iconColor = MaterialTheme.colorScheme.secondaryContainer
-                )
-            }
-
-            // ── Contributors content: Dezzy signature artwork ─────────────
-            item(key = "credits_art") {
-                DezzyCreditsArtSection()
-            }
-
-            // ── License footer ────────────────────────────────────────────
-            item(key = "license") {
-                LicenseFooterExpressive(
-                    onLicenseClick = {
-                        uriHandler.openUri("https://github.com/dezzy-music/Dezzy/blob/master/LICENSE")
-                    }
-                )
-            }
-
-            // ── Bottom spacer ─────────────────────────────────────────────
-            item(key = "bottom_spacer") {
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-        }
-    }
-}
-
-// ── Dezzy signature artwork (replaces the GitHub contributors list) ─────────
-// Poster-style: dos artes apilados con leve inclinación opuesta, marco morado
-// degradado, borde luminoso sutil y una pulsación de brillo muy lenta.
-
-@Composable
-private fun DezzyCreditsArtSection() {
-    val purpleDeep = Color(0xFF1E0B3D)
-    val purple = Color(0xFF5C2BA6)
-    val purpleBright = Color(0xFF7B3FE4)
-
-    // Very slow breathing glow on the frame border.
-    val glowTransition = rememberInfiniteTransition(label = "creditsGlow")
-    val glowAlpha by glowTransition.animateFloat(
-        initialValue = 0.15f,
-        targetValue = 0.45f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(3600, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "creditsGlowAlpha",
-    )
-
-    Card(
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = purpleDeep),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(
-                width = 2.dp,
-                brush = Brush.linearGradient(
-                    listOf(
-                        purpleBright.copy(alpha = glowAlpha),
-                        Color.Transparent,
-                        purpleBright.copy(alpha = glowAlpha),
-                    ),
-                ),
-                shape = RoundedCornerShape(28.dp),
-            ),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Brush.verticalGradient(listOf(purple, purpleDeep)))
-                .padding(16.dp),
-        ) {
-            Image(
-                painter = painterResource(R.drawable.dezzy_credits_created),
-                contentDescription = "Created for Dezzy",
-                contentScale = ContentScale.FillWidth,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .graphicsLayer { rotationZ = -1.4f }
-                    .clip(RoundedCornerShape(20.dp))
-                    .border(1.dp, Color.White.copy(alpha = 0.14f), RoundedCornerShape(20.dp)),
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Image(
-                painter = painterResource(R.drawable.dezzy_credits_collage),
-                contentDescription = "Dezzy — collage",
-                contentScale = ContentScale.FillWidth,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .graphicsLayer { rotationZ = 1.4f }
-                    .clip(RoundedCornerShape(20.dp))
-                    .border(1.dp, Color.White.copy(alpha = 0.14f), RoundedCornerShape(20.dp)),
-            )
-            Spacer(modifier = Modifier.height(14.dp))
-            Text(
-                text = "OBSESSION WAS ALWAYS THE KEY",
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.7f),
-                letterSpacing = 3.sp,
-                textAlign = TextAlign.Center,
+            // ── Barra superior: volver · título · copiar versión ──────────────
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-            )
-            Text(
-                text = "DEZZY · NEW YORK · ESTD 2030",
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.45f),
-                letterSpacing = 2.sp,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 4.dp),
-            )
-        }
-    }
-}
-
-// ── Section Header (Material 3) ────────────────────────────────────────────
-
-@Composable
-private fun SectionHeaderExpressive(
-    title: String,
-    iconRes: Int,
-    iconColor: Color,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Surface(
-            shape = RoundedCornerShape(14.dp),
-            color = iconColor,
-            modifier = Modifier.size(40.dp),
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    painter = painterResource(iconRes),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(22.dp),
-                )
-            }
-        }
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-    }
-}
-
-// ── Hero card (Expresivo con morphing) ─────────────────────────────────────
-
-@Composable
-private fun HeroCardExpressive(shimmerBrush: Brush) {
-    var isExpanded by remember { mutableStateOf(false) }
-    val scale = remember { Animatable(1f) }
-    val rotation = remember { Animatable(0f) }
-    val elevation = remember { Animatable(2f) }
-
-    LaunchedEffect(isExpanded) {
-        if (isExpanded) {
-            scale.animateTo(1.02f, spring(stiffness = Spring.StiffnessLow))
-            rotation.animateTo(1f, spring(stiffness = Spring.StiffnessVeryLow))
-            elevation.animateTo(8f, spring(stiffness = Spring.StiffnessLow))
-        } else {
-            scale.animateTo(1f, spring(stiffness = Spring.StiffnessLow))
-            rotation.animateTo(0f, spring(stiffness = Spring.StiffnessVeryLow))
-            elevation.animateTo(2f, spring(stiffness = Spring.StiffnessLow))
-        }
-    }
-
-    // Contenedor con padding superior para evitar corte al expandir
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = if (isExpanded) 8.dp else 0.dp),
-        contentAlignment = Alignment.TopCenter
-    ) {
-        ElevatedCard(
-            modifier = Modifier
-                .fillMaxWidth()
-                .graphicsLayer {
-                    scaleX = scale.value
-                    scaleY = scale.value
-                    rotationZ = rotation.value * 2f
-                }
-                .clickable { isExpanded = !isExpanded },
-            shape = RoundedCornerShape(32.dp),
-            colors = CardDefaults.elevatedCardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            ),
-            elevation = CardDefaults.elevatedCardElevation(
-            ),
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(28.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(BlockGap),
             ) {
-                // App icon with morphing shape
-                Surface(
-                    shape = if (isExpanded) CircleShape else RoundedCornerShape(24.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(if (isExpanded) 100.dp else 84.dp),
-                    shadowElevation = if (isExpanded) 12.dp else 4.dp,
+                BrutalBlock(
+                    fill = Acid,
+                    content = Ink,
+                    padding = PaddingValues(10.dp),
+                    onClick = { navController.navigateUp() },
+                    onLongClick = { navController.backToMain() },
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Image(
-                            painter = painterResource(R.drawable.star),
-                            contentDescription = null,
-                            colorFilter = ColorFilter.tint(
-                                MaterialTheme.colorScheme.onPrimaryContainer,
-                                BlendMode.SrcIn,
-                            ),
-                            modifier = Modifier
-                                .size(if (isExpanded) 68.dp else 56.dp)
-                                .clip(RoundedCornerShape(if (isExpanded) 24.dp else 16.dp)),
+                    BoardIcon(R.drawable.about_back, "Volver", 22.dp)
+                }
+                Column(Modifier.weight(1f)) {
+                    Text("ACERCA DE", style = mono(13.sp), color = edge)
+                    Text("05 / AJUSTES", style = mono(10.sp, FontWeight.Normal), color = edge.copy(alpha = 0.6f))
+                }
+                BrutalBlock(
+                    fill = surface,
+                    content = edge,
+                    padding = PaddingValues(10.dp),
+                    onClick = copyVersion,
+                ) {
+                    BoardIcon(R.drawable.about_copy, "Copiar versión", 22.dp)
+                }
+            }
+
+            // ── Bloque título ─────────────────────────────────────────────────
+            BrutalBlock(
+                modifier = Modifier.fillMaxWidth(),
+                fill = MaterialTheme.colorScheme.primary,
+                content = MaterialTheme.colorScheme.onPrimary,
+                padding = PaddingValues(start = 18.dp, end = 18.dp, top = 20.dp, bottom = 48.dp),
+            ) {
+                Column {
+                    Row(verticalAlignment = Alignment.Top) {
+                        Text(
+                            "DEZZY",
+                            fontFamily = DisplayFont,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 64.sp,
+                            lineHeight = 60.sp,
+                            letterSpacing = (-2).sp,
                         )
-                        // Shimmer overlay (solo visible en estado no expandido)
-                        if (!isExpanded) {
-                            Box(
-                                modifier = Modifier
-                                    .matchParentSize()
-                                    .background(shimmerBrush),
+                        Text(
+                            "*",
+                            fontFamily = DisplayFont,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 48.sp,
+                            lineHeight = 48.sp,
+                            color = Acid,
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text("* OBSESSION WAS ALWAYS THE KEY.", style = mono(11.sp))
+                }
+                // Pegatina girada en la esquina
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .offset(x = 6.dp, y = 34.dp)
+                        .rotate(-6f)
+                        .background(Acid)
+                        .border(EdgeWidth, Ink)
+                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                ) {
+                    Text("GPL-3.0 ✕ GRATIS", style = mono(10.sp), color = Ink)
+                }
+            }
+
+            // ── Versión · build ───────────────────────────────────────────────
+            BoardRow {
+                BrutalBlock(
+                    modifier = span(3),
+                    fill = Acid,
+                    content = Ink,
+                    onClick = { navController.navigate("settings/update") },
+                    onLongClick = copyVersion,
+                ) {
+                    Column {
+                        BlockLabel("VERSIÓN")
+                        BigValue(BuildConfig.VERSION_NAME)
+                        Spacer(Modifier.height(8.dp))
+                        Chip(
+                            text = when (upToDate) {
+                                null -> "BUSCAR"
+                                true -> "AL DÍA"
+                                false -> "NUEVA ${latestVersion.orEmpty()}"
+                            },
+                            fill = if (upToDate == false) Ink else Acid,
+                            content = if (upToDate == false) Acid else Ink,
+                            iconRes = R.drawable.about_update,
+                        )
+                    }
+                }
+                BrutalBlock(
+                    modifier = span(3),
+                    fill = Ink,
+                    content = Color.White,
+                ) {
+                    Column {
+                        BlockLabel("BUILD")
+                        BigValue("#${BuildConfig.VERSION_CODE}")
+                        Spacer(Modifier.height(8.dp))
+                        Chip(
+                            text = if (BuildConfig.DEBUG) "DEBUG" else "STABLE",
+                            fill = Ink,
+                            content = Color.White,
+                            edgeColor = Color.White,
+                        )
+                    }
+                }
+            }
+
+            // ── Autor · origen ────────────────────────────────────────────────
+            BoardRow {
+                BrutalBlock(
+                    modifier = span(4),
+                    fill = Blush,
+                    content = Ink,
+                    onClick = { uriHandler.openUri(UrlGitHub) },
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Face("JH", fill = Ink, content = Blush)
+                        Spacer(Modifier.size(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                "Jhonny Hernández",
+                                fontFamily = DisplayFont,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 17.sp,
+                                lineHeight = 19.sp,
                             )
+                            Spacer(Modifier.height(4.dp))
+                            Text("LEAD DEVELOPER", style = mono(10.sp))
                         }
                     }
                 }
-
-                // App name (animated)
-                AnimatedVisibility(
-                    visible = isExpanded,
-                    enter = fadeIn(animationSpec = tween(300)) + scaleIn(
-                        initialScale = 0.7f,
-                        animationSpec = spring(stiffness = Spring.StiffnessLow)
-                    ),
-                    exit = fadeOut(animationSpec = tween(150)) + scaleOut(
-                        targetScale = 0.7f,
-                        animationSpec = spring(stiffness = Spring.StiffnessLow)
-                    )
+                BrutalBlock(
+                    modifier = span(2),
+                    fill = Sky,
+                    content = Ink,
                 ) {
-                    Text(
-                        text = stringResource(R.string.app_name),
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.primary,
-                        textAlign = TextAlign.Center,
-                    )
-                }
-
-                if (!isExpanded) {
-                    Text(
-                        text = stringResource(R.string.app_name),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-
-                // Version badges
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    VersionBadgeExpressive(
-                        text = "v${BuildConfig.VERSION_NAME}",
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
-                    VersionBadgeExpressive(
-                        text = "#${BuildConfig.VERSION_CODE}",
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    )
-                    if (BuildConfig.DEBUG) {
-                        VersionBadgeExpressive(
-                            text = "DEBUG",
-                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    Column {
+                        BlockLabel("DESDE")
+                        Text(
+                            "20/30",
+                            fontFamily = DisplayFont,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 22.sp,
                         )
+                        Text("NY", style = mono(11.sp))
                     }
                 }
-
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 8.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-                )
-
-                // Developer info
-                DeveloperInfoExpressive()
-
-                AnimatedVisibility(
-                    visible = isExpanded,
-                    enter = fadeIn(animationSpec = tween(300, delayMillis = 100)) + scaleIn(
-                        initialScale = 0.9f,
-                        animationSpec = spring(stiffness = Spring.StiffnessLow)
-                    ),
-                    exit = fadeOut(animationSpec = tween(150))
-                ) {
-                    Text(
-                        text = "Jesus Christ loves you",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                }
             }
-        }
-    }
-}
 
-// ── Developer Info Component ───────────────────────────────────────────────
-
-@Composable
-private fun DeveloperInfoExpressive() {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Surface(
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.tertiaryContainer,
-            modifier = Modifier.size(44.dp),
-        ) {
-            AsyncImage(
-                model = "https://github.com/dezzy-music.png",
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(CircleShape),
-            )
-        }
-        Column {
-            Text(
-                text = "Jhonny Hernández",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = "Lead Developer",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-// ── Social card (Material 3 Expressive) ────────────────────────────────────
-
-@Composable
-private fun SocialCardExpressive(
-    links: List<SocialLink>,
-    onLinkClick: (String) -> Unit,
-    columns: Int = 3,
-) {
-    ElevatedCard(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            // Section header
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = MaterialTheme.colorScheme.tertiaryContainer,
-                    modifier = Modifier.size(44.dp),
+            // ── Contribuidores ────────────────────────────────────────────────
+            DezzyContributors.forEachIndexed { index, contributor ->
+                BrutalBlock(
+                    modifier = Modifier.fillMaxWidth(),
+                    fill = if (index % 2 == 0) Acid else Sky,
+                    content = Ink,
+                    onClick = { uriHandler.openUri(contributor.profileUrl) },
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            painter = painterResource(R.drawable.link),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                            modifier = Modifier.size(22.dp),
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Face(contributor.name.take(1).uppercase(), fill = Ink, content = Acid)
+                        Spacer(Modifier.size(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                contributor.name,
+                                fontFamily = DisplayFont,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 18.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text("${contributor.role.uppercase()} · NUEVO", style = mono(10.sp))
+                        }
+                        BoardIcon(R.drawable.about_arrow, null, 24.dp)
                     }
                 }
-                Text(
-                    text = stringResource(R.string.social_links),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
             }
 
-            // Social links FlowRow (responsive)
-            androidx.compose.foundation.layout.FlowRow(
+            // ── Redes ─────────────────────────────────────────────────────────
+            BoardRow {
+                LinkSquare("GH", "GITHUB", surface, edge, span(2)) { uriHandler.openUri(UrlGitHub) }
+                LinkSquare("IG", "INSTAGRAM", Ink, Color.White, span(2)) { uriHandler.openUri(UrlInstagram) }
+                LinkSquare("FB", "FACEBOOK", Sky, Ink, span(2)) { uriHandler.openUri(UrlFacebook) }
+            }
+
+            // ── Web ───────────────────────────────────────────────────────────
+            BrutalBlock(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                fill = surface,
+                content = edge,
+                onClick = { uriHandler.openUri(UrlWebsite) },
             ) {
-                links.forEach { link ->
-                    SocialPillExpressive(
-                        iconRes = link.iconRes,
-                        label = link.label,
-                        onClick = { onLinkClick(link.url) },
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    BoardIcon(R.drawable.about_code, null, 24.dp)
+                    Spacer(Modifier.size(12.dp))
+                    Text(
+                        "dezzy.space",
+                        modifier = Modifier.weight(1f),
+                        fontFamily = DisplayFont,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 20.sp,
                     )
+                    BoardIcon(R.drawable.about_arrow, null, 22.dp)
                 }
             }
+
+            // ── Cita · cruz ───────────────────────────────────────────────────
+            BoardRow {
+                BrutalBlock(
+                    modifier = span(4),
+                    fill = Ink,
+                    content = Color.White,
+                ) {
+                    Column {
+                        Text(
+                            "JESUS CHRIST",
+                            fontFamily = DisplayFont,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 20.sp,
+                            lineHeight = 22.sp,
+                        )
+                        Text("loves you", style = mono(12.sp, FontWeight.Normal), color = Acid)
+                    }
+                }
+                BrutalBlock(
+                    modifier = span(2),
+                    fill = Acid,
+                    content = Ink,
+                    contentAlignment = Alignment.Center,
+                ) {
+                    BoardIcon(R.drawable.about_cross, null, 40.dp)
+                }
+            }
+
+            // ── Licencia ──────────────────────────────────────────────────────
+            BrutalBlock(
+                modifier = Modifier.fillMaxWidth(),
+                fill = Paper,
+                content = Ink,
+                onClick = { uriHandler.openUri(UrlLicense) },
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    BoardIcon(R.drawable.about_doc, null, 26.dp)
+                    Spacer(Modifier.size(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        BlockLabel("LICENCIA")
+                        Text(
+                            "GNU GPL v3.0",
+                            fontFamily = DisplayFont,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 18.sp,
+                        )
+                    }
+                    Chip(text = "VER LICENCIA", fill = Ink, content = Paper, edgeColor = Ink)
+                }
+            }
+
+            Text(
+                "HECHO CON OBSESIÓN · DEZZY · NEW YORK · ESTD 2030",
+                style = mono(9.sp, FontWeight.Normal),
+                color = edge.copy(alpha = 0.55f),
+                modifier = Modifier.padding(top = 6.dp),
+            )
         }
     }
 }
 
-// ── Contributor Card (Expresivo) ───────────────────────────────────────────
+// ── Piezas del tablero ──────────────────────────────────────────────────────
 
+/** Color de bordes y sombras: onSurface, así el tablero se adapta al modo oscuro. */
+private val LocalBoardEdge = androidx.compose.runtime.staticCompositionLocalOf { Ink }
+
+/** Fila de la rejilla de 6 columnas: todos los bloques comparten altura. */
 @Composable
-private fun ContributorCardExpressive(
-    contributor: Contributor,
-    onClick: () -> Unit,
-) {
-    var isHovered by remember { mutableStateOf(false) }
-    val elevation by androidx.compose.animation.core.animateDpAsState(
-        targetValue = if (isHovered) 6.dp else 2.dp,
-        animationSpec = spring(stiffness = Spring.StiffnessLow),
-        label = "elevation"
+private fun BoardRow(content: @Composable RowScope.() -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min),
+        horizontalArrangement = Arrangement.spacedBy(BlockGap),
+        content = content,
     )
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .graphicsLayer {
-                scaleX = if (isHovered) 1.01f else 1f
-                scaleY = if (isHovered) 1.01f else 1f
-            },
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isHovered)
-                MaterialTheme.colorScheme.surfaceContainerHighest
-            else
-                MaterialTheme.colorScheme.surfaceContainer,
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = elevation),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            Surface(
-                shape = androidx.compose.foundation.shape.CircleShape,
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                modifier = Modifier.size(52.dp),
-                shadowElevation = if (isHovered) 4.dp else 2.dp,
-            ) {
-                AsyncImage(
-                    model = contributor.avatarUrl,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(androidx.compose.foundation.shape.CircleShape),
-                )
-            }
-
-            // Name + role
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = contributor.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = contributor.role,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-
-            // Forward arrow
-            Icon(
-                painter = painterResource(R.drawable.arrow_forward),
-                contentDescription = null,
-                tint = if (isHovered)
-                    MaterialTheme.colorScheme.primary
-                else
-                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                modifier = Modifier.size(20.dp),
-            )
-        }
-    }
 }
 
-// ── License footer (Material 3 Expressive) ─────────────────────────────────
+/** Ocupa [columns] de las 6 columnas de la fila y estira el bloque a su altura. */
+private fun RowScope.span(columns: Int): Modifier =
+    Modifier.weight(columns.toFloat()).fillMaxHeight()
 
+/**
+ * Bloque brutalista: relleno plano, borde de 3dp y sombra dura desplazada 4dp. Al pulsarlo
+ * el bloque «baja» sobre su sombra.
+ */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun LicenseFooterExpressive(onLicenseClick: () -> Unit) {
-    var isPressed by remember { mutableStateOf(false) }
-
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onLicenseClick)
-            .graphicsLayer {
-                scaleX = if (isPressed) 0.98f else 1f
-                scaleY = if (isPressed) 0.98f else 1f
-            },
-        shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-        shadowElevation = 2.dp,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 18.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            Surface(
-                shape = RoundedCornerShape(14.dp),
-                color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(44.dp),
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        painter = painterResource(R.drawable.policy),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(24.dp),
-                    )
-                }
-            }
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "GNU General Public License v3.0",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = stringResource(R.string.view_license),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            Icon(
-                painter = painterResource(R.drawable.arrow_forward),
-                contentDescription = null,
-                tint = if (isPressed)
-                    MaterialTheme.colorScheme.primary
-                else
-                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                modifier = Modifier.size(18.dp),
-            )
-        }
-    }
-}
-
-// ── Loading shimmer (Expresivo) ────────────────────────────────────────────
-
-@Composable
-private fun ContributorShimmerExpressive() {
-    val shimmer = shimmerEffect()
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        ),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            // Avatar shimmer con forma Ghostish
-            Surface(
-                shape = androidx.compose.foundation.shape.CircleShape,
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                modifier = Modifier.size(52.dp),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(shimmer)
-                        .clip(androidx.compose.foundation.shape.CircleShape),
-                )
-            }
-
-            Column(modifier = Modifier.weight(1f)) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.6f)
-                        .height(20.dp)
-                        .background(shimmer, RoundedCornerShape(6.dp))
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.4f)
-                        .height(14.dp)
-                        .background(shimmer, RoundedCornerShape(4.dp))
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .size(20.dp)
-                    .background(shimmer, CircleShape)
-            )
-        }
-    }
-}
-
-// ── Error card (Material 3 Expressive) ─────────────────────────────────────
-
-@Composable
-private fun ErrorCardExpressive(
-    message: String,
-    onRetry: () -> Unit,
+private fun BrutalBlock(
+    modifier: Modifier = Modifier,
+    fill: Color,
+    content: Color,
+    padding: PaddingValues = PaddingValues(14.dp),
+    contentAlignment: Alignment = Alignment.TopStart,
+    onClick: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
+    body: @Composable BoxScope.() -> Unit,
 ) {
-    ElevatedCard(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.errorContainer,
-                modifier = Modifier.size(80.dp),
-                shadowElevation = 4.dp,
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        painter = painterResource(R.drawable.error),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.size(44.dp),
+    val edge = LocalBoardEdge.current
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val shift by animateDpAsState(
+        targetValue = if (pressed && onClick != null) ShadowOffset else 0.dp,
+        animationSpec = tween(70),
+        label = "brutalPress",
+    )
+    Box(
+        modifier = modifier
+            .padding(end = ShadowOffset, bottom = ShadowOffset)
+            .drawBehind {
+                val s = ShadowOffset.toPx()
+                drawRect(edge, topLeft = Offset(s, s), size = size)
+            }
+            .offset(x = shift, y = shift)
+            .background(fill)
+            .border(EdgeWidth, edge)
+            .then(
+                if (onClick != null) {
+                    Modifier.combinedClickable(
+                        interactionSource = interaction,
+                        indication = null,
+                        onClick = onClick,
+                        onLongClick = onLongClick,
                     )
+                } else {
+                    Modifier
                 }
-            }
-
-            Text(
-                text = "Could not load contributors",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center,
             )
-
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            ElevatedButton(
-                onClick = onRetry,
-                shape = RoundedCornerShape(50.dp),
-                colors = ButtonDefaults.elevatedButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                ),
-            ) {
-                Text(
-                    text = stringResource(R.string.retry),
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                )
-            }
+            .padding(padding),
+        contentAlignment = contentAlignment,
+    ) {
+        CompositionLocalProvider(LocalContentColor provides content) {
+            body()
         }
     }
 }
 
-// ── Small helpers ──────────────────────────────────────────────────────────
+@Composable
+private fun BoardIcon(res: Int, description: String?, size: Dp) {
+    Icon(
+        painter = painterResource(res),
+        contentDescription = description,
+        tint = LocalContentColor.current,
+        modifier = Modifier.size(size),
+    )
+}
 
 @Composable
-private fun VersionBadgeExpressive(
+private fun BlockLabel(text: String) {
+    Text(text, style = mono(10.sp), modifier = Modifier.padding(bottom = 4.dp))
+}
+
+@Composable
+private fun BigValue(text: String) {
+    Text(
+        text,
+        fontFamily = DisplayFont,
+        fontWeight = FontWeight.Black,
+        fontSize = 26.sp,
+        lineHeight = 28.sp,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
+}
+
+/** Etiqueta rectangular con borde (sin esquinas redondeadas). */
+@Composable
+private fun Chip(
     text: String,
-    containerColor: Color,
-    contentColor: Color,
+    fill: Color,
+    content: Color,
+    edgeColor: Color = Ink,
+    iconRes: Int? = null,
 ) {
-    Surface(
-        shape = RoundedCornerShape(50.dp),
-        color = containerColor,
-        shadowElevation = 1.dp,
+    Row(
+        modifier = Modifier
+            .background(fill)
+            .border(2.dp, edgeColor)
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (iconRes != null) {
+            Icon(painterResource(iconRes), null, tint = content, modifier = Modifier.size(12.dp))
+            Spacer(Modifier.size(5.dp))
+        }
+        Text(text, style = mono(9.sp), color = content, maxLines = 1)
+    }
+}
+
+/** «Cara» cuadrada con iniciales: sin fotos ni ilustraciones generadas. */
+@Composable
+private fun Face(initials: String, fill: Color, content: Color) {
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .background(fill)
+            .border(EdgeWidth, Ink),
+        contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Medium,
-            color = contentColor,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            initials,
+            fontFamily = DisplayFont,
+            fontWeight = FontWeight.Black,
+            fontSize = 18.sp,
+            color = content,
         )
     }
 }
 
 @Composable
-private fun SocialPillExpressive(
-    iconRes: Int,
+private fun LinkSquare(
+    short: String,
     label: String,
+    fill: Color,
+    content: Color,
+    modifier: Modifier,
     onClick: () -> Unit,
 ) {
-    var isHovered by remember { mutableStateOf(false) }
-
-    Surface(
-        modifier = Modifier
-            .clickable(onClick = onClick)
-            .graphicsLayer {
-                scaleX = if (isHovered) 1.05f else 1f
-                scaleY = if (isHovered) 1.05f else 1f
-            },
-        shape = RoundedCornerShape(40.dp),
-        color = if (isHovered)
-            MaterialTheme.colorScheme.primaryContainer
-        else
-            MaterialTheme.colorScheme.secondaryContainer,
-        shadowElevation = if (isHovered) 6.dp else 2.dp,
+    BrutalBlock(
+        modifier = modifier.heightIn(min = 92.dp),
+        fill = fill,
+        content = content,
+        padding = PaddingValues(10.dp),
+        onClick = onClick,
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                painter = painterResource(iconRes),
-                contentDescription = label,
-                modifier = Modifier.size(20.dp),
-                tint = if (isHovered)
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                else
-                    MaterialTheme.colorScheme.onSecondaryContainer,
-            )
+        BoardIcon(R.drawable.about_arrow, null, 18.dp)
+        Column(Modifier.align(Alignment.BottomStart)) {
             Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Medium,
-                color = if (isHovered)
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                else
-                    MaterialTheme.colorScheme.onSecondaryContainer,
-                maxLines = 1,
+                short,
+                fontFamily = DisplayFont,
+                fontWeight = FontWeight.Black,
+                fontSize = 26.sp,
+                lineHeight = 26.sp,
             )
+            Text(label, style = mono(8.sp), maxLines = 1, overflow = TextOverflow.Clip)
         }
     }
 }

@@ -77,6 +77,8 @@ data class P2PUser(
      * no sube nada). Null = portada por defecto.
      */
     val banner: String? = null,
+    /** Video en bucle de la portada (sin sonido, hasta 15 s); [banner] es su fotograma. */
+    val bannerVideo: String? = null,
 ) {
     val npub: String get() = Bech32.npub(pubkey)
 

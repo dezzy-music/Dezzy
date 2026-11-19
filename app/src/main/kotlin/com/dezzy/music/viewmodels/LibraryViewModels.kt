@@ -412,10 +412,12 @@ constructor(
     @ApplicationContext context: Context,
     database: MusicDatabase,
     private val syncUtils: SyncUtils,
+    private val spotifyLibrarySync: com.dezzy.music.spotify.SpotifyLibrarySync,
 ) : ViewModel() {
     val syncAllLibrary = {
          viewModelScope.launch(Dispatchers.IO) {
              try {
+                 spotifyLibrarySync.requestSync()
                  syncUtils.performFullSync()
              } catch (e: Exception) {
                  timber.log.Timber.e(e, "Error during manual sync")

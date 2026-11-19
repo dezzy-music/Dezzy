@@ -46,6 +46,16 @@ object SpotifyFeatures {
         return runCatching { SessionCrypto.decrypt(spDc).isNotEmpty() }.getOrDefault(false)
     }
 
+    /**
+     * Hay sesión de Spotify guardada (cookie sp_dc), aunque la integración esté apagada en ajustes.
+     * Lo usan el mapa y las estadísticas de canciones para saber si pedir iniciar sesión.
+     */
+    fun hasSession(context: Context): Boolean {
+        val spDc = context.dataStore.get(SpotifySpDcKey, "")
+        if (spDc.isEmpty()) return false
+        return runCatching { SessionCrypto.decrypt(spDc).isNotEmpty() }.getOrDefault(false)
+    }
+
     fun searchEnabled(context: Context): Boolean =
         isActive(context) && context.dataStore.get(UseSpotifySearchKey, false)
 

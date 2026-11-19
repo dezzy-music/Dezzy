@@ -46,6 +46,7 @@ data class P2PProfileEntity(
     val isPrivate: Boolean,
     val updatedAt: Long,
     val banner: String? = null,
+    val bannerVideo: String? = null,
 )
 
 /** Publicaciones de cuentas privadas (llegan cifradas sólo a los seguidores aprobados). */
@@ -193,7 +194,7 @@ interface P2PDao {
         P2PFollowRequestEntity::class,
         P2PChatStateEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class P2PDatabase : RoomDatabase() {
@@ -211,10 +212,17 @@ abstract class P2PDatabase : RoomDatabase() {
             }
         }
 
+        /** v3: video en bucle de la portada. */
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE p2p_profile ADD COLUMN bannerVideo TEXT")
+            }
+        }
+
         fun get(context: Context): P2PDatabase =
             instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(context.applicationContext, P2PDatabase::class.java, "dezzy_p2p.db")
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .fallbackToDestructiveMigration(dropAllTables = true)
                     .build()
                     .also { instance = it }

@@ -8,6 +8,7 @@
 
 package com.dezzy.music.ui.screens
 
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -65,14 +66,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.common.MediaItem
-import androidx.media3.common.Player
-import androidx.media3.ui.AspectRatioFrameLayout
-import androidx.media3.ui.PlayerView
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
@@ -81,6 +75,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
@@ -1404,42 +1400,66 @@ fun SpotifyGenericCajon(
                                 .weight(1f)
                         )
                     } else if (item == "DJ") {
-                        val context = LocalContext.current
-                        val exoPlayer = remember {
-                            ExoPlayer.Builder(context).build().apply {
-                                val uri = android.net.Uri.parse("android.resource://${context.packageName}/${R.raw.dj_intro_video}")
-                                setMediaItem(MediaItem.fromUri(uri))
-                                repeatMode = Player.REPEAT_MODE_ALL
-                                volume = 0f
-                                playWhenReady = true
-                                prepare()
+                        // Boceto B «Ecualizador con tu color»: degradado del color del tema y
+                        // cuatro barras que sólo se mueven mientras el DJ está sonando.
+                        val djState = djVm?.uiState?.collectAsState()?.value
+                        val djActive = djState == com.dezzy.music.ui.screens.DJUiState.PLAYING ||
+                            djState == com.dezzy.music.ui.screens.DJUiState.SPEAKING
+                        val (customDjName) = com.dezzy.music.utils.rememberPreference(com.dezzy.music.constants.DjNameKey, "")
+                        val djName = if (customDjName.isNotBlank()) "DJ $customDjName" else "DJ Dezzy"
+                        val hour = remember { java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY) }
+                        val djSubtitle = when {
+                            djActive -> "Sonando ahora"
+                            hour in 6..11 -> "Mezcla de mañana"
+                            hour in 12..18 -> "Mezcla de tarde"
+                            hour in 19..23 -> "Mezcla de noche"
+                            else -> "Mezcla de madrugada"
+                        }
+                        val primary = MaterialTheme.colorScheme.primary
+                        val base = MaterialTheme.colorScheme.surfaceContainerHigh
+                        Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(56.dp)
+                                .background(
+                                    Brush.linearGradient(
+                                        listOf(
+                                            primary.copy(alpha = 0.45f).compositeOver(base),
+                                            primary.copy(alpha = 0.12f).compositeOver(base),
+                                        )
+                                    )
+                                ),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .background(Color.Black.copy(alpha = 0.18f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                DjEqualizerBars(animate = djActive, color = primary)
+                            }
+                            Column(
+                                modifier = Modifier
+                                    .padding(horizontal = 8.dp)
+                                    .weight(1f)
+                            ) {
+                                Text(
+                                    text = djName,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = djSubtitle,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
                             }
                         }
-                        DisposableEffect(exoPlayer) {
-                            onDispose { exoPlayer.release() }
-                        }
-                        AndroidView(
-                            factory = { ctx ->
-                                PlayerView(ctx).apply {
-                                    player = exoPlayer
-                                    useController = false
-                                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                                }
-                            },
-                            modifier = Modifier.size(56.dp)
-                        )
-                        val (customDjName) = com.dezzy.music.utils.rememberPreference(com.dezzy.music.constants.DjNameKey, "")
-                        val djName = if (customDjName.isNotBlank()) "DJ $customDjName" else "DJ"
-                        Text(
-                            text = djName,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier
-                                .padding(horizontal = 8.dp)
-                                .weight(1f)
-                        )
                     } else if (item == "ADD_PLAYLIST_1" || item == "ADD_PLAYLIST_2") {
                         Box(
                             modifier = Modifier
@@ -1808,6 +1828,49 @@ fun SpotifyMenuItemRow(
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                 modifier = Modifier.size(18.dp)
+            )
+        }
+    }
+}
+
+
+/**
+ * Cuatro barras de ecualizador en el color del tema para el cajón del DJ. Quietas (alturas
+ * fijas) si el DJ no suena; con [animate] cada barra sube y baja a su ritmo.
+ */
+@Composable
+private fun DjEqualizerBars(animate: Boolean, color: Color) {
+    val resting = listOf(0.45f, 0.8f, 0.6f, 0.35f)
+    val periods = listOf(520, 680, 450, 760)
+    val transition = androidx.compose.animation.core.rememberInfiniteTransition(label = "djEq")
+    Row(
+        modifier = Modifier.size(width = 28.dp, height = 24.dp),
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
+        verticalAlignment = Alignment.Bottom
+    ) {
+        resting.forEachIndexed { index, rest ->
+            val fraction = if (animate) {
+                transition.animateFloat(
+                    initialValue = 0.2f,
+                    targetValue = 1f,
+                    animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+                        animation = androidx.compose.animation.core.tween(
+                            durationMillis = periods[index],
+                            easing = androidx.compose.animation.core.FastOutSlowInEasing
+                        ),
+                        repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+                    ),
+                    label = "bar$index"
+                ).value
+            } else {
+                rest
+            }
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(fraction)
+                    .clip(RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp))
+                    .background(color)
             )
         }
     }

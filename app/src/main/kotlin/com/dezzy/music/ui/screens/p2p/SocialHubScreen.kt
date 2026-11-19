@@ -63,6 +63,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -165,7 +166,10 @@ private fun SocialHubContent(navController: NavController, initialTab: SocialTab
             val bottomPadding = playerInsets.only(WindowInsetsSides.Bottom).asPaddingValues()
             when (tab) {
                 SocialTab.FRIENDS -> FriendsTab(navController, bottomPadding, onAddFriend = { showAddFriend = true })
-                SocialTab.MAP -> com.dezzy.music.ui.screens.musicmap.MusicMapScreen(navController, embedded = true)
+                // Caja recortada: el mapa no puede asomar por encima de la cabecera ni de las pestañas.
+                SocialTab.MAP -> Box(Modifier.fillMaxSize().clipToBounds()) {
+                    com.dezzy.music.ui.screens.musicmap.MusicMapScreen(navController, embedded = true)
+                }
                 SocialTab.NEARBY -> NearbyTab(navController, bottomPadding)
                 SocialTab.COMMUNITY -> CommunityTab(navController, bottomPadding, feedVersion, onCompose = { showComposer = true })
             }

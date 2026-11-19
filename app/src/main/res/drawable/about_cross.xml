@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icono de «Acerca de» (boceto B brutalista): sólo trazos rectos. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M10,3h4v6h6v4h-6v8h-4v-8H4V9h6z"
+        android:fillColor="#FF000000" />
+</vector>

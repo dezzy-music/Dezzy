@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -57,6 +58,16 @@ import com.dezzy.music.ui.menu.YouTubeSongMenu
 import com.dezzy.music.ui.utils.backToMain
 import com.dezzy.music.ui.utils.SnapLayoutInfoProvider
 import com.dezzy.music.viewmodels.ChartsViewModel
+import com.dezzy.music.LocalDatabase
+import com.dezzy.music.ui.screens.musicmap.ConnectSpotifyCard
+import com.dezzy.music.ui.screens.musicmap.HistoryPeakBadge
+import com.dezzy.music.ui.screens.musicmap.RankingSongRow
+import com.dezzy.music.ui.screens.musicmap.RankingsSearchField
+import com.dezzy.music.ui.screens.musicmap.RankingsSectionTitle
+import com.dezzy.music.ui.screens.musicmap.historySubtitle
+import com.dezzy.music.ui.screens.musicmap.rememberCatalogSearch
+import com.dezzy.music.ui.screens.musicmap.rememberHistoryRankings
+import com.dezzy.music.ui.screens.musicmap.songStatsRoute
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -90,6 +101,24 @@ fun ChartsScreen(
     LaunchedEffect(Unit) {
         if (chartsPage == null) {
             viewModel.loadCharts()
+        }
+    }
+
+    // Buscador de cualquier canción y tus canciones más escuchadas con su mejor puesto en las listas.
+    var songQuery by rememberSaveable { mutableStateOf("") }
+    val catalog = rememberCatalogSearch(songQuery)
+    val database = LocalDatabase.current
+    val topSongs by remember(database) { database.mostPlayedSongs(fromTimeStamp = 0L, limit = 10) }
+        .collectAsState(initial = emptyList())
+    val history = rememberHistoryRankings(topSongs)
+    fun openStats(title: String, artist: String, thumbnail: String?, videoId: String, artistId: String?) {
+        navController.navigate(songStatsRoute(title, artist, thumbnail, videoId, artistId))
+    }
+    fun playVideo(id: String, preload: com.dezzy.music.models.MediaMetadata?) {
+        if (id == mediaMetadata?.id) {
+            playerConnection.player.togglePlayPause()
+        } else {
+            playerConnection.playQueue(YouTubeQueue(endpoint = WatchEndpoint(videoId = id), preloadItem = preload))
         }
     }
 
@@ -196,6 +225,64 @@ fun ChartsScreen(
                         .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)
                         .asPaddingValues(),
                 ) {
+                    item(key = "rk_search") {
+                        RankingsSearchField(songQuery, onQueryChange = { songQuery = it })
+                    }
+                    if (songQuery.isNotBlank()) {
+                        if (catalog.loading) {
+                            item(key = "rk_loading") {
+                                Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator()
+                                }
+                            }
+                        } else if (catalog.songs.isEmpty() && catalog.query.length >= 2) {
+                            item(key = "rk_empty") {
+                                Text(
+                                    "No encontré canciones para «${catalog.query}».",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                                )
+                            }
+                        }
+                        items(catalog.songs, key = { "rk_c_${it.id}" }) { song ->
+                            val artist = song.artists.joinToString { it.name }
+                            RankingSongRow(
+                                title = song.title,
+                                subtitle = artist,
+                                thumbnail = song.thumbnail,
+                                isActive = song.id == mediaMetadata?.id,
+                                onPlay = { playVideo(song.id, song.toMediaMetadata()) },
+                                onStats = { openStats(song.title, artist, song.thumbnail, song.id, song.artists.firstOrNull()?.id) },
+                            )
+                        }
+                    } else {
+                    if (topSongs.isNotEmpty()) {
+                        item(key = "rk_hist_title") {
+                            RankingsSectionTitle(
+                                "Tus canciones en los rankings",
+                                "Las que más escuchas y su mejor puesto en las listas de Spotify",
+                            )
+                        }
+                        if (history.hasSpotify == false) {
+                            item(key = "rk_connect") {
+                                ConnectSpotifyCard(onConnect = { navController.navigate("settings/spotify/login") })
+                            }
+                        }
+                        itemsIndexed(topSongs, key = { _, s -> "rk_h_${s.song.id}" }) { index, song ->
+                            val peak = history.peaks[song.song.id]
+                            val artist = song.artists.joinToString { it.name }
+                            RankingSongRow(
+                                title = song.song.title,
+                                subtitle = historySubtitle(song, peak),
+                                thumbnail = song.song.thumbnailUrl,
+                                isActive = song.song.id == mediaMetadata?.id,
+                                onPlay = { playVideo(song.song.id, song.toMediaMetadata()) },
+                                onStats = { openStats(song.song.title, artist, song.song.thumbnailUrl, song.song.id, song.artists.firstOrNull()?.id) },
+                                rank = index + 1,
+                                trailing = { HistoryPeakBadge(peak) },
+                            )
+                        }
+                    }
                     chartsPage?.sections?.filter { it.title != "Top music videos" }?.forEach { section ->
                         item {
                             NavigationTitle(
@@ -346,6 +433,7 @@ fun ChartsScreen(
                                 }
                             }
                         }
+                    }
                     }
                 }
             }

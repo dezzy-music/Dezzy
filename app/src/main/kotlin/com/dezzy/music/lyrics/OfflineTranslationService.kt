@@ -83,11 +83,18 @@ object OfflineTranslationService {
         }
     }
 
+    /** Idioma de origen ML Kit a partir de lo detectado; las variantes romanizadas ("ja-Latn") no sirven. */
+    private fun toMlKitSource(code: String?): String? =
+        code?.takeUnless { it.contains("-Latn", ignoreCase = true) }?.let(::toMlKitLanguage)
+
     /**
      * Traduce [lines] al idioma [targetLanguageCode] en el dispositivo,
-     * preservando el mapeo 1:1 línea a línea. Detecta el idioma de origen con
-     * ML Kit language-id; si no puede, asume inglés (el caso abrumadoramente
-     * común en música).
+     * preservando el mapeo 1:1 línea a línea.
+     *
+     * Las letras mezclan idiomas a menudo (intro en inglés, estribillo en
+     * español…): cada línea larga se traduce desde su propio idioma y el resto
+     * desde el idioma dominante de toda la letra. Si nada cambia se devuelve un
+     * error, para que no se guarde como "traducción" la letra original.
      */
     suspend fun translateLines(
         lines: List<String>,
@@ -98,42 +105,72 @@ object OfflineTranslationService {
         val target = toMlKitLanguage(targetLanguageCode)
             ?: return Result.failure(Exception("Idioma de destino no soportado offline: $targetLanguageCode"))
 
-        val sample = lines.filter { it.isNotBlank() }.take(8).joinToString(" ")
-        val detected = LanguageDetectionHelper.identifyLanguage(sample)
-        val source = toMlKitLanguage(detected) ?: TranslateLanguage.ENGLISH
+        val textLines = lines.filter { it.isNotBlank() }
+        val dominant = toMlKitSource(
+            LanguageDetectionHelper.identifyLanguage(textLines.take(40).joinToString("\n")),
+        ) ?: TranslateLanguage.ENGLISH
 
-        if (source == target) {
-            // La letra ya está en el idioma de destino: nada que traducir.
-            return Result.success(lines)
+        val sources = lines.map { line ->
+            when {
+                line.isBlank() -> null
+                line.trim().length >= PER_LINE_MIN_CHARS ->
+                    toMlKitSource(LanguageDetectionHelper.identifyLanguage(line)) ?: dominant
+                else -> dominant
+            }
+        }
+        if (sources.all { it == null || it == target }) {
+            return Result.failure(Exception("La letra ya está en ese idioma"))
         }
 
-        val translator = runCatching {
-            Translation.getClient(
-                TranslatorOptions.Builder()
-                    .setSourceLanguage(source)
-                    .setTargetLanguage(target)
-                    .build(),
-            )
-        }.getOrElse {
-            return Result.failure(
-                Exception("Traducción offline no disponible en este dispositivo (Google Play Services)"),
-            )
+        val translators = HashMap<String, com.google.mlkit.nl.translate.Translator?>()
+        var lastError: String? = null
+
+        /** Traductor listo (con su modelo) para [source], o null si no se puede usar. */
+        suspend fun translatorFor(source: String): com.google.mlkit.nl.translate.Translator? {
+            if (translators.containsKey(source)) return translators[source]
+            val translator = runCatching {
+                Translation.getClient(
+                    TranslatorOptions.Builder()
+                        .setSourceLanguage(source)
+                        .setTargetLanguage(target)
+                        .build(),
+                )
+            }.getOrElse {
+                lastError = "Traducción offline no disponible en este dispositivo (Google Play Services)"
+                null
+            }
+            val ready = translator != null && runCatching {
+                // Descarga bajo demanda el modelo que falte (origen o destino) si hay red.
+                suspendCancellableCoroutine<Boolean> { cont ->
+                    translator.downloadModelIfNeeded(DownloadConditions.Builder().build())
+                        .addOnSuccessListener { cont.resume(true) }
+                        .addOnFailureListener { e ->
+                            Timber.w(e, "Modelo ML Kit no disponible: $source -> $target")
+                            cont.resume(false)
+                        }
+                }
+            }.getOrDefault(false)
+            if (translator != null && !ready) {
+                runCatching { translator.close() }
+                lastError = "Falta el modelo de ${java.util.Locale.forLanguageTag(source).displayLanguage} " +
+                    "para traducir sin conexión. Conéctate una vez o descárgalo en Ajustes → Traducción de letras."
+            }
+            return (if (ready) translator else null).also { translators[source] = it }
         }
+
         return try {
-            // Si falta el modelo del idioma de origen lo descarga bajo demanda;
-            // el de destino ya debería estar descargado desde Ajustes.
-            val ready = suspendCancellableCoroutine<Result<Unit>> { cont ->
-                translator.downloadModelIfNeeded(DownloadConditions.Builder().build())
-                    .addOnSuccessListener { cont.resume(Result.success(Unit)) }
-                    .addOnFailureListener { cont.resume(Result.failure(it)) }
-            }
-            ready.exceptionOrNull()?.let {
-                return Result.failure(Exception("Modelo offline no disponible: ${it.message}"))
-            }
-
+            var changed = 0
             val out = ArrayList<String>(lines.size)
-            for (line in lines) {
-                if (line.isBlank()) {
+            for ((i, line) in lines.withIndex()) {
+                val source = sources[i]
+                if (source == null || source == target) {
+                    out.add(line)
+                    continue
+                }
+                // Si no hay modelo para el idioma de la línea, se prueba con el dominante.
+                val translator = translatorFor(source)
+                    ?: dominant.takeIf { it != source && it != target }?.let { translatorFor(it) }
+                if (translator == null) {
                     out.add(line)
                     continue
                 }
@@ -145,13 +182,21 @@ object OfflineTranslationService {
                             cont.resume(null)
                         }
                 }
-                out.add(translated ?: line)
+                if (!translated.isNullOrBlank() && translated.trim() != line.trim()) changed++
+                out.add(translated?.takeIf { it.isNotBlank() } ?: line)
             }
-            Result.success(out)
+            if (changed == 0) {
+                Result.failure(Exception(lastError ?: "No se pudo traducir la letra sin conexión"))
+            } else {
+                Result.success(out)
+            }
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             Result.failure(e)
         } finally {
-            runCatching { translator.close() }
+            translators.values.forEach { t -> runCatching { t?.close() } }
         }
     }
+
+    private const val PER_LINE_MIN_CHARS = 24
 }

@@ -179,7 +179,7 @@ fun ExperiencesScreen(navController: NavController) {
         ExperienceLink("together", R.drawable.group, "Escuchar juntos", "Salas públicas y privadas", "public_rooms"),
         ExperienceLink("charts", R.drawable.trending_up, "Listas de éxitos", "Lo más viral y charts mundiales", "charts_screen"),
         ExperienceLink("recognize", R.drawable.mic, "Reconocer música", "Qué canción está sonando", MusicRecognitionRoute),
-        ExperienceLink("settings", R.drawable.settings, "Ajustes", "Apariencia, reproducción y cuentas", "settings"),
+        // Ajustes vive ahora en la primera fila de «Cuentas y servicios».
     )
 
     Box(modifier = Modifier.fillMaxSize()) {

@@ -181,7 +181,7 @@ constructor(
                     val artworkDir = File(context.filesDir, "artwork").also { it.mkdirs() }
                     val artworkFile = File(artworkDir, "$hash.jpg")
                     if (!artworkFile.exists() || artworkFile.length() == 0L) {
-                        songEntity.thumbnailUrl?.resize(512, 512)?.let { url ->
+                        songEntity.thumbnailUrl?.resize(1080, 1080)?.let { url ->
                             val bytes = getArtworkBytes(context, url)
                             if (bytes != null) {
                                 try {

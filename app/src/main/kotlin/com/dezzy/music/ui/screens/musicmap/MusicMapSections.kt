@@ -32,6 +32,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -55,6 +56,7 @@ import coil3.compose.AsyncImage
 import com.dezzy.music.R
 import com.dezzy.music.innertube.models.SongItem
 import com.dezzy.music.musicmap.MusicMapGenres
+import com.dezzy.music.ui.component.CountryFlag
 import com.dezzy.music.ui.utils.highRes
 
 /*
@@ -64,13 +66,8 @@ import com.dezzy.music.ui.utils.highRes
  * más suena, con su mejor posición.
  */
 
-/** Bandera emoji a partir del código ISO del país («MX» → 🇲🇽). */
-internal fun flagEmoji(code: String): String {
-    if (code == "ZZ" || code.length != 2 || !code.all { it in 'A'..'Z' }) return "🌐"
-    val first = Character.toChars(0x1F1E6 + (code[0] - 'A'))
-    val second = Character.toChars(0x1F1E6 + (code[1] - 'A'))
-    return String(first) + String(second)
-}
+/** «1 canción» / «N canciones». Las banderas ya no son emoji: ver [CountryFlag]. */
+internal fun cancionesLabel(n: Int): String = if (n == 1) "1 canción" else "$n canciones"
 
 // ── Géneros ──────────────────────────────────────────────────────────────────
 
@@ -293,13 +290,71 @@ internal data class MapSearch(
     val artist: ArtistResult?,
     val songs: List<SongResult>,
     val countries: List<CountryChart>,
+    /** Canciones de todo el catálogo que no están en los tops de hoy (búsqueda en YouTube Music). */
+    val catalog: List<SongItem> = emptyList(),
 ) {
-    val isEmpty get() = artist == null && songs.isEmpty() && countries.isEmpty()
+    val isEmpty get() = artist == null && songs.isEmpty() && countries.isEmpty() && catalog.isEmpty()
+    val hasSongs get() = songs.isNotEmpty() || catalog.isNotEmpty()
 
     fun firstTab(): SearchTab = when {
         artist != null -> SearchTab.ARTIST
-        songs.isNotEmpty() -> SearchTab.SONGS
+        hasSongs -> SearchTab.SONGS
         else -> SearchTab.COUNTRIES
+    }
+}
+
+/** Canción de los resultados: toca para escucharla; botón de estadísticas y, si está en tops, del mapa. */
+@Composable
+private fun SearchSongRow(
+    song: SongItem,
+    detail: String,
+    isCurrent: Boolean,
+    onPlay: () -> Unit,
+    onStats: () -> Unit,
+    onShowOnMap: (() -> Unit)?,
+) {
+    val scheme = MaterialTheme.colorScheme
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 64.dp)
+            .clickable(onClickLabel = "Escuchar ${song.title}", onClick = onPlay)
+            .padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+    ) {
+        AsyncImage(
+            model = song.thumbnail.highRes(),
+            contentDescription = null,
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(scheme.surfaceContainerHigh),
+        )
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = song.title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (isCurrent) scheme.primary else scheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = detail,
+                style = MaterialTheme.typography.bodyMedium,
+                color = scheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        IconButton(onClick = onStats) {
+            Icon(painterResource(R.drawable.stats), contentDescription = "Estadísticas de ${song.title}")
+        }
+        if (onShowOnMap != null) {
+            IconButton(onClick = onShowOnMap) {
+                Icon(painterResource(R.drawable.language), contentDescription = "Ver ${song.title} en el mapa")
+            }
+        }
     }
 }
 
@@ -373,6 +428,8 @@ internal fun MapSearchResults(
     onFocusCountry: (Country) -> Unit,
     onPlaySong: (SongItem) -> Unit,
     onSearchEverywhere: () -> Unit,
+    onStats: (SongItem) -> Unit,
+    catalogLoading: Boolean,
     bottomPadding: androidx.compose.ui.unit.Dp,
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -391,7 +448,7 @@ internal fun MapSearchResults(
                 SearchTab.entries.forEach { t ->
                     val count = when (t) {
                         SearchTab.ARTIST -> if (search.artist != null) 1 else 0
-                        SearchTab.SONGS -> search.songs.size
+                        SearchTab.SONGS -> search.songs.size + search.catalog.size
                         SearchTab.COUNTRIES -> search.countries.size
                     }
                     FilterChip(
@@ -404,7 +461,18 @@ internal fun MapSearchResults(
             }
         }
 
-        if (search.isEmpty) {
+        if (search.isEmpty && catalogLoading) {
+            item(key = "catalog_loading") {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                ) {
+                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(12.dp))
+                    Text("Buscando en toda la música…", style = MaterialTheme.typography.bodyLarge)
+                }
+            }
+        } else if (search.isEmpty) {
             item(key = "empty") {
                 Column(Modifier.padding(horizontal = 24.dp, vertical = 12.dp)) {
                     Text(
@@ -483,48 +551,48 @@ internal fun MapSearchResults(
                 }
             }
 
-            SearchTab.SONGS -> search.songs.forEach { result ->
-                item(key = "sr_${result.song.id}") {
-                    val best = result.hits.first()
-                    val isCurrent = result.song.id == currentSongId
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 64.dp)
-                            .clickable { onPlaySong(result.song) }
-                            .padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
-                    ) {
-                        AsyncImage(
-                            model = result.song.thumbnail.highRes(),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(scheme.surfaceContainerHigh),
+            SearchTab.SONGS -> {
+                search.songs.forEach { result ->
+                    item(key = "sr_${result.song.id}") {
+                        val best = result.hits.first()
+                        SearchSongRow(
+                            song = result.song,
+                            detail = "${result.song.artists.joinToString { it.name }}, en ${result.hits.size} " +
+                                (if (result.hits.size == 1) "país" else "países") +
+                                ", mejor #${best.bestRank} en ${best.country.name}",
+                            isCurrent = result.song.id == currentSongId,
+                            onPlay = { onPlaySong(result.song) },
+                            onStats = { onStats(result.song) },
+                            onShowOnMap = { onShowOnMap(result.hits.map { it.country.code }.toSet()) },
                         )
-                        Spacer(Modifier.width(12.dp))
-                        Column(Modifier.weight(1f)) {
+                    }
+                }
+                if (search.catalog.isNotEmpty() || catalogLoading) {
+                    item(key = "catalog_label") {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp),
+                        ) {
                             Text(
-                                text = result.song.title,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = if (isCurrent) scheme.primary else scheme.onSurface,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            Text(
-                                text = "${result.song.artists.joinToString { it.name }}, en ${result.hits.size} " +
-                                    (if (result.hits.size == 1) "país" else "países") +
-                                    ", mejor #${best.bestRank} en ${best.country.name}",
-                                style = MaterialTheme.typography.bodyMedium,
+                                "En toda la música",
+                                style = MaterialTheme.typography.titleSmall,
                                 color = scheme.onSurfaceVariant,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f).semantics { heading() },
                             )
+                            if (catalogLoading) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
                         }
-                        IconButton(onClick = { onShowOnMap(result.hits.map { it.country.code }.toSet()) }) {
-                            Icon(painterResource(R.drawable.language), contentDescription = "Ver ${result.song.title} en el mapa")
-                        }
+                    }
+                }
+                search.catalog.forEach { song ->
+                    item(key = "cat_${song.id}") {
+                        SearchSongRow(
+                            song = song,
+                            detail = "${song.artists.joinToString { it.name }}, no está en los tops de hoy",
+                            isCurrent = song.id == currentSongId,
+                            onPlay = { onPlaySong(song) },
+                            onStats = { onStats(song) },
+                            onShowOnMap = null,
+                        )
                     }
                 }
             }
@@ -540,7 +608,7 @@ internal fun MapSearchResults(
                             .clickable(onClickLabel = "Ver el top de ${chart.country.name}") { onFocusCountry(chart.country) }
                             .padding(horizontal = 24.dp, vertical = 8.dp),
                     ) {
-                        Text(flagEmoji(chart.country.code), fontSize = 24.sp, modifier = Modifier.clearAndSetSemantics { })
+                        CountryFlag(chart.country.code, height = 20.dp)
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
                             Text(chart.country.name, style = MaterialTheme.typography.titleSmall)
@@ -617,7 +685,7 @@ private fun CountryHitRow(hit: CountryHit, detail: String, fraction: Float, onCl
             .semantics(mergeDescendants = true) { }
             .padding(horizontal = 24.dp, vertical = 8.dp),
     ) {
-        Text(flagEmoji(hit.country.code), fontSize = 24.sp, modifier = Modifier.clearAndSetSemantics { })
+        CountryFlag(hit.country.code, height = 20.dp)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(hit.country.name, style = MaterialTheme.typography.titleSmall)

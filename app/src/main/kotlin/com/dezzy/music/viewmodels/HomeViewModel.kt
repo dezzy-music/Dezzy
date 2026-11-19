@@ -58,6 +58,7 @@ class HomeViewModel @Inject constructor(
     val database: MusicDatabase,
     val syncUtils: SyncUtils,
     val downloadUtil: DownloadUtil,
+    private val spotifyLibrarySync: com.dezzy.music.spotify.SpotifyLibrarySync,
 ) : ViewModel() {
     val isRefreshing = MutableStateFlow(false)
     val isLoading = MutableStateFlow(false)
@@ -517,6 +518,11 @@ class HomeViewModel @Inject constructor(
                 isProcessingAccountData = false
             }
         }
+    }
+
+    init {
+        // La biblioteca sigue a la cuenta de Spotify conectada (YouTube Music lo hace SyncUtils).
+        spotifyLibrarySync.start()
     }
 
     init {

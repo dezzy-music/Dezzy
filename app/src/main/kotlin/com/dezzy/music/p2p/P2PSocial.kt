@@ -67,6 +67,9 @@ object P2PSocial {
     /** Degradado de portada de Dezzy (sólo el nombre del preset; no sube nada). */
     const val BANNER_PRESET_MARK = "dezzy_banner"
     const val BANNER_PRESET_PREFIX = "preset:"
+    const val BANNER_VIDEO_MARK = "dezzy_banner_video"
+    private const val BANNER_VIDEO_MAX_BYTES = 30L * 1024 * 1024
+    private const val BANNER_VIDEO_MAX_MS = 15_500L
 
     /** Reacciones de Dezzy (NIP-25). El «+» de otros clientes de Nostr cuenta como ❤️. */
     val REACTIONS = listOf("👍", "❤️", "😂", "😮", "😢", "🔥")
@@ -186,6 +189,7 @@ object P2PSocial {
             // `banner` es el campo estándar de Nostr (URL); los degradados de Dezzy van aparte.
             banner = str("banner")?.takeIf { it.startsWith("https://") }
                 ?: str(BANNER_PRESET_MARK)?.takeIf { it.length <= 24 }?.let { "$BANNER_PRESET_PREFIX$it" },
+            bannerVideo = str(BANNER_VIDEO_MARK)?.takeIf { it.startsWith("https://") },
         )
     }.getOrNull()
 
@@ -196,7 +200,7 @@ object P2PSocial {
         val missingFromMemory = wanted.filter { !profileCache.containsKey(it) }
         if (missingFromMemory.isNotEmpty()) {
             dao.profiles(missingFromMemory).forEach {
-                remember(P2PUser(it.pubkey, it.name, it.about, it.picture, it.isPrivate, it.banner))
+                remember(P2PUser(it.pubkey, it.name, it.about, it.picture, it.isPrivate, it.banner, it.bannerVideo))
             }
         }
         val toFetch = if (force) wanted else wanted.filter { !profileCache.containsKey(it) }
@@ -210,6 +214,7 @@ object P2PSocial {
                 dao.upsertProfile(
                     P2PProfileEntity(
                         profile.pubkey, profile.name, profile.about, profile.picture, profile.isPrivate, latest.createdAt, profile.banner,
+                        profile.bannerVideo,
                     ),
                 )
             }
@@ -226,6 +231,8 @@ object P2PSocial {
         picture: String?,
         isPrivate: Boolean,
         banner: String? = myProfile?.banner,
+        // Se conserva el video puesto desde el escritorio salvo que se cambie la portada.
+        bannerVideo: String? = myProfile?.bannerVideo,
     ): Boolean =
         withContext(Dispatchers.IO) {
             val k = keys.value ?: return@withContext false
@@ -240,12 +247,13 @@ object P2PSocial {
                     banner.startsWith(BANNER_PRESET_PREFIX) -> put(BANNER_PRESET_MARK, banner.removePrefix(BANNER_PRESET_PREFIX))
                     banner.startsWith("https://") -> put("banner", banner)
                 }
+                bannerVideo?.takeIf { it.startsWith("https://") }?.let { put(BANNER_VIDEO_MARK, it) }
             }.toString()
             val event = NostrEvent.sign(k, Kinds.METADATA, listOf(listOf("t", APP_TAG)), content)
-            val profile = P2PUser(k.publicKey, name.trim(), about.trim(), picture, isPrivate, banner)
+            val profile = P2PUser(k.publicKey, name.trim(), about.trim(), picture, isPrivate, banner, bannerVideo)
             remember(profile)
             dao.upsertProfile(
-                P2PProfileEntity(profile.pubkey, profile.name, profile.about, profile.picture, isPrivate, event.createdAt, banner),
+                P2PProfileEntity(profile.pubkey, profile.name, profile.about, profile.picture, isPrivate, event.createdAt, banner, bannerVideo),
             )
             RelayPool.publish(event) > 0
         }
@@ -282,8 +290,43 @@ object P2PSocial {
         return context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, options) }
     }
 
+    /** Video de portada listo para subir: el archivo y su primer fotograma en JPEG. */
+    class BannerVideo(val video: ByteArray, val mime: String, val poster: ByteArray)
+
+    /**
+     * Comprueba el video de portada (hasta 15 s y 30 MB) y saca su primer fotograma.
+     * Lanza un error con el motivo para mostrarlo tal cual.
+     */
+    fun prepareBannerVideo(context: android.content.Context, uri: android.net.Uri): BannerVideo {
+        val resolver = context.contentResolver
+        val size = resolver.openAssetFileDescriptor(uri, "r")?.use { it.length } ?: -1L
+        if (size > BANNER_VIDEO_MAX_BYTES) error("El video pesa demasiado. Elige uno de menos de 30 MB.")
+        val retriever = android.media.MediaMetadataRetriever()
+        try {
+            retriever.setDataSource(context, uri)
+            val ms = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
+            if (ms > BANNER_VIDEO_MAX_MS) error("El video dura más de 15 segundos. Recórtalo en la galería y vuelve a elegirlo.")
+            val frame = retriever.getFrameAtTime(0) ?: error("No se pudo leer el video.")
+            val scale = minOf(1f, 1280f / maxOf(frame.width, frame.height))
+            val poster = if (scale < 1f) {
+                android.graphics.Bitmap.createScaledBitmap(frame, (frame.width * scale).toInt(), (frame.height * scale).toInt(), true)
+            } else {
+                frame
+            }
+            val jpeg = java.io.ByteArrayOutputStream().use {
+                poster.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, it)
+                it.toByteArray()
+            }
+            val mime = resolver.getType(uri)?.takeIf { it == "video/mp4" || it == "video/webm" } ?: "video/mp4"
+            val bytes = resolver.openInputStream(uri)?.use { it.readBytes() } ?: error("No se pudo leer el video.")
+            return BannerVideo(bytes, mime, jpeg)
+        } finally {
+            retriever.release()
+        }
+    }
+
     /** Sube una foto a un servidor Blossom gratuito (autorizado con mi firma). */
-    suspend fun uploadPhoto(bytes: ByteArray): String? = withContext(Dispatchers.IO) {
+    suspend fun uploadPhoto(bytes: ByteArray, mime: String = "image/jpeg"): String? = withContext(Dispatchers.IO) {
         val k = keys.value ?: return@withContext null
         val hash = CryptoUtils.sha256(bytes).toHex()
         val auth = NostrEvent.sign(
@@ -301,7 +344,7 @@ object P2PSocial {
             val url = runCatching {
                 val request = Request.Builder()
                     .url("$server/upload")
-                    .put(bytes.toRequestBody("image/jpeg".toMediaType()))
+                    .put(bytes.toRequestBody(mime.toMediaType()))
                     .header("Authorization", header)
                     .build()
                 http.newCall(request).execute().use { response ->

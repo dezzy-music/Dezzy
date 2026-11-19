@@ -1372,10 +1372,22 @@ private fun VideoFullscreenDialog(
     val activityContext = LocalContext.current
     DisposableEffect(activityContext) {
         val activity = activityContext.findHostActivity()
-        val previous = activity?.requestedOrientation
+        // Primero se avisa a los reproductores (Spotify/Deezer) para que su bloqueo a vertical
+        // no pise el giro: antes lo volvían a poner en vertical y el video se quedaba así.
+        VideoFullscreenOrientation.active.value = true
         activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         onDispose {
-            if (activity != null && previous != null) activity.requestedOrientation = previous
+            VideoFullscreenOrientation.active.value = false
+            // Libre; el reproductor que esté debajo vuelve a pedir vertical si lo necesita.
+            activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
+    }
+    // Si algo vuelve a pedir vertical mientras dura la pantalla completa, se reafirma horizontal.
+    val currentOrientation = LocalConfiguration.current.orientation
+    LaunchedEffect(currentOrientation) {
+        val activity = activityContext.findHostActivity() ?: return@LaunchedEffect
+        if (activity.requestedOrientation != android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE) {
+            activity.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         }
     }
     Dialog(
@@ -1504,6 +1516,14 @@ fun SongVideoToggle(
             }
         }
     }
+}
+
+/**
+ * true mientras el video está en pantalla completa. Los reproductores que fijan la app en
+ * vertical lo consultan para no deshacer el giro a horizontal.
+ */
+object VideoFullscreenOrientation {
+    val active = kotlinx.coroutines.flow.MutableStateFlow(false)
 }
 
 private tailrec fun android.content.Context.findHostActivity(): android.app.Activity? = when (this) {

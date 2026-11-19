@@ -481,6 +481,8 @@ private fun ProfileHeader(
                 Modifier
                     .fillMaxWidth()
                     .height(BannerHeight),
+                video = user.bannerVideo,
+                fade = true,
             )
             if (onEdit != null) {
                 // Sobre la portada siempre hay fondo oscuro detrás: blanco sobre negro al 55 %.
@@ -619,6 +621,7 @@ private fun EditProfileSheet(user: P2PUser, onDismiss: () -> Unit, onSaved: (Boo
     var picture by remember { mutableStateOf(user.picture) }
     var isPrivate by rememberSaveable { mutableStateOf(user.isPrivate) }
     var banner by rememberSaveable { mutableStateOf(user.banner) }
+    var bannerVideo by rememberSaveable { mutableStateOf(user.bannerVideo) }
     var bannerBusy by remember { mutableStateOf(false) }
     var bannerError by remember { mutableStateOf<String?>(null) }
     var saving by remember { mutableStateOf(false) }
@@ -630,7 +633,34 @@ private fun EditProfileSheet(user: P2PUser, onDismiss: () -> Unit, onSaved: (Boo
             scope.launch {
                 val bytes = withContext(Dispatchers.IO) { P2PSocial.compressPhoto(context, uri, maxSide = 1600) }
                 val url = bytes?.let { runCatching { P2PSocial.uploadPhoto(it) }.getOrNull() }
-                if (url != null) banner = url else bannerError = "No se pudo subir la foto. Revisa la conexión e inténtalo otra vez."
+                if (url != null) {
+                    banner = url
+                    bannerVideo = null
+                } else {
+                    bannerError = "No se pudo subir la foto. Revisa la conexión e inténtalo otra vez."
+                }
+                bannerBusy = false
+            }
+        }
+    }
+    // Video de portada: hasta 15 s; se sube el archivo y su primer fotograma (lo que ven otras apps).
+    val bannerVideoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri: Uri? ->
+        if (uri != null) {
+            bannerBusy = true
+            bannerError = null
+            scope.launch {
+                val prepared = withContext(Dispatchers.IO) { runCatching { P2PSocial.prepareBannerVideo(context, uri) } }
+                prepared.onFailure { bannerError = it.message ?: "No se pudo leer el video." }
+                prepared.getOrNull()?.let { v ->
+                    val poster = runCatching { P2PSocial.uploadPhoto(v.poster) }.getOrNull()
+                    val video = poster?.let { runCatching { P2PSocial.uploadPhoto(v.video, v.mime) }.getOrNull() }
+                    if (poster != null && video != null) {
+                        banner = poster
+                        bannerVideo = video
+                    } else {
+                        bannerError = "No se pudo subir el video. Revisa la conexión e inténtalo otra vez."
+                    }
+                }
                 bannerBusy = false
             }
         }
@@ -661,13 +691,14 @@ private fun EditProfileSheet(user: P2PUser, onDismiss: () -> Unit, onSaved: (Boo
                         .fillMaxWidth()
                         .height(112.dp)
                         .clip(RoundedCornerShape(16.dp)),
+                    video = bannerVideo,
                 )
                 if (bannerBusy) CircularProgressIndicator(color = Color.White)
             }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Portada", style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
                 Text(
-                    "Elige un degradado o sube una foto. Los degradados no suben nada.",
+                    "Elige un degradado o sube una foto o un video de hasta 15 segundos (se ve sin sonido). Los degradados no suben nada.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -692,7 +723,10 @@ private fun EditProfileSheet(user: P2PUser, onDismiss: () -> Unit, onSaved: (Boo
                                     selected = selected,
                                     enabled = !bannerBusy,
                                     role = Role.RadioButton,
-                                    onClick = { banner = preset.value },
+                                    onClick = {
+                                        banner = preset.value
+                                        bannerVideo = null
+                                    },
                                 )
                                 .semantics { contentDescription = preset.label },
                             contentAlignment = Alignment.Center,
@@ -708,6 +742,14 @@ private fun EditProfileSheet(user: P2PUser, onDismiss: () -> Unit, onSaved: (Boo
                 ) {
                     Icon(painterResource(R.drawable.image), contentDescription = null, modifier = Modifier.size(18.dp))
                     Text("  Subir foto de portada")
+                }
+                OutlinedButton(
+                    onClick = { bannerVideoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)) },
+                    enabled = !bannerBusy,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(painterResource(R.drawable.image), contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text("  Subir video de portada")
                 }
                 bannerError?.let {
                     Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
@@ -752,7 +794,7 @@ private fun EditProfileSheet(user: P2PUser, onDismiss: () -> Unit, onSaved: (Boo
                 onClick = {
                     saving = true
                     scope.launch {
-                        val ok = runCatching { P2PSocial.updateMyProfile(name, about, picture, isPrivate, banner) }.getOrDefault(false)
+                        val ok = runCatching { P2PSocial.updateMyProfile(name, about, picture, isPrivate, banner, bannerVideo) }.getOrDefault(false)
                         saving = false
                         onSaved(ok)
                     }

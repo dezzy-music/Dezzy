@@ -1117,6 +1117,16 @@ fun AccountsServicesScreen(
     ) {
         Spacer(Modifier.windowInsetsPadding(LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Top)))
 
+        // Primera fila: los ajustes de la app (antes estaban en Experiencias).
+        Spacer(Modifier.height(8.dp))
+        DezzySettingsRow(
+            title = "Ajustes",
+            subtitle = "Apariencia, reproducción, descargas y privacidad",
+            shape = dezzyItemShape(0, 1),
+            leading = { DezzySettingsIcon(R.drawable.settings, DezzyIconTone.PRIMARY) },
+            onClick = { navController.navigate("settings") },
+        )
+
         // Tu cuenta
         DezzySectionLabel("Tu cuenta")
         val accountRows = if (isLoggedIn) 4 else 1
@@ -1221,23 +1231,30 @@ fun AccountsServicesScreen(
         DezzySectionLabel("Más")
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             DezzySettingsRow(
+                title = "Vincular escritorio",
+                subtitle = "Pasa tus cuentas a Dezzy en el ordenador con un QR",
+                shape = dezzyItemShape(0, 4),
+                leading = { DezzySettingsIcon(R.drawable.desktop_windows, DezzyIconTone.PRIMARY) },
+                onClick = { navController.navigate("settings/desktop_link") },
+            )
+            DezzySettingsRow(
                 title = "Escuchar juntos",
                 subtitle = "Salas para escuchar en sincronía con amigos",
-                shape = dezzyItemShape(0, 3),
+                shape = dezzyItemShape(1, 4),
                 leading = { DezzySettingsIcon(R.drawable.fire, DezzyIconTone.TERTIARY) },
                 onClick = { navController.navigate("settings/music_together") },
             )
             DezzySettingsRow(
                 title = "Descarga lossless",
                 subtitle = "FLAC y alta resolución",
-                shape = dezzyItemShape(1, 3),
+                shape = dezzyItemShape(2, 4),
                 leading = { DezzySettingsIcon(R.drawable.download, DezzyIconTone.TERTIARY) },
                 onClick = { navController.navigate("settings/lossless") },
             )
             DezzySettingsRow(
                 title = "Todas las integraciones",
                 subtitle = "Discord, Last.fm, ListenBrainz y otras",
-                shape = dezzyItemShape(2, 3),
+                shape = dezzyItemShape(3, 4),
                 leading = { DezzySettingsIcon(R.drawable.integration, DezzyIconTone.NEUTRAL) },
                 onClick = { navController.navigate("settings/integration") },
             )

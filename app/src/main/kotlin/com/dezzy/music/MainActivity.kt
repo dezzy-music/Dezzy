@@ -253,7 +253,7 @@ import com.dezzy.music.ui.screens.musicrecognition.openMusicRecognition
 import com.dezzy.music.ui.screens.navigationBuilder
 import com.dezzy.music.ui.screens.p2p.openP2PChat
 import com.dezzy.music.p2p.P2PNotifications
-import com.dezzy.music.ui.screens.WelcomeLoginDialog
+import com.dezzy.music.ui.screens.WelcomeScreen
 import com.dezzy.music.ui.screens.search.LocalSearchScreen
 import com.dezzy.music.ui.screens.search.OnlineSearchScreen
 import com.dezzy.music.ui.screens.settings.DarkMode
@@ -317,6 +317,7 @@ class MainActivity : AppCompatActivity() {
                 if (service is MusicBinder) {
                     playerConnection =
                         PlayerConnection(this@MainActivity, service, database, lifecycleScope)
+                    com.dezzy.music.connect.DezzyConnectSession.bind(playerConnection)
                     playPendingDeepLinkSongIfReady()
                     joinPendingTogetherIfReady()
                 }
@@ -324,6 +325,7 @@ class MainActivity : AppCompatActivity() {
 
             override fun onServiceDisconnected(name: ComponentName?) {
                 isMusicServiceBound = false
+                com.dezzy.music.connect.DezzyConnectSession.bind(null)
                 playerConnection?.dispose()
                 playerConnection = null
             }
@@ -445,6 +447,7 @@ class MainActivity : AppCompatActivity() {
         if (shouldStopOnTaskClear) {
             safeUnbindMusicService()
             stopService(Intent(this, MusicService::class.java))
+            com.dezzy.music.connect.DezzyConnectSession.bind(null)
             playerConnection = null
         }
     }
@@ -468,6 +471,8 @@ class MainActivity : AppCompatActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Dezzy Connect: otros Dezzy de tu grupo en la red de casa.
+        com.dezzy.music.connect.DezzyConnectSession.init(this)
         window.decorView.layoutDirection = View.LAYOUT_DIRECTION_LTR
         // Edge-to-edge en todas las versiones: barras transparentes; el color de
         // marca lo pone SystemBarScrims (velo en Android 10+, barras sólidas en 8–9).
@@ -1338,17 +1343,13 @@ class MainActivity : AppCompatActivity() {
                                 }
                             }
 
-                            if (!hasShownWelcomeLogin) {
-                                WelcomeLoginDialog(
-                                    onDismiss = { setHasShownWelcomeLogin(true) },
-                                    onYoutubeMusicLogin = {
-                                        setHasShownWelcomeLogin(true)
-                                        navController.navigate(buildLoginRoute())
-                                    },
-                                    onSpotifyLogin = {
-                                        setHasShownWelcomeLogin(true)
-                                        navController.navigate("settings/spotify")
-                                    }
+                            // Bienvenida de la primera vez (boceto A). Se oculta mientras se inicia
+                            // sesión y vuelve al regresar al inicio, con la tarjeta ya «Conectado».
+                            if (!hasShownWelcomeLogin && navBackStackEntry?.destination?.route == Screens.Home.route) {
+                                WelcomeScreen(
+                                    onSpotifyLogin = { navController.navigate("settings/spotify") },
+                                    onYoutubeMusicLogin = { navController.navigate(buildLoginRoute()) },
+                                    onFinish = { setHasShownWelcomeLogin(true) },
                                 )
                             }
 
@@ -2032,7 +2033,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleDeepLinkIntent(intent: Intent, navController: NavHostController) {
-        if (intent.action == P2PNotifications.ACTION_OPEN_CHAT) {
+        if (intent.action == P2PNotifications.ACTION_OPEN_CHAT && com.dezzy.music.constants.SocialFeatures.ENABLED) {
             val peer = intent.getStringExtra(P2PNotifications.EXTRA_PEER)
             if (!peer.isNullOrBlank()) {
                 navController.openP2PChat(peer)
@@ -2040,7 +2041,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        if (intent.action == P2PNotifications.ACTION_OPEN_SOCIAL) {
+        if (intent.action == P2PNotifications.ACTION_OPEN_SOCIAL && com.dezzy.music.constants.SocialFeatures.ENABLED) {
             navController.navigate("social")
             return
         }
@@ -2070,6 +2071,7 @@ class MainActivity : AppCompatActivity() {
 
         // Red social P2P: enlace de perfil (dezzy://invite?npub=… o https://dezzy.space/?npub=…).
         runCatching { uri.getQueryParameter("npub") }.getOrNull()
+            ?.takeIf { com.dezzy.music.constants.SocialFeatures.ENABLED }
             ?.let { com.dezzy.music.p2p.P2PSocial.parsePublicKey(it) }
             ?.let { pubkey ->
                 navController.navigate("social/profile/$pubkey")
@@ -2078,7 +2080,7 @@ class MainActivity : AppCompatActivity() {
 
         // Social referral: an invite link (dezzy://invite?ref=… or https://dezzy.space/?ref=…)
         // carries the inviter's id. Store it; once signed in, auto-link them as friends.
-        uri.getQueryParameter("ref")?.takeIf { it.isNotBlank() }?.let { inviterId ->
+        uri.getQueryParameter("ref")?.takeIf { it.isNotBlank() && com.dezzy.music.constants.SocialFeatures.ENABLED }?.let { inviterId ->
             lifecycleScope.launch {
                 runCatching {
                     this@MainActivity.dataStore.edit { it[com.dezzy.music.constants.PendingReferralKey] = inviterId }

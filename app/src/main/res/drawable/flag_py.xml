@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bandera de Paraguay (simplificada, 3:2). Generada por flags_gen.py: no editar a mano. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="36dp"
+    android:height="24dp"
+    android:viewportWidth="36"
+    android:viewportHeight="24">
+    <group>
+        <clip-path android:pathData="M3,0h30a3,3 0 0,1 3,3v18a3,3 0 0,1 -3,3h-30a3,3 0 0,1 -3,-3v-18a3,3 0 0,1 3,-3z" />
+        <path android:fillColor="#D52B1E" android:pathData="M0,0h36v8.02h-36z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M0,8h36v8.02h-36z" />
+        <path android:fillColor="#0038A8" android:pathData="M0,16h36v8.02h-36z" />
+        <path android:fillColor="#0038A8" android:pathData="M15.4,12a2.6,2.6 0 1,0 5.2,0a2.6,2.6 0 1,0 -5.2,0z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M16,12a2,2 0 1,0 4,0a2,2 0 1,0 -4,0z" />
+        <path android:fillColor="#F9E300" android:pathData="M18,10.8L18.28,11.61L19.14,11.63L18.46,12.15L18.71,12.97L18,12.48L17.29,12.97L17.54,12.15L16.86,11.63L17.72,11.61z" />
+    </group>
+    <path
+        android:pathData="M3,0h30a3,3 0 0,1 3,3v18a3,3 0 0,1 -3,3h-30a3,3 0 0,1 -3,-3v-18a3,3 0 0,1 3,-3z"
+        android:strokeColor="#33000000"
+        android:strokeWidth="0.6" />
+</vector>
