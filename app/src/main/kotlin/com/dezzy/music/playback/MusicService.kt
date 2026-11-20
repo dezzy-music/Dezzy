@@ -402,6 +402,11 @@ class MusicService :
     // Al tocar un "video similar" en modo video, la cola salta a esa canción y,
     // cuando la transición llega a este id, se re-activa el modo video solo.
     var pendingVideoModeMediaId: String? = null
+
+    /** Número de la última petición de video: las respuestas de peticiones anteriores se tiran. */
+    private var videoRequestSeq = 0
+    /** Canción cuyo videoclip se está resolviendo ahora mismo. */
+    private var videoLoadingMediaId: String? = null
     val videoModeActive = MutableStateFlow(false)
     val videoModeLoading = MutableStateFlow(false)
     val videoModeError = MutableStateFlow<String?>(null)
@@ -436,8 +441,12 @@ class MusicService :
     /** Resolves a muxed video stream for the current song and starts the standalone video player. */
     fun enableVideoMode() {
         val mediaId = player.currentMediaItem?.mediaId ?: return
-        if (videoModeLoading.value) return
+        // Ya se está resolviendo ESTA canción: nada que hacer. Si es otra (se cambió de
+        // canción mientras cargaba), se lanza una petición nueva que deja obsoleta la anterior.
+        if (videoModeLoading.value && videoLoadingMediaId == mediaId) return
         if (videoModeActive.value && videoModeMediaId == mediaId) return
+        val seq = ++videoRequestSeq
+        videoLoadingMediaId = mediaId
         videoModeError.value = null
         videoModeLoading.value = true
         val resumePositionMs = player.currentPosition
@@ -450,6 +459,8 @@ class MusicService :
                 val hasVideo = file != null && withContext(Dispatchers.IO) {
                     com.dezzy.music.utils.LocalMusicImporter.hasVideoTrack(file)
                 }
+                // Se pidió «Canción» u otra canción mientras se miraba el archivo.
+                if (seq != videoRequestSeq) return@launch
                 if (file != null && hasVideo) {
                     videoModeMediaId = mediaId
                     videoModeActive.value = true
@@ -492,6 +503,9 @@ class MusicService :
                 durationSec = durationSec,
                 maxHeight = maxHeight,
             )
+            // Petición obsoleta: el usuario volvió a «Canción» (o pidió otro video) mientras se
+            // resolvía. Sin esto el video arrancaba igualmente y pausaba la canción.
+            if (seq != videoRequestSeq) return@launch
             videoModeLoading.value = false
             result.onSuccess { video ->
                 // The song changed while we were resolving — don't attach a stale video.
@@ -595,6 +609,14 @@ class MusicService :
     }
 
     fun disableVideoMode() {
+        // Invalida cualquier resolución en curso y el salto pendiente de «videos similares»:
+        // «Canción» tiene que ganar aunque el video aún no hubiera empezado.
+        videoRequestSeq++
+        pendingVideoModeMediaId = null
+        if (videoModeLoading.value) {
+            videoModeLoading.value = false
+            videoLoadingMediaId = null
+        }
         if (!videoModeActive.value && videoPlayer == null) return
         val vp = videoPlayer
         val positionMs = vp?.let { audioPositionForVideo(it.currentPosition) } ?: player.currentPosition
