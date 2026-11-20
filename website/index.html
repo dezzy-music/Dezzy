@@ -252,6 +252,8 @@ a.blk:focus-visible { outline: 4px solid var(--color-focus); outline-offset: 4px
 .person { flex-direction: row; align-items: center; justify-content: flex-start; gap: var(--space-md); }
 .face { flex: none; width: 72px; height: 72px; display: grid; place-items: center; background: var(--color-ink); color: var(--color-paper); font-family: var(--font-display); font-stretch: 62%; font-weight: 800; font-size: var(--text-xl); }
 .blk.ink .face { background: var(--color-paper); color: var(--color-ink); }
+img.face { object-fit: cover; border: 4px solid var(--color-ink); background: var(--color-paper-3); }
+.person .name + .lbl { margin-top: var(--space-2xs); }
 .sq { aspect-ratio: 1; }
 .sq .val { font-size: clamp(3rem, 5vw, 5rem); }
 .row-link { flex-direction: row; align-items: center; }
@@ -344,6 +346,30 @@ a.blk:focus-visible { outline: 4px solid var(--color-focus); outline-offset: 4px
 @media (max-width: 60rem) { .linked .cols, .qr-panel { grid-template-columns: minmax(0, 1fr); } }
 @media (prefers-reduced-motion: reduce) { .qr::after { animation: none; } }
 
+
+/* ticker: one line of what Dezzy is, drifting */
+.ticker { overflow: hidden; border-block: 2px solid var(--color-rule); background: var(--color-ink); color: var(--color-paper); }
+.ticker ul { list-style: none; margin: 0; padding: var(--space-md) 0; display: flex; gap: var(--space-xl); width: max-content; animation: drift 40s linear infinite; }
+.ticker li { display: flex; align-items: center; gap: var(--space-xl); font-family: var(--font-display); font-stretch: 62%; font-weight: 800; font-size: clamp(2rem, 3.4vw, 3rem); line-height: 1; letter-spacing: -0.01em; white-space: nowrap; }
+.ticker li::after { content: "✶"; font-size: 0.6em; color: var(--grey-2); }
+@media (prefers-reduced-motion: reduce) { .ticker { overflow-x: auto; } .ticker ul { animation: none; } }
+
+/* questions */
+.faq { padding-block: var(--section-gap-s); border-top: 2px solid var(--color-rule); }
+.faq .container { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: var(--space-2xl); align-items: start; }
+.faq h2 { font-size: clamp(3rem, 6.5vw, 6.5rem); line-height: 0.94; max-width: 10ch; }
+.faq details { border-top: 2px solid var(--color-rule); }
+.faq details:last-child { border-bottom: 2px solid var(--color-rule); }
+.faq summary { display: flex; justify-content: space-between; align-items: center; gap: var(--space-lg); min-height: 72px; padding-block: var(--space-md); cursor: pointer; list-style: none; font-family: var(--font-display); font-stretch: 62%; font-weight: 800; font-size: var(--text-2xl); line-height: 1.05; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; flex: none; width: 40px; height: 40px; display: grid; place-items: center; border: 2px solid var(--color-ink); font-size: var(--text-xl); transition: transform var(--dur-short) var(--ease-out); }
+.faq details[open] summary::after { transform: rotate(45deg); }
+.faq summary:hover::after { background: var(--color-ink); color: var(--color-paper); }
+.faq summary:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+.faq details p { margin: 0 0 var(--space-lg); max-width: 52ch; color: var(--color-ink-2); }
+@media (max-width: 60rem) { .faq .container { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .faq summary::after { transition: none; } }
+
 /* close on white */
 .close { padding-block: var(--section-gap) var(--section-gap-s); border-top: 2px solid var(--color-rule); }
 .close .container { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--space-2xl); align-items: end; }
@@ -409,6 +435,8 @@ footer small { color: var(--color-night-muted); font-size: var(--text-sm); }
       </div>
     </div>
   </section>
+
+  <div class="ticker"><ul><li>Sin anuncios</li><li>Gratis para siempre</li><li>Letras sincronizadas</li><li>Sin conexión</li><li>Código abierto</li><li>Escuchar juntos</li><li>Android y Windows</li><li>Sin rastreo</li><li aria-hidden="true">Sin anuncios</li><li aria-hidden="true">Gratis para siempre</li><li aria-hidden="true">Letras sincronizadas</li><li aria-hidden="true">Sin conexión</li><li aria-hidden="true">Código abierto</li><li aria-hidden="true">Escuchar juntos</li><li aria-hidden="true">Android y Windows</li><li aria-hidden="true">Sin rastreo</li></ul></div>
 
   <section class="shelf" aria-labelledby="shelf-h">
     <div class="container"><h2 id="shelf-h">Para cada momento.</h2></div>
@@ -625,6 +653,19 @@ footer small { color: var(--color-night-muted); font-size: var(--text-sm); }
     </div>
   </section>
 
+  <section class="faq" id="preguntas" aria-labelledby="faq-h">
+    <div class="container">
+      <h2 id="faq-h">Preguntas.</h2>
+      <div>
+        <details><summary>¿De verdad es gratis?</summary><p>Sí. Sin anuncios, sin suscripción y con el código abierto bajo licencia GPL-3.0.</p></details>
+        <details><summary>¿Necesito una cuenta?</summary><p>No. Abres y escuchas. Si quieres traer tus listas, inicia sesión con YouTube o con Spotify.</p></details>
+        <details><summary>¿Funciona sin internet?</summary><p>Sí. Descarga tus canciones y escúchalas donde no haya señal.</p></details>
+        <details><summary>¿En qué dispositivos va?</summary><p>En Android 6.0 o superior y en Windows. Con Dezzy Connect el móvil controla el ordenador.</p></details>
+        <details><summary>¿Qué hace con mis datos?</summary><p>Nada. Dezzy no rastrea lo que escuchas ni recoge tus datos.</p></details>
+      </div>
+    </div>
+  </section>
+
   <section class="about" id="acerca" aria-labelledby="acerca-h">
     <div class="container">
       <h2 id="acerca-h">Acerca de.</h2>
@@ -640,11 +681,11 @@ footer small { color: var(--color-night-muted); font-size: var(--text-sm); }
           <span class="chip">Estable</span>
         </a>
         <a class="blk grey person s6" href="https://github.com/dezzy-music">
-          <span class="face" aria-hidden="true">JH</span>
+          <img class="face" src="https://github.com/dezzy-music.png?size=160" alt="Foto de Jhonny Hernández" width="72" height="72" loading="lazy">
           <span><span class="name">Jhonny Hernández</span><span class="lbl">Desarrollador principal</span></span>
         </a>
         <a class="blk person s3" href="https://github.com/dani36652">
-          <span class="face" aria-hidden="true">D</span>
+          <img class="face" src="https://github.com/dani36652.png?size=160" alt="Foto de dani36652" width="72" height="72" loading="lazy">
           <span><span class="name">dani36652</span><span class="lbl">Contribuidor</span></span>
         </a>
         <div class="blk ink edge s3">
@@ -660,6 +701,9 @@ footer small { color: var(--color-night-muted); font-size: var(--text-sm); }
         </a>
         <div class="blk ink edge s3"><span class="name">Jesus Christ</span><span>loves you</span></div>
         <a class="blk row-link s5" href="https://dezzy.space"><span class="name">dezzy.space</span><svg class="arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h14v14h-3V9.1L6.1 20 4 17.9 14.9 7H6z"/></svg></a>
+        <div class="blk s4"><span class="lbl">Hecho con</span><span class="name">Kotlin y Jetpack Compose</span></div>
+        <div class="blk ink edge s4"><span class="lbl">Escritorio</span><span class="name">Electron, para Windows</span></div>
+        <div class="blk grey s4"><span class="lbl">Basado en</span><span class="name">OpenTune</span></div>
       </div>
       <p class="foot">Hecho con obsesión en Nueva York.</p>
     </div>
