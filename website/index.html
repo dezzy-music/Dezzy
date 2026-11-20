@@ -95,6 +95,7 @@ body { font-stretch: 100%; }
 .c-grid { background-color: var(--grey-3); color: var(--color-ink); background-image: linear-gradient(var(--color-ink) 2px, transparent 2px), linear-gradient(90deg, var(--color-ink) 2px, transparent 2px); background-size: 25% 25%; }
 .c-grid .big { background: var(--grey-3); padding: 0 var(--space-xs); }
 .c-sun { background: repeating-linear-gradient(to bottom, var(--color-night) 0 9px, var(--grey-1) 9px 11px); }
+.c-sun .big { background: var(--color-night); padding: 0 var(--space-xs); }
 .c-sun::after { content: ""; position: absolute; width: 64%; aspect-ratio: 1; left: 18%; top: 10%; border-radius: 50%; background: repeating-linear-gradient(to bottom, var(--color-paper) 0 8px, transparent 8px 12px); }
 .c-check { background: repeating-conic-gradient(var(--color-night) 0 25%, var(--color-paper) 0 50%) 0 0 / 50% 50%; }
 .c-check .big { background: var(--color-night); padding: 0 var(--space-xs); }
@@ -265,6 +266,62 @@ a.blk:focus-visible { outline: 4px solid var(--color-focus); outline-offset: 4px
 @media (max-width: 40rem) { .s4, .s3, .s5 { grid-column: span 6; } .sq { aspect-ratio: auto; } }
 @media (prefers-reduced-motion: reduce) { a.blk { transition: none; } a.blk:hover, a.blk:active { transform: none; } }
 
+
+/* artists: poster cards with code-drawn portraits, on black */
+.artists { padding-block: var(--section-gap-s); }
+.artists .head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: var(--space-lg); margin-bottom: var(--space-xl); }
+.artists h2 { font-size: clamp(3rem, 6.5vw, 6.5rem); line-height: 0.94; max-width: 11ch; }
+.artists .head p { max-width: 30ch; color: var(--color-night-muted); }
+.wall { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: minmax(0, 1fr); gap: var(--space-md); }
+.poster { position: relative; display: block; aspect-ratio: 3 / 4; overflow: hidden; color: var(--color-night-ink); text-decoration: none; background: var(--color-night); box-shadow: inset 0 0 0 1px var(--color-night-rule); }
+.poster.hero-card { grid-column: span 2; grid-row: span 2; aspect-ratio: auto; }
+.poster .bg { position: absolute; inset: 0; transition: transform var(--dur-long) var(--ease-out); }
+.poster:hover .bg { transform: scale(1.04); }
+.poster .who { position: absolute; inset: 14% 0 0; background: var(--sil, var(--color-night-ink)); -webkit-mask: var(--shape); mask: var(--shape); transition: transform var(--dur-long) var(--ease-out); }
+.poster:hover .who { transform: translateY(-4px); }
+.poster::after { content: ""; position: absolute; inset: 45% 0 0; background: linear-gradient(to bottom, transparent, var(--color-night) 85%); }
+.poster .tag { position: absolute; left: var(--space-md); right: var(--space-md); bottom: var(--space-md); z-index: 1; display: flex; justify-content: space-between; align-items: end; gap: var(--space-sm); }
+.poster .n { display: block; font-family: var(--font-display); font-stretch: 62%; font-weight: 800; line-height: 0.9; letter-spacing: -0.02em; font-size: var(--text-2xl); overflow-wrap: break-word; min-width: 0; }
+.poster.hero-card .n { font-size: clamp(3rem, 6vw, 6rem); }
+.poster .r { display: block; margin-top: var(--space-2xs); font-size: var(--text-sm); color: var(--color-night-muted); }
+.poster .go { flex: none; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: var(--color-night-ink); transition: transform var(--dur-short) var(--ease-out); }
+.poster .go svg { width: 20px; height: 20px; fill: var(--color-night); }
+.poster:hover .go { transform: scale(1.1); }
+.poster:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+.poster .live { position: absolute; top: var(--space-md); left: var(--space-md); z-index: 1; display: flex; align-items: center; gap: var(--space-xs); padding: var(--space-2xs) var(--space-sm); background: var(--color-night-ink); color: var(--color-night); font-size: var(--text-sm); font-weight: 600; }
+.poster .live i { display: inline-flex; align-items: end; gap: var(--space-3xs); height: 12px; }
+.poster .live b { width: 3px; height: 100%; background: var(--color-night); transform-origin: bottom; animation: beat 0.9s var(--ease-in-out) infinite alternate; }
+.poster .live b:nth-child(2) { animation-delay: -0.3s; } .poster .live b:nth-child(3) { animation-delay: -0.6s; }
+/* silhouettes: head and shoulders, three cuts */
+.sh-a { --shape: radial-gradient(circle at 50% 30%, var(--color-ink) 0 19%, transparent 19.5%), radial-gradient(ellipse 48% 40% at 50% 100%, var(--color-ink) 0 99%, transparent 100%), radial-gradient(ellipse 9% 16% at 50% 58%, var(--color-ink) 0 99%, transparent 100%); }
+.sh-b { --shape: radial-gradient(ellipse 22% 19% at 46% 28%, var(--color-ink) 0 99%, transparent 100%), radial-gradient(ellipse 30% 9% at 46% 13%, var(--color-ink) 0 99%, transparent 100%), radial-gradient(ellipse 52% 42% at 50% 100%, var(--color-ink) 0 99%, transparent 100%), radial-gradient(ellipse 9% 16% at 47% 58%, var(--color-ink) 0 99%, transparent 100%); }
+.sh-c { --shape: radial-gradient(ellipse 27% 30% at 54% 32%, var(--color-ink) 0 99%, transparent 100%), radial-gradient(ellipse 44% 38% at 56% 100%, var(--color-ink) 0 99%, transparent 100%), radial-gradient(ellipse 9% 16% at 55% 58%, var(--color-ink) 0 99%, transparent 100%); }
+.tone-w { --sil: var(--color-night-ink); } .tone-g { --sil: var(--grey-2); } .tone-l { --sil: var(--grey-3); }
+@media (max-width: 60rem) { .wall { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (prefers-reduced-motion: reduce) { .poster .bg, .poster .who, .poster .go { transition: none; } .poster:hover .bg, .poster:hover .who { transform: none; } .poster .live b { animation: none; } }
+
+/* share: lyric cards and the year in music, fanned */
+.share { padding-block: var(--section-gap-s); border-top: 2px solid var(--color-rule); overflow: hidden; }
+.share .container { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: var(--space-2xl); align-items: center; }
+.share h2 { font-size: clamp(3rem, 6.5vw, 6.5rem); line-height: 0.94; max-width: 9ch; }
+.share .lead { margin-top: var(--space-lg); color: var(--color-ink-2); max-width: 28ch; }
+.fan { position: relative; height: 560px; }
+.sc { position: absolute; top: 50%; left: 50%; width: 248px; aspect-ratio: 9 / 16; display: flex; flex-direction: column; justify-content: space-between; gap: var(--space-md); padding: var(--space-lg); border: 2px solid var(--color-ink); box-shadow: 8px 8px 0 var(--color-ink); transition: transform var(--dur-long) var(--ease-out); }
+.sc:nth-child(1) { transform: translate(-156%, -46%) rotate(-8deg); background: var(--color-night); color: var(--color-night-ink); box-shadow: 8px 8px 0 var(--grey-2); }
+.sc:nth-child(2) { transform: translate(-50%, -54%); z-index: 1; background: var(--color-paper); color: var(--color-ink); }
+.sc:nth-child(3) { transform: translate(56%, -46%) rotate(7deg); background: var(--grey-3); color: var(--color-ink); }
+.fan:hover .sc:nth-child(1) { transform: translate(-162%, -48%) rotate(-11deg); }
+.fan:hover .sc:nth-child(3) { transform: translate(62%, -48%) rotate(10deg); }
+.sc .q { font-family: var(--font-display); font-stretch: 62%; font-weight: 800; line-height: 0.95; letter-spacing: -0.02em; font-size: var(--text-3xl); }
+.sc .who-mini { display: flex; align-items: center; gap: var(--space-sm); font-size: var(--text-sm); font-weight: 600; }
+.sc .who-mini .cover { width: 44px; flex: none; }
+.sc .yr { font-family: var(--font-display); font-stretch: 62%; font-weight: 800; line-height: 0.82; font-size: 5.5rem; letter-spacing: -0.04em; }
+.sc .big-cover { width: 100%; }
+.sc .small { font-size: var(--text-sm); font-weight: 600; }
+@media (max-width: 60rem) { .share .container { grid-template-columns: minmax(0, 1fr); } .fan { height: 520px; } .sc { width: 200px; } }
+@media (max-width: 40rem) { .fan, .fan:hover { height: auto; display: flex; gap: var(--space-lg); overflow-x: auto; padding: var(--space-xs) var(--space-md) var(--space-lg) 0; } .sc, .fan:hover .sc { position: static; flex: none; width: 220px; transform: none !important; } }
+@media (prefers-reduced-motion: reduce) { .sc { transition: none; } .fan:hover .sc:nth-child(1) { transform: translate(-156%, -46%) rotate(-8deg); } .fan:hover .sc:nth-child(3) { transform: translate(56%, -46%) rotate(7deg); } }
+
 /* close on white */
 .close { padding-block: var(--section-gap) var(--section-gap-s); border-top: 2px solid var(--color-rule); }
 .close .container { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--space-2xl); align-items: end; }
@@ -293,6 +350,7 @@ footer small { color: var(--color-night-muted); font-size: var(--text-sm); }
   <div class="container">
     <a class="wordmark" href="#">Dezzy</a>
     <nav aria-label="Principal">
+      <a class="hide-s" href="#artistas">Artistas</a>
       <a class="hide-s" href="#funciones">Funciones</a>
       <a class="hide-s" href="#personaliza">Personaliza</a>
       <a class="hide-s" href="#cambia">Qué cambia</a>
@@ -369,6 +427,37 @@ footer small { color: var(--color-night-muted); font-size: var(--text-sm); }
     </ul></div>
   </section>
 
+  <section class="artists night" id="artistas" aria-labelledby="artistas-h">
+    <div class="container">
+      <div class="head">
+        <h2 id="artistas-h">Tus artistas, sin pausa.</h2>
+        <p>Pon a quien quieras y Dezzy sigue con su radio, sin un solo anuncio.</p>
+      </div>
+      <div class="wall">
+        <a class="poster hero-card sh-a tone-w" href="#descargar">
+          <span class="bg cover c-rings" aria-hidden="true"></span><span class="who" aria-hidden="true"></span><span class="live"><i aria-hidden="true"><b></b><b></b><b></b></i>Sonando</span>
+          <span class="tag"><span><span class="n">Reggaetón</span><span class="r">Radio sin fin</span></span><span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg></span></span>
+        </a>
+        <a class="poster sh-b tone-l" href="#descargar">
+          <span class="bg cover c-stripes" aria-hidden="true"></span><span class="who" aria-hidden="true"></span>
+          <span class="tag"><span><span class="n">Corridos</span><span class="r">Radio sin fin</span></span><span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg></span></span>
+        </a>
+        <a class="poster sh-c tone-g" href="#descargar">
+          <span class="bg cover c-dots" aria-hidden="true"></span><span class="who" aria-hidden="true"></span>
+          <span class="tag"><span><span class="n">K-pop</span><span class="r">Radio sin fin</span></span><span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg></span></span>
+        </a>
+        <a class="poster sh-c tone-l" href="#descargar">
+          <span class="bg cover c-sun" aria-hidden="true"></span><span class="who" aria-hidden="true"></span>
+          <span class="tag"><span><span class="n">Trap</span><span class="r">Radio sin fin</span></span><span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg></span></span>
+        </a>
+        <a class="poster sh-a tone-g" href="#descargar">
+          <span class="bg cover c-check" aria-hidden="true"></span><span class="who" aria-hidden="true"></span>
+          <span class="tag"><span><span class="n">Bachata</span><span class="r">Radio sin fin</span></span><span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg></span></span>
+        </a>
+      </div>
+    </div>
+  </section>
+
   <section class="features" id="funciones">
     <div class="container">
       <h2>Lo que trae dentro.</h2>
@@ -380,6 +469,33 @@ footer small { color: var(--color-night-muted); font-size: var(--text-sm); }
         <li><h3>Sin conexión</h3><p>Descarga y escucha sin internet.</p></li>
         <li><h3>Privacidad</h3><p>Sin rastreo ni recogida de datos.</p></li>
       </ul>
+    </div>
+  </section>
+
+  <section class="share" aria-labelledby="share-h">
+    <div class="container">
+      <div>
+        <h2 id="share-h">Para tus historias.</h2>
+        <p class="lead">Tarjetas con tu letra favorita y tu resumen del año, listas para compartir.</p>
+      </div>
+      <div class="fan" role="img" aria-label="Tres tarjetas para compartir: dos con letras y una con el resumen del año">
+        <div class="sc">
+          <div class="who-mini"><span class="cover c-half"></span>Tu canción</div>
+          <div class="q">Cada palabra se enciende justo cuando suena.</div>
+          <div class="small">Dezzy</div>
+        </div>
+        <div class="sc">
+          <div class="small">Tu año en música</div>
+          <div class="yr">2026</div>
+          <div class="big-cover cover c-wave"></div>
+          <div class="small">Tu canción del año</div>
+        </div>
+        <div class="sc">
+          <div class="who-mini"><span class="cover c-grid"></span>Tu artista favorito</div>
+          <div class="q">Sube el volumen, que esta es la buena.</div>
+          <div class="small">Dezzy</div>
+        </div>
+      </div>
     </div>
   </section>
 
