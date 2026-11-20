@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dezzy escritorio · Icono de la app</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..600,0..1,0&display=swap" rel="stylesheet">
+<style>
+:root{--doc:#f4f1f1;--ink:#22191a;--muted:#6b5b5c;--line:#e3d6d6;
+  --bg:#000;--panel:#121212;--el:#1f1f1f;--hov:#2a2a2a;--hi:#fff;--sub:#b3b3b3;--dim:#7a7a7a;--acc:#f2606d;--acc-d:#ED5564}
+*{box-sizing:border-box}
+body{margin:0;background:var(--doc);color:var(--ink);font:15px/1.5 Poppins,system-ui,sans-serif}
+.doc{max-width:1340px;margin:0 auto;padding:40px 24px 80px}
+h1{font-size:30px;margin:0 0 6px}
+.lead{color:var(--muted);max-width:980px;margin:0}
+.pick{position:sticky;top:0;z-index:20;background:var(--doc);padding:18px 0 12px;display:flex;flex-wrap:wrap;gap:18px;align-items:center;border-bottom:1px solid var(--line);margin-top:22px}
+.seg{display:flex;gap:6px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:4px}
+.seg button{font:600 14px Poppins;border:0;background:none;padding:8px 14px;border-radius:10px;cursor:pointer;color:var(--muted)}
+.seg button.on{background:var(--ink);color:#fff}
+.vdesc{margin:18px 0 6px}
+.vdesc h2{font-size:22px;margin:0 0 4px;display:flex;align-items:center;gap:12px}
+.vdesc h2 .tag{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--ink);color:#fff;font-size:17px}
+.vdesc p{color:var(--muted);margin:0;max-width:1000px}
+ul.chg{margin:8px 0 12px;padding-left:20px;font-size:14px;max-width:1100px}
+ul.chg li{margin-bottom:3px}
+.ms{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;font-size:22px;line-height:1;display:inline-block;-webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400;vertical-align:middle}
+.ms.f{font-variation-settings:'FILL' 1,'wght' 500}
+.zoom{zoom:.92;margin-top:6px}
+@media (max-width:1300px){.zoom{zoom:.7}}
+@media (max-width:900px){.zoom{zoom:.45}}
+.note{margin-top:34px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 20px;font-size:14px;color:var(--muted)}
+.hide{display:none!important}
+
+/* ventana */
+.win{width:1300px;height:800px;border-radius:12px;overflow:hidden;background:var(--bg);color:var(--hi);display:flex;flex-direction:column;box-shadow:0 18px 50px rgba(0,0,0,.3);font-family:Poppins,sans-serif;font-size:14px}
+.top{height:64px;display:flex;align-items:center;gap:10px;padding:0 14px;flex:none}
+.logo{width:30px;height:30px;border-radius:9px;background:var(--acc-d);display:grid;place-items:center;font-weight:800;font-size:16px;color:#fff}
+.back{width:32px;height:32px;border-radius:50%;background:var(--panel);display:grid;place-items:center}
+.circ{width:48px;height:48px;border-radius:24px;background:var(--el);display:grid;place-items:center}
+.search{width:470px;height:48px;border-radius:24px;background:var(--el);display:flex;align-items:center;gap:12px;padding:0 16px;color:var(--sub)}
+.mid{flex:1;display:flex;justify-content:center;gap:8px}
+.ico{display:flex;gap:14px;color:var(--sub);align-items:center}
+.ico .on{color:#fff}
+.av{width:32px;height:32px;border-radius:50%;background:#1a8f86;display:grid;place-items:center;font-weight:700;color:#fff}
+.body{flex:1;display:flex;gap:8px;padding:0 8px;min-height:0}
+.p{background:var(--panel);border-radius:8px;overflow:hidden;position:relative}
+.lib{width:76px;flex:none;display:flex;flex-direction:column;align-items:center;gap:8px;padding-top:14px;color:var(--sub)}
+.lib i{width:48px;height:48px;border-radius:4px;display:block}
+.main{flex:1;min-width:0}
+.scroll{position:absolute;inset:0;overflow:hidden}
+.bar{height:72px;flex:none;display:grid;grid-template-columns:1fr 1.6fr 1fr;align-items:center;padding:0 16px 0 10px}
+.np{display:flex;gap:12px;align-items:center}
+.np i{width:52px;height:52px;border-radius:4px}
+.np small{display:block;color:var(--sub);font-size:12px}
+.tr{display:flex;flex-direction:column;align-items:center;gap:6px}
+.tr .b{display:flex;gap:20px;align-items:center;color:var(--sub)}
+.tr .pp{width:34px;height:34px;border-radius:50%;background:#fff;color:#000;display:grid;place-items:center}
+.prog{width:100%;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--sub)}
+.prog span.t{flex:1;height:4px;border-radius:2px;background:#4d4d4d;position:relative}
+.prog span.t::before{content:'';position:absolute;inset:0 62% 0 0;background:#fff;border-radius:2px}
+.ex{display:flex;justify-content:flex-end;gap:12px;color:var(--sub);align-items:center}
+.vol{width:90px;height:4px;border-radius:2px;background:linear-gradient(90deg,#fff 70%,#4d4d4d 70%)}
+
+/* comunes */
+.g1{background:linear-gradient(135deg,#7b2ff7,#f2606d)}.g2{background:linear-gradient(135deg,#0f9b8e,#183b5a)}
+.g3{background:linear-gradient(135deg,#f7b733,#fc4a1a)}.g4{background:linear-gradient(135deg,#355c7d,#c06c84)}
+.g5{background:linear-gradient(135deg,#11998e,#38ef7d)}.g6{background:linear-gradient(135deg,#232526,#5b5b5b)}
+.g7{background:linear-gradient(135deg,#ee0979,#ff6a00)}.g8{background:linear-gradient(135deg,#4568dc,#b06ab3)}
+.g9{background:linear-gradient(135deg,#e0c3fc,#8ec5fc)}.g10{background:linear-gradient(135deg,#a8071a,#3a0a12)}
+.liked{background:linear-gradient(135deg,#450af5,#c4efd9)}
+.playc{width:56px;height:56px;border-radius:50%;background:var(--acc);color:#1a0407;display:grid;place-items:center;box-shadow:0 8px 18px rgba(0,0,0,.35);flex:none}
+.playc .ms{font-size:32px}
+.playc.s{width:46px;height:46px}.playc.s .ms{font-size:26px}
+.chip{height:32px;padding:0 14px;border-radius:16px;background:rgba(255,255,255,.1);display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;white-space:nowrap}
+.chip.on{background:#fff;color:#000}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.sh{font-size:22px;font-weight:700;margin:0 0 12px;display:flex;align-items:baseline;gap:10px}
+.sh small{margin-left:auto;font-size:13px;color:var(--sub);font-weight:600}
+.pad{padding:0 24px}
+.sub{color:var(--sub)}
+.row{display:grid;grid-template-columns:28px 40px 1fr 160px 60px;gap:14px;align-items:center;padding:6px 12px;border-radius:4px;color:var(--sub);font-size:13px}
+.row i{width:40px;height:40px;border-radius:3px;display:block}
+.row b{color:#fff;font-weight:400;font-size:15px;display:block}
+.row.h{background:rgba(255,255,255,.08)}
+.row.on b{color:var(--acc)}
+.n{text-align:center;font-size:15px}
+.thead{display:grid;grid-template-columns:28px 40px 1fr 160px 60px;gap:14px;padding:0 12px 8px;margin-bottom:8px;border-bottom:1px solid #2a2a2a;color:var(--sub);font-size:13px}
+.thead span:nth-child(2){grid-column:2/4}
+.cards{display:flex;gap:4px;margin:0 -12px}
+.card{width:176px;padding:12px;border-radius:6px;flex:none;position:relative}
+.card.h{background:var(--el)}
+.card i{display:block;aspect-ratio:1;border-radius:6px;margin-bottom:8px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.card i.r{border-radius:50%}
+.card b{display:block;font-weight:500;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card small{color:var(--sub);font-size:13px}
+.card .hp{position:absolute;right:20px;top:122px}
+.bar2{height:4px;border-radius:2px;background:#3a3a3a;position:relative;overflow:hidden}
+.bar2 span{position:absolute;inset:0 auto 0 0;background:var(--acc);border-radius:2px}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:rgba(242,96,109,.18);color:var(--acc)}
+.badge.g{background:rgba(56,239,125,.14);color:#4ee08f}
+.heat{display:grid;grid-template-columns:repeat(53,1fr);grid-auto-flow:column;grid-template-rows:repeat(7,1fr);gap:3px}
+.heat b{aspect-ratio:1;border-radius:2px;background:#262626}
+.heat b.l1{background:rgba(242,96,109,.3)}.heat b.l2{background:rgba(242,96,109,.55)}.heat b.l3{background:rgba(242,96,109,.8)}.heat b.l4{background:#f2606d}
+.wk{display:flex;align-items:flex-end;gap:10px;height:120px}
+.wk div{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end;font-size:11px;color:var(--sub)}
+.wk div span{width:100%;border-radius:6px 6px 2px 2px;background:#3a3a3a}
+.wk div span.top{background:var(--acc)}
+.hero{display:flex;gap:24px;align-items:flex-end;padding:56px 24px 24px}
+.hero .cov{width:232px;height:232px;border-radius:6px;box-shadow:0 8px 40px rgba(0,0,0,.6);flex:none;display:grid;place-items:center}
+.hero .cov .ms{font-size:110px;color:#fff}
+.hero .tg{font-size:13px;font-weight:500}
+.hero h3n{display:block;font-size:76px;font-weight:800;letter-spacing:-.04em;line-height:1;margin:6px 0 14px}
+.acts{display:flex;align-items:center;gap:22px;padding:20px 24px;color:var(--sub)}
+.acts .ms{font-size:30px}
+.tile{background:var(--el);border-radius:12px;padding:16px;position:relative;overflow:hidden}
+.tile h4{margin:0 0 8px;font-size:13px;font-weight:600;color:var(--sub)}
+.kpi b{display:block;font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.kpi small{color:var(--sub);font-size:12px}
+/* fase 4 */
+.mini{display:grid;grid-template-columns:22px 40px 1fr auto;gap:12px;align-items:center;padding:6px 0;font-size:13px;color:var(--sub)}
+.mini i{width:40px;height:40px;border-radius:3px;display:block}
+.mini b{display:block;color:#fff;font-weight:500;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini .n{font-size:14px}
+.cc{display:inline-grid;place-items:center;min-width:28px;height:20px;padding:0 4px;border-radius:4px;background:#2c2c2c;font-size:10px;font-weight:700;letter-spacing:.04em;color:#fff}
+.world{position:absolute;inset:0}
+.world svg{width:100%;height:100%;display:block}
+.circ.s{width:40px;height:40px;border-radius:20px;background:rgba(31,31,31,.92)}
+.inp{height:40px;border-radius:20px;background:var(--el);display:flex;align-items:center;gap:10px;padding:0 14px;color:var(--sub);font-size:13px}
+.tgl{width:40px;height:22px;border-radius:11px;background:#535353;position:relative;flex:none;display:inline-block}
+.tgl::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff}
+.tgl.on{background:var(--acc)}.tgl.on::after{left:21px}
+.av2{width:36px;height:36px;border-radius:50%;display:inline-grid;place-items:center;font-weight:700;font-size:13px;color:#fff;border:2px solid var(--panel);flex:none}
+.stack{display:flex}.stack .av2+.av2{margin-left:-10px}
+.bub{background:var(--el);border-radius:14px 14px 14px 4px;padding:8px 12px;font-size:13px;max-width:250px;align-self:flex-start}
+.bub small{display:block;font-size:11px;color:var(--acc);font-weight:600}
+.bub.me{background:var(--acc);color:#1a0407;border-radius:14px 14px 4px 14px;align-self:flex-end}
+.chat{display:flex;flex-direction:column;gap:8px}
+.sel{height:36px;padding:0 12px;border-radius:18px;background:var(--el);display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:500}
+.up{color:#4ee08f}.dn{color:#f2606d}.eq{color:#7a7a7a}
+.rk{display:grid;grid-template-columns:28px 34px 40px 1fr 120px 56px;gap:14px;align-items:center;padding:6px 12px;border-radius:4px;font-size:13px;color:var(--sub)}
+.rk i{width:40px;height:40px;border-radius:3px;display:block}
+.rk b{display:block;color:#fff;font-weight:400;font-size:15px}
+.rk.h{background:rgba(255,255,255,.08)}
+.rk .d{font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.srow{display:flex;align-items:center;gap:16px;padding:13px 0;border-bottom:1px solid #222;font-size:14px}
+.srow>div{flex:1}.srow small{display:block;color:var(--sub);font-size:12px}
+.sec{font-size:20px;font-weight:700;margin:26px 0 4px}
+.sw{width:26px;height:26px;border-radius:50%;display:inline-block;border:2px solid transparent}
+.sw.on{border-color:#fff;box-shadow:0 0 0 2px #000 inset}
+.btnw{height:32px;padding:0 16px;border-radius:16px;border:1px solid #727272;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600}
+.btnf{height:32px;padding:0 16px;border-radius:16px;background:#fff;color:#000;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700}
+.vote{display:flex;align-items:center;gap:8px;font-size:12px}
+.vote .bar2{width:70px}
+.big1{font-size:260px;font-weight:800;line-height:.8;letter-spacing:-.06em;color:transparent;-webkit-text-stroke:3px rgba(255,255,255,.55)}
+/* fase 5 */
+.qt{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.q{height:56px;border-radius:4px;background:rgba(255,255,255,.08);display:flex;align-items:center;gap:12px;overflow:hidden;font-weight:600;font-size:13px;position:relative}
+.q i{width:56px;height:56px;flex:none;display:block}
+.q.h{background:rgba(255,255,255,.16)}
+.q .playc.s{position:absolute;right:8px;width:34px;height:34px}.q .playc.s .ms{font-size:22px}
+.bento{display:grid;grid-template-columns:1.4fr 1fr 1fr;grid-template-rows:150px 150px;gap:12px}
+.bt{border-radius:12px;padding:16px;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end}
+.bt small{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.8}
+.bt b{font-size:20px;font-weight:700;line-height:1.15}
+.desk{position:relative;height:560px;border-radius:12px;overflow:hidden;background:linear-gradient(160deg,#3a5a8c,#c76a4b);box-shadow:0 18px 50px rgba(0,0,0,.3)}
+.desk .taskbar{position:absolute;left:0;right:0;bottom:0;height:44px;background:rgba(20,20,20,.75);backdrop-filter:blur(10px)}
+.desk .lbl{position:absolute;color:#fff;font:600 12px Poppins;opacity:.8}
+.mp{position:absolute;color:#fff;font-family:Poppins;box-shadow:0 14px 40px rgba(0,0,0,.5);overflow:hidden}
+.mp .t b{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp .t small{display:block;font-size:12px;color:#b3b3b3}
+.qr{width:180px;height:180px;border-radius:12px;background:#fff;padding:12px;display:grid;grid-template-columns:repeat(21,1fr);gap:0}
+.qr b{background:#111;aspect-ratio:1}.qr b.o{background:transparent}
+.step{display:flex;gap:14px;align-items:flex-start;font-size:14px}
+.step .k{width:28px;height:28px;border-radius:50%;background:#2a2a2a;display:grid;place-items:center;font-weight:700;font-size:13px;flex:none}
+.step .k.on{background:var(--acc);color:#1a0407}
+.code{font:700 26px ui-monospace,'Cascadia Mono',monospace;letter-spacing:.18em}
+.wall{position:absolute;inset:-40px;display:grid;grid-template-columns:repeat(10,1fr);gap:10px;transform:rotate(-8deg) scale(1.15);opacity:.55}
+.wall i{aspect-ratio:1;border-radius:8px;display:block}
+.wall i.r{border-radius:50%}
+.lyr{font-size:15px;font-weight:700;line-height:1.3}
+.lyr span{color:rgba(255,255,255,.45)}
+/* fase 6 */
+.win{position:relative}
+.dim{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:5}
+.ov{position:absolute;z-index:6}
+.menu{background:#282828;border-radius:4px;padding:4px;width:290px;box-shadow:0 16px 24px rgba(0,0,0,.5),0 6px 8px rgba(0,0,0,.3);font-size:14px}
+.mi{display:flex;align-items:center;gap:12px;height:40px;padding:0 12px;border-radius:2px;color:#e6e6e6}
+.mi .ms{font-size:20px;color:var(--sub)}
+.mi.h{background:#3e3e3e;color:#fff}
+.mi.off{opacity:.4}
+.mi .end{margin-left:auto}
+.sep{height:1px;background:#3e3e3e;margin:4px 0}
+.toast{position:absolute;left:50%;transform:translateX(-50%);bottom:96px;z-index:7;display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:8px;font-size:14px;font-weight:500;box-shadow:0 10px 30px rgba(0,0,0,.5);white-space:nowrap}
+.modal{background:#282828;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.6);color:#fff}
+.field{background:#3e3e3e;border-radius:4px;height:40px;display:flex;align-items:center;padding:0 12px;font-size:14px;color:#fff}
+.field.ph{color:#9a9a9a}
+.lbl6{font-size:11px;font-weight:700;color:var(--sub);margin:0 0 6px}
+.plr{display:flex;align-items:center;gap:12px;padding:6px 8px;border-radius:4px;font-size:14px}
+.plr i{width:44px;height:44px;border-radius:4px;display:block;flex:none}
+.plr small{display:block;color:var(--sub);font-size:12px}
+.plr.h{background:#3e3e3e}
+.ck{margin-left:auto;width:22px;height:22px;border-radius:50%;border:2px solid #727272;flex:none}
+.ck.on{border:0;background:var(--acc);display:grid;place-items:center;color:#1a0407}
+.ck.on::after{content:'check';font-family:'Material Symbols Rounded';font-size:16px;font-weight:700}
+.side{position:absolute;top:64px;right:8px;bottom:72px;width:380px;background:var(--panel);border-radius:8px;z-index:6;display:flex;flex-direction:column;overflow:hidden}
+.side .hd{display:flex;align-items:center;gap:10px;padding:16px 16px 10px;font-weight:700;font-size:16px}
+.side .hd .ms:last-child{margin-left:auto;color:var(--sub)}
+.glass{background:rgba(40,28,32,.62);backdrop-filter:blur(26px) saturate(1.4);border:1px solid rgba(255,255,255,.12)}
+.card6{border-radius:14px;display:flex;flex-direction:column;justify-content:flex-end;padding:22px;color:#fff;box-shadow:0 20px 50px rgba(0,0,0,.55);position:relative;overflow:hidden}
+.card6 .art{width:100%;aspect-ratio:1;border-radius:8px;margin-bottom:16px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.card6 b{font-size:22px;font-weight:800;line-height:1.1}
+.card6 small{font-size:14px;opacity:.75}
+.card6 .wm{position:absolute;top:16px;right:18px;font-weight:800;font-size:13px;opacity:.8}
+.pillseg{display:inline-flex;background:#1f1f1f;border-radius:20px;padding:4px;gap:2px}
+.pillseg span{padding:6px 14px;border-radius:16px;font-size:13px;font-weight:600;color:var(--sub)}
+.pillseg span.on{background:#fff;color:#000}
+.dev{display:flex;align-items:center;gap:14px;padding:10px 12px;border-radius:6px}
+.dev .di{width:40px;height:40px;border-radius:8px;background:#3e3e3e;display:grid;place-items:center;flex:none}
+.dev b{display:block;font-weight:500;font-size:14px}
+.dev small{display:block;font-size:12px;color:var(--sub)}
+.dev.cur b,.dev.cur small,.dev.cur .di{color:var(--acc)}
+.dev.h{background:#3e3e3e}
+.eqz{display:inline-flex;gap:2px;align-items:flex-end;height:12px;margin-right:4px}
+.eqz i{width:3px;background:var(--acc);display:block;border-radius:1px}
+.ping{margin-left:auto;font-size:11px;color:var(--dim)}
+.sect{font-size:12px;font-weight:700;color:var(--sub);margin:14px 12px 4px;letter-spacing:.02em}
+.rbtn{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.12)}
+.rcol{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12px;color:#ddd}
+.orb{position:absolute;display:flex;flex-direction:column;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#fff;transform:translate(-50%,-50%)}
+.orb span.c{width:76px;height:76px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15)}
+.orb span.c .ms{font-size:34px}
+.orb small{color:var(--sub);font-weight:400;font-size:11px;margin-top:-6px}
+.ring{position:absolute;border-radius:50%;border:1px dashed rgba(255,255,255,.14);transform:translate(-50%,-50%)}
+.tile6{border-radius:10px;aspect-ratio:1;position:relative;overflow:hidden;display:flex;align-items:flex-end;padding:12px;font-weight:700;font-size:14px;box-shadow:0 10px 24px rgba(0,0,0,.4)}
+.tile6::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 45%,rgba(0,0,0,.65))}
+.tile6 span{position:relative}
+.tile6.new{background:rgba(255,255,255,.08);border:2px dashed rgba(255,255,255,.25);box-shadow:none;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.tile6.new::before{display:none}
+.tile6.sel{outline:3px solid var(--acc);outline-offset:3px}
+/* fase 7 */
+.snav{width:260px;flex:none;padding:22px 14px;border-right:1px solid #1f1f1f;display:flex;flex-direction:column;gap:4px;color:var(--sub);font-size:14px}
+.snav h2{color:#fff;font-size:28px;margin:0 0 10px 10px}
+.snav .it{display:flex;gap:12px;align-items:center;height:40px;padding:0 10px;border-radius:6px}
+.snav .it.on{background:#2a2a2a;color:#fff;box-shadow:inset 3px 0 0 var(--acc)}
+.scont{flex:1;padding:22px 28px;overflow:hidden;position:relative}
+.scard{background:#1a1a1a;border-radius:10px;padding:18px}
+.ai{display:grid;place-items:center;flex:none;position:relative;font-weight:800;color:#fff}
+.ai .ms{font-variation-settings:'FILL' 1}
+.task{height:44px;border-radius:8px;background:rgba(32,32,32,.9);display:flex;align-items:center;justify-content:center;gap:10px}
+.task i{width:26px;height:26px;border-radius:6px;display:block;background:#3a3a3a}
+.pal{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:var(--sub)}
+.pal.on{color:#fff}
+.pal.on .ai{outline:2px solid #fff;outline-offset:3px}
+.cbar{height:12px;border-radius:6px;position:relative}
+.cbar b{position:absolute;top:50%;width:18px;height:18px;border-radius:50%;border:3px solid #fff;transform:translate(-50%,-50%);box-shadow:0 2px 6px rgba(0,0,0,.5)}
+.sws{display:flex;align-items:center;gap:10px;height:44px;padding:0 14px 0 8px;border-radius:22px;background:#2a2a2a;font-size:13px}
+.sws i{width:28px;height:28px;border-radius:50%;display:block;border:2px solid rgba(255,255,255,.25)}
+.sws code{color:var(--sub);font-size:12px}
+.deskp{border-radius:12px;overflow:hidden;position:relative;background:linear-gradient(160deg,#3a5a8c,#c76a4b)}
+.startm{position:absolute;left:50%;transform:translateX(-50%);bottom:56px;width:300px;border-radius:10px;background:rgba(36,36,36,.92);padding:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;font-size:10px;color:#ddd;text-align:center}
+.startm div{display:flex;flex-direction:column;align-items:center;gap:4px}
+.startm i{width:34px;height:34px;border-radius:8px;display:block;background:#4a4a4a}
+.tray{position:absolute;right:10px;bottom:7px;display:flex;gap:8px;align-items:center;color:#fff;font-size:11px}
+</style>
+</head>
+<body>
+<div class="doc">
+<h1>Dezzy escritorio · Icono de la app</h1>
+<p class="lead">Fase 7 y última del estilo Spotify: el ajuste «Icono de la app» (Ajustes › Apariencia), la única pieza que queda con el diseño antiguo. La pantalla «Pronto» no se usa en ninguna parte de la app, así que propongo borrarla en vez de rediseñarla. Elige arriba la propuesta.</p>
+
+<div class="pick">
+  <div class="seg" id="segV"><button data-v="A" class="on">A · Clásico</button><button data-v="B">B · Panel</button><button data-v="C">C · Inmersivo</button></div>
+</div>
+
+<div class="vdesc" data-v="A"><h2><span class="tag">A</span> Clásico: como el selector de tema</h2>
+<p>Igual que las miniaturas de tema de Apariencia: una tarjeta, todo a la vista y compacto.</p>
+<ul class="chg">
+<li>Arriba, el icono grande con su nombre y, al lado, una tira de la barra de tareas de Windows con tu icono puesto.</li>
+<li>Forma en dos chips (d·play / Estrella) y debajo las 8 paletas en fila, cada una con su nombre.</li>
+<li>«Colores propios» como tres píldoras (Fondo, Letra, Play): al pulsar una se abren sus barras de tono y luz.</li>
+</ul></div>
+<div class="vdesc hide" data-v="B"><h2><span class="tag">B</span> Panel: vista previa en el escritorio</h2>
+<p>Dos columnas: a la izquierda ves el icono en Windows; a la derecha, los controles.</p>
+<ul class="chg">
+<li>Izquierda: un escritorio en pequeño con el menú Inicio abierto, la barra de tareas y la bandeja, todos con tu icono.</li>
+<li>Derecha: forma, la lista de paletas como filas (muestra + nombre + ✓) y las barras de color siempre abiertas.</li>
+<li>Botón «Volver al original» abajo, a lo ancho.</li>
+</ul></div>
+<div class="vdesc hide" data-v="C"><h2><span class="tag">C</span> Inmersivo: el icono como protagonista</h2>
+<p>El icono enorme en el centro sobre un degradado de sus propios colores.</p>
+<ul class="chg">
+<li>Arriba, el icono a 160 px con un halo de su color; el nombre de la paleta debajo en grande.</li>
+<li>Un carrusel con las 16 combinaciones en círculos; la elegida crece.</li>
+<li>Los colores propios son tres círculos que abren el selector de color con sus barras.</li>
+</ul></div>
+
+<div class="zoom" id="stage"></div>
+
+<div class="note"><b>En las tres:</b> hace lo mismo que ahora: 2 formas × 8 paletas, colores propios con tono y luz, y el cambio se ve al momento en la ventana, la barra de tareas, la bandeja, el mini reproductor y los accesos directos. <b>«Pronto»:</b> el archivo <code>ComingSoon.tsx</code> no lo usa ninguna pantalla; lo borraría en la misma fase.</div>
+</div>
+
+<template id="frame"><div class="win">
+  <div class="top"><span class="logo">d</span><span class="back"><span class="ms">chevron_left</span></span>
+    <div class="mid"><span class="circ" style="color:#fff"><span class="ms">home</span></span><span class="search"><span class="ms">search</span>¿Qué quieres reproducir?</span></div>
+    <div class="ico"><span class="ms">public</span><span class="ms">leaderboard</span><span class="ms">download</span><span class="ms on" style="color:var(--acc)">settings</span><span class="av">Q</span></div></div>
+  <div class="body">
+    <div class="p lib"><span class="ms f">library_music</span><i class="liked"></i><i class="g1"></i><i class="g4"></i><i class="g2"></i><i class="g3"></i><i class="g8"></i></div>
+    <div class="p main" style="display:flex">
+      <div class="snav"><h2>Ajustes</h2><div class="inp" style="margin-bottom:8px"><span class="ms">search</span>Buscar ajustes</div>
+        <div class="it"><span class="ms">phonelink</span>Móvil vinculado</div><div class="it on"><span class="ms">palette</span>Apariencia</div><div class="it"><span class="ms">tune</span>Reproductor y audio</div><div class="it"><span class="ms">download</span>Descargas</div><div class="it"><span class="ms">keyboard</span>Atajos</div><div class="it"><span class="ms">extension</span>Integraciones</div><div class="it"><span class="ms">desktop_windows</span>Windows</div><div class="it"><span class="ms">info</span>Acerca de</div></div>
+      <div class="scont" id="main"></div>
+    </div>
+  </div>
+  <div class="bar"><div class="np"><i class="g7"></i><div>DESPECHÁ<small>Rosalía</small></div></div><div class="tr"><div class="b"><span class="ms">shuffle</span><span class="ms f">skip_previous</span><span class="pp"><span class="ms f">pause</span></span><span class="ms f">skip_next</span><span class="ms">repeat</span></div><div class="prog">1:02<span class="t"></span>2:37</div></div><div class="ex"><span class="ms">view_sidebar</span><span class="ms">lyrics</span><span class="ms">queue_music</span><span class="ms">devices</span><span class="ms">volume_up</span><span class="vol"></span></div></div>
+</div></template>
+
+<template id="A"><div class="sec" style="margin-top:0">Apariencia</div>
+<div class="sub" style="font-size:13px;margin-bottom:14px">Tema, Dezzy Style y el icono de la app</div>
+<div class="scard">
+  <div style="display:flex;gap:18px;align-items:center">
+    <span data-ai="1,96,0.24"></span>
+    <div style="flex:1"><b style="font-size:18px;display:block">Icono de la app</b><span class="sub" style="font-size:13px">Estrella · Medianoche</span>
+      <div class="task" style="margin-top:12px;width:360px"><i></i><i></i><span data-ai="1,28,0.22"></span><i></i><i></i><i></i></div></div>
+    <span class="btnw"><span class="ms" style="font-size:18px">restart_alt</span>Original</span>
+  </div>
+  <div style="display:flex;gap:8px;margin:20px 0 14px"><span class="chip">d·play</span><span class="chip on">Estrella</span></div>
+  <div style="display:flex;justify-content:space-between" data-pals="1,48,0.24"></div>
+  <div style="height:1px;background:#2a2a2a;margin:18px 0"></div>
+  <b style="font-size:14px;display:block;margin-bottom:10px">Colores propios</b>
+  <div style="display:flex;gap:10px"><span class="sws" style="box-shadow:inset 0 0 0 1px #fff"><i style="background:#141414"></i>Fondo<code>#141414</code></span><span class="sws"><i style="background:#ffffff"></i>Estrella<code>#FFFFFF</code></span><span class="sws"><i style="background:#7b5cff"></i>Centro<code>#7B5CFF</code></span></div>
+  <div style="display:grid;grid-template-columns:60px 1fr;gap:12px 14px;align-items:center;margin-top:16px;max-width:560px;font-size:12px;color:var(--sub)">
+    <span>Tono</span><div class="cbar" style="background:linear-gradient(90deg,#f33,#ff3,#3f3,#3ff,#33f,#f3f,#f33)"><b style="left:2%;background:#141414"></b></div>
+    <span>Luz</span><div class="cbar" style="background:linear-gradient(90deg,#000,#888,#fff)"><b style="left:8%;background:#141414"></b></div></div>
+</div></template>
+
+<template id="B"><div class="sec" style="margin-top:0">Icono de la app</div>
+<div class="sub" style="font-size:13px;margin-bottom:14px">Se ve al momento en Windows</div>
+<div style="display:grid;grid-template-columns:1fr 360px;gap:18px;height:520px">
+  <div class="deskp">
+    <div class="startm"><div><i></i>Edge</div><div><i></i>Fotos</div><div><span data-ai="1,34,0.24"></span>Dezzy</div><div><i></i>Correo</div><div><i></i>Archivos</div><div><i></i>Música</div><div><i></i>Notas</div><div><i></i>Ajustes</div></div>
+    <div class="task" style="position:absolute;left:0;right:0;bottom:0;border-radius:0"><i></i><i></i><span data-ai="1,28,0.22"></span><i></i><i></i></div>
+    <div class="tray"><span data-ai="1,16,0.25"></span>9:41</div>
+    <span style="position:absolute;left:14px;top:12px;font:600 12px Poppins;opacity:.85">Así se verá</span>
+  </div>
+  <div class="scard" style="display:flex;flex-direction:column;gap:12px">
+    <span class="pillseg" style="align-self:flex-start"><span>d·play</span><span class="on">Estrella</span></span>
+    <div style="display:flex;flex-direction:column;gap:2px" data-rows="1"></div>
+    <div style="display:grid;grid-template-columns:52px 1fr;gap:10px 12px;align-items:center;font-size:12px;color:var(--sub);margin-top:4px">
+      <span>Fondo</span><div class="cbar" style="background:linear-gradient(90deg,#f33,#ff3,#3f3,#3ff,#33f,#f3f,#f33)"><b style="left:2%;background:#141414"></b></div>
+      <span>Estrella</span><div class="cbar" style="background:linear-gradient(90deg,#000,#888,#fff)"><b style="left:98%;background:#fff"></b></div>
+      <span>Centro</span><div class="cbar" style="background:linear-gradient(90deg,#f33,#ff3,#3f3,#3ff,#33f,#f3f,#f33)"><b style="left:71%;background:#7b5cff"></b></div></div>
+    <span class="btnw" style="margin-top:auto;justify-content:center;height:40px;border-radius:20px">Volver al original</span>
+  </div>
+</div></template>
+
+<template id="C"><div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 28%,#3a2a7a,#121212 62%)"></div>
+<div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:10px">
+  <span style="filter:drop-shadow(0 0 40px rgba(123,92,255,.6))" data-ai="1,160,0.24"></span>
+  <b style="font-size:34px;font-weight:800;letter-spacing:-.02em;margin-top:6px">Medianoche</b>
+  <span class="pillseg"><span>d·play</span><span class="on">Estrella</span></span>
+  <div style="display:flex;gap:14px;align-items:center;margin-top:10px" data-car="1"></div>
+  <div style="display:flex;gap:26px;margin-top:16px">
+    <div class="rcol"><span class="rbtn" style="background:#141414;border:3px solid #fff"></span>Fondo</div>
+    <div class="rcol"><span class="rbtn" style="background:#fff"></span>Estrella</div>
+    <div class="rcol"><span class="rbtn" style="background:#7b5cff"></span>Centro</div></div>
+  <span class="sub" style="font-size:12px;display:flex;align-items:center;gap:6px"><span class="ms" style="font-size:16px">restart_alt</span>Volver al original</span>
+</div></template>
+
+<script>
+let v = 'A'
+const stage = document.getElementById('stage')
+const PALS = [['Dezzy','#ED5564','#fff','#1a0407'],['Medianoche','#141414','#fff','#7b5cff'],['Coral','#f2606d','#fff','#2a0a10'],['Lima','#c6f135','#141414','#7b5cff'],['Océano','#1da1f2','#fff','#ffcc00'],['Naranja','#ff7a45','#fff','#2a0a10'],['Bosque','#1f5d3a','#fff','#c6f135'],['Nieve','#ffffff','#141414','#7b5cff']]
+function icon(p, shape, size, corner) {
+  const r = Math.round(size * corner)
+  if (shape === 'd') return `<span class="ai" style="width:${size}px;height:${size}px;border-radius:${r}px;background:${p[1]};color:${p[2]};font-size:${size*.62}px;line-height:1">d<i style="position:absolute;width:${size*.2}px;height:${size*.2}px;border-radius:50%;background:${p[3]};left:${size*.47}px;top:${size*.47}px"></i></span>`
+  return `<span class="ai" style="width:${size}px;height:${size}px;border-radius:${r}px;background:${p[1]}"><span class="ms" style="font-size:${size*.72}px;color:${p[2]}">star</span><i style="position:absolute;width:${size*.2}px;height:${size*.2}px;border-radius:50%;background:${p[3]};left:${size*.4}px;top:${size*.43}px"></i></span>`
+}
+function render() {
+  stage.innerHTML = document.getElementById('frame').innerHTML
+  stage.querySelector('#main').innerHTML = document.getElementById(v).innerHTML
+  stage.querySelectorAll('[data-ai]').forEach((el) => { const [i, s, c] = el.dataset.ai.split(','); el.outerHTML = icon(PALS[+i], 'star', +s, +c) })
+  stage.querySelectorAll('[data-pals]').forEach((el) => { const [, s, c] = el.dataset.pals.split(','); el.innerHTML = PALS.map((p, i) => `<div class="pal ${i === 1 ? 'on' : ''}">${icon(p, 'star', +s, +c)}${p[0]}</div>`).join('') })
+  stage.querySelectorAll('[data-rows]').forEach((el) => { el.innerHTML = PALS.map((p, i) => `<div class="plr ${i === 1 ? 'h' : ''}" style="padding:4px 8px">${icon(p, 'star', 30, 0.24)}<span style="flex:1;font-size:13px">${p[0]}</span>${i === 1 ? '<span class="ms" style="color:var(--acc);font-size:20px">check</span>' : ''}</div>`).join('') })
+  stage.querySelectorAll('[data-car]').forEach((el) => { el.innerHTML = [...PALS.map((p) => ['d', p]), ...PALS.map((p) => ['star', p])].slice(4, 13).map(([sh, p], i) => { const on = sh === 'star' && p[0] === 'Medianoche'; return `<span style="${on ? 'outline:3px solid #fff;outline-offset:4px;border-radius:50%' : 'opacity:.75'}">${icon(p, sh, on ? 64 : 46, 0.5)}</span>` }).join('') })
+  document.querySelectorAll('.vdesc').forEach((d) => d.classList.toggle('hide', d.dataset.v !== v))
+  document.querySelectorAll('#segV button').forEach((b) => b.classList.toggle('on', b.dataset.v === v))
+  history.replaceState(null, '', `#${v}`)
+}
+document.getElementById('segV').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { v = b.dataset.v; render() } })
+const m = location.hash.match(/^#([ABC])$/)
+if (m) v = m[1]
+render()
+</script>
+</body>
+</html>
