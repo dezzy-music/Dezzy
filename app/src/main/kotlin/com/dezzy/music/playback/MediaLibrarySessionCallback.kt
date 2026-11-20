@@ -109,6 +109,29 @@ constructor(
         controller: MediaSession.ControllerInfo,
     ): MediaSession.ConnectionResult {
         val connectionResult = super.onConnect(session, controller)
+        // Seguridad: el servicio está exportado, así que cualquier app instalada podía conectarse
+        // y leer la biblioteca y el historial. Sólo el sistema (notificación, Bluetooth, reloj),
+        // Android Auto y las apps de confianza (las nuestras o con permiso del sistema) pueden
+        // navegar la biblioteca; el resto sólo recibe los mandos básicos (play, pausa, saltar).
+        val trusted =
+            controller.isTrusted ||
+                controller.packageName == context.packageName ||
+                session.isMediaNotificationController(controller) ||
+                session.isAutomotiveController(controller) ||
+                session.isAutoCompanionController(controller)
+        if (!trusted) {
+            val basic = connectionResult.availableSessionCommands.buildUpon()
+            listOf(
+                SessionCommand.COMMAND_CODE_LIBRARY_GET_LIBRARY_ROOT,
+                SessionCommand.COMMAND_CODE_LIBRARY_SUBSCRIBE,
+                SessionCommand.COMMAND_CODE_LIBRARY_UNSUBSCRIBE,
+                SessionCommand.COMMAND_CODE_LIBRARY_GET_CHILDREN,
+                SessionCommand.COMMAND_CODE_LIBRARY_GET_ITEM,
+                SessionCommand.COMMAND_CODE_LIBRARY_SEARCH,
+                SessionCommand.COMMAND_CODE_LIBRARY_GET_SEARCH_RESULT,
+            ).forEach { basic.remove(it) }
+            return MediaSession.ConnectionResult.accept(basic.build(), connectionResult.availablePlayerCommands)
+        }
         return MediaSession.ConnectionResult.accept(
             connectionResult.availableSessionCommands
                 .buildUpon()

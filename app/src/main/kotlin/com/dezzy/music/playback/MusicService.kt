@@ -6545,7 +6545,8 @@ class MusicService :
             .setBufferDurationsMs(
                 /* minBufferMs = */ 60_000,
                 /* maxBufferMs = */ 600_000,
-                /* bufferForPlaybackMs = */ 2_000,
+                // 1 s basta para arrancar sin cortes (antes 2 s: era espera pura al pulsar).
+                /* bufferForPlaybackMs = */ 1_000,
                 /* bufferForPlaybackAfterRebufferMs = */ 3_000,
             )
             .setPrioritizeTimeOverSizeThresholds(true)

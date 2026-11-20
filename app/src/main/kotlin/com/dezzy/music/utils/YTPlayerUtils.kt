@@ -682,19 +682,16 @@ object YTPlayerUtils {
 
         if (isCancelled?.invoke() == true) throw kotlin.coroutines.cancellation.CancellationException("Playback was cancelled")
         Timber.tag(logTag).i("Fetching fast-start responses: ${fastStartClients.joinToString { it.clientName }}")
-        val fastStartResponses: List<Pair<YouTubeClient, PlayerResponse?>> =
-            coroutineScope {
-                fastStartClients.map { client ->
-                    async(Dispatchers.IO) {
-                        client to withTimeoutOrNull(FAST_START_TIMEOUT_MS) {
-                            playerResponseMemoized(responseMemo, videoId, playlistId, client) { null }
-                        }
-                    }
-                }.awaitAll()
+        // Como en escritorio: gana el PRIMERO que responda OK y no se espera al otro (antes se
+        // esperaba a los dos, y si uno iba lento la canción tardaba hasta FAST_START_TIMEOUT_MS).
+        val okPick: Pair<YouTubeClient, PlayerResponse>? =
+            raceFirst(fastStartClients) { client ->
+                withTimeoutOrNull(FAST_START_TIMEOUT_MS) {
+                    playerResponseMemoized(responseMemo, videoId, playlistId, client) { null }
+                }?.takeIf { it.playabilityStatus?.status == "OK" }?.let { client to it }
             }
-        val metadataPick =
-            fastStartResponses.firstOrNull { it.second?.playabilityStatus?.status == "OK" }
-                ?: fastStartResponses.firstOrNull { it.second != null }
+        val metadataPick: Pair<YouTubeClient, PlayerResponse>? =
+            okPick ?: fastStartClients.firstNotNullOfOrNull { c -> responseMemo[c.clientName]?.let { c to it } }
         val metadataClient = metadataPick?.first ?: VISIONOS
         val metadataPlayerResponse =
             metadataPick?.second
