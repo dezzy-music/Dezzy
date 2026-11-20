@@ -14,10 +14,15 @@ data class Track(
     val id: Int,
     val trackName: String,
     val artistName: String,
-    val duration: Double,
-    val plainLyrics: String?,
-    val syncedLyrics: String?,
+    // LRCLIB a veces devuelve "duration": null; sin el valor por defecto se cae toda la búsqueda.
+    val duration: Double? = null,
+    val plainLyrics: String? = null,
+    val syncedLyrics: String? = null,
 )
+
+/** Diferencia en segundos con [target]; si LRCLIB no sabe la duración, nunca cuenta como coincidencia. */
+internal fun Track.durationGap(target: Int): Int =
+    duration?.let { abs(it.toInt() - target) } ?: Int.MAX_VALUE
 
 internal fun List<Track>.bestMatchingFor(duration: Int): Track? {
     if (isEmpty()) return null
@@ -26,8 +31,8 @@ internal fun List<Track>.bestMatchingFor(duration: Int): Track? {
         return firstOrNull { it.syncedLyrics != null } ?: firstOrNull()
     }
 
-    return minByOrNull { abs(it.duration.toInt() - duration) }
-        ?.takeIf { abs(it.duration.toInt() - duration) <= 2 }
+    return minByOrNull { it.durationGap(duration) }
+        ?.takeIf { it.durationGap(duration) <= 2 }
 }
 
 internal fun List<Track>.bestMatchingFor(
@@ -44,8 +49,8 @@ internal fun List<Track>.bestMatchingFor(
         return firstOrNull { it.syncedLyrics != null } ?: firstOrNull()
     }
 
-    return minByOrNull { abs(it.duration.toInt() - duration) }
-        ?.takeIf { abs(it.duration.toInt() - duration) <= 2 }
+    return minByOrNull { it.durationGap(duration) }
+        ?.takeIf { it.durationGap(duration) <= 2 }
 }
 
 private fun List<Track>.findBestMatch(

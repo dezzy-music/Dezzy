@@ -8,6 +8,7 @@ package com.dezzy.music.lrclib
 
 import com.dezzy.music.lrclib.models.Track
 import com.dezzy.music.lrclib.models.bestMatchingFor
+import com.dezzy.music.lrclib.models.durationGap
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO
@@ -112,7 +113,7 @@ object LrcLib {
                     }
                 }
                 else -> {
-                    tracks.sortedBy { abs(it.duration.toInt() - duration) }
+                    tracks.sortedBy { it.durationGap(duration) }
                 }
             }
 
@@ -123,11 +124,11 @@ object LrcLib {
                     count++
                     track.syncedLyrics.let(callback)
                 } else {
-                    if (track.syncedLyrics != null && abs(track.duration.toInt() - duration) <= 2) {
+                    if (track.syncedLyrics != null && track.durationGap(duration) <= 2) {
                         count++
                         track.syncedLyrics.let(callback)
                     }
-                    if (track.plainLyrics != null && abs(track.duration.toInt() - duration) <= 2 && plain == 0) {
+                    if (track.plainLyrics != null && track.durationGap(duration) <= 2 && plain == 0) {
                         count++
                         plain++
                         track.plainLyrics.let(callback)
