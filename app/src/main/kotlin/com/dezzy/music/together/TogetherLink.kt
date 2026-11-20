@@ -41,6 +41,20 @@ data class TogetherJoinInfo(
 object TogetherLink {
     fun encode(joinInfo: TogetherJoinInfo): String = joinInfo.toDeepLink()
 
+    /** Contenido del QR de una sala en línea: `dezzy://together?code=…`. */
+    fun roomCodeDeepLink(code: String): String =
+        TogetherJoinInfo(host = "", port = 0, sessionId = code, sessionKey = "").toDeepLink()
+
+    /**
+     * Lo que se pasa a unirse tras escanear un QR: el código de la sala (en línea) o el
+     * enlace completo (sala LAN). null si el QR no es de una sala de Dezzy.
+     */
+    fun parseScannedQr(raw: String): String? {
+        val uri = runCatching { URI(raw.trim()) }.getOrNull() ?: return null
+        val info = decodeDeepLink(uri) ?: return null
+        return if (info.host.isBlank()) info.sessionId.uppercase() else raw.trim()
+    }
+
     fun decode(raw: String): TogetherJoinInfo? {
         val trimmed = raw.trim()
         if (trimmed.isBlank()) return null

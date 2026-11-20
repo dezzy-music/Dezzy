@@ -493,7 +493,7 @@ object ComposeToImage {
     ) {
         val baseSize  = cardSize.toFloat()
         val logoSize  = (baseSize * 0.045f).toInt()
-        val rawLogo   = context.getDrawable(R.drawable.star)?.toBitmap(logoSize, logoSize)
+        val rawLogo   = com.dezzy.music.appicon.AppIcon.markDrawable(context)?.toBitmap(logoSize, logoSize)
         val logo = rawLogo?.let { source ->
             val colored = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
             Canvas(colored).drawBitmap(source, 0f, 0f, Paint().apply {
@@ -671,7 +671,7 @@ object ComposeToImage {
         val rowWidth = brandH + w * 0.018f + brandWidth
         var bx = w - pad - rowWidth
         val brandCenterY = h - pad - brandH / 2f
-        context.getDrawable(R.drawable.star)
+        com.dezzy.music.appicon.AppIcon.markDrawable(context)
             ?.toBitmap(brandH.toInt(), brandH.toInt())
             ?.let { star ->
                 canvas.drawBitmap(star, bx, brandCenterY - brandH / 2f, Paint().apply {
@@ -800,7 +800,7 @@ object ComposeToImage {
         }
         val brandCenterY = descTop + descLayout.height + w * 0.05f + brandH / 2f
         var bx = textLeft
-        context.getDrawable(R.drawable.star)
+        com.dezzy.music.appicon.AppIcon.markDrawable(context)
             ?.toBitmap(brandH.toInt(), brandH.toInt())
             ?.let { star ->
                 canvas.drawBitmap(star, bx, brandCenterY - brandH / 2f, Paint().apply {
@@ -1782,7 +1782,7 @@ object ComposeToImage {
             val rowWidthL = noteSizeL + w * 0.02f + brandWidthL
             var xL = (w - rowWidthL) / 2f
             val rowCenterYL = h - padding - brandH / 2f
-            context.getDrawable(R.drawable.star)
+            com.dezzy.music.appicon.AppIcon.markDrawable(context)
                 ?.toBitmap(noteSizeL.toInt(), noteSizeL.toInt())
                 ?.let { star ->
                     val starPaint = Paint().apply {
@@ -1858,7 +1858,7 @@ object ComposeToImage {
         val rowCenterY = y + brandRowH / 2f
 
         // Star from the app logo (matches the preview's branding row).
-        context.getDrawable(R.drawable.star)
+        com.dezzy.music.appicon.AppIcon.markDrawable(context)
             ?.toBitmap(noteSize.toInt(), noteSize.toInt())
             ?.let { star ->
                 val starPaint = Paint().apply {

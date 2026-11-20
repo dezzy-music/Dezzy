@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Selector de visualizador</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="reproductor-estilos-base.css">
+<style>
+.app{background:#1A1112;color:#EDE0E1}
+.surf{background:#271D1E;border-radius:20px}
+.muted{color:rgba(237,224,225,.62)}
+.lbl{font-size:11.5px;letter-spacing:.08em;font-weight:700;color:rgba(237,224,225,.6);padding:14px 20px 6px}
+.bar{display:flex;align-items:center;gap:6px;height:56px;padding:0 6px;flex:none}
+.bar .t{font-size:20px;font-weight:500;flex:1}
+.ib{width:44px;height:44px;display:grid;place-items:center;border-radius:50%;cursor:pointer}
+.scroll{flex:1;overflow:auto;padding-bottom:20px}
+.scroll::-webkit-scrollbar{display:none}
+.row{display:flex;align-items:center;gap:14px;padding:12px 20px;cursor:pointer}
+.row .tx{flex:1;min-width:0}.row .tx b{display:block;font-size:16px;font-weight:400}.row .tx small{font-size:13px;color:rgba(237,224,225,.62)}
+.row .ic{width:24px;color:#FFB2B9}
+canvas.v{display:block;width:100%;height:100%;background:#000}
+.radio{width:20px;height:20px;border-radius:50%;border:2px solid #9F8C8D;flex:none;position:relative}
+.radio.on{border-color:#FFB2B9}.radio.on::after{content:"";position:absolute;inset:3px;border-radius:50%;background:#FFB2B9}
+.pill{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 14px;border-radius:16px;font-size:13px;font-weight:500;background:#4A3436;color:#FFD9DC}
+/* A */
+.a-hero{margin:4px 16px 0;height:300px;border-radius:28px;overflow:hidden;position:relative}
+.a-hero .cap2{position:absolute;left:16px;bottom:14px;right:16px;display:flex;align-items:center;gap:8px}
+.a-hero .cap2 b{font-size:22px;font-family:'Roboto Flex',Roboto;font-weight:700;flex:1;text-shadow:0 1px 8px #000}
+.a-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 16px 0}
+.a-card{border-radius:20px;overflow:hidden;position:relative;height:150px;cursor:pointer;outline:3px solid transparent;outline-offset:-3px;transition:outline-color .15s}
+.a-card.on{outline-color:#FFB2B9}
+.a-card span{position:absolute;left:10px;bottom:8px;font-size:13px;font-weight:500;text-shadow:0 1px 6px #000}
+.a-card .ms{position:absolute;right:8px;top:8px;color:#FFB2B9;display:none}.a-card.on .ms{display:block}
+/* B */
+.b-strip{display:flex;gap:10px;overflow-x:auto;padding:4px 16px 4px;scroll-snap-type:x mandatory}
+.b-strip::-webkit-scrollbar{display:none}
+.b-card{flex:none;width:132px;scroll-snap-align:start;cursor:pointer}
+.b-card .frame{height:230px;border-radius:22px;overflow:hidden;outline:3px solid transparent;outline-offset:-3px;transition:outline-color .15s}
+.b-card.on .frame{outline-color:#FFB2B9}
+.b-card b{display:flex;align-items:center;gap:4px;justify-content:center;font-size:13px;font-weight:500;margin-top:8px}
+.b-card.on b{color:#FFB2B9}
+/* C */
+.c-hero{margin:4px 16px 8px;aspect-ratio:16/10;border-radius:24px;overflow:hidden;position:relative}
+.c-hero .pill{position:absolute;right:12px;bottom:12px}
+.c-thumb{width:56px;height:56px;border-radius:14px;overflow:hidden;flex:none}
+.c-row.on .tx b{color:#FFB2B9}
+.mini{margin:8px 16px 0;border-radius:16px;background:#271D1E;padding:12px 14px;font-size:13px;color:rgba(237,224,225,.7);display:flex;gap:10px;align-items:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Selector de visualizador en Apariencia</h1>
+    <p class="lead">Fuera los chips de la pantalla del visualizador. El estilo se elige en <b>Ajustes › Apariencia › Visualizador</b>, con su vista previa animada (las vistas previas de aquí se mueven con un espectro de prueba; en la app usan los colores de la carátula y el audio real).</p>
+  </header>
+  <div class="today">
+    <h4>Qué cambia en los tres</h4>
+    <ul>
+      <li>La pantalla del visualizador queda limpia: sin la fila de chips (Esfera · Cordillera · Túnel · Espejo). Se mantiene deslizar para cambiar de estilo rápido.</li>
+      <li>Nueva entrada en Apariencia: <b>Visualizador</b> — «Esfera» (muestra el elegido).</li>
+      <li>Al elegir, se guarda al momento (misma preferencia <code>visualizerStyle</code> de ahora).</li>
+    </ul>
+  </div>
+
+  <!-- A -->
+  <section class="sketch" data-v="A">
+    <div class="sk-head"><span class="sk-tag">A</span><h3>Galería con vista grande</h3>
+      <p>Pantalla propia: arriba, la vista previa grande del elegido; debajo, las 4 tarjetas animadas en cuadrícula de 2×2.</p></div>
+    <div class="sk-body">
+      <div>
+        <div class="phone app"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s14">signal_cellular_alt</span><span class="ms s14">battery_full</span></span></div>
+          <div class="bar"><span class="ib"><span class="ms">arrow_back</span></span><span class="t">Visualizador</span></div>
+          <div class="scroll">
+            <div class="a-hero"><canvas class="v" data-k="esfera" data-role="hero-a"></canvas>
+              <div class="cap2"><b data-role="name-a">Esfera</b><span class="pill"><span class="ms s18">fullscreen</span>Probar</span></div></div>
+            <div class="a-grid" data-group="a"></div>
+            <div class="mini"><span class="ms s20">swipe</span>En el visualizador también puedes deslizar para cambiar.</div>
+          </div>
+        </div>
+        <p class="cap">Toca una tarjeta: cambia la vista grande y queda guardado.</p>
+      </div>
+      <div class="notes">
+        <h4 class="pro">A favor</h4><ul><li>Se ven los 4 a la vez, moviéndose: se elige comparando.</li><li>La vista grande enseña el detalle del elegido.</li></ul>
+        <h4 class="con">En contra</h4><ul><li>5 lienzos animados a la vez: más trabajo para el móvil (se puede pausar los pequeños fuera de pantalla).</li><li>Si un día hay 8 estilos, la cuadrícula crece mucho.</li></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- B -->
+  <section class="sketch" data-v="B">
+    <div class="sk-head"><span class="sk-tag">B</span><h3>Carrusel dentro de Apariencia</h3>
+      <p>Sin pantalla nueva: en la propia lista de Apariencia, una fila de tarjetas altas tipo pantalla de móvil que se deslizan en horizontal.</p></div>
+    <div class="sk-body">
+      <div>
+        <div class="phone app"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s14">signal_cellular_alt</span><span class="ms s14">battery_full</span></span></div>
+          <div class="bar"><span class="ib"><span class="ms">arrow_back</span></span><span class="t">Apariencia</span></div>
+          <div class="scroll">
+            <div class="row"><span class="ms ic">palette</span><div class="tx"><b>Paleta de colores</b><small>Dinámica</small></div></div>
+            <div class="row"><span class="ms ic">apps</span><div class="tx"><b>Icono de la app</b><small>d · play · Original</small></div></div>
+            <div class="lbl">VISUALIZADOR</div>
+            <div class="b-strip" data-group="b"></div>
+            <div class="row" style="margin-top:6px"><span class="ms ic">swipe</span><div class="tx"><b>Deslizar para cambiar</b><small>En la pantalla del visualizador</small></div><span class="ms" style="color:#FFB2B9">toggle_on</span></div>
+            <div class="row"><span class="ms ic">view_agenda</span><div class="tx"><b>Estilo del reproductor</b><small>Dezzy</small></div></div>
+          </div>
+        </div>
+        <p class="cap">Desliza la fila y toca una tarjeta para elegirla.</p>
+      </div>
+      <div class="notes">
+        <h4 class="pro">A favor</h4><ul><li>Cero pantallas nuevas: está a la vista nada más entrar en Apariencia.</li><li>La forma de la tarjeta es la de la pantalla real (vertical), así que la vista previa es fiel.</li></ul>
+        <h4 class="con">En contra</h4><ul><li>Hace más larga la lista de Apariencia.</li><li>Las vistas previas son más pequeñas que en A.</li></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- C -->
+  <section class="sketch" data-v="C">
+    <div class="sk-head"><span class="sk-tag">C</span><h3>Lista con vista previa arriba</h3>
+      <p>Pantalla propia, más sobria: una vista previa ancha arriba y debajo una lista con miniatura animada, nombre, descripción y botón de opción.</p></div>
+    <div class="sk-body">
+      <div>
+        <div class="phone app"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s14">signal_cellular_alt</span><span class="ms s14">battery_full</span></span></div>
+          <div class="bar"><span class="ib"><span class="ms">arrow_back</span></span><span class="t">Visualizador</span></div>
+          <div class="scroll">
+            <div class="c-hero"><canvas class="v" data-k="esfera" data-role="hero-c"></canvas><span class="pill"><span class="ms s18">fullscreen</span>Probar</span></div>
+            <div data-group="c"></div>
+          </div>
+        </div>
+        <p class="cap">Toca una fila: cambia la vista previa y se guarda.</p>
+      </div>
+      <div class="notes">
+        <h4 class="pro">A favor</h4><ul><li>Explica cada estilo con una frase.</li><li>Escala bien si se añaden más estilos; es el patrón del resto de Ajustes.</li></ul>
+        <h4 class="con">En contra</h4><ul><li>Las miniaturas son pequeñas: la comparación se hace con la vista de arriba.</li></ul>
+      </div>
+    </div>
+  </section>
+
+  <div class="pick">Dime <b>A</b>, <b>B</b> o <b>C</b> (o una mezcla) y lo hago en la app. En las tres se quitan los chips de la pantalla del visualizador.</div>
+</div>
+
+<script>
+const VIS=[
+ {k:'esfera',name:'Esfera',d:'Esfera de puntos con ondas y barras abajo.'},
+ {k:'cordillera',name:'Cordillera',d:'Crestas apiladas: cada línea es un instante anterior.'},
+ {k:'tunel',name:'Túnel',d:'Anillos que vienen hacia ti al ritmo de los graves.'},
+ {k:'espejo',name:'Espejo',d:'Espectro clásico con reflejo y picos que caen.'},
+];
+let sel='esfera';
+const PAL=['#FFC8D8','#F7C873','#C0507A','#7A2E4A'];
+const N=64;let spec=new Float32Array(N),peaks=new Float32Array(N),bass=0;
+function fakeSpectrum(t){const beat=Math.pow(Math.max(0,Math.sin(t*Math.PI*2/0.5)),12);bass=bass*.82+beat*.18*5;
+ for(let i=0;i<N;i++){const f=i/N;const base=(1-f)*.7*(.55+.45*beat)+.25*Math.abs(Math.sin(t*1.7+i*.35))*(1-f*.5)+.18*Math.abs(Math.sin(t*5.3+i*1.3))*f;
+  spec[i]=spec[i]*.6+Math.min(1,base)*.4;peaks[i]=Math.max(spec[i],peaks[i]-.008);}return beat}
+function rgba(h,a){const n=parseInt(h.slice(1),16);return `rgba(${n>>16},${n>>8&255},${n&255},${a})`}
+const W=340,H=700;
+const draw={
+ esfera(x,t,beat,st){x.fillStyle='#05030A';x.fillRect(0,0,W,H);const cx=W/2,cy=H*.4,R=110+bass*8;
+  for(let i=0;i<500;i++){const y=1-(i/499)*2,r=Math.sqrt(1-y*y),th=i*2.39996+t*.4;const px=Math.cos(th)*r,pz=Math.sin(th)*r;
+   const w=1+.12*Math.sin(y*6+t*3)*(.5+spec[(i%N)]);const sx=cx+px*R*w,sy=cy+y*R*w,s=(pz+1.3)*1.1;x.fillStyle=rgba(PAL[i%2],.35+.5*(pz+1)/2);x.fillRect(sx,sy,s,s);}
+  const bw=W/N;for(let i=0;i<N;i++){const h=spec[i]*90;x.fillStyle=rgba(PAL[0],.55);x.fillRect(i*bw+1,H*.4+190-h,bw-2,h);}},
+ cordillera(x,t,beat,st){if(!st.rows){st.rows=[];for(let r=0;r<34;r++)st.rows.push(Array.from(spec))}if(!st.last||t-st.last>.07){st.last=t;st.rows.unshift(Array.from(spec));if(st.rows.length>34)st.rows.pop();}
+  x.fillStyle='#000';x.fillRect(0,0,W,H);const base=470,gap=11,pad=30;
+  for(let r=st.rows.length-1;r>=0;r--){const row=st.rows[r],y0=base-r*gap;x.beginPath();x.moveTo(pad,y0);
+   for(let i=0;i<=60;i++){const f=i/60;const c=Math.exp(-Math.pow((f-.5)*2.6,2));const v=row[Math.floor(Math.abs(f-.5)*2*(N-1))]+.25*Math.abs(Math.sin(f*40+r));x.lineTo(pad+f*(W-pad*2),y0-v*c*150);}
+   x.lineTo(W-pad,y0);x.closePath();x.fillStyle='#000';x.fill();x.strokeStyle=r===0?PAL[1]:rgba(PAL[0],1-r/40);x.lineWidth=r===0?2:1.2;x.stroke();}},
+ tunel(x,t,beat,st){st.z=(st.z||0)+.012+bass*.01;x.fillStyle='rgba(10,4,16,.35)';x.fillRect(0,0,W,H);const cx=W/2+Math.sin(t*.7)*20,cy=H*.4+Math.cos(t*.5)*16;
+  for(let k=0;k<22;k++){const z=((k/22)+st.z)%1;const s=Math.pow(z,2.2);const r=10+s*420;const seg=48;x.beginPath();
+   for(let j=0;j<=seg;j++){const a=j/seg*Math.PI*2;const v=spec[Math.floor(j/seg*(N/2))]*s*30;const rr=r+v*Math.sin(a*6+t*2);j?x.lineTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr):x.moveTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr);}
+   x.strokeStyle=rgba(PAL[k%3],Math.min(1,s*1.6));x.lineWidth=1+s*3;x.stroke();}},
+ espejo(x,t,beat,st){x.fillStyle='#07070B';x.fillRect(0,0,W,H);const cy=H*.42,bw=(W-30)/40;
+  for(let i=0;i<40;i++){const v=spec[Math.floor(i/40*N*.8)],h=v*170,px=15+i*bw;const g=x.createLinearGradient(0,cy-h,0,cy);g.addColorStop(0,PAL[1]);g.addColorStop(1,PAL[2]);
+   x.fillStyle=g;x.fillRect(px+1,cy-h,bw-3,h);x.fillStyle=rgba(PAL[2],.25);x.fillRect(px+1,cy+4,bw-3,h*.55);
+   const p=peaks[Math.floor(i/40*N*.8)]*170;x.fillStyle='#fff';x.fillRect(px+1,cy-p-5,bw-3,2);}
+  const g2=x.createLinearGradient(0,cy,0,cy+120);g2.addColorStop(0,'rgba(7,7,11,0)');g2.addColorStop(1,'#07070B');x.fillStyle=g2;x.fillRect(0,cy+2,W,120);},
+};
+// Construye cada variante
+const ga=document.querySelector('[data-group=a]'),gb=document.querySelector('[data-group=b]'),gc=document.querySelector('[data-group=c]');
+VIS.forEach(v=>{
+  ga.insertAdjacentHTML('beforeend',`<div class="a-card" data-pick="${v.k}"><canvas class="v" data-k="${v.k}"></canvas><span>${v.name}</span><span class="ms f">check_circle</span></div>`);
+  gb.insertAdjacentHTML('beforeend',`<div class="b-card" data-pick="${v.k}"><div class="frame"><canvas class="v" data-k="${v.k}"></canvas></div><b><span class="ms f s16" style="display:none">check_circle</span>${v.name}</b></div>`);
+  gc.insertAdjacentHTML('beforeend',`<div class="row c-row" data-pick="${v.k}"><div class="c-thumb"><canvas class="v" data-k="${v.k}"></canvas></div><div class="tx"><b>${v.name}</b><small>${v.d}</small></div><span class="radio"></span></div>`);
+});
+function refresh(){
+  document.querySelectorAll('[data-pick]').forEach(el=>{const on=el.dataset.pick===sel;el.classList.toggle('on',on);
+    const r=el.querySelector('.radio');if(r)r.classList.toggle('on',on);const c=el.querySelector('b .ms');if(c)c.style.display=on?'inline-block':'none';});
+  document.querySelectorAll('[data-role^=hero]').forEach(c=>{const o=canv.find(o=>o.c===c);o.k=sel;o.st={};});
+  document.querySelector('[data-role=name-a]').textContent=VIS.find(v=>v.k===sel).name;
+}
+document.addEventListener('click',e=>{const p=e.target.closest('[data-pick]');if(p){sel=p.dataset.pick;refresh();}});
+const canv=[...document.querySelectorAll('canvas.v')].map(c=>({c,x:c.getContext('2d'),k:c.dataset.k,st:{}}));
+function fit(o){const r=devicePixelRatio||1,cw=c=>c.clientWidth,w=o.c.clientWidth,h=o.c.clientHeight;if(o.w!==w||o.h!==h){o.w=w;o.h=h;o.c.width=w*r;o.c.height=h*r;}
+  // escala para cubrir el lienzo, centrado en el foco del visualizador (40 % de alto)
+  const s=Math.max(w/W,h/(H*.8));o.x.setTransform(r*s,0,0,r*s,r*(w/2-W/2*s),r*(h/2-H*.4*s));}
+function loop(ms){const t=ms/1000;const beat=fakeSpectrum(t);canv.forEach(o=>{fit(o);draw[o.k](o.x,t,beat,o.st)});requestAnimationFrame(loop)}
+refresh();requestAnimationFrame(loop);
+</script>
+</body>
+</html>

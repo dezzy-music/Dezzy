@@ -395,11 +395,9 @@ private fun AccountSettingsHeader(onClose: () -> Unit) {
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // App Icon
-                Icon(
-                    painter = painterResource(R.drawable.star),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(44.dp)
+                com.dezzy.music.appicon.DezzyAppIcon(
+                    modifier = Modifier.size(44.dp),
+                    corner = 0.5f,
                 )
 
                 Text(

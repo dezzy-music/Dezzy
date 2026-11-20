@@ -98,22 +98,6 @@ fun CarModePlayer(
                             modifier = Modifier.size(30.dp)
                         )
                     }
-                    IconButton(onClick = onVisualizerClick) {
-                        Icon(
-                            painter = painterResource(R.drawable.auto_awesome),
-                            contentDescription = "Visualizador",
-                            tint = Color.White,
-                            modifier = Modifier.size(30.dp)
-                        )
-                    }
-                    IconButton(onClick = { showShareSheet = true }) {
-                        Icon(
-                            painter = painterResource(R.drawable.share),
-                            contentDescription = "Compartir",
-                            tint = Color.White,
-                            modifier = Modifier.size(30.dp)
-                        )
-                    }
                     IconButton(onClick = onQueueClick) {
                         Icon(
                             painter = painterResource(R.drawable.queue_music),

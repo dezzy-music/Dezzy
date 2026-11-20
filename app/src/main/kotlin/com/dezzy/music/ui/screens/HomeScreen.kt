@@ -33,6 +33,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.material3.Text
@@ -168,14 +169,20 @@ fun HomeScreen(
         }
     }
 
+    // El efecto vive toda la pantalla: sin esto vería siempre el filtro y la página del primer
+    // fotograma (página nula → nunca cargaba más y el esqueleto se quedaba para siempre).
+    val currentHomeFilter by rememberUpdatedState(homeFilter)
+    val currentContinuation by rememberUpdatedState(homePage?.continuation)
     LaunchedEffect(Unit) {
-        snapshotFlow { lazylistState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
-            .collect { lastVisibleIndex ->
-                val len = lazylistState.layoutInfo.totalItemsCount
-                if (homeFilter == HomeFilter.Music && lastVisibleIndex != null && lastVisibleIndex >= len - 3) {
-                    viewModel.loadMoreYouTubeItems(homePage?.continuation)
-                }
+        snapshotFlow {
+            val info = lazylistState.layoutInfo
+            val last = info.visibleItemsInfo.lastOrNull()?.index
+            Triple(last, info.totalItemsCount, currentContinuation)
+        }.collect { (lastVisibleIndex, len, continuation) ->
+            if (currentHomeFilter == HomeFilter.Music && lastVisibleIndex != null && lastVisibleIndex >= len - 3) {
+                viewModel.loadMoreYouTubeItems(continuation)
             }
+        }
     }
 
     if (selectedChip != null) {

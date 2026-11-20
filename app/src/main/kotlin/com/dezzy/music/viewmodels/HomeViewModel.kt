@@ -49,8 +49,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.delay
 import timber.log.Timber
 import javax.inject.Inject
+
+/** Tope por cada parte de la portada (ver [HomeViewModel.load]). */
+private const val HOME_PART_TIMEOUT_MS = 20_000L
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -298,12 +303,23 @@ class HomeViewModel @Inject constructor(
                 val hideVideo = context.dataStore.get(HideVideoKey, false)
                 val fromTimeStamp = System.currentTimeMillis() - 86400000 * 7 * 2
 
-                launch { getQuickPicks() }
-                launch { loadSpeedDialSongs() }
-                launch { loadSpotifyHome() }
-                launch { forgottenFavorites.value = database.forgottenFavorites().first().shuffled().take(20) }
+                // Cada parte con su tope de tiempo: si una petición se cuelga (red lenta, Spotify,
+                // YouTube sin responder), la portada no se queda cargando para siempre.
+                fun part(block: suspend () -> Unit) = launch {
+                    try {
+                        withTimeoutOrNull(HOME_PART_TIMEOUT_MS) { block() }
+                    } catch (e: Exception) {
+                        if (e is kotlinx.coroutines.CancellationException) throw e
+                        reportException(e)
+                    }
+                }
+
+                part { getQuickPicks() }
+                part { loadSpeedDialSongs() }
+                part { loadSpotifyHome() }
+                part { forgottenFavorites.value = database.forgottenFavorites().first().shuffled().take(20) }
                 
-                launch {
+                part {
                     val keepListeningSongs = database.mostPlayedSongs(fromTimeStamp, limit = 15, offset = 5)
                         .first().shuffled().take(10)
                     val keepListeningAlbums = database.mostPlayedAlbums(fromTimeStamp, limit = 8, offset = 2)
@@ -314,8 +330,9 @@ class HomeViewModel @Inject constructor(
                     keepListening.value = (keepListeningSongs + keepListeningAlbums + keepListeningArtists).shuffled()
                 }
 
-                launch {
-                        YouTube.home().onSuccess { page ->
+                part {
+                    // Un reintento: la primera petición falla a veces con la red recién despierta.
+                    (YouTube.home().takeIf { it.isSuccess } ?: run { delay(1_500); YouTube.home() }).onSuccess { page ->
                         homePage.value = page.copy(
                             chips = filterHomeChips(page.chips),
                             sections = page.sections.map { section ->
@@ -325,8 +342,8 @@ class HomeViewModel @Inject constructor(
                     }.onFailure { reportException(it) }
                 }
 
-                launch {
-                    YouTube.explore().onSuccess { page ->
+                part {
+                    (YouTube.explore().takeIf { it.isSuccess } ?: run { delay(1_500); YouTube.explore() }).onSuccess { page ->
                         val artists: MutableMap<Int, String> = mutableMapOf()
                         val favouriteArtists: MutableMap<Int, String> = mutableMapOf()
                         database.allArtistsByPlayTime().first().let { list ->

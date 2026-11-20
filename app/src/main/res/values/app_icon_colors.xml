@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generado: fondos de los iconos del launcher -->
+<resources>
+    <color name="app_icon_bg_0">#7C3AED</color>
+    <color name="app_icon_bg_1">#0B0B10</color>
+    <color name="app_icon_bg_2">#ED5564</color>
+    <color name="app_icon_bg_3">#C6F432</color>
+    <color name="app_icon_bg_4">#0EA5E9</color>
+    <color name="app_icon_bg_5">#FF7A59</color>
+    <color name="app_icon_bg_6">#14532D</color>
+    <color name="app_icon_bg_7">#F7F5FF</color>
+</resources>

@@ -981,6 +981,13 @@ enum class AuroraMode {
 }
 
 val AuroraModeKey = stringPreferencesKey("auroraMode")
+
+/** Estilo elegido del visualizador (ESFERA, CORDILLERA, TUNEL, ESPEJO); se recuerda el último. */
+val VisualizerStyleKey = stringPreferencesKey("visualizerStyle")
+
+/** Deslizar a izquierda/derecha en la pantalla del visualizador cambia de estilo. */
+val VisualizerSwipeKey = booleanPreferencesKey("visualizerSwipe")
+
 val AuroraColor1Key = intPreferencesKey("auroraColor1")
 val AuroraColor2Key = intPreferencesKey("auroraColor2")
 val AuroraColor3Key = intPreferencesKey("auroraColor3")

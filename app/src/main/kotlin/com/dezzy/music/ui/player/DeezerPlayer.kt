@@ -256,14 +256,6 @@ fun DeezerPlayer(
                     )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onVisualizerClick) {
-                        Icon(
-                            painter = painterResource(R.drawable.auto_awesome),
-                            contentDescription = "Visualizador",
-                            tint = onColor,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
                     IconButton(onClick = onMenuClick) {
                         Icon(
                             painter = painterResource(R.drawable.more_vert),
@@ -362,14 +354,6 @@ fun DeezerPlayer(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            IconButton(onClick = { showShareSheet = true }) {
-                                Icon(
-                                    painter = painterResource(R.drawable.share_network),
-                                    contentDescription = "Compartir",
-                                    tint = onColor,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 val videoModeActive by playerConnection.videoModeActive.collectAsState()
                                 val videoModeLoading by playerConnection.videoModeLoading.collectAsState()
@@ -635,14 +619,6 @@ fun DeezerPlayer(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = { showShareSheet = true }) {
-                    Icon(
-                        painter = painterResource(R.drawable.share_network),
-                        contentDescription = "Compartir",
-                        tint = onColor,
-                        modifier = Modifier.size(26.dp)
-                    )
-                }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     // Cambiar a modo video: el antiguo "+" duplicaba el menú de los tres puntos.
                     val videoModeActive by playerConnection.videoModeActive.collectAsState()

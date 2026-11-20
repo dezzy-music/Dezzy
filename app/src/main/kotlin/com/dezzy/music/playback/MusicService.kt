@@ -554,10 +554,13 @@ class MusicService :
         // Punto de partida real: durante un crossfade el audio va una pista por
         // delante del índice del player.
         val audible = crossfadeAudio?.audiblyPlayingIndex() ?: C.INDEX_UNSET
-        val from = if (audible != C.INDEX_UNSET) audible else player.currentMediaItemIndex
+        val from = if (audible in 0 until count) audible else player.currentMediaItemIndex
 
         val repeatModeForSkip = if (player.repeatMode == Player.REPEAT_MODE_ONE) Player.REPEAT_MODE_ALL else player.repeatMode
         val timeline = player.currentTimeline
+        // Un índice fuera del timeline (p. ej. el audible de un fundido tras cambiar la
+        // cola) haría reventar getNext/PreviousWindowIndex.
+        if (from !in 0 until timeline.windowCount) return
 
         val target = when {
             forward -> timeline.getNextWindowIndex(from, repeatModeForSkip, player.shuffleModeEnabled)
@@ -1074,6 +1077,22 @@ class MusicService :
             put("lyricsV2Style", prefs[com.dezzy.music.constants.LyricsV2StyleKey] ?: "LIQUID_FLOW")
             put("background", prefs[com.dezzy.music.constants.PlayerBackgroundStyleKey] ?: "DEFAULT")
             put("slider", prefs[com.dezzy.music.constants.SliderStyleKey] ?: "Aurora")
+            // Receptor (variante C): «Conectado desde …» y el QR de la sala de Escuchar juntos.
+            put("sender", android.os.Build.MODEL ?: "")
+            val (roomCode, people) = when (val s = togetherSessionState.value) {
+                is com.dezzy.music.together.TogetherSessionState.HostingOnline ->
+                    s.code to (s.roomState?.participants?.size ?: 1)
+                is com.dezzy.music.together.TogetherSessionState.Joined ->
+                    s.sessionId.takeIf { it.matches(Regex("^[A-Za-z0-9]{4,8}$")) } to
+                        s.roomState.participants.size
+                else -> null to 0
+            }
+            if (roomCode != null) {
+                put("room", org.json.JSONObject().apply {
+                    put("code", roomCode.uppercase())
+                    put("people", people.coerceAtLeast(1))
+                })
+            }
         }.toString()
     }
     val castConnected get() = castController.isConnected
@@ -1266,7 +1285,7 @@ class MusicService :
                     )
 
                 NotificationCompat.Builder(this, CHANNEL_ID)
-                    .setSmallIcon(R.drawable.star)
+                    .setSmallIcon(com.dezzy.music.appicon.AppIcon.smallIconRes(this))
                     .setContentTitle(getString(R.string.music_player))
                     .setContentText(getString(R.string.app_name))
                     .setContentIntent(contentIntent)
@@ -1679,16 +1698,25 @@ class MusicService :
                     CoilBitmapLoader(this, scope, onArtworkUnusable = ::repairBrokenArtwork)
                 )
                 .build()
-        setMediaNotificationProvider(
-            DefaultMediaNotificationProvider(
-                this,
-                { NOTIFICATION_ID },
-                CHANNEL_ID,
-                R.string.music_player
-            ).apply {
-                setSmallIcon(R.drawable.star)
-            }
-        )
+        val notificationProvider = DefaultMediaNotificationProvider(
+            this,
+            { NOTIFICATION_ID },
+            CHANNEL_ID,
+            R.string.music_player
+        ).apply {
+            setSmallIcon(com.dezzy.music.appicon.AppIcon.smallIconRes(this@MusicService))
+        }
+        setMediaNotificationProvider(notificationProvider)
+        // Al aplicar otro icono al launcher, la notificación cambia de icono sin reiniciar el servicio.
+        scope.launch {
+            dataStore.data
+                .map { com.dezzy.music.appicon.AppIcon.smallIconFor(it[com.dezzy.music.appicon.AppIcon.LauncherKey]) }
+                .distinctUntilChanged()
+                .collect { res ->
+                    notificationProvider.setSmallIcon(res)
+                    updateNotification()
+                }
+        }
         
         updateNotification()
         player.repeatMode = REPEAT_MODE_OFF
@@ -1725,7 +1753,8 @@ class MusicService :
             normalizeFactor,
             audioFocusVolumeFactor,
             playbackFadeFactor,
-            castController.isConnected,
+            // Dezzy Connect «Sólo allí»: el móvil sigue la canción en silencio para hacer de mando.
+            castController.isConnected.combine(com.dezzy.music.connect.DezzyConnectSession.silentHere) { cast, dz -> cast || dz },
         ) { playerVolume, normalizeFactor, audioFocusVolumeFactor, playbackFadeFactor, casting ->
             // Muted locally while casting: audio actually plays on the Cast receiver, not the phone.
             if (casting) 0f else playerVolume * normalizeFactor * audioFocusVolumeFactor * playbackFadeFactor
@@ -1735,7 +1764,11 @@ class MusicService :
 
         // El video sigue el volumen de la app (y el foco/atenuado lo gestiona su propio ExoPlayer).
         // La normalización no aplica: el audio del videoclip no trae datos de sonoridad.
-        combine(playerVolume, videoPlayerInstance, castController.isConnected) { volume, vp, casting ->
+        combine(
+            playerVolume,
+            videoPlayerInstance,
+            castController.isConnected.combine(com.dezzy.music.connect.DezzyConnectSession.silentHere) { cast, dz -> cast || dz },
+        ) { volume, vp, casting ->
             Triple(volume, vp, casting)
         }.collectLatest(scope) { (volume, vp, casting) ->
             vp?.volume = if (casting) 0f else volume
@@ -5270,7 +5303,12 @@ class MusicService :
 
     crossfadeAudio?.onMediaItemTransition(mediaItem, reason)
 
-    prefetchUpcomingStreams()
+    // Una excepción aquí corta la cadena de oyentes de Media3: los siguientes (p. ej. el
+    // de MainActivity que saca el mini reproductor) no se enteran del cambio y
+    // currentMediaMetadata, que se asigna más abajo, no se actualiza. La canción suena
+    // pero no aparece el mini reproductor. El prefetch es opcional: nunca debe romper esto.
+    runCatching { prefetchUpcomingStreams() }
+        .onFailure { Timber.w(it, "prefetchUpcomingStreams falló") }
 
     // Pre-load lyrics for upcoming songs in queue
     val currentIndex = player.currentMediaItemIndex
@@ -6382,14 +6420,20 @@ class MusicService :
         val nextRepeatMode = player.repeatMode.let { if (it == Player.REPEAT_MODE_ONE) Player.REPEAT_MODE_OFF else it }
         val now = System.currentTimeMillis()
         val ids = mutableListOf<String>()
+        val windowCount = timeline.windowCount
         var index = player.currentMediaItemIndex
-        repeat(2) {
+        // getNextWindowIndex revienta (AIOOBE) si recibe un índice fuera del timeline,
+        // p. ej. -1. Antes `return@repeat` sólo saltaba a la siguiente vuelta, así que
+        // con una sola canción y repetir apagado la 2.ª vuelta llamaba con -1 y la app
+        // se cerraba al tocar una canción suelta (crash 2026-11-19).
+        for (step in 0 until 2) {
+            if (index !in 0 until windowCount) break
             index = timeline.getNextWindowIndex(index, nextRepeatMode, player.shuffleModeEnabled)
-            if (index == C.INDEX_UNSET || index >= player.mediaItemCount) return@repeat
+            if (index !in 0 until windowCount || index >= player.mediaItemCount) break
             val id = player.getMediaItemAt(index).mediaId
-            if (id.isBlank() || id.startsWith("LOCAL_") || id.startsWith(FLAC_STREAM_PREFIX)) return@repeat
-            if ((playbackUrlCache[id]?.second ?: 0L) > now) return@repeat
-            if (runCatching { downloadCache.getCachedSpans(id).isNotEmpty() }.getOrDefault(false)) return@repeat
+            if (id.isBlank() || id.startsWith("LOCAL_") || id.startsWith(FLAC_STREAM_PREFIX)) continue
+            if ((playbackUrlCache[id]?.second ?: 0L) > now) continue
+            if (runCatching { downloadCache.getCachedSpans(id).isNotEmpty() }.getOrDefault(false)) continue
             ids += id
         }
         if (ids.isEmpty()) return

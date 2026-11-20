@@ -15,6 +15,18 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import kotlin.math.PI
+import kotlin.math.sin
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -174,7 +186,6 @@ fun ClassicPlayer(
     val linerConnState by linerManager.connectionState.collectAsState()
     val isConnectedToDesktop = linerConnState == ConnectState.CONNECTED
     var showDevicePicker by remember { mutableStateOf(false) }
-    var showMoreSheet by remember { mutableStateOf(false) }
     var showDjSheet by remember { mutableStateOf(false) }
 
     // ---- Canvas de la canción sobre la carátula ----
@@ -264,7 +275,7 @@ fun ClassicPlayer(
                     tint = colorScheme.onSurface,
                 )
             }
-            IconButton(onClick = { showMoreSheet = true }) {
+            IconButton(onClick = onMenuClick) {
                 Icon(
                     painter = painterResource(R.drawable.more_vert),
                     contentDescription = "Más opciones",
@@ -368,10 +379,28 @@ fun ClassicPlayer(
 
         Spacer(Modifier.height(12.dp))
 
-        // Barra de progreso M3: pista de 4 dp y pulgar redondo de 20 dp.
+        // Barra de progreso dinámica: toma el color de la carátula y, mientras suena,
+        // la parte recorrida ondula suavemente (se aplana al pausar).
         val sliderMax = maxOf(duration.toFloat(), 1f)
-        val activeTrack = colorScheme.primary
-        val inactiveTrack = colorScheme.surfaceContainerHighest
+        val activeTrack = remember(accent, isDarkSurface) {
+            when {
+                isDarkSurface && accent.luminance() < 0.22f -> lerp(accent, Color.White, 0.45f)
+                !isDarkSurface && accent.luminance() > 0.55f -> lerp(accent, Color.Black, 0.4f)
+                else -> accent
+            }
+        }
+        val inactiveTrack = lerp(colorScheme.surfaceContainerHighest, activeTrack, 0.18f)
+        val waveAmplitude by animateFloatAsState(
+            targetValue = if (isPlaying && sliderPosition == null) 1f else 0f,
+            animationSpec = tween(450),
+            label = "classicWaveAmp",
+        )
+        val wavePhase by rememberInfiniteTransition(label = "classicWave").animateFloat(
+            initialValue = 0f,
+            targetValue = (2 * PI).toFloat(),
+            animationSpec = infiniteRepeatable(tween(1600, easing = LinearEasing)),
+            label = "classicWavePhase",
+        )
         Slider(
             value = currentPos.toFloat().coerceIn(0f, sliderMax),
             valueRange = 0f..sliderMax,
@@ -400,19 +429,51 @@ fun ClassicPlayer(
                 } else {
                     0f
                 }
-                Box(
+                Canvas(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(4.dp)
-                        .clip(CircleShape)
-                        .background(inactiveTrack),
+                        .height(12.dp),
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(fraction)
-                            .height(4.dp)
-                            .background(activeTrack),
-                    )
+                    val stroke = 4.dp.toPx()
+                    val midY = size.height / 2f
+                    val splitX = size.width * fraction
+                    // Resto de la canción: línea recta.
+                    if (splitX < size.width) {
+                        drawLine(
+                            color = inactiveTrack,
+                            start = Offset(splitX, midY),
+                            end = Offset(size.width, midY),
+                            strokeWidth = stroke,
+                            cap = StrokeCap.Round,
+                        )
+                    }
+                    // Parte recorrida: onda con el color de la carátula.
+                    if (splitX > 0f) {
+                        val amp = 3.dp.toPx() * waveAmplitude
+                        if (amp < 0.5f) {
+                            drawLine(
+                                color = activeTrack,
+                                start = Offset(0f, midY),
+                                end = Offset(splitX, midY),
+                                strokeWidth = stroke,
+                                cap = StrokeCap.Round,
+                            )
+                        } else {
+                            val wavelength = 28.dp.toPx()
+                            val path = Path()
+                            var x = 0f
+                            path.moveTo(0f, midY + amp * sin(wavePhase))
+                            while (x < splitX) {
+                                x = minOf(x + 2f, splitX)
+                                path.lineTo(x, midY + amp * sin(x / wavelength * 2f * PI.toFloat() + wavePhase))
+                            }
+                            drawPath(
+                                path = path,
+                                color = activeTrack,
+                                style = Stroke(width = stroke, cap = StrokeCap.Round),
+                            )
+                        }
+                    }
                 }
             },
             modifier = Modifier
@@ -606,20 +667,6 @@ fun ClassicPlayer(
         )
     }
 
-    if (showMoreSheet) {
-        mediaMetadata?.let { metadata ->
-            ClassicMoreSheet(
-                mediaMetadata = metadata,
-                state = state,
-                navController = navController,
-                onVisualizerClick = onVisualizerClick,
-                onAllOptionsClick = onMenuClick,
-                onDjClick = { showDjSheet = true },
-                onDismiss = { showMoreSheet = false },
-            )
-        }
-    }
-
     if (showDjSheet) {
         DJDezzyPlayerSheet(
             onDismiss = { showDjSheet = false },
@@ -675,321 +722,4 @@ private fun ClassicActionButton(
             textAlign = TextAlign.Center,
         )
     }
-}
-
-/**
- * Hoja «Más» del reproductor Clásico: acciones rápidas en chips y el resto
- * agrupado (Ver y escuchar, Audio, Ir a). «Todas las opciones» abre el menú
- * completo de siempre (marcación rápida, escuchar juntos, AOD, detalles…).
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ClassicMoreSheet(
-    mediaMetadata: MediaMetadata,
-    state: BottomSheetState,
-    navController: NavController,
-    onVisualizerClick: () -> Unit,
-    onAllOptionsClick: () -> Unit,
-    onDjClick: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val playerConnection = LocalPlayerConnection.current ?: return
-    val context = LocalContext.current
-    val database = LocalDatabase.current
-    val coroutineScope = rememberCoroutineScope()
-    val colorScheme = MaterialTheme.colorScheme
-    val activityResultLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { }
-
-    val download by LocalDownloadUtil.current.getDownload(mediaMetadata.id)
-        .collectAsState(initial = null)
-    val videoModeActive by playerConnection.videoModeActive.collectAsState()
-    val videoModeLoading by playerConnection.videoModeLoading.collectAsState()
-
-    var showShare by remember { mutableStateOf(false) }
-    var showAddToPlaylist by remember { mutableStateOf(false) }
-    var showEqualizer by remember { mutableStateOf(false) }
-    var showTempoPitch by remember { mutableStateOf(false) }
-
-    val artistId = mediaMetadata.artists.firstOrNull { it.id != null }?.id
-    val album = mediaMetadata.album
-
-    fun goTo(route: String) {
-        onDismiss()
-        state.collapseSoft()
-        navController.navigate(route)
-    }
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = colorScheme.surfaceContainerLow,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .navigationBarsPadding()
-                .padding(bottom = 8.dp),
-        ) {
-            // Cabecera: la canción.
-            Row(
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                AsyncImage(
-                    model = mediaMetadata.thumbnailUrl,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(8.dp)),
-                )
-                Spacer(Modifier.width(16.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = mediaMetadata.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = listOfNotNull(
-                            mediaMetadata.artists.joinToString { it.name }.takeIf { it.isNotBlank() },
-                            album?.title,
-                        ).joinToString(", "),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-
-            // Acciones rápidas.
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                AssistChip(
-                    onClick = { showShare = true },
-                    label = { Text("Compartir") },
-                    leadingIcon = { Icon(painterResource(R.drawable.share), null, Modifier.size(18.dp)) },
-                )
-                AssistChip(
-                    onClick = { showAddToPlaylist = true },
-                    label = { Text("Añadir") },
-                    leadingIcon = { Icon(painterResource(R.drawable.playlist_add), null, Modifier.size(18.dp)) },
-                )
-                when (download?.state) {
-                    Download.STATE_COMPLETED -> AssistChip(
-                        onClick = {
-                            DownloadService.sendRemoveDownload(context, ExoDownloadService::class.java, mediaMetadata.id, false)
-                        },
-                        label = { Text("Quitar descarga") },
-                        leadingIcon = { Icon(painterResource(R.drawable.offline), null, Modifier.size(18.dp)) },
-                    )
-                    Download.STATE_QUEUED, Download.STATE_DOWNLOADING -> AssistChip(
-                        onClick = {
-                            DownloadService.sendRemoveDownload(context, ExoDownloadService::class.java, mediaMetadata.id, false)
-                        },
-                        label = { Text("Descargando…") },
-                        leadingIcon = { CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp) },
-                    )
-                    else -> AssistChip(
-                        onClick = {
-                            database.transaction { insert(mediaMetadata) }
-                            val downloadRequest = DownloadRequest
-                                .Builder(mediaMetadata.id, mediaMetadata.id.toUri())
-                                .setCustomCacheKey(mediaMetadata.id)
-                                .setData(mediaMetadata.title.toByteArray())
-                                .build()
-                            DownloadService.sendAddDownload(context, ExoDownloadService::class.java, downloadRequest, false)
-                        },
-                        label = { Text("Descargar") },
-                        leadingIcon = { Icon(painterResource(R.drawable.download), null, Modifier.size(18.dp)) },
-                    )
-                }
-            }
-
-            ClassicSheetGroup("Ver y escuchar")
-            ClassicSheetItem(
-                iconRes = R.drawable.slow_motion_video,
-                title = if (videoModeActive) "Volver a la canción" else "Ver video",
-                onClick = {
-                    if (videoModeActive) {
-                        playerConnection.disableVideoMode()
-                    } else if (!videoModeLoading) {
-                        playerConnection.enableVideoMode()
-                    }
-                    onDismiss()
-                },
-            )
-            ClassicSheetItem(
-                iconRes = R.drawable.auto_awesome,
-                title = "Visualizador",
-                onClick = {
-                    onDismiss()
-                    onVisualizerClick()
-                },
-            )
-            ClassicSheetItem(
-                iconRes = R.drawable.graphic_eq,
-                title = "DJ Dezzy",
-                supporting = "Pídele música escribiendo o con tu voz",
-                onClick = {
-                    onDismiss()
-                    onDjClick()
-                },
-            )
-            ClassicSheetItem(
-                iconRes = R.drawable.radio,
-                title = stringResource(R.string.start_radio),
-                onClick = {
-                    Toast.makeText(context, context.getString(R.string.starting_radio), Toast.LENGTH_SHORT).show()
-                    playerConnection.startRadioSeamlessly()
-                    onDismiss()
-                },
-            )
-
-            ClassicSheetGroup("Audio")
-            ClassicSheetItem(
-                iconRes = R.drawable.equalizer,
-                title = stringResource(R.string.equalizer),
-                onClick = { showEqualizer = true },
-            )
-            ClassicSheetItem(
-                iconRes = R.drawable.speed,
-                title = stringResource(R.string.tempo_and_pitch),
-                onClick = { showTempoPitch = true },
-            )
-
-            if (artistId != null || album != null) {
-                ClassicSheetGroup("Ir a")
-                if (artistId != null) {
-                    ClassicSheetItem(
-                        iconRes = R.drawable.artist,
-                        title = stringResource(R.string.view_artist),
-                        onClick = { goTo("artist/$artistId") },
-                    )
-                }
-                if (album != null) {
-                    ClassicSheetItem(
-                        iconRes = R.drawable.album,
-                        title = stringResource(R.string.view_album),
-                        onClick = { goTo("album/${album.id}") },
-                    )
-                }
-            }
-
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 8.dp),
-                color = colorScheme.outlineVariant,
-            )
-            ClassicSheetItem(
-                iconRes = R.drawable.more_horiz,
-                title = "Todas las opciones",
-                supporting = "Marcación rápida, escuchar juntos, AOD, detalles…",
-                onClick = {
-                    onDismiss()
-                    onAllOptionsClick()
-                },
-            )
-        }
-    }
-
-    // Diálogos fuera de la hoja para que sigan abiertos aunque la hoja se cierre.
-    if (showShare) {
-        ShareBottomSheet(
-            title = mediaMetadata.title,
-            subtitle = mediaMetadata.artists.joinToString { it.name },
-            thumbnailUrl = mediaMetadata.thumbnailUrl,
-            shareLink = "https://music.youtube.com/watch?v=${mediaMetadata.id}",
-            hasVideo = false,
-            mediaId = mediaMetadata.id,
-            onDismiss = { showShare = false },
-        )
-    }
-
-    AddToPlaylistDialog(
-        isVisible = showAddToPlaylist,
-        onGetSong = { playlist ->
-            database.transaction { insert(mediaMetadata) }
-            listOf(mediaMetadata.id)
-        },
-        onDismiss = { showAddToPlaylist = false },
-        onAddComplete = { _, playlistNames ->
-            val message = when {
-                playlistNames.size == 1 -> context.getString(R.string.added_to_playlist, playlistNames.first())
-                else -> context.getString(R.string.added_to_n_playlists, playlistNames.size)
-            }
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-        },
-    )
-
-    if (showEqualizer) {
-        EqualizerDialog(
-            onDismiss = { showEqualizer = false },
-            openSystemEqualizer = {
-                val intent = Intent(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL).apply {
-                    putExtra(AudioEffect.EXTRA_AUDIO_SESSION, playerConnection.player.audioSessionId)
-                    putExtra(AudioEffect.EXTRA_PACKAGE_NAME, context.packageName)
-                    putExtra(AudioEffect.EXTRA_CONTENT_TYPE, AudioEffect.CONTENT_TYPE_MUSIC)
-                }
-                if (intent.resolveActivity(context.packageManager) != null) {
-                    activityResultLauncher.launch(intent)
-                }
-            },
-        )
-    }
-
-    if (showTempoPitch) {
-        TempoPitchDialog(onDismiss = { showTempoPitch = false })
-    }
-}
-
-@Composable
-private fun ClassicSheetGroup(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier
-            .padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 4.dp)
-            .semantics { heading() },
-    )
-}
-
-@Composable
-private fun ClassicSheetItem(
-    iconRes: Int,
-    title: String,
-    onClick: () -> Unit,
-    supporting: String? = null,
-) {
-    ListItem(
-        headlineContent = { Text(title) },
-        supportingContent = if (supporting != null) {
-            { Text(supporting, maxLines = 2, overflow = TextOverflow.Ellipsis) }
-        } else {
-            null
-        },
-        leadingContent = {
-            Icon(
-                painter = painterResource(iconRes),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        },
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 8.dp),
-    )
 }

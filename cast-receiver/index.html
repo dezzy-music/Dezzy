@@ -4,6 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>DezzyMusic Cast Receiver</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..900&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; }
 
@@ -498,6 +500,155 @@
     #no-lyrics svg { width: 9vh; height: 9vh; opacity: 0.55; }
     #no-lyrics span { font-size: 3vh; font-weight: 500; }
 
+    /* ================= Variante C: canvas a pantalla completa (boceto 2026-11-19) =================
+       El canvas (o la carátula con un Ken Burns lento, que evita marcar la pantalla) ocupa toda
+       la tele; abajo, sobre un degradado, la línea de letra actual, la canción y el progreso. */
+    :root { --safe-x: 5vw; --safe-y: 5vh; }
+
+    #now-playing { display: block; padding: 0; }
+    #now-playing #artwork-wrap {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      max-width: none; aspect-ratio: auto; border-radius: 0;
+      box-shadow: none; z-index: 0; background: #000; overflow: hidden;
+    }
+    #now-playing #artwork {
+      transform-origin: 62% 38%;
+      animation: kenBurns 48s ease-in-out infinite alternate;
+      transition: filter 0.8s ease;
+    }
+    #now-playing #canvas-video { transition: filter 0.8s ease; }
+    @keyframes kenBurns {
+      from { transform: scale(1.04) translate(0, 0); }
+      to   { transform: scale(1.18) translate(-2.5%, 1.5%); }
+    }
+    #now-playing #artwork-wrap.canvas-mode::after { display: none; }
+    #now-playing.paused #artwork,
+    #now-playing.paused #canvas-video { filter: brightness(0.42) saturate(0.8); }
+
+    #c-shade {
+      position: absolute; inset: 0; z-index: 1; pointer-events: none;
+      background: linear-gradient(180deg,
+        rgba(0,0,0,0.38) 0%, rgba(0,0,0,0) 20%, rgba(0,0,0,0) 40%,
+        rgba(0,0,0,0.55) 66%, rgba(0,0,0,0.9) 100%);
+    }
+
+    #c-bottom {
+      position: absolute; z-index: 2;
+      left: var(--safe-x); right: var(--safe-x); bottom: var(--safe-y);
+      display: flex; flex-direction: column; gap: 2.8vh;
+      transform-origin: left bottom;
+      transition: transform 0.9s ease, opacity 0.9s ease;
+    }
+    #now-playing.calm #c-bottom { transform: scale(0.8); opacity: 0.85; }
+
+    /* Letra: una sola línea grande (la actual). */
+    #now-playing #right-pane {
+      flex: none; height: auto; padding: 0; display: block;
+      -webkit-mask-image: none; mask-image: none;
+    }
+    #now-playing #karaoke { height: auto; gap: 0; align-items: stretch; }
+    #now-playing .k-prev, #now-playing .k-next { display: none; }
+    #now-playing .k-current {
+      font-family: 'Roboto Flex', 'Google Sans', 'Roboto', sans-serif;
+      font-size: min(7.2vh, 4.4vw);
+      font-weight: 800;
+      line-height: 1.12;
+      letter-spacing: -0.01em;
+      color: #fff;
+      text-shadow: 0 0.4vh 3vh rgba(0,0,0,0.6);
+      max-width: 80vw;
+      min-height: 1.12em;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    #now-playing .align-center .k-current { margin-inline: auto; }
+    #now-playing .align-right .k-current { margin-left: auto; }
+    #now-playing #lyrics-viewport, #now-playing #no-lyrics { display: none !important; }
+
+    #c-meta { display: flex; align-items: center; gap: 2vw; }
+    #c-thumb {
+      width: 11vh; height: 11vh; flex: none; object-fit: cover;
+      border-radius: 1.4vh; background: #222;
+      box-shadow: 0 1vh 3vh rgba(0,0,0,0.5);
+    }
+    #c-thumb:not([src]) { visibility: hidden; }
+    .c-text { flex: 1; min-width: 0; }
+    #now-playing #song-title {
+      margin: 0; text-align: left;
+      font-family: 'Roboto Flex', 'Google Sans', 'Roboto', sans-serif;
+      font-size: min(6.2vh, 3.8vw); font-weight: 800; line-height: 1.1;
+      -webkit-line-clamp: 1; color: #fff;
+      text-shadow: 0 0.3vh 2vh rgba(0,0,0,0.5);
+    }
+    #now-playing #song-artist {
+      margin-top: 0.6vh; text-align: left; white-space: nowrap;
+      font-size: min(3.4vh, 2.3vw); color: rgba(255,255,255,0.78);
+    }
+    #c-chip {
+      flex: none; display: flex; align-items: center; gap: 0.8vw;
+      padding: 0.9vh 1.6vw 0.9vh 0.9vh; border-radius: 999px;
+      background: rgba(255,255,255,0.12);
+      -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+      font-size: 2.2vh; font-weight: 700; color: #fff;
+    }
+    #c-chip img { width: 3.4vh; height: 3.4vh; border-radius: 0.8vh; }
+
+    #now-playing #progress-row { width: 100%; margin: 0; gap: 1.4vw; }
+    #now-playing .time-label { color: rgba(255,255,255,0.8); font-size: 2.2vh; }
+
+    /* Escuchar juntos: código + QR arriba a la derecha, sólo con sala activa. */
+    #c-room {
+      position: absolute; z-index: 2; top: var(--safe-y); right: var(--safe-x);
+      display: flex; align-items: center; gap: 1.4vw;
+      padding: 1.4vh 1.4vh 1.4vh 2vw; border-radius: 2.4vh;
+      background: rgba(10,10,14,0.55);
+      -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+      color: #fff;
+    }
+    #c-room[hidden] { display: none; }
+    .c-room-text { display: flex; flex-direction: column; gap: 0.4vh; text-align: right; }
+    .c-room-text b { font-size: 2.4vh; font-weight: 800; }
+    .c-room-text span { font-size: 2vh; color: rgba(255,255,255,0.75); }
+    #c-room-code { font-family: ui-monospace, 'Roboto Mono', monospace; letter-spacing: 0.12em; font-weight: 700; color: #fff !important; }
+    #c-room-qr {
+      width: 13vh; height: 13vh; padding: 1vh; box-sizing: border-box;
+      background: #fff; border-radius: 1.2vh; image-rendering: pixelated;
+    }
+
+    /* «Conectado desde …»: breve, al empezar y al cambiar de canción. */
+    #c-toast {
+      position: absolute; z-index: 2; top: var(--safe-y); left: var(--safe-x);
+      display: flex; align-items: center; gap: 1vw;
+      padding: 1.2vh 2vw 1.2vh 1.4vw; border-radius: 999px;
+      background: rgba(10,10,14,0.55);
+      -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+      font-size: 2.2vh; font-weight: 600; color: #fff;
+      opacity: 0; transform: translateY(-1vh);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    #c-toast.show { opacity: 1; transform: none; }
+    #c-toast svg { width: 2.6vh; height: 2.6vh; fill: var(--accent); }
+
+    #c-paused {
+      position: absolute; z-index: 2; top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(0.94);
+      display: flex; align-items: center; gap: 1.4vw;
+      padding: 2vh 3.4vw; border-radius: 999px;
+      background: rgba(10,10,14,0.5);
+      -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+      font-size: 3.6vh; font-weight: 800; color: #fff;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    #c-paused svg { width: 4vh; height: 4vh; fill: #fff; }
+    #now-playing.paused #c-paused { opacity: 1; transform: translate(-50%, -50%); }
+
+    #idle-clock {
+      position: absolute; bottom: var(--safe-y);
+      font-size: 4.4vh; font-weight: 300; letter-spacing: 0.04em;
+      color: rgba(255,255,255,0.6); font-variant-numeric: tabular-nums;
+    }
+
   </style>
 </head>
 <body>
@@ -508,39 +659,50 @@
   <div id="bg-veil"></div>
 
   <div id="now-playing">
-    <div id="left-pane">
-      <div id="artwork-wrap"><img id="artwork" alt="" crossorigin="anonymous" loading="eager"><video id="canvas-video" muted autoplay loop playsinline></video></div>
-      <div id="song-title"></div>
-      <div id="song-artist"></div>
+    <div id="artwork-wrap"><img id="artwork" alt="" crossorigin="anonymous" loading="eager"><video id="canvas-video" muted autoplay loop playsinline></video></div>
+    <div id="c-shade"></div>
+
+    <div id="c-toast">
+      <svg viewBox="0 0 24 24"><path d="M1 18v3h3c0-1.66-1.34-3-3-3zm0-4v2c2.76 0 5 2.24 5 5h2c0-3.87-3.13-7-7-7zm0-4v2c4.97 0 9 4.03 9 9h2c0-6.08-4.93-11-11-11zm20-7H3c-1.1 0-2 .9-2 2v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+      <span id="c-toast-text"></span>
+    </div>
+
+    <div id="c-room" hidden>
+      <div class="c-room-text">
+        <b>Escuchar juntos</b>
+        <span id="c-room-code"></span>
+        <span id="c-room-people"></span>
+      </div>
+      <canvas id="c-room-qr"></canvas>
+    </div>
+
+    <div id="c-paused">
+      <svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+      En pausa
+    </div>
+
+    <div id="c-bottom">
+      <div id="right-pane">
+        <div id="karaoke">
+          <div class="k-line k-prev" id="k-prev"></div>
+          <div class="k-line k-current" id="k-cur"></div>
+          <div class="k-line k-next" id="k-next"></div>
+        </div>
+        <div id="lyrics-viewport"><div id="lyrics-scroller"></div></div>
+        <div id="no-lyrics"><span>No se encontraron letras</span></div>
+      </div>
+      <div id="c-meta">
+        <img id="c-thumb" alt="">
+        <div class="c-text">
+          <div id="song-title"></div>
+          <div id="song-artist"></div>
+        </div>
+        <div id="c-chip"><img src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20960%20960%22%3E%0A%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%0A%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23ED5564%22%2F%3E%0A%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23c144b8%22%2F%3E%0A%3C%2FlinearGradient%3E%3C%2Fdefs%3E%0A%3Crect%20width%3D%22960%22%20height%3D%22960%22%20rx%3D%22200%22%20fill%3D%22url(%23g)%22%2F%3E%0A%3Cpath%20fill%3D%22%23fff%22%20d%3D%22M354%2C673L480%2C597L606%2C674L573%2C530L684%2C434L538%2C421L480%2C285L422%2C420L276%2C433L387%2C530L354%2C673ZM233%2C840L298%2C559L80%2C370L368%2C345L480%2C80L592%2C345L880%2C370L662%2C559L727%2C840L480%2C691L233%2C840ZM480%2C490L480%2C490L480%2C490L480%2C490L480%2C490L480%2C490L480%2C490L480%2C490L480%2C490L480%2C490Z%22%2F%3E%0A%3C%2Fsvg%3E" alt="">Dezzy</div>
+      </div>
       <div id="progress-row">
         <span class="time-label" id="time-current">0:00</span>
         <div id="progress-track"><div id="progress-fill"></div></div>
         <span class="time-label" id="time-total" style="text-align:right">0:00</span>
-      </div>
-      <div id="volume-row" style="margin-top: 2.4vh; width: 40vh; display: flex; align-items: center; gap: 1vw;">
-        <svg style="width: 2.2vh; height: 2.2vh; flex-shrink: 0; fill: var(--fg-dim);" viewBox="0 0 24 24">
-          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.26 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-        </svg>
-        <input id="volume-slider" type="range" min="0" max="100" value="100" style="flex: 1; height: 0.6vh; border-radius: 0.3vh; background: var(--track-bg); outline: none; -webkit-appearance: none; appearance: none; cursor: pointer;">
-        <style>
-          #volume-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 1.4vh; height: 1.4vh; border-radius: 50%; background: var(--accent); cursor: pointer; box-shadow: 0 0 0.8vh var(--accent); }
-          #volume-slider::-moz-range-thumb { width: 1.4vh; height: 1.4vh; border-radius: 50%; background: var(--accent); cursor: pointer; border: none; box-shadow: 0 0 0.8vh var(--accent); }
-        </style>
-      </div>
-    </div>
-
-    <div id="right-pane">
-      <div id="karaoke">
-        <div class="k-line k-prev" id="k-prev"></div>
-        <div class="k-line k-current" id="k-cur"></div>
-        <div class="k-line k-next" id="k-next"></div>
-      </div>
-      <div id="lyrics-viewport"><div id="lyrics-scroller"></div></div>
-      <div id="no-lyrics">
-        <svg viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6zm-2 14a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/>
-        </svg>
-        <span>No se encontraron letras</span>
       </div>
     </div>
   </div>
@@ -549,6 +711,7 @@
     <img id="idle-logo" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20960%20960%22%3E%0A%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%0A%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23ED5564%22%2F%3E%0A%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23c144b8%22%2F%3E%0A%3C%2FlinearGradient%3E%3C%2Fdefs%3E%0A%3Crect%20width%3D%22960%22%20height%3D%22960%22%20rx%3D%22200%22%20fill%3D%22url(%23g)%22%2F%3E%0A%3Cpath%20fill%3D%22%23fff%22%20d%3D%22M354%2C673L480%2C597L606%2C674L573%2C530L684%2C434L538%2C421L480%2C285L422%2C420L276%2C433L387%2C530L354%2C673ZM233%2C840L298%2C559L80%2C370L368%2C345L480%2C80L592%2C345L880%2C370L662%2C559L727%2C840L480%2C691L233%2C840ZM480%2C490L480%2C490L480%2C490L480%2C490L480%2C490L480%2C490L480%2C490L480%2C490L480%2C490L480%2C490Z%22%2F%3E%0A%3C%2Fsvg%3E" alt="DezzyMusic">
     <div id="idle-title">Dezzy</div>
     <div id="idle-subtitle">Listo para reproducir</div>
+    <div id="idle-clock"></div>
   </div>
 
   <script>
@@ -576,6 +739,10 @@
     var elTotal = $('time-total');
     var elTrack = $('progress-track');
     var elFill = $('progress-fill');
+    var elThumb = $('c-thumb');
+    var elToast = $('c-toast');
+    var elToastText = $('c-toast-text');
+    var elRoom = $('c-room');
 
     var qs = new URLSearchParams(location.search);
     var DEBUG = qs.has('debug');
@@ -619,6 +786,87 @@
       background: 'GRADIENT',
       slider: 'Standard',
     };
+
+    var senderName = '';
+
+    // ---------- variante C: calma, aviso, pausa, sala ----------
+    // Tras 10 s sin cambios (sin verso nuevo, sin cambio de canción) el bloque inferior se
+    // encoge un poco para dejar ver el canvas.
+    var calmTimer = null;
+    function poke() {
+      elNow.classList.remove('calm');
+      if (calmTimer) clearTimeout(calmTimer);
+      calmTimer = setTimeout(function () { elNow.classList.add('calm'); }, 10000);
+    }
+
+    var toastTimer = null;
+    function showToast(text) {
+      if (!text) return;
+      elToastText.textContent = text;
+      elToast.classList.add('show');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { elToast.classList.remove('show'); }, 4000);
+    }
+
+    function setPaused(paused) {
+      if (paused === elNow.classList.contains('paused')) return;
+      elNow.classList.toggle('paused', paused);
+      poke();
+    }
+
+    // QR de la sala: la librería se carga sólo cuando hay sala activa.
+    var qrLibState = 0; // 0 sin cargar, 1 cargando, 2 lista
+    var pendingQr = null;
+    function drawQr(text) {
+      pendingQr = text;
+      if (qrLibState === 0) {
+        qrLibState = 1;
+        var sc = document.createElement('script');
+        sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
+        sc.onload = function () { qrLibState = 2; if (pendingQr) drawQr(pendingQr); };
+        sc.onerror = function () { qrLibState = 0; };
+        document.head.appendChild(sc);
+        return;
+      }
+      if (qrLibState !== 2 || typeof qrcode !== 'function') return;
+      try {
+        var qr = qrcode(0, 'M');
+        qr.addData(text);
+        qr.make();
+        var n = qr.getModuleCount(), cell = 8;
+        var cv = $('c-room-qr');
+        cv.width = cv.height = n * cell;
+        var cx = cv.getContext('2d');
+        cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
+        cx.fillStyle = '#000';
+        for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) {
+          if (qr.isDark(r, c)) cx.fillRect(c * cell, r * cell, cell, cell);
+        }
+      } catch (e) {}
+    }
+
+    var roomCode = null;
+    function updateRoom(room) {
+      var code = room && room.code ? String(room.code).toUpperCase() : null;
+      if (!code) { roomCode = null; elRoom.hidden = true; return; }
+      elRoom.hidden = false;
+      $('c-room-code').textContent = 'Sala ' + code;
+      var n = +room.people || 0;
+      $('c-room-people').textContent = n > 0 ? (n === 1 ? '1 persona' : n + ' personas') : '';
+      if (code !== roomCode) {
+        roomCode = code;
+        drawQr('dezzy://together?code=' + encodeURIComponent(code));
+      }
+    }
+
+    // Reloj de la pantalla de espera.
+    function tickClock() {
+      var d = new Date();
+      $('idle-clock').textContent =
+        (d.getHours() < 10 ? '0' : '') + d.getHours() + ':' + (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
+    }
+    tickClock();
+    setInterval(tickClock, 15000);
 
     // ---------- helpers ----------
     function fmtTime(s) {
@@ -679,6 +927,8 @@
         uiPrefs.lyricsV2Style = p.lyricsV2Style || uiPrefs.lyricsV2Style;
         uiPrefs.background = p.background || uiPrefs.background;
         uiPrefs.slider = p.slider || uiPrefs.slider;
+        if (p.sender) senderName = String(p.sender);
+        updateRoom(p.room || null);
       }
 
       // lyrics alignment
@@ -891,8 +1141,10 @@
 
     function renderPlain(text) {
       syncedLines = null;
+      activeIdx = -1;
       elNoLyrics.style.display = 'none';
-      elKaraoke.style.display = 'none';
+      elKaraoke.style.display = 'flex';
+      elKCur.textContent = '';
       elViewport.style.display = 'block';
       elScroller.innerHTML = '';
       var lines = (text || '').split(/\r?\n/);
@@ -1004,6 +1256,7 @@
           elKCur.classList.remove('pop');
           void elKCur.offsetWidth;
           elKCur.classList.add('pop');
+          poke();
         }
       }
       // Plain (non-synced) lyrics: scroll linearly through duration and highlight active line
@@ -1014,6 +1267,14 @@
           var activePlainIdx = Math.min(totalChildren - 1, Math.floor(frac * totalChildren));
           for (var c = 0; c < totalChildren; c++) {
             children[c].classList.toggle('active', c === activePlainIdx);
+          }
+          if (activePlainIdx !== activeIdx) {
+            activeIdx = activePlainIdx;
+            elKCur.textContent = (children[activePlainIdx].textContent || '').trim();
+            elKCur.classList.remove('pop');
+            void elKCur.offsetWidth;
+            elKCur.classList.add('pop');
+            poke();
           }
           var scrollHeight = elScroller.scrollHeight;
           var viewportHeight = elViewport.clientHeight;
@@ -1035,6 +1296,8 @@
       elNow.classList.add('visible');
       if (key === lastTrackKey) return;
       lastTrackKey = key;
+      poke();
+      if (senderName) showToast('Conectado desde ' + senderName);
 
       // Canvas de la canción: video en bucle a pantalla completa en vez de carátula
       var elArtWrap = $('artwork-wrap');
@@ -1063,8 +1326,10 @@
 
       if (artUrl) {
         elArt.src = artUrl;
+        elThumb.src = artUrl;
       } else {
         elArt.removeAttribute('src');
+        elThumb.removeAttribute('src');
         if (!paletteFromPhone) setFallbackGradient();
       }
       if (localLyrics) {
@@ -1081,18 +1346,6 @@
     }
 
     // ---------- CAF wiring ----------
-    var volSlider = $('volume-slider');
-    var lastSliderValue = 100;
-
-    if (volSlider) {
-      volSlider.addEventListener('input', function () {
-        lastSliderValue = parseInt(volSlider.value, 10);
-        if (playerManager && playerManager.setVolume) {
-          playerManager.setVolume(lastSliderValue / 100);
-        }
-      });
-    }
-
     function wireCast() {
       var context = cast.framework.CastReceiverContext.getInstance();
       playerManager = context.getPlayerManager();
@@ -1118,14 +1371,7 @@
         function () {
           var state = playerManager.getPlayerState();
           if (!state || state === cast.framework.messages.PlayerState.IDLE) showIdle();
-          // Update volume slider from receiver state
-          try {
-            var vol = playerManager.getVolume();
-            if (vol !== undefined && vol !== null) {
-              volSlider.value = Math.round(vol * 100);
-              lastSliderValue = Math.round(vol * 100);
-            }
-          } catch (e) {}
+          setPaused(state === cast.framework.messages.PlayerState.PAUSED);
         }
       );
 
@@ -1151,7 +1397,10 @@
         lyricsV2Style: qs.get('v2style') || 'LIQUID_FLOW',
         background: qs.get('bg') || 'GRADIENT',
         slider: qs.get('slider') || 'Standard',
+        sender: qs.get('sender') || 'POCO C71',
+        room: qs.get('room') ? { code: qs.get('room'), people: +(qs.get('people') || 3) } : null,
       });
+      if (qs.get('paused') === '1') setTimeout(function () { setPaused(true); }, 300);
       var sampleArt = $('idle-logo').src;
       // &palette=237,85,100;193,68,184 exercises the phone-supplied palette path.
       var dbgPalette = null;
@@ -1160,7 +1409,8 @@
           return t.split(',').map(Number);
         });
       }
-      showTrack('Die For You', 'The Weeknd', sampleArt, 262, null, dbgPalette);
+      showTrack('Die For You', 'The Weeknd', qs.get('art') || sampleArt, 262, null, dbgPalette, qs.get('canvas') || null);
+      lyricsToken++; // que la búsqueda en LRCLIB no pise la letra de ejemplo
       renderSynced([
         { t: 1,  text: "I'm findin' ways to articulate" },
         { t: 4,  text: "The feeling I'm goin' through" },

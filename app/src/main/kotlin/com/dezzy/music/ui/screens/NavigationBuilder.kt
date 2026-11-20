@@ -433,6 +433,9 @@ fun NavGraphBuilder.navigationBuilder(
     composable("settings/appearance") {
         AppearanceSettings(navController, scrollBehavior)
     }
+    composable("settings/appearance/app_icon") {
+        com.dezzy.music.ui.screens.settings.AppIconScreen(navController, scrollBehavior)
+    }
     composable("settings/appearance/palette_picker") {
         PalettePickerScreen(navController)
     }

@@ -160,7 +160,7 @@ object UpdateNotificationManager {
         )
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.star)
+            .setSmallIcon(com.dezzy.music.appicon.AppIcon.smallIconRes(context))
             .setContentTitle(context.getString(R.string.update_notification_title))
             .setContentText(context.getString(R.string.update_notification_text, newVersion))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)

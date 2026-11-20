@@ -78,7 +78,10 @@ import javax.crypto.spec.SecretKeySpec
  *   Clave de sesión = HMAC(auth, "sess|nC|nS"). Desde ahí cada cuerpo es AES-256-GCM (texto +
  *   etiqueta) con iv = [dirección (0 cliente, 1 servidor), 0, 0, 0, contador de 8 bytes big endian].
  *   Mensajes: {t:"ping", a} → {t:"pong", a, b}; {t:"bye"}; el resto (take, state, cmd, stop, drift,
- *   offset) los entiende [DezzyConnectSession]. `pb.at` llega ya pasado al reloj de este móvil.
+ *   offset, ctrl) los entiende [DezzyConnectSession]. `pb.at` llega ya pasado al reloj de este móvil.
+ *
+ * Varias conexiones a la vez (hasta [MAX_LINKS]): forman una estrella alrededor del dispositivo
+ * que reparte la música; los demás sólo hablan con él.
  */
 object DezzyConnect {
     private const val PORT = 47830
@@ -93,9 +96,11 @@ object DezzyConnect {
     private const val IDLE_MS = 20_000
     private const val MAX_FRAME = 512 * 1024
     private const val MAX_DEVICES = 20
+    /** Conexiones a la vez: este dispositivo y hasta tres más (4 en total). */
+    const val MAX_LINKS = 3
     private val ID_RE = Regex("^[0-9a-f]{16}$")
     private val NONCE_RE = Regex("^[0-9a-f]{32}$")
-    private val FORWARDED = setOf("take", "state", "cmd", "stop", "drift", "offset")
+    private val FORWARDED = setOf("take", "state", "cmd", "stop", "drift", "offset", "ctrl")
 
     data class Device(
         val id: String,
@@ -106,7 +111,10 @@ object DezzyConnect {
         val connected: Boolean,
     )
 
-    data class Peer(val id: String, val name: String, val kind: String, val incoming: Boolean)
+    data class Peer(val id: String, val name: String, val kind: String, val incoming: Boolean, val rtt: Int? = null)
+
+    /** Mensaje de sesión con quién lo manda. */
+    data class Incoming(val from: String, val name: String, val msg: JsonObject)
 
     private data class Known(val id: String, val name: String, val kind: String)
     private data class Seen(val ip: InetAddress, val port: Int, val lastSeen: Long)
@@ -121,6 +129,10 @@ object DezzyConnect {
 
     private val _devices = MutableStateFlow<List<Device>>(emptyList())
     val devices: StateFlow<List<Device>> = _devices.asStateFlow()
+    /** Todos los conectados ahora mismo, en el orden en que se conectaron. */
+    private val _peers = MutableStateFlow<List<Peer>>(emptyList())
+    val peers: StateFlow<List<Peer>> = _peers.asStateFlow()
+    /** El primero de [peers] (lo que había antes de poder conectar varios). */
     private val _peer = MutableStateFlow<Peer?>(null)
     val peer: StateFlow<Peer?> = _peer.asStateFlow()
     private val _rtt = MutableStateFlow<Int?>(null)
@@ -129,8 +141,8 @@ object DezzyConnect {
     val searching: StateFlow<Boolean> = _searching.asStateFlow()
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
-    private val _messages = MutableSharedFlow<JsonObject>(extraBufferCapacity = 64)
-    val messages: SharedFlow<JsonObject> = _messages.asSharedFlow()
+    private val _messages = MutableSharedFlow<Incoming>(extraBufferCapacity = 64)
+    val messages: SharedFlow<Incoming> = _messages.asSharedFlow()
 
     private lateinit var appContext: Context
     private var started = false
@@ -142,7 +154,8 @@ object DezzyConnect {
     private var udp: DatagramSocket? = null
     private var server: ServerSocket? = null
     private var tcpPort = 0
-    private var link: Link? = null
+    /** Conexiones ya autenticadas, por identificador del otro. */
+    private val links = LinkedHashMap<String, Link>()
     private var pending = 0
     private var searchJob: Job? = null
     private var multicastLock: WifiManager.MulticastLock? = null
@@ -202,12 +215,23 @@ object DezzyConnect {
 
     private fun isAvailable(id: String): Boolean = seen[id]?.let { now() - it.lastSeen < AVAILABLE_MS } == true
 
+    private fun live(): List<Link> = links.values.filter { it.key != null && !it.closed }
+
     private fun emitDevices() {
-        val live = link?.takeIf { it.key != null && !it.closed }
-        _devices.value = known.map { Device(it.id, it.name, it.kind, isAvailable(it.id), live?.id == it.id) }
-        _peer.value = live?.let { Peer(it.id, it.name, it.kind, it.incoming) }
-        _rtt.value = live?.rtt
+        val live = live()
+        val ids = live.mapTo(HashSet()) { it.id }
+        _devices.value = known.map { Device(it.id, it.name, it.kind, isAvailable(it.id), it.id in ids) }
+        val peers = live.map { Peer(it.id, it.name, it.kind, it.incoming, it.rtt) }
+        _peers.value = peers
+        _peer.value = peers.firstOrNull()
+        _rtt.value = peers.firstOrNull()?.rtt
     }
+
+    /** Identificador de este dispositivo en el grupo. */
+    fun selfId(): String = selfId
+
+    /** Nombre con el que este dispositivo se presenta a los demás. */
+    fun selfName(): String = if (::appContext.isInitialized) deviceName() else "Móvil"
 
     private fun remember(device: Known) {
         val old = known.firstOrNull { it.id == device.id }
@@ -456,8 +480,8 @@ object DezzyConnect {
         runCatching { l.socket.close() }
         l.ready?.complete("Se cortó la conexión")
         l.ready = null
-        if (link === l) {
-            link = null
+        if (links[l.id] === l) {
+            links.remove(l.id)
             emitDevices()
         }
     }
@@ -471,8 +495,10 @@ object DezzyConnect {
     }
 
     private fun ready(l: Link): Boolean {
-        link?.takeIf { it !== l }?.let { close(it, bye = true) }
-        link = l
+        // El mismo dispositivo otra vez: la conexión nueva sustituye a la vieja.
+        links[l.id]?.takeIf { it !== l }?.let { close(it, bye = false) }
+        if (links.size >= MAX_LINKS) return drop(l, "Ya hay ${MAX_LINKS + 1} dispositivos conectados")
+        links[l.id] = l
         // Desde aquí el otro manda un ping cada 4 s: 20 s sin nada es que se fue.
         runCatching { l.socket.soTimeout = IDLE_MS }
         remember(Known(l.id, l.name, l.kind))
@@ -538,14 +564,14 @@ object DezzyConnect {
             }
             "bye" -> close(l, bye = false)
             else -> {
-                if (link !== l || t == null || t !in FORWARDED) return
+                if (links[l.id] !== l || t == null || t !in FORWARDED) return
                 // `pb.at` viaja en el reloj del otro: se pasa al nuestro.
                 val pb = msg["pb"] as? JsonObject
                 val at = pb?.num("at")
                 val out = if (pb != null && at != null) {
                     JsonObject(msg + ("pb" to JsonObject(pb + ("at" to JsonPrimitive(at - l.offset)))))
                 } else msg
-                _messages.tryEmit(out)
+                _messages.tryEmit(Incoming(l.id, l.name, out))
             }
         }
     }
@@ -567,7 +593,7 @@ object DezzyConnect {
             when {
                 disc == null -> null.also { problem = "Dezzy Connect no está listo" }
                 // Ya estamos conectados a ese.
-                link?.let { it.id == id && it.key != null && !it.closed } == true -> null
+                links[id]?.let { it.key != null && !it.closed } == true -> null
                 else -> seen[id]?.takeIf { isAvailable(id) } ?: null.also { problem = "No disponible ahora" }
             }
         }
@@ -584,17 +610,30 @@ object DezzyConnect {
         return withTimeoutOrNull(HANDSHAKE_MS + 2_000L) { ready.await() } ?: "No responde"
     }
 
-    fun send(message: JsonObject) {
-        scope.launch { link?.takeIf { it.key != null && !it.closed }?.let { sendSecure(it, message) } }
+    /**
+     * Manda un mensaje de sesión. Sin `to` va a todos los conectados; `except` se salta uno
+     * (para reenviar a los demás lo que dijo él).
+     */
+    fun send(message: JsonObject, to: String? = null, except: String? = null) {
+        scope.launch {
+            for (l in live()) {
+                if (to != null && l.id != to) continue
+                if (except != null && l.id == except) continue
+                sendSecure(l, message)
+            }
+        }
     }
 
-    fun close() {
-        scope.launch { link?.let { close(it, bye = true) } }
+    /** Cierra la conexión con `id`, o con todos si es null. */
+    fun close(id: String? = null) {
+        scope.launch {
+            for (l in links.values.toList()) if (id == null || l.id == id) close(l, bye = true)
+        }
     }
 
     fun forget(id: String) {
         scope.launch {
-            link?.takeIf { it.id == id }?.let { close(it, bye = true) }
+            links[id]?.let { close(it, bye = true) }
             seen.remove(id)
             known = known.filter { it.id != id }
             saveKnown()

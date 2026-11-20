@@ -769,10 +769,8 @@ private fun WelcomePage(year: Int) {
         StoryBody("Todo lo que escuchaste este año, en un solo lugar.")
         Spacer(Modifier.weight(1f))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Image(
-                painter = painterResource(R.drawable.dezzymusic_monochrome),
-                contentDescription = null,
-                colorFilter = ColorFilter.tint(Color.White),
+            com.dezzy.music.appicon.DezzyLogoMark(
+                tint = Color.White,
                 modifier = Modifier.size(20.dp),
             )
             Spacer(Modifier.width(8.dp))

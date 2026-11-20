@@ -711,6 +711,14 @@ fun BottomSheetPlayer(
         initialAnchor = 1
     )
 
+    // El visualizador ya no tiene botón propio: se abre desde el menú «Más».
+    LaunchedEffect(canvasSheetState) {
+        com.dezzy.music.ui.menu.PlayerSheetRequests.visualizer.collect {
+            if (state.isCollapsed) state.expandSoft()
+            canvasSheetState.expandSoft()
+        }
+    }
+
     val isLyricsExpanded = !lyricsSheetState.isCollapsed && !lyricsSheetState.isDismissed
     DisposableEffect(isLyricsExpanded, hideStatusBarOnFullscreen) {
         val window = (context as? android.app.Activity)?.window
@@ -1115,6 +1123,23 @@ fun BottomSheetPlayer(
 
                 onSleepTimerClick = { showSleepTimerDialog = true },
                 onVisualizerClick = { canvasSheetState.expandSoft() },
+                onMenuClick = {
+                    enrichedMetadata?.let { metadata ->
+                        menuState.show {
+                            PlayerMenu(
+                                mediaMetadata = metadata,
+                                navController = navController,
+                                playerBottomSheetState = state,
+                                onShowDetailsDialog = {
+                                    bottomSheetPageState.show {
+                                        ShowMediaInfo(metadata.id)
+                                    }
+                                },
+                                onDismiss = menuState::dismiss
+                            )
+                        }
+                    }
+                },
                 modifier = Modifier,
             )
         } else if (playerDesignStyle == PlayerDesignStyle.AURORA) {

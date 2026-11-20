@@ -100,11 +100,9 @@ fun DezzyAuthScreen(onAuthenticated: () -> Unit) {
                 .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                painter = painterResource(R.drawable.star),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.size(34.dp),
+            com.dezzy.music.appicon.DezzyAppIcon(
+                modifier = Modifier.matchParentSize(),
+                corner = 0.5f,
             )
         }
 

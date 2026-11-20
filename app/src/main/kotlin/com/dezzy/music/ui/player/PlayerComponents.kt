@@ -273,36 +273,6 @@ fun PlayerTopActions(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (onVisualizerClick != null) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { onVisualizerClick() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.auto_awesome),
-                            contentDescription = "Visualizador",
-                            tint = textBackgroundColor.copy(alpha = 0.7f),
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { showShareDialog = true },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.share),
-                        contentDescription = null,
-                        tint = textBackgroundColor.copy(alpha = 0.7f),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
                 Box(
                     modifier = Modifier
                         .size(36.dp)
@@ -326,26 +296,6 @@ fun PlayerTopActions(
         }
 
         PlayerDesignStyle.V1 -> {
-            Box(
-                modifier =
-                    Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(textButtonColor)
-                        .clickable { showShareDialog = true },
-            ) {
-                Image(
-                    painter = painterResource(R.drawable.share),
-                    contentDescription = null,
-                    colorFilter = ColorFilter.tint(iconButtonColor),
-                    modifier =
-                        Modifier
-                            .align(Alignment.Center)
-                            .size(24.dp),
-                )
-            }
-
-            Spacer(modifier = Modifier.size(12.dp))
 
             Box(
                 contentAlignment = Alignment.Center,

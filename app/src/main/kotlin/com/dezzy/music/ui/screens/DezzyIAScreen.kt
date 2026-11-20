@@ -371,9 +371,7 @@ private fun ChatBubble(message: ChatMessage) {
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    painter = painterResource(R.drawable.star),
-                    contentDescription = null,
+                com.dezzy.music.appicon.DezzyLogoMark(
                     modifier = Modifier.size(18.dp),
                     tint = MaterialTheme.colorScheme.onPrimary
                 )
@@ -496,9 +494,7 @@ private fun TypingIndicator() {
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                painter = painterResource(R.drawable.star),
-                contentDescription = null,
+            com.dezzy.music.appicon.DezzyLogoMark(
                 modifier = Modifier.size(18.dp),
                 tint = MaterialTheme.colorScheme.onPrimary
             )

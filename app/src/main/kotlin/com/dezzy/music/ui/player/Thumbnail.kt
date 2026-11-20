@@ -332,7 +332,7 @@ fun Thumbnail(
     val timeline = playerConnection.player.currentTimeline
     val currentIndex = playerConnection.player.currentMediaItemIndex
     val shuffleModeEnabled = playerConnection.player.shuffleModeEnabled
-    val previousWindowIndex = if (swipeThumbnail && !timeline.isEmpty) {
+    val previousWindowIndex = if (swipeThumbnail && currentIndex in 0 until timeline.windowCount) {
         timeline.getPreviousWindowIndex(
             currentIndex,
             Player.REPEAT_MODE_OFF,
@@ -347,7 +347,7 @@ fun Thumbnail(
         } catch (e: Exception) { null }
     } else null
 
-    val nextWindowIndex = if (swipeThumbnail && !timeline.isEmpty) {
+    val nextWindowIndex = if (swipeThumbnail && currentIndex in 0 until timeline.windowCount) {
         timeline.getNextWindowIndex(
             currentIndex,
             Player.REPEAT_MODE_OFF,
@@ -753,11 +753,9 @@ fun Thumbnail(
                                                 .background(MaterialTheme.colorScheme.surfaceVariant),
                                             contentAlignment = Alignment.Center
                                         ) {
-                                            Icon(
-                                                painter = painterResource(R.drawable.star),
-                                                contentDescription = stringResource(R.string.hide_player_thumbnail),
-                                                tint = textBackgroundColor.copy(alpha = 0.7f),
-                                                modifier = Modifier.size(120.dp)
+                                            com.dezzy.music.appicon.DezzyAppIcon(
+                                                modifier = Modifier.size(120.dp),
+                                                corner = 0.24f,
                                             )
                                         }
                                     } else {

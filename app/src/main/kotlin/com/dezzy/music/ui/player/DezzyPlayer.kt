@@ -794,21 +794,7 @@ fun DezzyPlayer(
                         },
                     )
                     Spacer(modifier = Modifier.weight(1f))
-                    IconButton(onClick = { showShareSheet = true }) {
-                        Icon(
-                            painter = painterResource(R.drawable.share),
-                            contentDescription = "Compartir",
-                            tint = Color.White.copy(alpha = 0.85f),
-                        )
-                    }
                     SongVideoToggle(playerConnection = playerConnection, canvas = canvasArtwork)
-                    IconButton(onClick = onVisualizerClick) {
-                        Icon(
-                            painter = painterResource(R.drawable.auto_awesome),
-                            contentDescription = "Visualizador",
-                            tint = Color.White.copy(alpha = 0.85f),
-                        )
-                    }
                     Spacer(modifier = Modifier.weight(1f))
                 }
             } else {
@@ -822,21 +808,7 @@ fun DezzyPlayer(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    IconButton(onClick = { showShareSheet = true }) {
-                        Icon(
-                            painter = painterResource(R.drawable.share),
-                            contentDescription = "Compartir",
-                            tint = Color.White.copy(alpha = 0.85f),
-                        )
-                    }
                     SongVideoToggle(playerConnection = playerConnection, canvas = canvasArtwork)
-                    IconButton(onClick = onVisualizerClick) {
-                        Icon(
-                            painter = painterResource(R.drawable.auto_awesome),
-                            contentDescription = "Visualizador",
-                            tint = Color.White.copy(alpha = 0.85f),
-                        )
-                    }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
             }

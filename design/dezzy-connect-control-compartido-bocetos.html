@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Control compartido en Dezzy Connect</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="reproductor-estilos-base.css">
+<style>
+.app{background:#1A1112;color:#EDE0E1;display:flex;flex-direction:column}
+.muted{color:rgba(237,224,225,.62)}
+.dim{position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:2}
+.bg-player{position:absolute;inset:0;background:linear-gradient(180deg,#5A2A35,#1A1112 60%)}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:3;background:#271D1E;border-radius:28px 28px 0 0;padding:10px 0 18px;max-height:88%;overflow:auto}
+.sheet::-webkit-scrollbar{display:none}
+.handle{width:32px;height:4px;border-radius:2px;background:#9F8C8D;margin:0 auto 10px}
+.sh-t{font-size:22px;font-weight:500;padding:4px 20px 2px}
+.sh-s{font-size:13px;color:rgba(237,224,225,.62);padding:0 20px 10px}
+.lbl{font-size:11.5px;letter-spacing:.08em;font-weight:700;color:rgba(237,224,225,.6);padding:14px 20px 6px}
+.dev{display:flex;align-items:center;gap:14px;padding:10px 20px;cursor:pointer}
+.dev .ico{width:40px;height:40px;border-radius:12px;background:#3A2C2D;display:grid;place-items:center;flex:none;color:#FFB2B9}
+.dev.on .ico{background:#FFB2B9;color:#5E1123}
+.dev .tx{flex:1;min-width:0}.dev .tx b{display:block;font-size:15.5px;font-weight:500}.dev .tx small{font-size:12.5px;color:rgba(237,224,225,.62)}
+.dev.on .tx b{color:#FFB2B9}
+.chk{width:22px;height:22px;border-radius:6px;border:2px solid #9F8C8D;display:grid;place-items:center;flex:none}
+.chk.on{background:#FFB2B9;border-color:#FFB2B9;color:#5E1123}
+.now{margin:4px 16px 8px;border-radius:20px;background:#3A2C2D;padding:12px;display:flex;gap:12px;align-items:center}
+.now .art{width:52px;height:52px;border-radius:12px;flex:none}
+.now .tx{flex:1;min-width:0}.now b{display:block;font-size:15px;font-weight:500}.now small{font-size:12.5px;color:rgba(237,224,225,.62)}
+.ctl{display:flex;justify-content:center;gap:18px;align-items:center;padding:6px 0 4px}
+.ctl .pp{width:52px;height:52px;border-radius:50%;background:#FFB2B9;color:#5E1123;display:grid;place-items:center}
+.seg{display:flex;margin:4px 16px;border:1px solid #9F8C8D;border-radius:20px;overflow:hidden}
+.seg span{flex:1;text-align:center;font-size:13px;font-weight:500;padding:9px 4px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px}
+.seg span.on{background:#5D3F42;color:#FFD9DC}
+.tip{margin:8px 16px 0;border-radius:16px;background:#1F1617;padding:10px 12px;font-size:12.5px;color:rgba(237,224,225,.72);display:flex;gap:10px;align-items:flex-start}
+.chipc{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:14px;font-size:12.5px;font-weight:500;background:#FFB2B9;color:#5E1123}
+.vol{display:flex;align-items:center;gap:10px;padding:0 20px 8px 74px}
+.vol i{flex:1;height:4px;border-radius:2px;background:#5D3F42;position:relative}
+.vol i::after{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--w);background:#FFB2B9;border-radius:2px}
+.crown{color:#F7C873}
+.toast{position:absolute;left:16px;right:16px;top:70px;z-index:4;background:#EDE0E1;color:#271D1E;border-radius:14px;padding:10px 14px;font-size:13px;display:flex;gap:10px;align-items:center;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+.setrow{display:flex;align-items:center;gap:14px;padding:12px 20px}
+.setrow .tx{flex:1}.setrow b{display:block;font-size:16px;font-weight:400}.setrow small{font-size:13px;color:rgba(237,224,225,.62)}
+.radio{width:20px;height:20px;border-radius:50%;border:2px solid #9F8C8D;flex:none;position:relative}
+.radio.on{border-color:#FFB2B9}.radio.on::after{content:"";position:absolute;inset:3px;border-radius:50%;background:#FFB2B9}
+.tg{color:#FFB2B9}
+.bar{display:flex;align-items:center;gap:6px;height:56px;padding:0 6px;flex:none}
+.bar .t{font-size:20px;font-weight:500;flex:1}
+.ib{width:44px;height:44px;display:grid;place-items:center;border-radius:50%}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Control compartido en Dezzy Connect</h1>
+    <p class="lead">Escuchar en varios dispositivos a la vez y controlar la música desde cualquiera de ellos, como en Spotify. Siempre hay <b>un solo mando a la vez</b>: el último que toca manda, y los demás se ponen al día.</p>
+  </header>
+  <div class="today">
+    <h4>Lo que cambia en los tres bocetos</h4>
+    <ul>
+      <li><b>Un mando cada vez:</b> pausas, saltos y búsquedas pasan siempre por el dispositivo que lleva el ritmo. Así dos órdenes a la vez nunca chocan: gana la última y todos acaban igual.</li>
+      <li><b>«En ambos» se puede controlar desde los dos lados</b>, no solo desde el que lo empezó. Hoy el otro solo puede tocar el volumen.</li>
+      <li><b>Si suena en el ordenador</b>, los botones normales del móvil lo controlan: el reproductor, el mini reproductor, la notificación y la pantalla de bloqueo. Hoy solo funcionan los de la hoja de dispositivos.</li>
+      <li><b>Varios dispositivos a la vez</b> (hasta 4), por ejemplo el móvil, el portátil y el PC del salón. Hoy solo se puede uno.</li>
+      <li><b>Ajuste nuevo «Quién puede controlar»:</b> «Todos los conectados» (predeterminado) o «Solo el que lo empezó».</li>
+      <li>Hay que tocar el protocolo en los dos lados: Android y Dezzy Desktop. Los dos se actualizan juntos.</li>
+    </ul>
+  </div>
+
+  <!-- A -->
+  <section class="sketch" data-v="A">
+    <div class="sk-head"><span class="sk-tag">A</span><h3>Lista con casillas (tipo Spotify)</h3>
+      <p>La hoja de dispositivos de siempre, pero cada uno lleva una casilla «suena aquí». Puedes marcar varios a la vez. Abajo hay un selector rápido para decidir quién controla.</p></div>
+    <div class="sk-body">
+      <div>
+        <div class="phone"><div class="bg-player"></div><div class="dim"></div>
+          <div class="statusbar" style="z-index:5"><span>9:41</span><span class="ic"><span class="ms s14">wifi</span><span class="ms s14">battery_full</span></span></div>
+          <div class="sheet app">
+            <div class="handle"></div>
+            <div class="sh-t">Dispositivos</div>
+            <div class="sh-s">Sonando en 3 dispositivos · los controlas desde cualquiera</div>
+            <div class="now"><div class="art art-a"></div><div class="tx"><b>Flores amarillas</b><small>Arcángel</small></div></div>
+            <div class="ctl"><span class="ms">skip_previous</span><span class="pp"><span class="ms f s32">pause</span></span><span class="ms">skip_next</span></div>
+            <div class="lbl">SUENA EN</div>
+            <div class="dev on"><span class="ico"><span class="ms">smartphone</span></span><div class="tx"><b>Este móvil</b><small>Lleva el ritmo</small></div><span class="chk on"><span class="ms s18">check</span></span></div>
+            <div class="dev on"><span class="ico"><span class="ms">laptop</span></span><div class="tx"><b>Portátil de Dezzy</b><small>Sincronizado · 12 ms</small></div><span class="chk on"><span class="ms s18">check</span></span></div>
+            <div class="dev on"><span class="ico"><span class="ms">desktop_windows</span></span><div class="tx"><b>PC del salón</b><small>Sincronizado · 30 ms</small></div><span class="chk on"><span class="ms s18">check</span></span></div>
+            <div class="dev"><span class="ico"><span class="ms">speaker</span></span><div class="tx"><b>Bocina del cuarto</b><small>Disponible</small></div><span class="chk"></span></div>
+            <div class="lbl">QUIÉN PUEDE CONTROLAR</div>
+            <div class="seg"><span class="on"><span class="ms s18">groups</span>Todos</span><span><span class="ms s18">person</span>Solo este móvil</span></div>
+          </div>
+        </div>
+        <p class="cap">Marca o desmarca un dispositivo para que suene o deje de sonar ahí. La música sigue por donde iba.</p>
+      </div>
+      <div class="notes">
+        <h4 class="pro">A favor</h4><ul><li>Es lo que ya conoces de Spotify: marcas casillas y listo.</li><li>Todo está en un mismo sitio: qué suena, dónde suena y quién manda.</li></ul>
+        <h4 class="con">En contra</h4><ul><li>La hoja se alarga si tienes muchos dispositivos.</li><li>No hay volumen por dispositivo: se cambia desde cada uno.</li></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- B -->
+  <section class="sketch" data-v="B">
+    <div class="sk-head"><span class="sk-tag">B</span><h3>Grupo con volumen por dispositivo</h3>
+      <p>Los dispositivos que suenan forman un «grupo», cada uno con su propia barra de volumen. Cuando otro dispositivo toma el control, aparece un aviso corto que dice quién lo tomó.</p></div>
+    <div class="sk-body">
+      <div>
+        <div class="phone"><div class="bg-player"></div><div class="dim"></div>
+          <div class="statusbar" style="z-index:5"><span>9:41</span><span class="ic"><span class="ms s14">wifi</span><span class="ms s14">battery_full</span></span></div>
+          <div class="toast"><span class="ms s20">sync_alt</span>Portátil de Dezzy cambió de canción</div>
+          <div class="sheet app">
+            <div class="handle"></div>
+            <div class="sh-t">Grupo de escucha</div>
+            <div class="sh-s">3 dispositivos · <span class="crown">●</span> el último que tocó: Portátil</div>
+            <div class="now"><div class="art art-b"></div><div class="tx"><b>Ojitos lindos</b><small>Bad Bunny · 1:12 / 4:18</small></div><span class="ms s32 tg">pause_circle</span></div>
+            <div class="dev on"><span class="ico"><span class="ms">smartphone</span></span><div class="tx"><b>Este móvil</b><small>Suena aquí</small></div><span class="ms muted">close</span></div>
+            <div class="vol" style="--w:70%"><span class="ms s18 muted">volume_up</span><i></i></div>
+            <div class="dev on"><span class="ico"><span class="ms">laptop</span></span><div class="tx"><b>Portátil de Dezzy <span class="ms s16 crown">touch_app</span></b><small>Controló hace 5 s</small></div><span class="ms muted">close</span></div>
+            <div class="vol" style="--w:45%"><span class="ms s18 muted">volume_up</span><i></i></div>
+            <div class="dev on"><span class="ico"><span class="ms">desktop_windows</span></span><div class="tx"><b>PC del salón</b><small>Suena aquí</small></div><span class="ms muted">close</span></div>
+            <div class="vol" style="--w:85%"><span class="ms s18 muted">volume_up</span><i></i></div>
+            <div class="dev"><span class="ico"><span class="ms">add</span></span><div class="tx"><b>Añadir dispositivo</b><small>Bocina del cuarto disponible</small></div></div>
+            <div class="lbl">QUIÉN PUEDE CONTROLAR</div>
+            <div class="seg"><span class="on">Todos</span><span>Solo este móvil</span></div>
+          </div>
+        </div>
+        <p class="cap">El aviso de arriba sale cuando otro dispositivo toma el control. La ✕ quita un dispositivo del grupo.</p>
+      </div>
+      <div class="notes">
+        <h4 class="pro">A favor</h4><ul><li>Controlas el volumen de cada sala desde el móvil.</li><li>Siempre sabes quién tocó lo último, así no te pillan cambios sorpresa.</li></ul>
+        <h4 class="con">En contra</h4><ul><li>Es la hoja más cargada de las tres.</li><li>Más trabajo: hay que mandar el volumen de cada dispositivo por la red.</li></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- C -->
+  <section class="sketch" data-v="C">
+    <div class="sk-head"><span class="sk-tag">C</span><h3>Hoja sencilla y ajustes aparte</h3>
+      <p>La hoja de dispositivos casi no cambia: solo se pueden marcar varios. Las reglas de control van a una pantalla nueva, <b>Ajustes › Dezzy Connect</b>.</p></div>
+    <div class="sk-body">
+      <div>
+        <div class="phone app">
+          <div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s14">wifi</span><span class="ms s14">battery_full</span></span></div>
+          <div class="bar"><span class="ib"><span class="ms">arrow_back</span></span><span class="t">Dezzy Connect</span></div>
+          <div class="lbl">QUIÉN PUEDE CONTROLAR</div>
+          <div class="setrow"><span class="radio on"></span><div class="tx"><b>Todos los conectados</b><small>Cualquiera puede pausar, saltar o cambiar de canción. Manda el último que toca.</small></div></div>
+          <div class="setrow"><span class="radio"></span><div class="tx"><b>Solo el que lo empezó</b><small>Los demás solo escuchan y cambian su propio volumen.</small></div></div>
+          <div class="lbl">VARIOS A LA VEZ</div>
+          <div class="setrow"><span class="ms muted">devices</span><div class="tx"><b>Sonar en varios dispositivos</b><small>Hasta 4 a la vez</small></div><span class="ms s36 tg">toggle_on</span></div>
+          <div class="setrow"><span class="ms muted">notifications</span><div class="tx"><b>Avisar cuando otro tome el control</b><small>Un aviso corto con su nombre</small></div><span class="ms s36 tg">toggle_on</span></div>
+          <div class="lbl">CUANDO SUENA EN OTRO SITIO</div>
+          <div class="setrow"><span class="ms muted">lock</span><div class="tx"><b>Controlar desde la notificación y el bloqueo</b><small>El móvil hace de mando del ordenador</small></div><span class="ms s36 tg">toggle_on</span></div>
+          <div class="tip"><span class="ms s18">info</span>Estos ajustes se aplican a todos tus dispositivos vinculados.</div>
+        </div>
+        <p class="cap">Un sitio fijo para las reglas. La hoja de dispositivos sigue siendo rápida.</p>
+      </div>
+      <div class="notes">
+        <h4 class="pro">A favor</h4><ul><li>La hoja de dispositivos se queda limpia, como ahora.</li><li>Hay sitio para más reglas en el futuro sin llenar la hoja.</li></ul>
+        <h4 class="con">En contra</h4><ul><li>Para cambiar quién controla hay que entrar en Ajustes.</li><li>Ver dónde suena y ajustar las reglas queda en dos sitios distintos.</li></ul>
+      </div>
+    </div>
+  </section>
+
+  <div class="pick">Mi recomendación: <b>A</b>, que es lo más parecido a Spotify, con el aviso «X tomó el control» de B. Dime A, B o C, o una mezcla.</div>
+</div>
+</body>
+</html>

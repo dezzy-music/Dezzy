@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Editor de icono</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="reproductor-estilos-base.css">
+<style>
+.app{background:#1A1112;color:#EDE0E1}
+.surf{background:#271D1E;border-radius:20px}
+.surf2{background:#22191A;border-radius:16px}
+.muted{color:rgba(237,224,225,.62)}
+.lbl{font-size:11.5px;letter-spacing:.08em;font-weight:700;color:rgba(237,224,225,.6)}
+.tl{font-size:20px;font-weight:500}
+.btn{display:inline-flex;align-items:center;gap:6px;height:40px;border-radius:20px;padding:0 18px;font-size:14px;font-weight:500;cursor:pointer;user-select:none}
+.btn.fill{background:#FFB2B9;color:#5F1121}.btn.tonal{background:#4A3436;color:#FFD9DC}.btn.out{border:1px solid #9F8C8D;color:#EDE0E1}
+.seg{display:flex;background:#22191A;border-radius:20px;padding:4px;gap:4px}
+.seg span{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;height:44px;border-radius:16px;font-size:14px;font-weight:500;cursor:pointer}
+.seg span.on{background:#4A3436;color:#FFD9DC}
+.ico{display:block;flex:none}
+.pal{display:flex;flex-wrap:wrap;gap:10px}
+.pal .p{width:44px;height:44px;border-radius:14px;cursor:pointer;position:relative;outline:2px solid transparent;outline-offset:2px}
+.pal .p.on{outline-color:#FFB2B9}
+.crow{display:flex;align-items:center;gap:12px;padding:10px 0}
+.crow .sw{width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.18);position:relative;overflow:hidden;flex:none}
+.crow .sw input{position:absolute;inset:-8px;width:60px;height:60px;border:0;padding:0;opacity:0;cursor:pointer}
+.crow .hex{font-family:ui-monospace,monospace;font-size:13px;color:rgba(237,224,225,.7)}
+.hue{height:14px;border-radius:7px;background:linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);position:relative;margin-top:6px}
+.hue i{position:absolute;top:-4px;width:22px;height:22px;border-radius:50%;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);transform:translateX(-50%)}
+.home{border-radius:22px;padding:18px 16px;background:linear-gradient(160deg,#3b2a55,#1b1630 55%,#0e1a26);position:relative;overflow:hidden}
+.home .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 8px;justify-items:center}
+.home .app-i{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:#fff}
+.home .dummy{width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.18)}
+.notif{display:flex;gap:10px;align-items:center;background:#2c2324;border-radius:18px;padding:10px 12px}
+.badge-ok{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:#B4E8C6;background:rgba(52,211,153,.14);border-radius:10px;padding:2px 8px}
+.note{font-size:12px;line-height:17px;color:rgba(237,224,225,.6)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid rgba(255,255,255,.1)}
+.tabs span{padding:10px 14px;font-size:14px;font-weight:500;color:rgba(237,224,225,.6);border-bottom:3px solid transparent;cursor:pointer}
+.tabs span.on{color:#FFB2B9;border-color:#FFB2B9}
+.gal{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.gal .g{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;cursor:pointer;border-radius:16px;padding:8px 0}
+.gal .g.on{background:#4A3436}
+/* escritorio */
+.desk{width:640px;height:420px;border-radius:12px;overflow:hidden;background:#1A1112;color:#EDE0E1;box-shadow:0 0 0 1px #333,0 18px 40px rgba(0,0,0,.25);display:flex;flex-direction:column;flex:none;font-size:13px}
+.desk .tb{height:34px;display:flex;align-items:center;gap:8px;padding:0 10px;background:#1A1112;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px}
+.desk .tb .wc{margin-left:auto;display:flex;gap:18px;color:#bbb}
+.desk .body{flex:1;display:flex;min-height:0}
+.desk .side{width:150px;background:#22191A;padding:10px 8px;display:flex;flex-direction:column;gap:2px}
+.desk .side span{padding:7px 10px;border-radius:8px;display:flex;gap:8px;align-items:center;color:rgba(237,224,225,.75)}
+.desk .side span.on{background:#4A3436;color:#FFD9DC}
+.desk .main{flex:1;padding:18px 20px;overflow:hidden}
+.desk .taskbar{height:40px;background:#202020;display:flex;align-items:center;justify-content:center;gap:10px}
+.desk .taskbar .tbi{width:28px;height:28px;border-radius:6px;background:#3a3a3a}
+.desk .taskbar .act{position:relative}
+.desk .taskbar .act::after{content:'';position:absolute;bottom:-5px;left:30%;right:30%;height:3px;border-radius:2px;background:#FFB2B9}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="styles"><a href="dezzy-android-together-qr-bocetos.html">Listen Together · QR</a><a href="dezzy-android-transmitir-chromecast-bocetos.html">Pantalla en la tele</a><a class="on" href="dezzy-icono-editor-bocetos.html">Icono de la app</a></nav>
+  <header class="top">
+    <h1>Icono de la app · editor con colores propios</h1>
+    <p class="lead">Dos formas: <b>d·play</b> (la nueva, predeterminada) y la <b>estrella</b> de siempre. Cada una tiene tres colores: fondo, figura y acento (el play verde, o el centro de la estrella). Los bocetos son interactivos: toca las paletas o los colores.</p>
+    <div class="today"><h4>En las tres variantes</h4><ul>
+      <li><b>Dentro de la app el color es libre</b>: el logo de la bienvenida, Ajustes, Acerca de, el reproductor, las tarjetas para compartir y el color de las notificaciones cambian al momento.</li>
+      <li><b>Launcher de Android</b>: 2 formas × 8 paletas van dentro del APK. Con colores propios se usa la paleta más parecida. Solo cambia al pulsar «Aplicar al launcher», con aviso de que la app se cerrará y de que en algunos launchers hay que volver a poner el icono en la pantalla de inicio.</li>
+      <li><b>Escritorio</b>: los colores son libres en todas partes: ventana, barra de tareas, bandeja, mini reproductor y el acceso directo del menú Inicio.</li>
+      <li>Ajustes › Apariencia › <b>Icono de la app</b> (Android) y Ajustes › Apariencia › <b>Icono</b> (escritorio).</li></ul></div>
+  </header>
+
+  <!-- ═════════ A ═════════ -->
+  <section class="sketch" data-v="A">
+    <div class="sk-head"><span class="sk-tag">A</span><h3>Taller: vista previa grande y colores debajo</h3>
+      <p>Arriba, tu pantalla de inicio con el icono puesto. Debajo: forma, paletas y los tres colores con su selector. Todo en una sola pantalla.</p></div>
+    <div class="sk-body">
+      <div>
+        <div class="phone app"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s14">signal_cellular_alt</span><span class="ms s14">battery_full</span></span></div>
+          <div class="content" style="padding:0 16px">
+            <div class="row" style="height:52px"><span class="ms">arrow_back</span><span class="tl" style="margin-left:16px">Icono de la app</span></div>
+            <div class="home"><div class="grid">
+              <div class="app-i"><span class="dummy"></span>Fotos</div><div class="app-i"><span class="dummy"></span>Mapas</div>
+              <div class="app-i"><span data-icon="58" data-mask="circle"></span>Dezzy</div><div class="app-i"><span class="dummy"></span>Cámara</div></div></div>
+            <div class="seg" style="margin-top:14px" data-shape-seg><span data-shape="d">d · play</span><span data-shape="star">Estrella</span></div>
+            <div class="lbl" style="margin-top:14px">PALETAS</div>
+            <div class="pal" style="margin-top:8px" data-pal></div>
+            <div class="lbl" style="margin-top:12px">TUS COLORES</div>
+            <div data-colors></div>
+            <div class="row" style="gap:8px;margin-top:4px"><span class="btn out" style="flex:1;justify-content:center" data-reset>Restablecer</span><span class="btn fill" style="flex:1.4;justify-content:center"><span class="ms s18">home_app_logo</span>Aplicar al launcher</span></div>
+          </div><div class="gesture"><i></i></div></div>
+        <p class="cap">Android: todo a la vista, sin pestañas.</p>
+      </div>
+      <div>
+        <div class="desk"><div class="tb"><span data-icon="16" data-mask="r4"></span>Dezzy<span class="wc">— ▢ ✕</span></div>
+          <div class="body"><div class="side"><span><span class="ms s18">tune</span>General</span><span class="on"><span class="ms s18">palette</span>Apariencia</span><span><span class="ms s18">graphic_eq</span>Audio</span><span><span class="ms s18">desktop_windows</span>Escritorio</span></div>
+            <div class="main"><b style="font-size:16px">Icono</b>
+              <div class="row" style="gap:18px;margin-top:12px;align-items:flex-start">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:10px"><span data-icon="112" data-mask="r22"></span>
+                  <div class="row" style="gap:6px"><span data-icon="24" data-mask="r5"></span><span data-icon="20" data-mask="r4"></span><span data-icon="16" data-mask="r3"></span></div></div>
+                <div class="sp">
+                  <div class="seg" data-shape-seg><span data-shape="d">d · play</span><span data-shape="star">Estrella</span></div>
+                  <div class="pal" style="margin-top:10px;gap:8px" data-pal data-size="30"></div>
+                  <div data-colors data-compact></div>
+                </div></div></div></div>
+          <div class="taskbar"><span class="tbi"></span><span class="tbi"></span><span class="act" data-icon="26" data-mask="r6"></span><span class="tbi"></span></div></div>
+        <p class="cap">Escritorio: el icono de la barra de tareas cambia en vivo.</p>
+      </div>
+      <div class="notes"><h4>Cómo funciona</h4><ul>
+        <li>Al tocar una paleta, los tres colores se rellenan con ella. Si luego tocas un color, pasa a «Personalizada».</li>
+        <li>Cada color se elige con el selector del sistema y muestra su código hex.</li>
+        <li>«Restablecer» vuelve a d·play con la paleta original (morado, negro y verde).</li>
+      </ul><p class="pro" style="margin-top:10px">Es la más directa: se ve el resultado y se toca en el mismo sitio.</p></div>
+    </div>
+  </section>
+
+  <!-- ═════════ B ═════════ -->
+  <section class="sketch" data-v="B">
+    <div class="sk-head"><span class="sk-tag">B</span><h3>Galería: todas las combinaciones a la vista</h3>
+      <p>Como un pack de iconos: una cuadrícula con las 16 combinaciones de forma y paleta. Debajo, una tarjeta «Colores propios» con ruedas de tono.</p></div>
+    <div class="sk-body">
+      <div>
+        <div class="phone app"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s14">signal_cellular_alt</span><span class="ms s14">battery_full</span></span></div>
+          <div class="content" style="padding:0 16px">
+            <div class="row" style="height:52px"><span class="ms">arrow_back</span><span class="tl" style="margin-left:16px">Icono de la app</span></div>
+            <div class="surf" style="padding:14px"><div class="gal" data-gal></div></div>
+            <div class="surf" style="padding:14px 16px;margin-top:12px">
+              <div class="row"><b style="font-size:15px">Colores propios</b><span class="sp"></span><span class="ms s20 muted">expand_less</span></div>
+              <div data-hues></div>
+              <div class="note" style="margin-top:8px">En el launcher se usará la paleta más parecida. Dentro de Dezzy, tus colores exactos.</div>
+            </div>
+            <div class="row" style="margin-top:12px"><span class="btn fill" style="flex:1;justify-content:center"><span class="ms s18">home_app_logo</span>Aplicar al launcher</span></div>
+          </div><div class="gesture"><i></i></div></div>
+        <p class="cap">Android: elegir es tocar una celda.</p>
+      </div>
+      <div>
+        <div class="desk"><div class="tb"><span data-icon="16" data-mask="r4"></span>Dezzy<span class="wc">— ▢ ✕</span></div>
+          <div class="body"><div class="side"><span><span class="ms s18">tune</span>General</span><span class="on"><span class="ms s18">palette</span>Apariencia</span><span><span class="ms s18">graphic_eq</span>Audio</span><span><span class="ms s18">desktop_windows</span>Escritorio</span></div>
+            <div class="main"><b style="font-size:16px">Icono</b>
+              <div class="gal" style="grid-template-columns:repeat(8,1fr);gap:6px;margin-top:10px" data-gal data-size="40"></div>
+              <div class="surf2" style="padding:10px 14px;margin-top:12px"><b>Colores propios</b><div data-hues data-compact></div></div></div></div>
+          <div class="taskbar"><span class="tbi"></span><span class="tbi"></span><span class="act" data-icon="26" data-mask="r6"></span><span class="tbi"></span></div></div>
+        <p class="cap">Escritorio: la galería cabe en dos filas.</p>
+      </div>
+      <div class="notes"><h4>Cómo funciona</h4><ul>
+        <li>Las 16 celdas son exactamente los iconos que hay dentro del APK para el launcher.</li>
+        <li>Con «Colores propios», cada color se cambia arrastrando una barra de tono (rápido, sin escribir hex).</li>
+        <li>Menos control fino que A, pero la elección más rápida.</li>
+      </ul><p class="pro" style="margin-top:10px">Ideal si casi siempre se usan las paletas.</p></div>
+    </div>
+  </section>
+
+  <!-- ═════════ C ═════════ -->
+  <section class="sketch" data-v="C">
+    <div class="sk-head"><span class="sk-tag">C</span><h3>En contexto: cómo queda en cada sitio</h3>
+      <p>La vista previa enseña el icono donde aparece de verdad: pantalla de inicio, arranque, notificación y tarjeta de compartir. Debajo, pestañas Forma · Paletas · Colores.</p></div>
+    <div class="sk-body">
+      <div>
+        <div class="phone app"><div class="statusbar"><span>9:41</span><span class="ic"><span class="ms s14">signal_cellular_alt</span><span class="ms s14">battery_full</span></span></div>
+          <div class="content" style="padding:0 16px">
+            <div class="row" style="height:52px"><span class="ms">arrow_back</span><span class="tl" style="margin-left:16px">Icono de la app</span></div>
+            <div class="row" style="gap:10px;align-items:stretch">
+              <div class="surf2" style="flex:1;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px"><span data-icon="64" data-mask="squircle"></span><span class="note">Inicio</span></div>
+              <div class="surf2" style="flex:1;padding:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:#0B0B10" data-splash><span data-icon="44" data-mask="circle"></span><span class="note">Arranque</span></div></div>
+            <div class="notif" style="margin-top:10px"><span data-icon="30" data-mask="circle"></span><div class="sp" style="min-width:0"><b style="font-size:13px">Dezzy · Sonando</b><div class="muted ell" style="font-size:12px">Luces de neón · Aurora Vega</div></div><span class="ms s20">pause</span></div>
+            <div class="tabs" style="margin-top:12px"><span class="on" data-tab="pal">Paletas</span><span data-tab="shape">Forma</span><span data-tab="col">Colores</span></div>
+            <div data-tabpane="pal"><div class="pal" style="margin-top:12px" data-pal></div></div>
+            <div data-tabpane="shape" hidden><div class="seg" style="margin-top:12px" data-shape-seg><span data-shape="d">d · play</span><span data-shape="star">Estrella</span></div></div>
+            <div data-tabpane="col" hidden><div data-colors></div></div>
+            <div class="row" style="margin-top:14px"><span class="btn fill" style="flex:1;justify-content:center"><span class="ms s18">home_app_logo</span>Aplicar al launcher</span></div>
+          </div><div class="gesture"><i></i></div></div>
+        <p class="cap">Android: se ve en cada sitio antes de aplicar.</p>
+      </div>
+      <div>
+        <div class="desk"><div class="tb"><span data-icon="16" data-mask="r4"></span>Dezzy<span class="wc">— ▢ ✕</span></div>
+          <div class="body"><div class="side"><span><span class="ms s18">tune</span>General</span><span class="on"><span class="ms s18">palette</span>Apariencia</span><span><span class="ms s18">graphic_eq</span>Audio</span><span><span class="ms s18">desktop_windows</span>Escritorio</span></div>
+            <div class="main"><b style="font-size:16px">Icono</b>
+              <div class="row" style="gap:10px;margin-top:10px">
+                <div class="surf2" style="flex:1;padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px"><span data-icon="48" data-mask="r10"></span><span class="note">Menú Inicio</span></div>
+                <div class="surf2" style="flex:1;padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px"><span data-icon="26" data-mask="r6"></span><span class="note">Barra de tareas</span></div>
+                <div class="surf2" style="flex:1;padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px"><span data-icon="18" data-mask="r3"></span><span class="note">Bandeja</span></div></div>
+              <div class="pal" style="margin-top:12px;gap:8px" data-pal data-size="30"></div>
+              <div data-colors data-compact></div></div></div>
+          <div class="taskbar"><span class="tbi"></span><span class="tbi"></span><span class="act" data-icon="26" data-mask="r6"></span><span class="tbi"></span></div></div>
+        <p class="cap">Escritorio: los tres sitios de Windows de un vistazo.</p>
+      </div>
+      <div class="notes"><h4>Cómo funciona</h4><ul>
+        <li>Pensada para comprobar que el icono se lee bien en tamaño pequeño (notificación, bandeja) antes de aplicarlo.</li>
+        <li>Las pestañas ocupan menos sitio, pero hay un toque más para llegar a los colores.</li>
+      </ul><p class="pro" style="margin-top:10px">La más segura para no llevarse sorpresas.</p></div>
+    </div>
+  </section>
+
+  <div class="pick">Dime <b>A</b>, <b>B</b> o <b>C</b> (o una mezcla) y lo hago en Android y en el escritorio.</div>
+</div>
+
+<script>
+const PALETTES = [
+  { name: 'Original', bg: '#7C3AED', fg: '#0B0B10', ac: '#34D399' },
+  { name: 'Medianoche', bg: '#0B0B10', fg: '#F7F5FF', ac: '#7C3AED' },
+  { name: 'Dezzy', bg: '#ED5564', fg: '#FFFFFF', ac: '#2A0E14' },
+  { name: 'Lima', bg: '#C6F432', fg: '#0B0B10', ac: '#7C3AED' },
+  { name: 'Océano', bg: '#0EA5E9', fg: '#0B1220', ac: '#FDE047' },
+  { name: 'Coral', bg: '#FF7A59', fg: '#1B1B1F', ac: '#FFF1E6' },
+  { name: 'Bosque', bg: '#14532D', fg: '#ECFDF5', ac: '#FACC15' },
+  { name: 'Papel', bg: '#F7F5FF', fg: '#0B0B10', ac: '#7C3AED' },
+];
+const STAR_OUT = 'M233,840L298,559L80,370L368,345L480,80L592,345L880,370L662,559L727,840L480,691L233,840Z';
+const STAR_IN = 'M354,673L480,597L606,674L573,530L684,434L538,421L480,285L422,420L276,433L387,530L354,673Z';
+function iconSvg(st, size, mask) {
+  const r = { circle: 256, squircle: 150, r22: 100, r10: 96, r6: 110, r5: 110, r4: 110, r3: 110 }[mask] ?? 0;
+  const body = st.shape === 'd'
+    ? `<circle cx="220" cy="300" r="110" fill="none" stroke="${st.fg}" stroke-width="56"/><rect x="298" y="130" width="60" height="280" rx="30" fill="${st.fg}"/><path fill="${st.ac}" d="M188 250 292 300 188 350Z"/>`
+    : `<g transform="translate(76 76) scale(.375)"><path fill-rule="evenodd" fill="${st.fg}" d="${STAR_OUT} ${STAR_IN}"/><path fill="${st.ac}" d="${STAR_IN}"/></g>`;
+  return `<svg class="ico" width="${size}" height="${size}" viewBox="0 0 512 512"><rect width="512" height="512" rx="${r}" fill="${st.bg}"/>${body}</svg>`;
+}
+document.querySelectorAll('.sketch').forEach((sec) => {
+  const st = { shape: 'd', pal: 0, ...PALETTES[0] };
+  const render = () => {
+    sec.querySelectorAll('[data-icon]').forEach((el) => (el.innerHTML = iconSvg(st, +el.dataset.icon, el.dataset.mask)));
+    sec.querySelectorAll('[data-shape]').forEach((el) => el.classList.toggle('on', el.dataset.shape === st.shape));
+    sec.querySelectorAll('[data-pal]').forEach((box) => {
+      const sz = +(box.dataset.size || 44);
+      box.innerHTML = PALETTES.map((p, i) => `<span class="p${st.pal === i ? ' on' : ''}" title="${p.name}" data-i="${i}" style="width:${sz}px;height:${sz}px;border-radius:${sz * 0.3}px;overflow:hidden">${iconSvg({ ...p, shape: st.shape }, sz)}</span>`).join('');
+    });
+    sec.querySelectorAll('[data-gal]').forEach((box) => {
+      const sz = +(box.dataset.size || 52);
+      box.innerHTML = ['d', 'star'].flatMap((shape) => PALETTES.map((p, i) => `<span class="g${st.pal === i && st.shape === shape ? ' on' : ''}" data-i="${i}" data-s="${shape}"><span style="border-radius:50%;overflow:hidden;display:block">${iconSvg({ ...p, shape }, sz)}</span>${box.dataset.size ? '' : p.name}</span>`)).join('');
+    });
+    const roles = [['bg', 'Fondo'], ['fg', st.shape === 'd' ? 'Letra' : 'Estrella'], ['ac', st.shape === 'd' ? 'Play' : 'Centro']];
+    sec.querySelectorAll('[data-colors]').forEach((box) => {
+      box.innerHTML = roles.map(([k, n]) => `<div class="crow" style="${box.dataset.compact !== undefined ? 'padding:5px 0' : ''}"><span class="sw" style="background:${st[k]}"><input type="color" value="${st[k]}" data-k="${k}"></span><span class="sp">${n}</span><span class="hex">${st[k].toUpperCase()}</span><span class="ms s18 muted">edit</span></div>`).join('');
+    });
+    sec.querySelectorAll('[data-hues]').forEach((box) => {
+      box.innerHTML = roles.map(([k, n]) => {
+        const h = hueOf(st[k]);
+        return `<div style="margin-top:${box.dataset.compact !== undefined ? 6 : 12}px"><div class="row" style="font-size:13px"><span class="sw" style="width:14px;height:14px;border-radius:4px;background:${st[k]};margin-right:8px;display:inline-block"></span>${n}<span class="sp"></span><span class="hex muted" style="font-family:ui-monospace,monospace;font-size:12px">${st[k].toUpperCase()}</span></div><div class="hue" data-k="${k}"><i style="left:${(h / 360) * 100}%;background:${st[k]}"></i></div></div>`;
+      }).join('');
+    });
+    const splash = sec.querySelector('[data-splash]');
+    if (splash) splash.style.background = st.bg;
+  };
+  sec.addEventListener('click', (e) => {
+    const p = e.target.closest('[data-pal] .p, [data-gal] .g');
+    if (p) { const i = +p.dataset.i; Object.assign(st, PALETTES[i], { pal: i }); if (p.dataset.s) st.shape = p.dataset.s; render(); return; }
+    const sh = e.target.closest('[data-shape]');
+    if (sh) { st.shape = sh.dataset.shape; render(); return; }
+    if (e.target.closest('[data-reset]')) { Object.assign(st, PALETTES[0], { pal: 0, shape: 'd' }); render(); return; }
+    const tab = e.target.closest('[data-tab]');
+    if (tab) { sec.querySelectorAll('[data-tab]').forEach((t) => t.classList.toggle('on', t === tab)); sec.querySelectorAll('[data-tabpane]').forEach((p) => (p.hidden = p.dataset.tabpane !== tab.dataset.tab)); return; }
+    const hue = e.target.closest('.hue');
+    if (hue) { const r = hue.getBoundingClientRect(); const h = ((e.clientX - r.left) / r.width) * 360; st[hue.dataset.k] = withHue(st[hue.dataset.k], h); st.pal = -1; render(); }
+  });
+  sec.addEventListener('input', (e) => { if (e.target.dataset.k) { st[e.target.dataset.k] = e.target.value; st.pal = -1; render(); } });
+  render();
+});
+function hsl(hex) { const n = parseInt(hex.slice(1), 16); let r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b); let h = 0, s = 0; const l = (mx + mn) / 2; if (mx !== mn) { const d = mx - mn; s = l > .5 ? d / (2 - mx - mn) : d / (mx + mn); h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h *= 60; } return [h, s, l]; }
+function hueOf(hex) { return hsl(hex)[0]; }
+function withHue(hex, h) { let [, s, l] = hsl(hex); if (s < .25) s = .7; if (l < .2) l = .45; if (l > .9) l = .6; const f = (n) => { const k = (n + h / 30) % 12, a = s * Math.min(l, 1 - l); return Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)))); }; return '#' + [f(0), f(8), f(4)].map((v) => v.toString(16).padStart(2, '0')).join(''); }
+</script>
+</body>
+</html>

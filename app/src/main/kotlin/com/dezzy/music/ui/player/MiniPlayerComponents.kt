@@ -324,10 +324,9 @@ private fun MiniPlayerArtwork(
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
-                Icon(
-                    painter = painterResource(R.drawable.star),
-                    contentDescription = null,
-                    modifier = Modifier.size(22.dp)
+                com.dezzy.music.appicon.DezzyAppIcon(
+                    modifier = Modifier.fillMaxSize(),
+                    corner = 0f,
                 )
             }
         }
@@ -441,7 +440,6 @@ fun NewMiniPlayerContent(
     val isPlaying by playerConnection.isPlaying.collectAsState()
     val playbackState by playerConnection.playbackState.collectAsState()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
-    val togetherSessionState by playerConnection.service.togetherSessionState.collectAsState()
     val canSkipPrevious by playerConnection.canSkipPrevious.collectAsState()
     val canSkipNext by playerConnection.canSkipNext.collectAsState()
     val currentSong by playerConnection.currentSong.collectAsState(initial = null)
@@ -469,26 +467,6 @@ fun NewMiniPlayerContent(
             mediaMetadata?.let {
                 MiniPlayerInfo(mediaMetadata = it)
             } ?: Spacer(Modifier.weight(1f))
-
-            if (togetherSessionState !is TogetherSessionState.Idle) {
-                Spacer(modifier = Modifier.width(8.dp))
-                Surface(
-                    shape = RoundedCornerShape(999.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.all_inclusive),
-                            contentDescription = stringResource(R.string.music_together),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(14.dp),
-                        )
-                    }
-                }
-            }
 
             Spacer(modifier = Modifier.width(12.dp))
 
@@ -519,52 +497,6 @@ fun NewMiniPlayerContent(
                     }
                 },
                 isPrimary = false
-            )
-        }
-
-        var expanded by remember { mutableStateOf(false) }
-        Box {
-            IconButton(
-                onClick = { expanded = true },
-                modifier = Modifier.size(if (miniPlayerStyle == MiniPlayerStyle.COMPACT) 36.dp else 24.dp).padding(start = if (miniPlayerStyle == MiniPlayerStyle.COMPACT) 8.dp else 4.dp)
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.style),
-                    contentDescription = "Style",
-                    modifier = Modifier.size(if (miniPlayerStyle == MiniPlayerStyle.COMPACT) 20.dp else 16.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                MiniPlayerStyle.values().forEach { style ->
-                    DropdownMenuItem(
-                        text = { Text(style.name.lowercase().replaceFirstChar { it.uppercase() } + " Style") },
-                        onClick = { onStyleChange(style); expanded = false }
-                    )
-                }
-            }
-        }
-
-
-        Spacer(modifier = Modifier.width(4.dp))
-
-        // ── Ícono de Persona (acceso al perfil del artista) ─────────
-        IconButton(
-            onClick = {
-                val firstArtist = mediaMetadata?.artists?.firstOrNull()
-                val artistId = firstArtist?.id
-                if (!artistId.isNullOrBlank()) {
-                    navController.navigate("artist/$artistId")
-                    state.collapseSoft()
-                }
-            },
-            modifier = Modifier.size(40.dp)
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.person),
-                contentDescription = stringResource(R.string.artists),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp)
             )
         }
 

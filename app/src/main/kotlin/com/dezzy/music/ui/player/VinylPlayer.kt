@@ -204,6 +204,7 @@ fun VinylPlayer(
 
     onSleepTimerClick: () -> Unit = {},
     onVisualizerClick: () -> Unit = {},
+    onMenuClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
@@ -470,7 +471,7 @@ fun VinylPlayer(
                         onNext = { playerConnection.seekToNext() },
                         onToggleLike = { playerConnection.toggleLike() },
                         onLyricsClick = onLyricsClick,
-                        onShareClick = { showShareSheet = true },
+                        onMoreClick = onMenuClick,
                         onVisualizerClick = onVisualizerClick,
                         onOpenListenTogether = {
                             state.collapseSoft()
@@ -556,7 +557,7 @@ fun VinylPlayer(
                     onNext = { playerConnection.seekToNext() },
                     onToggleLike = { playerConnection.toggleLike() },
                     onLyricsClick = onLyricsClick,
-                    onShareClick = { showShareSheet = true },
+                    onMoreClick = onMenuClick,
                     onVisualizerClick = onVisualizerClick,
                     onOpenListenTogether = {
                         state.collapseSoft()
@@ -1275,7 +1276,7 @@ private fun InfoAndControls(
     onToggleLike: () -> Unit,
     onLyricsClick: () -> Unit,
 
-    onShareClick: () -> Unit = {},
+    onMoreClick: () -> Unit = {},
     onVisualizerClick: () -> Unit = {},
     onOpenListenTogether: (() -> Unit)? = null,
 ) {
@@ -1368,7 +1369,7 @@ private fun InfoAndControls(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // Fila inferior: me gusta · visualizador · compartir · letras
+        // Fila inferior: me gusta · dispositivos · letras · más (visualizador y compartir viven en «Más»)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1382,12 +1383,7 @@ private fun InfoAndControls(
                 // ♥ relleno y en color cuando te gusta (boceto A)
                 tint = if (liked) Color(0xFFE5484D) else null,
             )
-            RoundIconButton(
-                iconRes = R.drawable.auto_awesome,
-                theme = theme,
-                onClick = onVisualizerClick,
-            )
-            // Dispositivos en el centro de los 5 botones
+            // Dispositivos en el centro
             PhysicalEdge(theme = theme, shape = CircleShape, width = 46.dp, height = 46.dp) {
                 Surface(
                     shape = CircleShape,
@@ -1405,14 +1401,14 @@ private fun InfoAndControls(
                 }
             }
             RoundIconButton(
-                iconRes = R.drawable.share,
-                theme = theme,
-                onClick = onShareClick,
-            )
-            RoundIconButton(
                 iconRes = R.drawable.lyrics,
                 theme = theme,
                 onClick = onLyricsClick,
+            )
+            RoundIconButton(
+                iconRes = R.drawable.more_horiz,
+                theme = theme,
+                onClick = onMoreClick,
             )
         }
 

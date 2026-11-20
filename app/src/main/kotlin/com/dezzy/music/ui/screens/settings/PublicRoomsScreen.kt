@@ -9,6 +9,10 @@ import com.dezzy.music.together.membershipIn
 import com.dezzy.music.together.currentTogetherRoom
 import com.dezzy.music.together.TogetherRoomMembership
 import com.dezzy.music.together.TogetherSessionState
+import com.dezzy.music.together.TogetherLink
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import androidx.compose.runtime.collectAsState
 import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.activity.compose.BackHandler
@@ -214,6 +218,38 @@ fun PublicRoomsScreen(
         }
     }
 
+    // Escanear el QR de una sala (móvil o PC) con el escáner de Google Play: no pide
+    // permiso de cámara. Un QR válido rellena el código y entra directamente.
+    var scanError by remember { mutableStateOf<String?>(null) }
+    fun scanRoomQr() {
+        scanError = null
+        val options = GmsBarcodeScannerOptions.Builder()
+            .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
+            .build()
+        val scanner = runCatching { GmsBarcodeScanning.getClient(context, options) }.getOrElse {
+            scanError = "No se pudo abrir el escáner. Escribe el código a mano."
+            return
+        }
+        runCatching { scanner.startScan() }.getOrElse {
+            scanError = "No se pudo abrir el escáner. Escribe el código a mano."
+            return
+        }
+            .addOnSuccessListener { barcode ->
+                val target = TogetherLink.parseScannedQr(barcode.rawValue.orEmpty())
+                if (target == null) {
+                    scanError = "Este QR no es de una sala de Dezzy"
+                } else {
+                    // Sala en línea: el código; sala LAN: el enlace completo.
+                    privateRoomCode = if (target.length <= 8) target else ""
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    openOrJoin(target)
+                }
+            }
+            .addOnFailureListener {
+                scanError = "No se pudo abrir el escáner. Escribe el código a mano."
+            }
+    }
+
     fun fetchRooms() {
         scope.launch(Dispatchers.IO) {
             isLoading = true
@@ -415,7 +451,7 @@ fun PublicRoomsScreen(
                         TogetherActionCard(
                             iconRes = R.drawable.lock,
                             title = "Unirse con código",
-                            subtitle = "Sala privada de 6 caracteres",
+                            subtitle = "Código de 6 caracteres o QR",
                             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                             contentColor = MaterialTheme.colorScheme.onSurface,
                             onClick = {
@@ -602,7 +638,7 @@ fun PublicRoomsScreen(
                 )
 
                 Text(
-                    text = "Introduce el código de 6 caracteres compartido por el anfitrión para sincronizar la música en tiempo real.",
+                    text = "Escribe el código o escanea el QR del móvil o del PC.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center,
@@ -613,7 +649,10 @@ fun PublicRoomsScreen(
 
                 androidx.compose.material3.OutlinedTextField(
                     value = privateRoomCode,
-                    onValueChange = { privateRoomCode = it.uppercase().take(8) },
+                    onValueChange = {
+                        privateRoomCode = it.uppercase().take(8)
+                        scanError = null
+                    },
                     placeholder = {
                         Text(
                             "CÓDIGO (ej. AB12CD)",
@@ -639,7 +678,7 @@ fun PublicRoomsScreen(
                             androidx.compose.material3.IconButton(onClick = { privateRoomCode = "" }) {
                                 Icon(painterResource(R.drawable.close), null, modifier = Modifier.size(18.dp))
                             }
-                        } else {
+                        } else Row(verticalAlignment = Alignment.CenterVertically) {
                             androidx.compose.material3.IconButton(
                                 onClick = {
                                     val text = clipboard.getText()?.text?.trim().orEmpty()
@@ -656,7 +695,22 @@ fun PublicRoomsScreen(
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }
+                            androidx.compose.material3.FilledTonalButton(
+                                onClick = { scanRoomQr() },
+                                shape = RoundedCornerShape(14.dp),
+                                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp),
+                                modifier = Modifier
+                                    .padding(end = 6.dp)
+                                    .height(40.dp),
+                            ) {
+                                Icon(painterResource(R.drawable.qr_code_scanner), null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text("Escanear", fontWeight = FontWeight.SemiBold)
+                            }
                         }
+                    },
+                    supportingText = scanError?.let { msg ->
+                        { Text(msg, color = MaterialTheme.colorScheme.error) }
                     },
                     colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,

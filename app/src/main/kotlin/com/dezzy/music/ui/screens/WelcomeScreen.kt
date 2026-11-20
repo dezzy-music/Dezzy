@@ -72,6 +72,7 @@ import com.dezzy.music.innertube.models.AlbumItem
 import com.dezzy.music.innertube.models.ArtistItem
 import com.dezzy.music.innertube.models.SongItem
 import com.dezzy.music.innertube.utils.parseCookieString
+import com.dezzy.music.security.SessionCrypto
 import com.dezzy.music.utils.rememberPreference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -104,7 +105,9 @@ fun WelcomeScreen(
     val (innerTubeCookie) = rememberPreference(InnerTubeCookieKey, "")
     val spotifyLinked = spotifySpDc.isNotBlank()
     val youtubeLinked = remember(innerTubeCookie) {
-        innerTubeCookie.isNotBlank() && "SAPISID" in parseCookieString(innerTubeCookie)
+        // La cookie se guarda cifrada: sin descifrarla nunca aparece SAPISID y la tarjeta
+        // de YouTube no pasaba a «Conectado» aunque la sesión sí estuviera iniciada.
+        innerTubeCookie.isNotBlank() && "SAPISID" in parseCookieString(SessionCrypto.decrypt(innerTubeCookie))
     }
 
     var tiles by remember { mutableStateOf<List<WelcomeTile>>(emptyList()) }

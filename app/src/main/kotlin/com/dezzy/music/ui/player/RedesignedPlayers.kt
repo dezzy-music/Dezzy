@@ -737,7 +737,6 @@ private fun CinematicPosterPlayer(
                 iconSize = 22.dp,
             )
             StyledIcon(R.drawable.lyrics, "Letras", inkDim, actions.onLyricsClick, iconSize = 22.dp)
-            StyledIcon(R.drawable.auto_awesome, "Visualizador", inkDim, actions.onVisualizerClick, iconSize = 22.dp)
             StyledIcon(R.drawable.queue_music, "Cola", inkDim, actions.onQueueClick, iconSize = 22.dp)
         }
     }
@@ -1057,7 +1056,6 @@ private fun ExpressiveTypePlayer(
                 22.dp,
             )
             StyledIcon(R.drawable.lyrics, "Letras", accent, actions.onLyricsClick, small, 22.dp)
-            StyledIcon(R.drawable.auto_awesome, "Visualizador", accent, actions.onVisualizerClick, small, 22.dp)
             DevicesButton(
                 tint = accent,
                 iconSize = 22.dp,
@@ -1405,7 +1403,6 @@ private fun ModernGlassPlayer(
                 )
                 Spacer(Modifier.weight(1f))
                 StyledIcon(R.drawable.lyrics, "Letras", inkDim, actions.onLyricsClick, Modifier.size(44.dp), 22.dp)
-                StyledIcon(R.drawable.auto_awesome, "Visualizador", inkDim, actions.onVisualizerClick, Modifier.size(44.dp), 22.dp)
                 StyledIcon(R.drawable.queue_music, "Cola", inkDim, actions.onQueueClick, Modifier.size(44.dp), 22.dp)
             }
         }
@@ -1695,7 +1692,6 @@ private fun MinimalPaperPlayer(
                 iconSize = 20.dp,
             )
             StyledIcon(R.drawable.lyrics, "Letras", ink, actions.onLyricsClick, iconSize = 20.dp)
-            StyledIcon(R.drawable.auto_awesome, "Visualizador", ink, actions.onVisualizerClick, iconSize = 20.dp)
             StyledIcon(R.drawable.queue_music, "Cola", ink, actions.onQueueClick, iconSize = 20.dp)
             StyledIcon(
                 repeatIcon(repeatMode),

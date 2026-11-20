@@ -308,6 +308,14 @@ fun AppearanceSettings(
             defaultValue = PlayerBackgroundStyle.DEFAULT,
         )
     val (pureBlack, onPureBlackChange) = rememberPreference(PureBlackKey, defaultValue = true)
+    val (visualizerStyleName, onVisualizerStyleNameChange) = rememberPreference(
+        com.dezzy.music.constants.VisualizerStyleKey,
+        defaultValue = com.dezzy.music.ui.player.VisualizerStyle.ESFERA.name,
+    )
+    val (visualizerSwipe, onVisualizerSwipeChange) = rememberPreference(
+        com.dezzy.music.constants.VisualizerSwipeKey,
+        defaultValue = true,
+    )
     val (disableBlur, onDisableBlurChange) = rememberPreference(DisableBlurKey, defaultValue = false)
     val (useSystemFont, onUseSystemFontChange) = rememberPreference(UseSystemFontKey, defaultValue = false)
     val (fontFamily, onFontFamilyChange) = rememberPreference(FontFamilyKey, defaultValue = "MATERIAL3")
@@ -560,6 +568,35 @@ fun AppearanceSettings(
                 onClick = { navController.navigate("settings/appearance/palette_picker") }
             )
         }
+
+        PreferenceEntry(
+            title = { Text("Icono de la app") },
+            description = "Forma y colores del icono, en la app y en el launcher",
+            icon = {
+                com.dezzy.music.appicon.DezzyAppIcon(
+                    Modifier.size(24.dp),
+                    corner = 0.5f,
+                )
+            },
+            onClick = { navController.navigate("settings/appearance/app_icon") }
+        )
+
+        // Visualizador (boceto B «Carrusel»): se elige aquí con su vista previa animada.
+        PreferenceGroupTitle(title = "Visualizador")
+        com.dezzy.music.ui.player.VisualizerCarousel(
+            selected = com.dezzy.music.ui.player.VisualizerStyle.entries
+                .firstOrNull { it.name == visualizerStyleName }
+                ?: com.dezzy.music.ui.player.VisualizerStyle.ESFERA,
+            onSelect = { onVisualizerStyleNameChange(it.name) },
+            modifier = Modifier.padding(bottom = 12.dp),
+        )
+        SwitchPreference(
+            title = { Text("Deslizar para cambiar") },
+            description = "En la pantalla del visualizador",
+            icon = { Icon(painterResource(R.drawable.swipe), null) },
+            checked = visualizerSwipe,
+            onCheckedChange = onVisualizerSwipeChange,
+        )
 
         EnumListPreference(
             title = { Text(stringResource(R.string.dark_theme)) },

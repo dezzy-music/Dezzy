@@ -1111,9 +1111,7 @@ fun ShareBottomSheet(
 @Composable
 private fun BrandingRow(textColor: Color) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            painter = painterResource(id = R.drawable.star),
-            contentDescription = null,
+        com.dezzy.music.appicon.DezzyLogoMark(
             tint = textColor,
             modifier = Modifier.size(16.dp)
         )

@@ -8,20 +8,22 @@ package com.dezzy.music.ui.screens.settings
 
 import com.dezzy.music.together.TogetherRoomMembership
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedIconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,6 +44,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -55,6 +60,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.dezzy.music.R
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.EncodeHintType
+import com.google.zxing.qrcode.QRCodeWriter
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import com.dezzy.music.together.TogetherPublicRoom
 
 /*
@@ -266,73 +275,148 @@ internal fun TogetherPublicRoomRow(
 }
 
 /**
- * Tarjeta grande con el código (salas en línea) o el enlace (salas LAN) de la
- * sala activa, con Copiar y Compartir.
+ * Tarjeta de la sala (boceto «modelo A», como en el escritorio): QR a la izquierda
+ * con `dezzy://together?code=…` y el código a la derecha, más Código / Enlace / Compartir.
+ * En salas LAN no hay código corto: el QR lleva el enlace completo.
  */
 @Composable
 internal fun TogetherRoomCodeCard(
-    code: String,
-    isLink: Boolean,
+    code: String?,
+    qrContent: String,
     addressHint: String?,
-    onCopy: () -> Unit,
+    onCopyCode: (() -> Unit)?,
+    onCopyLink: () -> Unit,
     onShare: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
         shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.primaryContainer,
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         modifier = modifier.fillMaxWidth(),
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text(
-                text = if (isLink) "Enlace de la sala" else "Código de la sala",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-            )
-            if (isLink) {
-                Text(
-                    text = code,
-                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-                    textAlign = TextAlign.Center,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (addressHint != null) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                TogetherQrCode(content = qrContent, modifier = Modifier.size(132.dp))
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
                     Text(
-                        text = addressHint,
-                        style = MaterialTheme.typography.labelLarge.copy(fontFamily = FontFamily.Monospace),
-                        fontWeight = FontWeight.Bold,
+                        text = if (code != null) "CÓDIGO DE LA SALA" else "SALA EN TU RED",
+                        style = MaterialTheme.typography.labelMedium,
+                        letterSpacing = 1.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (code != null) {
+                        Text(
+                            text = code,
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                fontFamily = FontFamily.Monospace,
+                                letterSpacing = 3.sp,
+                            ),
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                        )
+                    } else if (addressHint != null) {
+                        Text(
+                            text = addressHint,
+                            style = MaterialTheme.typography.titleMedium.copy(fontFamily = FontFamily.Monospace),
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    Text(
+                        text = if (code != null) {
+                            "Escanéalo con otro móvil o escribe el código en Escuchar juntos."
+                        } else {
+                            "Escanéalo con otro móvil conectado a la misma wifi."
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-            } else {
-                Text(
-                    text = code,
-                    style = MaterialTheme.typography.displaySmall.copy(
-                        fontFamily = FontFamily.Monospace,
-                        letterSpacing = 6.sp,
-                    ),
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                )
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Button(onClick = onCopy, modifier = Modifier.weight(1f)) {
-                    Icon(painterResource(R.drawable.copy), null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Copiar", fontWeight = FontWeight.SemiBold)
+                if (onCopyCode != null) {
+                    FilledTonalButton(
+                        onClick = onCopyCode,
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(horizontal = 8.dp),
+                    ) {
+                        Icon(painterResource(R.drawable.content_copy), null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Código", fontWeight = FontWeight.SemiBold, maxLines = 1)
+                    }
                 }
-                FilledTonalButton(onClick = onShare, modifier = Modifier.weight(1f)) {
-                    Icon(painterResource(R.drawable.share), null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(stringResource(R.string.share), fontWeight = FontWeight.SemiBold)
+                OutlinedButton(
+                    onClick = onCopyLink,
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 8.dp),
+                ) {
+                    Icon(painterResource(R.drawable.link), null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Enlace", fontWeight = FontWeight.SemiBold, maxLines = 1)
+                }
+                OutlinedButton(
+                    onClick = onShare,
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 8.dp),
+                ) {
+                    Icon(painterResource(R.drawable.share), null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Compartir", fontWeight = FontWeight.SemiBold, maxLines = 1)
+                }
+            }
+        }
+    }
+}
+
+/** QR negro sobre blanco (siempre, también en tema oscuro, para que lo lea cualquier cámara). */
+@Composable
+internal fun TogetherQrCode(content: String, modifier: Modifier = Modifier) {
+    val matrix = remember(content) {
+        runCatching {
+            QRCodeWriter().encode(
+                content,
+                BarcodeFormat.QR_CODE,
+                0,
+                0,
+                mapOf(EncodeHintType.MARGIN to 0, EncodeHintType.ERROR_CORRECTION to ErrorCorrectionLevel.M),
+            )
+        }.getOrNull()
+    }
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color.White)
+            .padding(10.dp),
+    ) {
+        if (matrix != null) {
+            Canvas(Modifier.fillMaxSize()) {
+                val cells = matrix.width
+                val cell = size.minDimension / cells
+                for (y in 0 until cells) {
+                    for (x in 0 until cells) {
+                        if (matrix[x, y]) {
+                            // +0.5px evita las líneas finas entre módulos por redondeo.
+                            drawRect(
+                                color = Color.Black,
+                                topLeft = Offset(x * cell, y * cell),
+                                size = Size(cell + 0.5f, cell + 0.5f),
+                            )
+                        }
+                    }
                 }
             }
         }

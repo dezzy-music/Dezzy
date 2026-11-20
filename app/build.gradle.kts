@@ -366,6 +366,8 @@ dependencies {
     implementation("com.google.mlkit:translate:17.0.3")
     // Escáner de QR de Google Play (sin permiso de cámara) para vincular Dezzy en el ordenador.
     implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
+    // Generador de QR (sólo el núcleo, sin cámara) para la tarjeta de la sala de Escuchar juntos.
+    implementation("com.google.zxing:core:3.5.3")
     // Music Map (native, keyless OpenStreetMap tiles)
     implementation("org.osmdroid:osmdroid-android:6.1.20")
     implementation("androidx.lifecycle:lifecycle-process:2.10.0")

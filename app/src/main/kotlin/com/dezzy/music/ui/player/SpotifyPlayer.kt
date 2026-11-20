@@ -518,14 +518,6 @@ fun SpotifyPlayer(
                     )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onVisualizerClick) {
-                        Icon(
-                            painter = painterResource(R.drawable.auto_awesome),
-                            contentDescription = "Visualizador",
-                            tint = Color.White,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
                     IconButton(onClick = onMenuClick) {
                         Icon(
                             painter = painterResource(R.drawable.more_vert),
@@ -698,14 +690,6 @@ fun SpotifyPlayer(
                                         contentDescription = "Temporizador",
                                         tint = Color.White.copy(alpha = 0.8f),
                                         modifier = Modifier.size(22.dp)
-                                    )
-                                }
-                                IconButton(onClick = { showShareSheet = true }) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.share),
-                                        contentDescription = "Compartir",
-                                        tint = Color.White.copy(alpha = 0.8f),
-                                        modifier = Modifier.size(20.dp)
                                     )
                                 }
                                 IconButton(onClick = onQueueClick) {
@@ -937,14 +921,6 @@ fun SpotifyPlayer(
                                 contentDescription = "Temporizador",
                                 tint = Color.White.copy(alpha = 0.8f),
                                 modifier = Modifier.size(22.dp)
-                            )
-                        }
-                        IconButton(onClick = { showShareSheet = true }) {
-                            Icon(
-                                painter = painterResource(R.drawable.share),
-                                contentDescription = "Compartir",
-                                tint = Color.White.copy(alpha = 0.8f),
-                                modifier = Modifier.size(20.dp)
                             )
                         }
                         IconButton(onClick = onQueueClick) {

@@ -104,14 +104,10 @@ internal fun LyricsBrandingRow(
                 .background(secondaryColor.copy(alpha = 0.9f)),
             contentAlignment = Alignment.Center,
         ) {
-            Image(
-                painter = painterResource(R.drawable.star),
-                contentDescription = null,
+            com.dezzy.music.appicon.DezzyLogoMark(
                 modifier = Modifier.size(15.dp),
-                colorFilter = ColorFilter.tint(
-                    if (isDark) Color.Black.copy(alpha = 0.85f)
-                    else Color.White.copy(alpha = 0.9f)
-                ),
+                tint = if (isDark) Color.Black.copy(alpha = 0.85f)
+                    else Color.White.copy(alpha = 0.9f),
             )
         }
         Spacer(Modifier.width(8.dp))
@@ -123,9 +119,7 @@ internal fun LyricsBrandingRow(
             letterSpacing = 0.02.em,
         )
         Spacer(Modifier.width(4.dp))
-        Icon(
-            painter = painterResource(R.drawable.star),
-            contentDescription = null,
+        com.dezzy.music.appicon.DezzyLogoMark(
             modifier = Modifier.size(10.dp),
             tint = secondaryColor
         )
@@ -404,9 +398,7 @@ fun DezzyShareLayout(
                             .background(secondaryTxt.copy(alpha = 0.2f)),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(
-                            painter = painterResource(R.drawable.star),
-                            contentDescription = null,
+                        com.dezzy.music.appicon.DezzyLogoMark(
                             modifier = Modifier.size(14.dp),
                             tint = secondaryTxt
                         )

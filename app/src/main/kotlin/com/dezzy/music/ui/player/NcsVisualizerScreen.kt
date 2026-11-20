@@ -16,11 +16,14 @@
 package com.dezzy.music.ui.player
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
+import android.os.PowerManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -28,6 +31,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -50,6 +54,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -66,10 +72,14 @@ import coil3.request.allowHardware
 import coil3.toBitmap
 import com.dezzy.music.LocalPlayerConnection
 import com.dezzy.music.R
+import com.dezzy.music.constants.VisualizerStyleKey
+import com.dezzy.music.constants.VisualizerSwipeKey
 import com.dezzy.music.models.MediaMetadata
 import com.dezzy.music.utils.AudioSpectrumEngine
+import com.dezzy.music.utils.rememberPreference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlin.math.abs
 import kotlin.math.asin
 import kotlin.math.cos
 import kotlin.math.sin
@@ -84,7 +94,7 @@ private const val ORBITER_COUNT = 3
 private const val TWO_PI = 6.2831855f
 
 /** Punto unitario sobre la esfera (fibonacci lattice). */
-private class SpherePoint(val x: Float, val y: Float, val z: Float, val lat: Float)
+internal class SpherePoint(val x: Float, val y: Float, val z: Float, val lat: Float)
 
 private fun buildSphere(): List<SpherePoint> = List(SPHERE_POINTS) { i ->
     val y = 1f - 2f * (i + 0.5f) / SPHERE_POINTS
@@ -94,7 +104,7 @@ private fun buildSphere(): List<SpherePoint> = List(SPHERE_POINTS) { i ->
 }
 
 /** Estrella ambiental: coords 0..1 relativas a la pantalla, z = parallax. */
-private class Star(val x: Float, val y: Float, val z: Float, val phase: Float, val speed: Float)
+internal class Star(val x: Float, val y: Float, val z: Float, val phase: Float, val speed: Float)
 
 private fun buildStars(): List<Star> {
     val rnd = Random(20260716)
@@ -110,7 +120,7 @@ private fun buildStars(): List<Star> {
 }
 
 /** Destello "+" alrededor de la esfera, ligado a una banda de frecuencia. */
-private class Sparkle(
+internal class Sparkle(
     val angle: Float,
     val dist: Float,
     val phase: Float,
@@ -129,6 +139,157 @@ private fun buildSparkles(): List<Sparkle> {
             rotSpeed = (rnd.nextFloat() - 0.5f) * 1.6f,
             scale = 0.5f + rnd.nextFloat(),
             band = rnd.nextInt(AudioSpectrumEngine.BANDS),
+        )
+    }
+}
+
+/** Adornos y puntos de la Esfera, construidos una vez (ver [drawEsfera]). */
+class EsferaScene {
+    internal val sphere = buildSphere()
+    internal val stars = buildStars()
+    internal val sparkles = buildSparkles()
+}
+
+/** Estilo ESFERA: estrellas, barras al pie, chispas en órbita, destellos y la esfera de puntos. */
+fun DrawScope.drawEsfera(t: Float, bands: FloatArray, loud: Float, sphereColor: Color, scene: EsferaScene) {
+    val sphere = scene.sphere
+    val stars = scene.stars
+    val sparkles = scene.sparkles
+    val w = size.width
+    val h = size.height
+    val cx = w / 2f
+    val cy = h / 2f
+    val minDim = size.minDimension
+    // Pulso global suave con la sonoridad (como el original)
+    val baseR = minDim * 0.34f * (1f + loud * 0.06f)
+    // En apaisado, los adornos se expanden a lo ancho para llenar la pantalla.
+    val spreadX = (w / h).coerceIn(1f, 2.2f)
+
+    // ── 1. Estrellas de fondo: deriva lenta + parpadeo con la música ──
+    for (s in stars) {
+        val drift = t * 0.012f * (0.25f + s.z)
+        val sx = ((s.x + drift) % 1f) * w
+        val sy = s.y * h
+        val twinkle = 0.5f + 0.5f * sin(t * s.speed + s.phase)
+        val alpha = (0.05f + 0.30f * twinkle * (0.35f + loud)).coerceIn(0f, 0.5f)
+        drawCircle(
+            color = sphereColor.copy(alpha = alpha),
+            radius = minDim * 0.0016f * (0.6f + s.z * 1.6f),
+            center = Offset(sx, sy),
+        )
+    }
+
+    // ── 2. Barras de espectro al pie, a todo lo ancho (espejo centro→bordes) ──
+    val barsPerSide = 42
+    val barW = w / (barsPerSide * 2f)
+    val maxBarH = h * 0.08f
+    for (i in 0 until barsPerSide) {
+        val bandIdx = i * (AudioSpectrumEngine.BANDS - 1) / (barsPerSide - 1)
+        val band = bands[bandIdx]
+        val bh = minDim * 0.004f + band * maxBarH * (0.35f + loud)
+        val alpha = (0.08f + band * 0.42f).coerceIn(0f, 0.6f)
+        val barSize = Size(barW * 0.62f, bh)
+        val radius = CornerRadius(barW * 0.3f)
+        drawRoundRect(
+            color = sphereColor.copy(alpha = alpha),
+            topLeft = Offset(cx + i * barW, h - bh),
+            size = barSize,
+            cornerRadius = radius,
+        )
+        drawRoundRect(
+            color = sphereColor.copy(alpha = alpha),
+            topLeft = Offset(cx - (i + 1) * barW, h - bh),
+            size = barSize,
+            cornerRadius = radius,
+        )
+    }
+
+    // ── 3. Chispas orbitando la esfera con estela (brillan con los agudos) ──
+    for (k in 0 until ORBITER_COUNT) {
+        val dir = if (k % 2 == 0) 1f else -1f
+        val speed = 0.55f + k * 0.18f
+        val orbR = baseR * (1.30f + k * 0.22f)
+        val tilt = 0.30f + k * 0.10f
+        val baseA = t * speed * dir + k * 2.1f
+        val treble = bands[40 + k * 6]
+        for (j in 0 until 7) {
+            val a = baseA - dir * j * 0.05f * (1f + loud)
+            val fade = 1f - j / 7f
+            drawCircle(
+                color = sphereColor.copy(
+                    alpha = (0.10f + 0.75f * fade * (0.35f + 0.65f * treble)).coerceIn(0f, 1f),
+                ),
+                radius = baseR * 0.018f * fade * (1f + treble),
+                center = Offset(
+                    cx + cos(a) * orbR * spreadX,
+                    cy + sin(a) * orbR * tilt,
+                ),
+            )
+        }
+    }
+
+    // ── 4. Destellos "+" alrededor: cada uno pulsa con su banda ──
+    val sparkleStroke = (minDim * 0.0022f).coerceAtLeast(1f)
+    for (sp in sparkles) {
+        val band = bands[sp.band]
+        val pulse = 0.5f + 0.5f * sin(t * 1.8f + sp.phase)
+        val alpha = (0.05f + 0.65f * pulse * (0.25f + 0.75f * band)).coerceIn(0f, 0.9f)
+        if (alpha < 0.07f) continue
+        val px = cx + cos(sp.angle) * baseR * sp.dist * spreadX
+        val py = cy + sin(sp.angle) * baseR * sp.dist
+        val len = baseR * 0.045f * sp.scale * (0.7f + band)
+        val rot = t * sp.rotSpeed + sp.phase
+        val c = cos(rot)
+        val s2 = sin(rot)
+        val color = sphereColor.copy(alpha = alpha)
+        drawLine(
+            color = color,
+            start = Offset(px - c * len, py - s2 * len),
+            end = Offset(px + c * len, py + s2 * len),
+            strokeWidth = sparkleStroke,
+            cap = StrokeCap.Round,
+        )
+        drawLine(
+            color = color,
+            start = Offset(px + s2 * len, py - c * len),
+            end = Offset(px - s2 * len, py + c * len),
+            strokeWidth = sparkleStroke,
+            cap = StrokeCap.Round,
+        )
+    }
+
+    // ── 5. Esfera: SOLO puntos con ondas viajeras (sin halo ni anillos) ──
+    val rotY = t * 0.30f
+    val cosR = cos(rotY)
+    val sinR = sin(rotY)
+    val dotBase = baseR * 0.016f
+
+    for (p in sphere) {
+        // Rotación lenta sobre el eje Y
+        val x1 = p.x * cosR + p.z * sinR
+        val z1 = -p.x * sinR + p.z * cosR
+        val y1 = p.y
+
+        // Onda viajera por latitud (los "anillos" de la captura) +
+        // desplazamiento por la banda de frecuencia de su latitud.
+        val bandIdx = (((y1 + 1f) / 2f) * (AudioSpectrumEngine.BANDS - 1)).toInt()
+            .coerceIn(0, AudioSpectrumEngine.BANDS - 1)
+        val band = bands[bandIdx]
+        val ripple = 1f +
+            0.055f * sin(p.lat * 9f - t * 2.6f) * (0.35f + loud) +
+            band * 0.11f
+
+        val rr = baseR * ripple
+        val sx = cx + x1 * rr
+        val sy = cy + y1 * rr
+        val depth = (z1 + 1f) / 2f // 0 = atrás, 1 = frente
+
+        drawCircle(
+            color = sphereColor.copy(
+                alpha = (0.22f + 0.72f * depth).coerceIn(0f, 1f),
+            ),
+            radius = dotBase * (0.55f + 0.85f * depth) * (1f + band * 0.5f),
+            center = Offset(sx, sy),
         )
     }
 }
@@ -200,6 +361,17 @@ fun NcsVisualizerScreen(
         }
     }
 
+    // Tres tonos de la carátula para Cordillera / Túnel / Espejo.
+    val palette = remember(sphereColor) { visualizerPaletteOf(sphereColor) }
+
+    // ── Estilo elegido (se recuerda el último) ──
+    var styleName by rememberPreference(VisualizerStyleKey, VisualizerStyle.ESFERA.name)
+    val style = VisualizerStyle.entries.firstOrNull { it.name == styleName } ?: VisualizerStyle.ESFERA
+    val swipeEnabled by rememberPreference(VisualizerSwipeKey, true)
+    val ridgeState = remember { RidgeState() }
+    val tunnelState = remember { TunnelState() }
+    val mirrorState = remember { MirrorState() }
+
     // ── Motor de espectro ──
     val engine = remember { AudioSpectrumEngine() }
     var engineRunning by remember { mutableStateOf(false) }
@@ -216,21 +388,29 @@ fun NcsVisualizerScreen(
 
     // ── Frame loop ──
     var timeSec by remember { mutableFloatStateOf(0f) }
+    // 60 fps; con el ahorro de batería activo sólo se redibuja uno de cada dos frames (~30 fps).
+    val powerManager = remember { context.getSystemService(Context.POWER_SERVICE) as? PowerManager }
     LaunchedEffect(Unit) {
         var last = 0L
+        var pending = 0f
+        var frame = 0
         while (true) {
             withFrameNanos { now ->
                 if (last != 0L) {
-                    timeSec += ((now - last) / 1_000_000_000f).coerceAtMost(0.05f)
+                    pending += ((now - last) / 1_000_000_000f).coerceAtMost(0.05f)
                 }
                 last = now
+                frame++
+                val saver = powerManager?.isPowerSaveMode == true
+                if (!saver || frame % 2 == 0) {
+                    timeSec += pending
+                    pending = 0f
+                }
             }
         }
     }
 
-    val sphere = remember { buildSphere() }
-    val stars = remember { buildStars() }
-    val sparkles = remember { buildSparkles() }
+    val esferaScene = remember { EsferaScene() }
 
     Box(
         modifier = modifier
@@ -239,148 +419,44 @@ fun NcsVisualizerScreen(
                 Brush.verticalGradient(
                     listOf(Color(0xFF090D0F), Color(0xFF0D1113), Color(0xFF0A1013)),
                 ),
-            ),
+            )
+            // Deslizar a izquierda/derecha cambia de estilo (se puede apagar en Apariencia).
+            .pointerInput(swipeEnabled) {
+                if (!swipeEnabled) return@pointerInput
+                var dragX = 0f
+                detectHorizontalDragGestures(
+                    onDragStart = { dragX = 0f },
+                    onDragEnd = {
+                        if (abs(dragX) > 64.dp.toPx()) {
+                            val all = VisualizerStyle.entries
+                            val current = all.firstOrNull { it.name == styleName } ?: VisualizerStyle.ESFERA
+                            val step = if (dragX < 0f) 1 else all.size - 1
+                            styleName = all[(current.ordinal + step) % all.size].name
+                        }
+                    },
+                    onHorizontalDrag = { _, delta -> dragX += delta },
+                )
+            },
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val t = timeSec // leerlo aquí ata el redibujado al frame loop
-            val loud = engine.loudness
-            val w = size.width
-            val h = size.height
-            val cx = w / 2f
-            val cy = h / 2f
-            val minDim = size.minDimension
-            // Pulso global suave con la sonoridad (como el original)
-            val baseR = minDim * 0.34f * (1f + loud * 0.06f)
-            // En apaisado, los adornos se expanden a lo ancho para llenar la pantalla.
-            val spreadX = (w / h).coerceIn(1f, 2.2f)
-
-            // ── 1. Estrellas de fondo: deriva lenta + parpadeo con la música ──
-            for (s in stars) {
-                val drift = t * 0.012f * (0.25f + s.z)
-                val sx = ((s.x + drift) % 1f) * w
-                val sy = s.y * h
-                val twinkle = 0.5f + 0.5f * sin(t * s.speed + s.phase)
-                val alpha = (0.05f + 0.30f * twinkle * (0.35f + loud)).coerceIn(0f, 0.5f)
-                drawCircle(
-                    color = sphereColor.copy(alpha = alpha),
-                    radius = minDim * 0.0016f * (0.6f + s.z * 1.6f),
-                    center = Offset(sx, sy),
-                )
-            }
-
-            // ── 2. Barras de espectro al pie, a todo lo ancho (espejo centro→bordes) ──
-            val barsPerSide = 42
-            val barW = w / (barsPerSide * 2f)
-            val maxBarH = h * 0.08f
-            for (i in 0 until barsPerSide) {
-                val bandIdx = i * (AudioSpectrumEngine.BANDS - 1) / (barsPerSide - 1)
-                val band = engine.bands[bandIdx]
-                val bh = minDim * 0.004f + band * maxBarH * (0.35f + loud)
-                val alpha = (0.08f + band * 0.42f).coerceIn(0f, 0.6f)
-                val barSize = Size(barW * 0.62f, bh)
-                val radius = CornerRadius(barW * 0.3f)
-                drawRoundRect(
-                    color = sphereColor.copy(alpha = alpha),
-                    topLeft = Offset(cx + i * barW, h - bh),
-                    size = barSize,
-                    cornerRadius = radius,
-                )
-                drawRoundRect(
-                    color = sphereColor.copy(alpha = alpha),
-                    topLeft = Offset(cx - (i + 1) * barW, h - bh),
-                    size = barSize,
-                    cornerRadius = radius,
-                )
-            }
-
-            // ── 3. Chispas orbitando la esfera con estela (brillan con los agudos) ──
-            for (k in 0 until ORBITER_COUNT) {
-                val dir = if (k % 2 == 0) 1f else -1f
-                val speed = 0.55f + k * 0.18f
-                val orbR = baseR * (1.30f + k * 0.22f)
-                val tilt = 0.30f + k * 0.10f
-                val baseA = t * speed * dir + k * 2.1f
-                val treble = engine.bands[40 + k * 6]
-                for (j in 0 until 7) {
-                    val a = baseA - dir * j * 0.05f * (1f + loud)
-                    val fade = 1f - j / 7f
-                    drawCircle(
-                        color = sphereColor.copy(
-                            alpha = (0.10f + 0.75f * fade * (0.35f + 0.65f * treble)).coerceIn(0f, 1f),
-                        ),
-                        radius = baseR * 0.018f * fade * (1f + treble),
-                        center = Offset(
-                            cx + cos(a) * orbR * spreadX,
-                            cy + sin(a) * orbR * tilt,
-                        ),
-                    )
+            when (style) {
+                VisualizerStyle.CORDILLERA -> {
+                    drawCordillera(t, engine.bands, palette, ridgeState)
+                    return@Canvas
                 }
+                VisualizerStyle.TUNEL -> {
+                    drawTunel(t, engine.bands, palette, tunnelState)
+                    return@Canvas
+                }
+                VisualizerStyle.ESPEJO -> {
+                    // Leer t ata el redibujado al frame loop también aquí.
+                    if (t >= 0f) drawEspejo(engine.bands, palette, mirrorState)
+                    return@Canvas
+                }
+                VisualizerStyle.ESFERA -> Unit
             }
-
-            // ── 4. Destellos "+" alrededor: cada uno pulsa con su banda ──
-            val sparkleStroke = (minDim * 0.0022f).coerceAtLeast(1f)
-            for (sp in sparkles) {
-                val band = engine.bands[sp.band]
-                val pulse = 0.5f + 0.5f * sin(t * 1.8f + sp.phase)
-                val alpha = (0.05f + 0.65f * pulse * (0.25f + 0.75f * band)).coerceIn(0f, 0.9f)
-                if (alpha < 0.07f) continue
-                val px = cx + cos(sp.angle) * baseR * sp.dist * spreadX
-                val py = cy + sin(sp.angle) * baseR * sp.dist
-                val len = baseR * 0.045f * sp.scale * (0.7f + band)
-                val rot = t * sp.rotSpeed + sp.phase
-                val c = cos(rot)
-                val s2 = sin(rot)
-                val color = sphereColor.copy(alpha = alpha)
-                drawLine(
-                    color = color,
-                    start = Offset(px - c * len, py - s2 * len),
-                    end = Offset(px + c * len, py + s2 * len),
-                    strokeWidth = sparkleStroke,
-                    cap = StrokeCap.Round,
-                )
-                drawLine(
-                    color = color,
-                    start = Offset(px + s2 * len, py - c * len),
-                    end = Offset(px - s2 * len, py + c * len),
-                    strokeWidth = sparkleStroke,
-                    cap = StrokeCap.Round,
-                )
-            }
-
-            // ── 5. Esfera: SOLO puntos con ondas viajeras (sin halo ni anillos) ──
-            val rotY = t * 0.30f
-            val cosR = cos(rotY)
-            val sinR = sin(rotY)
-            val dotBase = baseR * 0.016f
-
-            for (p in sphere) {
-                // Rotación lenta sobre el eje Y
-                val x1 = p.x * cosR + p.z * sinR
-                val z1 = -p.x * sinR + p.z * cosR
-                val y1 = p.y
-
-                // Onda viajera por latitud (los "anillos" de la captura) +
-                // desplazamiento por la banda de frecuencia de su latitud.
-                val bandIdx = (((y1 + 1f) / 2f) * (AudioSpectrumEngine.BANDS - 1)).toInt()
-                    .coerceIn(0, AudioSpectrumEngine.BANDS - 1)
-                val band = engine.bands[bandIdx]
-                val ripple = 1f +
-                    0.055f * sin(p.lat * 9f - t * 2.6f) * (0.35f + loud) +
-                    band * 0.11f
-
-                val rr = baseR * ripple
-                val sx = cx + x1 * rr
-                val sy = cy + y1 * rr
-                val depth = (z1 + 1f) / 2f // 0 = atrás, 1 = frente
-
-                drawCircle(
-                    color = sphereColor.copy(
-                        alpha = (0.22f + 0.72f * depth).coerceIn(0f, 1f),
-                    ),
-                    radius = dotBase * (0.55f + 0.85f * depth) * (1f + band * 0.5f),
-                    center = Offset(sx, sy),
-                )
-            }
+            drawEsfera(t, engine.bands, engine.loudness, sphereColor, esferaScene)
         }
 
         // ── Título / artista ──

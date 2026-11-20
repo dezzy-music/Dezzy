@@ -99,11 +99,9 @@ fun SettingsProfileHeader(modifier: Modifier = Modifier) {
                         ),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(
-                        painter = painterResource(R.drawable.star),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(SettingsDimensions.HeroIconInnerSize),
+                    com.dezzy.music.appicon.DezzyAppIcon(
+                        modifier = Modifier.matchParentSize(),
+                        corner = 0f,
                     )
                 }
 

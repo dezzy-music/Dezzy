@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generado: icono de la app (no editar a mano) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="512" android:viewportHeight="512">
+<group android:pivotX="256" android:pivotY="256" android:scaleX="0.66" android:scaleY="0.66">
+<group android:translateX="76" android:translateY="76" android:scaleX="0.375" android:scaleY="0.375">
+<path android:fillType="evenOdd" android:pathData="M233,840L298,559L80,370L368,345L480,80L592,345L880,370L662,559L727,840L480,691L233,840Z M354,673L480,597L606,674L573,530L684,434L538,421L480,285L422,420L276,433L387,530L354,673Z" android:fillColor="#F7F5FF"/>
+<path android:pathData="M354,673L480,597L606,674L573,530L684,434L538,421L480,285L422,420L276,433L387,530L354,673Z" android:fillColor="#7C3AED"/></group>
+</group>
+</vector>

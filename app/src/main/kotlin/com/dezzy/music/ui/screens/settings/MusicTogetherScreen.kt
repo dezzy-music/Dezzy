@@ -1172,23 +1172,39 @@ private fun StatusCard(
                 when (state) {
                     is TogetherSessionState.Hosting -> {
                         TogetherRoomCodeCard(
-                            code = state.joinLink,
-                            isLink = true,
+                            code = null,
+                            qrContent = state.joinLink,
                             addressHint = state.localAddressHint?.let { "$it:${state.port}" },
-                            onCopy  = { onCopyLink(state.joinLink) },
+                            onCopyCode = null,
+                            onCopyLink = { onCopyLink(state.joinLink) },
                             onShare = { onShareLink(state.joinLink) },
                         )
                     }
                     is TogetherSessionState.HostingOnline -> {
+                        val deepLink = TogetherLink.roomCodeDeepLink(state.code)
                         TogetherRoomCodeCard(
                             code = state.code,
-                            isLink = false,
+                            qrContent = deepLink,
                             addressHint = null,
-                            onCopy  = { onCopyLink(state.code) },
-                            onShare = { onShareLink(state.code) },
+                            onCopyCode = { onCopyLink(state.code) },
+                            onCopyLink = { onCopyLink(deepLink) },
+                            onShare = { onShareLink(deepLink) },
                         )
                     }
                     is TogetherSessionState.Joined -> {
+                        // Los invitados de una sala en línea también ven el QR para pasarlo a otro.
+                        val guestCode = state.sessionId.takeIf { it.matches(Regex("^[A-Za-z0-9]{4,8}$")) }
+                        if (!isWaitingApproval && guestCode != null) {
+                            val deepLink = TogetherLink.roomCodeDeepLink(guestCode)
+                            TogetherRoomCodeCard(
+                                code = guestCode.uppercase(),
+                                qrContent = deepLink,
+                                addressHint = null,
+                                onCopyCode = { onCopyLink(guestCode.uppercase()) },
+                                onCopyLink = { onCopyLink(deepLink) },
+                                onShare = { onShareLink(deepLink) },
+                            )
+                        }
                         if (!isWaitingApproval) {
                             ParticipantsCard(
                                 participants = state.roomState.participants.map { it.name }
