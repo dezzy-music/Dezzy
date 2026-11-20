@@ -82,6 +82,13 @@ import javax.crypto.spec.SecretKeySpec
  *
  * Varias conexiones a la vez (hasta [MAX_LINKS]): forman una estrella alrededor del dispositivo
  * que reparte la música; los demás sólo hablan con él.
+ *
+ * Blindaje (igual en los dos lados):
+ *   - Si los dos abren conexión a la vez, se queda la que abrió el de id menor (si sigue viva).
+ *   - Si una conexión se corta sin «bye», se reintenta sola durante [RECONNECT_FOR_MS]; los
+ *     primeros [GRACE_MS] el otro sigue contando como conectado para que la sesión no se rompa.
+ *   - Si se caen los avisos o el servidor, o cambia la red, se vuelven a abrir solos.
+ *   - Además de la difusión, se pregunta directamente a la última IP conocida de cada dispositivo.
  */
 object DezzyConnect {
     private const val PORT = 47830
@@ -95,7 +102,17 @@ object DezzyConnect {
     private const val OPEN_TRIES = 3
     private const val REFRESH_WAIT_MS = 2_000L
     private const val PING_MS = 4_000L
-    private const val IDLE_MS = 20_000
+    /** Sin recibir nada en este tiempo se da por perdida (holgado para el móvil en segundo plano). */
+    private const val IDLE_MS = 45_000
+    /** Una conexión que habló hace menos de esto se considera viva al resolver un choque. */
+    private const val FRESH_MS = 8_000L
+    /** Comprobación de sockets, red y reconexiones. */
+    private const val HEAL_MS = 1_000L
+    private const val NET_CHECK_MS = 5_000L
+    /** Tras un corte, el otro sigue como «conectado» este tiempo mientras se reconecta. */
+    private const val GRACE_MS = 10_000L
+    /** Y se sigue intentando reconectar durante este tiempo. */
+    private const val RECONNECT_FOR_MS = 10 * 60_000L
     private const val MAX_FRAME = 512 * 1024
     private const val MAX_DEVICES = 20
     /** Conexiones a la vez: este dispositivo y hasta tres más (4 en total). */
@@ -118,8 +135,16 @@ object DezzyConnect {
     /** Mensaje de sesión con quién lo manda. */
     data class Incoming(val from: String, val name: String, val msg: JsonObject)
 
-    private data class Known(val id: String, val name: String, val kind: String)
+    /** `ip`: última dirección en la que respondió, para preguntarle directamente. */
+    private data class Known(val id: String, val name: String, val kind: String, val ip: String? = null)
     private data class Seen(val ip: InetAddress, val port: Int, val lastSeen: Long)
+
+    /** Dispositivo con el que se cortó la conexión sin despedirse: se intenta recuperar. */
+    private class Wanted(val name: String, val kind: String, val since: Long, var next: Long) {
+        var tries = 0
+        var busy = false
+        var graceOver = false
+    }
 
     private val json = Json { ignoreUnknownKeys = true }
     private val random = SecureRandom()
@@ -161,6 +186,9 @@ object DezzyConnect {
     private var pending = 0
     private var searchJob: Job? = null
     private var multicastLock: WifiManager.MulticastLock? = null
+    private val wanted = LinkedHashMap<String, Wanted>()
+    private var netSig = ""
+    private var lastNetCheck = 0L
 
     /* ── Clave de grupo ── */
 
@@ -192,7 +220,7 @@ object DezzyConnect {
                     (el as? JsonArray).orEmpty().mapNotNull { item ->
                         val o = item as? JsonObject ?: return@mapNotNull null
                         val id = o.str("id")?.takeIf { ID_RE.matches(it) } ?: return@mapNotNull null
-                        Known(id, o.str("name") ?: "Ordenador", if (o.str("kind") == "phone") "phone" else "pc")
+                        Known(id, o.str("name") ?: "Ordenador", if (o.str("kind") == "phone") "phone" else "pc", o.str("ip"))
                     }
                 }
             }.getOrDefault(emptyList())
@@ -200,15 +228,113 @@ object DezzyConnect {
             disc = hmac(key, "dezzy-connect-v1|disc")
             auth = hmac(key, "dezzy-connect-v1|auth")
             key.fill(0)
+            netSig = netSignature()
             start()
+            lookKnown()
             emitDevices()
+            // Repaso: sockets caídos, cambios de red y reconexiones pendientes.
+            scope.launch {
+                while (isActive) {
+                    delay(HEAL_MS)
+                    heal()
+                }
+            }
             while (isActive) {
                 delay(ANNOUNCE_MS)
                 announce("here", null)
+                lookKnown()
                 // Los que dejan de anunciarse pasan a «No disponible ahora».
                 emitDevices()
             }
         }
+    }
+
+    /* ── Blindaje ── */
+
+    /** Huella de las IP de este móvil: si cambia, la red cambió. */
+    private fun netSignature(): String = runCatching {
+        NetworkInterface.getNetworkInterfaces().toList()
+            .filter { it.isUp && !it.isLoopback }
+            .flatMap { nif -> nif.interfaceAddresses.filter { it.address is java.net.Inet4Address }.map { "${it.address.hostAddress}/${it.networkPrefixLength}" } }
+            .sorted()
+            .joinToString(",")
+    }.getOrDefault("")
+
+    /** La red cambió: avisos nuevos, búsqueda y reconexión inmediata. */
+    private fun networkChanged() {
+        udp?.let { old ->
+            udp = null
+            runCatching { old.close() }
+        }
+        start()
+        announce("look", null)
+        lookKnown()
+        val soon = now() + 500 + random.nextInt(1_000)
+        for (w in wanted.values) w.next = minOf(w.next, soon)
+    }
+
+    /** Pregunta directamente a la última IP de cada dispositivo conocido que no esté conectado. */
+    private fun lookKnown() {
+        for (k in known) {
+            val ip = k.ip ?: continue
+            if (links[k.id]?.key != null) continue
+            val addr = runCatching { InetAddress.getByName(ip) }.getOrNull() ?: continue
+            announce("look", addr to PORT)
+        }
+    }
+
+    private fun heal() {
+        if (disc == null) return
+        val t = now()
+        if (t - lastNetCheck >= NET_CHECK_MS) {
+            lastNetCheck = t
+            val sig = netSignature()
+            if (sig != netSig) {
+                val changed = netSig.isNotEmpty()
+                netSig = sig
+                if (changed) {
+                    networkChanged()
+                    return
+                }
+            }
+            if (udp == null || server == null) start()
+        }
+        val iter = wanted.entries.iterator()
+        while (iter.hasNext()) {
+            val (id, w) = iter.next()
+            if (links[id]?.key != null) {
+                iter.remove()
+                continue
+            }
+            if (t - w.since > RECONNECT_FOR_MS) {
+                iter.remove()
+                emitDevices()
+                continue
+            }
+            if (!w.graceOver && t - w.since >= GRACE_MS) {
+                w.graceOver = true
+                emitDevices()
+            }
+            if (w.busy || t < w.next) continue
+            w.busy = true
+            w.tries++
+            scope.launch {
+                try {
+                    if (!isAvailable(id)) refresh(id)
+                    if (wanted[id] === w) openOnce(id)
+                } finally {
+                    w.busy = false
+                    w.next = now() + minOf(30_000L, 1_000L shl minOf(w.tries, 5)) + random.nextInt(1_000)
+                }
+            }
+        }
+    }
+
+    /** Apunta un corte inesperado para reconectar solo. */
+    private fun want(l: Link) {
+        if (l.id.isEmpty()) return
+        val t = now()
+        wanted[l.id] = Wanted(l.name, l.kind, t, t + 300 + random.nextInt(700))
     }
 
     /* ── Estado ── */
@@ -221,9 +347,13 @@ object DezzyConnect {
 
     private fun emitDevices() {
         val live = live()
-        val ids = live.mapTo(HashSet()) { it.id }
+        val peers = live.map { Peer(it.id, it.name, it.kind, it.incoming, it.rtt) }.toMutableList()
+        // Recién cortados: siguen contando unos segundos mientras se reconecta solo.
+        for ((id, w) in wanted) {
+            if (!w.graceOver && peers.none { it.id == id }) peers += Peer(id, w.name, w.kind, false, null)
+        }
+        val ids = peers.mapTo(HashSet()) { it.id }
         _devices.value = known.map { Device(it.id, it.name, it.kind, isAvailable(it.id), it.id in ids) }
-        val peers = live.map { Peer(it.id, it.name, it.kind, it.incoming, it.rtt) }
         _peers.value = peers
         _peer.value = peers.firstOrNull()
         _rtt.value = peers.firstOrNull()?.rtt
@@ -237,14 +367,22 @@ object DezzyConnect {
 
     private fun remember(device: Known) {
         val old = known.firstOrNull { it.id == device.id }
-        if (old == device) return
-        known = (listOf(device) + known.filter { it.id != device.id }).take(MAX_DEVICES)
+        val merged = if (device.ip == null) device.copy(ip = old?.ip) else device
+        if (old == merged) return
+        known = (listOf(merged) + known.filter { it.id != device.id }).take(MAX_DEVICES)
         saveKnown()
     }
 
     private fun saveKnown() {
         val array = JsonArray(
-            known.map { buildJsonObject { put("id", it.id); put("name", it.name); put("kind", it.kind) } },
+            known.map { k ->
+                buildJsonObject {
+                    put("id", k.id)
+                    put("name", k.name)
+                    put("kind", k.kind)
+                    k.ip?.let { put("ip", it) }
+                }
+            },
         )
         appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString("devices", array.toString()).apply()
     }
@@ -347,7 +485,7 @@ object DezzyConnect {
         val kind = if (d.str("kind") == "phone") "phone" else "pc"
         val name = d.str("name")?.trim()?.take(60)?.ifBlank { null } ?: if (kind == "phone") "Móvil" else "Ordenador"
         seen[id] = Seen(from, port, now())
-        remember(Known(id, name, kind))
+        remember(Known(id, name, kind, from.hostAddress))
         if (d.str("t") == "look") announce("here", from to fromPort)
         emitDevices()
     }
@@ -387,6 +525,8 @@ object DezzyConnect {
         val output = DataOutputStream(BufferedOutputStream(socket.getOutputStream()))
 
         @Volatile var closed = false
+        /** Última vez que llegó algo (para saber si sigue viva al resolver un choque). */
+        var lastRx = System.currentTimeMillis()
         var offset = 0.0
         var rtt: Int? = null
         val samples = ArrayDeque<Pair<Int, Double>>()
@@ -406,6 +546,8 @@ object DezzyConnect {
                 }
             }
         }
+        // El servidor se rompió: se suelta y el repaso periódico abre otro.
+        withContext(logic) { if (server === srv) server = null }
     }
 
     private fun attach(sock: Socket, incoming: Boolean, id: String): Link {
@@ -489,6 +631,8 @@ object DezzyConnect {
     }
 
     private fun drop(l: Link, message: String?): Boolean {
+        // Estaba conectado y se cortó sin despedirse: se intentará recuperar.
+        if (l.key != null && !l.closed && links[l.id] === l) want(l)
         val report = l.ready
         l.ready = null
         close(l, bye = false)
@@ -497,10 +641,28 @@ object DezzyConnect {
     }
 
     private fun ready(l: Link): Boolean {
-        // El mismo dispositivo otra vez: la conexión nueva sustituye a la vieja.
-        links[l.id]?.takeIf { it !== l }?.let { close(it, bye = false) }
-        if (links.size >= MAX_LINKS) return drop(l, "Ya hay ${MAX_LINKS + 1} dispositivos conectados")
+        val old = links[l.id]?.takeIf { it !== l }
+        if (old != null) {
+            // Choque: los dos abrieron a la vez. Gana la que abrió el de id menor, igual en los dos
+            // lados, siempre que la vieja siga viva; si no, la nueva sustituye a la vieja.
+            val oldOpener = if (old.incoming) old.id else selfId
+            val newOpener = if (l.incoming) l.id else selfId
+            val oldAlive = old.key != null && !old.closed && now() - old.lastRx < FRESH_MS
+            if (oldAlive && oldOpener != newOpener && oldOpener < newOpener) {
+                val report = l.ready
+                l.ready = null
+                close(l, bye = false)
+                report?.complete(null)
+                return false
+            }
+            // Primero la nueva, para que la sesión no vea un «se perdió» entre medias.
+            links[l.id] = l
+            close(old, bye = false)
+        } else if (links.size >= MAX_LINKS) {
+            return drop(l, "Ya hay ${MAX_LINKS + 1} dispositivos conectados")
+        }
         links[l.id] = l
+        wanted.remove(l.id)
         // Desde aquí el otro manda un ping cada 4 s: 20 s sin nada es que se fue.
         runCatching { l.socket.soTimeout = IDLE_MS }
         remember(Known(l.id, l.name, l.kind))
@@ -564,7 +726,11 @@ object DezzyConnect {
                 l.rtt = rtt
                 if (changed) emitDevices()
             }
-            "bye" -> close(l, bye = false)
+            "bye" -> {
+                // Se despidió a propósito: no hay que reconectar.
+                if (links[l.id] === l) wanted.remove(l.id)
+                close(l, bye = false)
+            }
             else -> {
                 if (links[l.id] !== l || t == null || t !in FORWARDED) return
                 // `pb.at` viaja en el reloj del otro: se pasa al nuestro.
@@ -579,6 +745,7 @@ object DezzyConnect {
     }
 
     private fun onFrame(l: Link, body: ByteArray): Boolean {
+        l.lastRx = now()
         val key = l.key ?: return handshake(l, body)
         val plain = gcmDecrypt(key, ivFor(1 - l.dir, l.recvCtr), body) ?: return drop(l, null)
         l.recvCtr++
@@ -678,12 +845,15 @@ object DezzyConnect {
     /** Cierra la conexión con `id`, o con todos si es null. */
     fun close(id: String? = null) {
         scope.launch {
+            if (id == null) wanted.clear() else wanted.remove(id)
             for (l in links.values.toList()) if (id == null || l.id == id) close(l, bye = true)
+            emitDevices()
         }
     }
 
     fun forget(id: String) {
         scope.launch {
+            wanted.remove(id)
             links[id]?.let { close(it, bye = true) }
             seen.remove(id)
             known = known.filter { it.id != id }
