@@ -1,0 +1,70 @@
+[
+ {
+  "shape": "Narrative Workflow",
+  "theme": "bloom",
+  "axes": "light/grotesk-sans/warm",
+  "hero": "Settled",
+  "nav": "slab",
+  "footer": "mast",
+  "imagery": "product",
+  "entry": "design/landing/C/index.html",
+  "sections": [
+   "hero",
+   "steps",
+   "steps",
+   "steps",
+   "steps",
+   "table",
+   "close"
+  ],
+  "signature": "synced lyrics raised on the piano-roll grid",
+  "prompt": "Dezzy landing C",
+  "date": "2026-11-19",
+  "mode": "build"
+ },
+ {
+  "shape": "Split Studio",
+  "theme": "ribbon",
+  "axes": "dark/grotesk-sans/warm",
+  "hero": "Counter",
+  "nav": "floating-pill",
+  "footer": "statement",
+  "imagery": "product",
+  "entry": "design/landing/B/index.html",
+  "sections": [
+   "hero",
+   "split",
+   "split",
+   "split",
+   "panel",
+   "close"
+  ],
+  "signature": "night drawn as slow light behind the Canvas capture",
+  "prompt": "Dezzy landing B",
+  "date": "2026-11-19",
+  "mode": "build"
+ },
+ {
+  "shape": "Conversational FAQ",
+  "theme": "midnight",
+  "axes": "dark/grotesk-sans/cool",
+  "hero": "Counter",
+  "nav": "banner-retracting",
+  "footer": "colophon",
+  "imagery": "product",
+  "entry": "design/landing/A/index.html",
+  "sections": [
+   "hero",
+   "split",
+   "showcase",
+   "split",
+   "table",
+   "switcher",
+   "close"
+  ],
+  "signature": "Canvas playing beside the downloads",
+  "prompt": "Dezzy landing A",
+  "date": "2026-11-19",
+  "mode": "build"
+ }
+]

@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dezzy escritorio · Biblioteca, Descargas, Estadísticas y Máquina del tiempo</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..600,0..1,0&display=swap" rel="stylesheet">
+<style>
+:root{--doc:#f4f1f1;--ink:#22191a;--muted:#6b5b5c;--line:#e3d6d6;
+  --bg:#000;--panel:#121212;--el:#1f1f1f;--hov:#2a2a2a;--hi:#fff;--sub:#b3b3b3;--dim:#7a7a7a;--acc:#f2606d;--acc-d:#ED5564}
+*{box-sizing:border-box}
+body{margin:0;background:var(--doc);color:var(--ink);font:15px/1.5 Poppins,system-ui,sans-serif}
+.doc{max-width:1340px;margin:0 auto;padding:40px 24px 80px}
+h1{font-size:30px;margin:0 0 6px}
+.lead{color:var(--muted);max-width:980px;margin:0}
+.pick{position:sticky;top:0;z-index:20;background:var(--doc);padding:18px 0 12px;display:flex;flex-wrap:wrap;gap:18px;align-items:center;border-bottom:1px solid var(--line);margin-top:22px}
+.seg{display:flex;gap:6px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:4px}
+.seg button{font:600 14px Poppins;border:0;background:none;padding:8px 14px;border-radius:10px;cursor:pointer;color:var(--muted)}
+.seg button.on{background:var(--ink);color:#fff}
+.vdesc{margin:18px 0 6px}
+.vdesc h2{font-size:22px;margin:0 0 4px;display:flex;align-items:center;gap:12px}
+.vdesc h2 .tag{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--ink);color:#fff;font-size:17px}
+.vdesc p{color:var(--muted);margin:0;max-width:1000px}
+ul.chg{margin:8px 0 12px;padding-left:20px;font-size:14px;max-width:1100px}
+ul.chg li{margin-bottom:3px}
+.ms{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;font-size:22px;line-height:1;display:inline-block;-webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400;vertical-align:middle}
+.ms.f{font-variation-settings:'FILL' 1,'wght' 500}
+.zoom{zoom:.92;margin-top:6px}
+@media (max-width:1300px){.zoom{zoom:.7}}
+@media (max-width:900px){.zoom{zoom:.45}}
+.note{margin-top:34px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 20px;font-size:14px;color:var(--muted)}
+.hide{display:none!important}
+
+/* ventana */
+.win{width:1300px;height:800px;border-radius:12px;overflow:hidden;background:var(--bg);color:var(--hi);display:flex;flex-direction:column;box-shadow:0 18px 50px rgba(0,0,0,.3);font-family:Poppins,sans-serif;font-size:14px}
+.top{height:64px;display:flex;align-items:center;gap:10px;padding:0 14px;flex:none}
+.logo{width:30px;height:30px;border-radius:9px;background:var(--acc-d);display:grid;place-items:center;font-weight:800;font-size:16px;color:#fff}
+.back{width:32px;height:32px;border-radius:50%;background:var(--panel);display:grid;place-items:center}
+.circ{width:48px;height:48px;border-radius:24px;background:var(--el);display:grid;place-items:center}
+.search{width:470px;height:48px;border-radius:24px;background:var(--el);display:flex;align-items:center;gap:12px;padding:0 16px;color:var(--sub)}
+.mid{flex:1;display:flex;justify-content:center;gap:8px}
+.ico{display:flex;gap:14px;color:var(--sub);align-items:center}
+.ico .on{color:#fff}
+.av{width:32px;height:32px;border-radius:50%;background:#1a8f86;display:grid;place-items:center;font-weight:700;color:#fff}
+.body{flex:1;display:flex;gap:8px;padding:0 8px;min-height:0}
+.p{background:var(--panel);border-radius:8px;overflow:hidden;position:relative}
+.lib{width:76px;flex:none;display:flex;flex-direction:column;align-items:center;gap:8px;padding-top:14px;color:var(--sub)}
+.lib i{width:48px;height:48px;border-radius:4px;display:block}
+.main{flex:1;min-width:0}
+.scroll{position:absolute;inset:0;overflow:hidden}
+.bar{height:72px;flex:none;display:grid;grid-template-columns:1fr 1.6fr 1fr;align-items:center;padding:0 16px 0 10px}
+.np{display:flex;gap:12px;align-items:center}
+.np i{width:52px;height:52px;border-radius:4px}
+.np small{display:block;color:var(--sub);font-size:12px}
+.tr{display:flex;flex-direction:column;align-items:center;gap:6px}
+.tr .b{display:flex;gap:20px;align-items:center;color:var(--sub)}
+.tr .pp{width:34px;height:34px;border-radius:50%;background:#fff;color:#000;display:grid;place-items:center}
+.prog{width:100%;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--sub)}
+.prog span.t{flex:1;height:4px;border-radius:2px;background:#4d4d4d;position:relative}
+.prog span.t::before{content:'';position:absolute;inset:0 62% 0 0;background:#fff;border-radius:2px}
+.ex{display:flex;justify-content:flex-end;gap:12px;color:var(--sub);align-items:center}
+.vol{width:90px;height:4px;border-radius:2px;background:linear-gradient(90deg,#fff 70%,#4d4d4d 70%)}
+
+/* comunes */
+.g1{background:linear-gradient(135deg,#7b2ff7,#f2606d)}.g2{background:linear-gradient(135deg,#0f9b8e,#183b5a)}
+.g3{background:linear-gradient(135deg,#f7b733,#fc4a1a)}.g4{background:linear-gradient(135deg,#355c7d,#c06c84)}
+.g5{background:linear-gradient(135deg,#11998e,#38ef7d)}.g6{background:linear-gradient(135deg,#232526,#5b5b5b)}
+.g7{background:linear-gradient(135deg,#ee0979,#ff6a00)}.g8{background:linear-gradient(135deg,#4568dc,#b06ab3)}
+.g9{background:linear-gradient(135deg,#e0c3fc,#8ec5fc)}.g10{background:linear-gradient(135deg,#a8071a,#3a0a12)}
+.liked{background:linear-gradient(135deg,#450af5,#c4efd9)}
+.playc{width:56px;height:56px;border-radius:50%;background:var(--acc);color:#1a0407;display:grid;place-items:center;box-shadow:0 8px 18px rgba(0,0,0,.35);flex:none}
+.playc .ms{font-size:32px}
+.playc.s{width:46px;height:46px}.playc.s .ms{font-size:26px}
+.chip{height:32px;padding:0 14px;border-radius:16px;background:rgba(255,255,255,.1);display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;white-space:nowrap}
+.chip.on{background:#fff;color:#000}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.sh{font-size:22px;font-weight:700;margin:0 0 12px;display:flex;align-items:baseline;gap:10px}
+.sh small{margin-left:auto;font-size:13px;color:var(--sub);font-weight:600}
+.pad{padding:0 24px}
+.sub{color:var(--sub)}
+.row{display:grid;grid-template-columns:28px 40px 1fr 160px 60px;gap:14px;align-items:center;padding:6px 12px;border-radius:4px;color:var(--sub);font-size:13px}
+.row i{width:40px;height:40px;border-radius:3px;display:block}
+.row b{color:#fff;font-weight:400;font-size:15px;display:block}
+.row.h{background:rgba(255,255,255,.08)}
+.row.on b{color:var(--acc)}
+.n{text-align:center;font-size:15px}
+.thead{display:grid;grid-template-columns:28px 40px 1fr 160px 60px;gap:14px;padding:0 12px 8px;margin-bottom:8px;border-bottom:1px solid #2a2a2a;color:var(--sub);font-size:13px}
+.thead span:nth-child(2){grid-column:2/4}
+.cards{display:flex;gap:4px;margin:0 -12px}
+.card{width:176px;padding:12px;border-radius:6px;flex:none;position:relative}
+.card.h{background:var(--el)}
+.card i{display:block;aspect-ratio:1;border-radius:6px;margin-bottom:8px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.card i.r{border-radius:50%}
+.card b{display:block;font-weight:500;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card small{color:var(--sub);font-size:13px}
+.card .hp{position:absolute;right:20px;top:122px}
+.bar2{height:4px;border-radius:2px;background:#3a3a3a;position:relative;overflow:hidden}
+.bar2 span{position:absolute;inset:0 auto 0 0;background:var(--acc);border-radius:2px}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:rgba(242,96,109,.18);color:var(--acc)}
+.badge.g{background:rgba(56,239,125,.14);color:#4ee08f}
+.heat{display:grid;grid-template-columns:repeat(53,1fr);grid-auto-flow:column;grid-template-rows:repeat(7,1fr);gap:3px}
+.heat b{aspect-ratio:1;border-radius:2px;background:#262626}
+.heat b.l1{background:rgba(242,96,109,.3)}.heat b.l2{background:rgba(242,96,109,.55)}.heat b.l3{background:rgba(242,96,109,.8)}.heat b.l4{background:#f2606d}
+.wk{display:flex;align-items:flex-end;gap:10px;height:120px}
+.wk div{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end;font-size:11px;color:var(--sub)}
+.wk div span{width:100%;border-radius:6px 6px 2px 2px;background:#3a3a3a}
+.wk div span.top{background:var(--acc)}
+.hero{display:flex;gap:24px;align-items:flex-end;padding:56px 24px 24px}
+.hero .cov{width:232px;height:232px;border-radius:6px;box-shadow:0 8px 40px rgba(0,0,0,.6);flex:none;display:grid;place-items:center}
+.hero .cov .ms{font-size:110px;color:#fff}
+.hero .tg{font-size:13px;font-weight:500}
+.hero h3n{display:block;font-size:76px;font-weight:800;letter-spacing:-.04em;line-height:1;margin:6px 0 14px}
+.acts{display:flex;align-items:center;gap:22px;padding:20px 24px;color:var(--sub)}
+.acts .ms{font-size:30px}
+.tile{background:var(--el);border-radius:12px;padding:16px;position:relative;overflow:hidden}
+.tile h4{margin:0 0 8px;font-size:13px;font-weight:600;color:var(--sub)}
+.kpi b{display:block;font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.kpi small{color:var(--sub);font-size:12px}
+</style>
+</head>
+<body>
+<div class="doc">
+<h1>Dezzy escritorio · Biblioteca, Descargas, Estadísticas y Máquina del tiempo</h1>
+<p class="lead">Fase 3 del estilo Spotify. Tres propuestas para estas cuatro pantallas. Elige arriba la propuesta (A, B o C) y la pantalla para verla; el resto de la app (negro, coral, Poppins, barra superior, biblioteca plegable) ya está hecho y no cambia.</p>
+
+<div class="pick">
+  <div class="seg" id="segV"><button data-v="A" class="on">A · Clásico</button><button data-v="B">B · Panel</button><button data-v="C">C · Inmersivo</button></div>
+  <div class="seg" id="segS"><button data-s="lib" class="on">Biblioteca</button><button data-s="dl">Descargas</button><button data-s="st">Estadísticas</button><button data-s="tm">Máquina del tiempo</button></div>
+</div>
+
+<div class="vdesc" data-v="A"><h2><span class="tag">A</span> Clásico: como una lista de Spotify</h2>
+<p>Sigue el lenguaje de las fases 1 y 2: cabecera con degradado, botón coral y tablas. Lo más coherente con lo ya hecho.</p>
+<ul class="chg">
+<li><b>Biblioteca:</b> título grande, chips (Playlists, Álbumes, Artistas, Canciones, Géneros), orden y cuadrícula/lista. Una tarjeta ancha «Me gusta» con las últimas canciones encabeza la cuadrícula.</li>
+<li><b>Descargas:</b> se ve como una playlist: portada verde, «128 canciones · 3,2 GB», botón coral, aleatorio, pausar y carpeta. La tabla lleva una columna de estado con la barra de progreso dentro de la fila.</li>
+<li><b>Estadísticas:</b> cabecera con la cifra grande («86 h») y chips de periodo; debajo, artistas en círculos, top canciones en tabla, mapa de calor y barras por día.</li>
+<li><b>Máquina del tiempo:</b> el año enorme en la cabecera, una fila de años para saltar, botón coral «Viajar» y la lista con la marca «Tuya» en lo que escuchaste ese año.</li>
+</ul></div>
+<div class="vdesc hide" data-v="B"><h2><span class="tag">B</span> Panel: mosaicos con datos</h2>
+<p>Un tablero de mosaicos de distintos tamaños. Más información a la vista sin hacer scroll, pensado para pantallas anchas.</p>
+<ul class="chg">
+<li><b>Biblioteca:</b> mosaicos arriba («Me gusta», «Descargadas», lo último que abriste) y debajo una tabla con columnas: título, tipo, añadido y última escucha.</li>
+<li><b>Descargas:</b> dos columnas: a la izquierda la cola con tarjetas de progreso; a la derecha el espacio usado en un anillo y los ajustes (calidad, carpeta, descargas a la vez).</li>
+<li><b>Estadísticas:</b> cifras en mosaicos (horas, escuchas, racha, % frente al periodo anterior), artista nº 1 con foto, mapa de calor ancho, barras y top canciones.</li>
+<li><b>Máquina del tiempo:</b> una línea del tiempo horizontal con un punto por año (más grande si escuchaste más); al elegir uno se abre su ficha a la derecha.</li>
+</ul></div>
+<div class="vdesc hide" data-v="C"><h2><span class="tag">C</span> Inmersivo: portadas grandes y modo «Wrapped»</h2>
+<p>El más visual. Portadas enormes, color a pantalla completa y las estadísticas contadas como diapositivas, al estilo de un resumen anual.</p>
+<ul class="chg">
+<li><b>Biblioteca:</b> mosaico de portadas grandes sin texto hasta pasar el ratón, con una barra lateral A–Z para saltar.</li>
+<li><b>Descargas:</b> un anillo grande en el centro («3 de 12 descargando»), interruptor «Solo descargadas» (modo sin conexión) y la lista debajo.</li>
+<li><b>Estadísticas:</b> diapositivas a pantalla completa: «Escuchaste 86 horas», «Tu artista nº 1», «Tu canción del mes»… con flechas, puntos y botón para compartir.</li>
+<li><b>Máquina del tiempo:</b> un vinilo que gira con el año en la etiqueta, rueda de años para girar y las canciones como fotos instantáneas.</li>
+</ul></div>
+
+<div class="zoom"><div class="win" id="win">
+  <div class="top"><span class="logo">d</span><span class="back"><span class="ms">chevron_left</span></span>
+    <div class="mid"><span class="circ"><span class="ms">home</span></span><span class="search"><span class="ms">search</span>¿Qué quieres reproducir?</span></div>
+    <div class="ico"><span class="ms">public</span><span class="ms">leaderboard</span><span class="ms">groups</span><span class="ms" id="icoDl">download</span><span class="ms">settings</span><span class="av">Q</span></div></div>
+  <div class="body">
+    <div class="p lib"><span class="ms f">library_music</span><i class="liked"></i><i class="g1"></i><i class="g4"></i><i class="g2"></i><i class="g3"></i><i class="g8"></i></div>
+    <div class="p main" id="main"></div>
+  </div>
+  <div class="bar"><div class="np"><i class="g7"></i><div>DESPECHÁ<small>Rosalía</small></div></div><div class="tr"><div class="b"><span class="ms">shuffle</span><span class="ms f">skip_previous</span><span class="pp"><span class="ms f">pause</span></span><span class="ms f">skip_next</span><span class="ms">repeat</span></div><div class="prog">1:02<span class="t"></span>2:37</div></div><div class="ex"><span class="ms">view_sidebar</span><span class="ms">lyrics</span><span class="ms">queue_music</span><span class="ms">devices</span><span class="ms">volume_up</span><span class="vol"></span></div></div>
+</div></div>
+
+<div class="note"><b>En las tres:</b> los datos son los que la app ya tiene (tu biblioteca vinculada, la cola de descargas, tu historial local y el catálogo por año). No hace falta nada nuevo en el servidor. Se pueden mezclar piezas, por ejemplo la Biblioteca de A con las Estadísticas de C.</div>
+</div>
+
+<!-- ════════ contenidos ════════ -->
+<template id="A-lib"><div class="scroll" style="background:linear-gradient(180deg,#2a2440,#121212 260px)">
+  <div class="pad" style="padding-top:28px;display:flex;align-items:center;gap:14px"><h3n style="font-size:40px;font-weight:800;letter-spacing:-.03em">Tu biblioteca</h3n><span style="flex:1"></span><span class="sub" style="display:flex;gap:6px;align-items:center;font-size:13px">Recientes <span class="ms">swap_vert</span></span><span class="ms">grid_view</span><span class="ms sub">list</span></div>
+  <div class="pad chips" style="margin:14px 0 20px"><span class="chip on">Playlists</span><span class="chip">Álbumes</span><span class="chip">Artistas</span><span class="chip">Canciones</span><span class="chip">Géneros</span></div>
+  <div class="pad" style="display:grid;grid-template-columns:2fr repeat(3,1fr);gap:16px">
+    <div style="border-radius:8px;padding:20px;display:flex;flex-direction:column;justify-content:flex-end;position:relative" class="liked">
+      <div style="font-size:13px;opacity:.9;line-height:1.7">Rosalía · DESPECHÁ &nbsp;•&nbsp; Bad Bunny · DtMF &nbsp;•&nbsp; Feid · LUNA &nbsp;•&nbsp; Karol G · Si Antes Te Hubiera Conocido …</div>
+      <b style="font-size:32px;font-weight:800;margin-top:10px">Me gusta</b><span style="font-size:13px">1.272 canciones</span>
+      <span class="playc s" style="position:absolute;right:18px;bottom:18px"><span class="ms f">play_arrow</span></span></div>
+    <div class="card h" style="width:auto"><i class="g1"></i><b>Funkkk 2025</b><small>Playlist · cevicheee</small><span class="playc s hp" style="top:auto;bottom:62px"><span class="ms f">play_arrow</span></span></div>
+    <div class="card" style="width:auto"><i class="g2"></i><b>Lo-fi beats</b><small>Playlist · Dezzy</small></div>
+    <div class="card" style="width:auto"><i class="g4"></i><b>before i fall</b><small>Playlist · 128 canciones</small></div>
+  </div>
+  <div class="pad" style="display:grid;grid-template-columns:repeat(6,1fr);gap:16px;margin-top:4px">
+    <div class="card" style="width:auto"><i class="g3"></i><b>Mis pistas en Shazam</b><small>Playlist</small></div>
+    <div class="card" style="width:auto"><i class="g8"></i><b>Nightmare</b><small>Álbum · A7X</small></div>
+    <div class="card" style="width:auto"><i class="g5"></i><b>Funk</b><small>Playlist</small></div>
+    <div class="card" style="width:auto"><i class="g10"></i><b>Motomami</b><small>Álbum · Rosalía</small></div>
+    <div class="card" style="width:auto"><i class="g6"></i><b>Para entrenar</b><small>Playlist</small></div>
+    <div class="card" style="width:auto"><i class="g9"></i><b>Sad hours</b><small>Playlist</small></div>
+  </div>
+</div></template>
+
+<template id="A-dl"><div class="scroll" style="background:linear-gradient(180deg,#0f5a45,#121212 380px)">
+  <div class="hero"><div class="cov g5"><span class="ms f">download_for_offline</span></div><div><span class="tg">Playlist local</span><h3n>Descargas</h3n><span style="font-size:14px"><b>128 canciones</b> • 3,2 GB • FLAC y M4A • C:\Música\Dezzy</span></div></div>
+  <div class="acts"><span class="playc"><span class="ms f">play_arrow</span></span><span class="ms">shuffle</span><span class="ms">pause_circle</span><span class="ms">folder_open</span><span class="ms">tune</span><span style="flex:1"></span><span class="chips"><span class="chip on">Todo</span><span class="chip">En curso · 3</span><span class="chip">Error · 1</span></span></div>
+  <div class="pad"><div class="thead"><span>#</span><span>Título</span><span>Estado</span><span class="ms" style="font-size:18px">schedule</span></div>
+    <div class="row h"><span class="n">1</span><i class="g7"></i><span><b>DESPECHÁ</b>Rosalía</span><span><span class="bar2"><span style="right:38%"></span></span><small style="font-size:11px">Guardando · 62 %</small></span><span>2:37</span></div>
+    <div class="row"><span class="n">2</span><i class="g3"></i><span><b>DtMF</b>Bad Bunny</span><span><span class="bar2"><span style="right:85%"></span></span><small style="font-size:11px">Resolviendo…</small></span><span>3:57</span></div>
+    <div class="row"><span class="n">3</span><i class="g1"></i><span><b>LUNA</b>Feid, ATL Jacob</span><span class="sub">En cola</span><span>3:16</span></div>
+    <div class="row"><span class="n">4</span><i class="g10"></i><span><b>SAOKO</b>Rosalía</span><span style="color:#ff8a8a;display:flex;gap:6px;align-items:center"><span class="ms" style="font-size:18px">error</span>Error · Reintentar</span><span>2:17</span></div>
+    <div class="row"><span class="n">5</span><i class="g2"></i><span><b>Tití Me Preguntó</b>Bad Bunny</span><span style="display:flex;gap:6px;align-items:center;color:#4ee08f"><span class="ms f" style="font-size:18px">download_done</span>FLAC · 34 MB</span><span>4:03</span></div>
+  </div>
+</div></template>
+
+<template id="A-st"><div class="scroll" style="background:linear-gradient(180deg,#5a1f33,#121212 360px)">
+  <div class="hero" style="padding-top:44px"><div class="cov g7" style="width:200px;height:200px"><span class="ms f" style="font-size:96px">insights</span></div><div><span class="tg">Tus estadísticas · este mes</span><h3n>86 h</h3n><span style="font-size:14px"><b>1.942 escuchas</b> • +18 % que el mes pasado • racha de 23 días 🔥</span></div></div>
+  <div class="acts" style="padding-top:8px"><span class="chips"><span class="chip">Semana</span><span class="chip on">Mes</span><span class="chip">Año</span><span class="chip">Siempre</span></span><span style="flex:1"></span><span class="ms">ios_share</span></div>
+  <div class="pad" style="display:grid;grid-template-columns:1.5fr 1fr;gap:28px">
+    <div><div class="sh">Top artistas</div><div class="cards">
+      <div class="card"><i class="g7 r"></i><b>Rosalía</b><small>14 h · 212</small></div><div class="card h"><i class="g3 r"></i><b>Bad Bunny</b><small>11 h · 180</small></div><div class="card"><i class="g5 r"></i><b>Feid</b><small>8 h · 131</small></div><div class="card"><i class="g8 r"></i><b>Karol G</b><small>6 h · 98</small></div></div></div>
+    <div><div class="sh">Por día</div><div class="wk"><div><span style="height:40%"></span>L</div><div><span style="height:55%"></span>M</div><div><span style="height:48%"></span>X</div><div><span style="height:62%"></span>J</div><div><span class="top" style="height:96%"></span>V</div><div><span style="height:80%"></span>S</div><div><span style="height:44%"></span>D</div></div></div>
+  </div>
+</div></template>
+
+<template id="A-tm"><div class="scroll" style="background:linear-gradient(180deg,#6b4a12,#121212 380px)">
+  <div class="hero"><div class="cov g3"><span class="ms f">history</span></div><div><span class="tg">Máquina del tiempo</span><h3n style="font-size:110px">2019</h3n><span style="font-size:14px"><b>50 canciones</b> • 12 son tuyas • lo que sonaba y lo que escuchabas</span></div></div>
+  <div class="acts"><span class="playc"><span class="ms f">play_arrow</span></span><span class="ms">shuffle</span><span style="flex:1"></span><span class="ms">chevron_left</span><span class="chips"><span class="chip">2016</span><span class="chip">2017</span><span class="chip">2018</span><span class="chip on">2019</span><span class="chip">2020</span><span class="chip">2021</span><span class="chip">2022</span></span><span class="ms">chevron_right</span></div>
+  <div class="pad"><div class="thead"><span>#</span><span>Título</span><span>Álbum</span><span class="ms" style="font-size:18px">schedule</span></div>
+    <div class="row h"><span class="n">1</span><i class="g10"></i><span><b>Con Altura</b>Rosalía, J Balvin <span class="badge">Tuya</span></span><span>Con Altura</span><span>2:42</span></div>
+    <div class="row"><span class="n">2</span><i class="g2"></i><span><b>Callaita</b>Bad Bunny, Tainy <span class="badge">Tuya</span></span><span>Callaita</span><span>4:10</span></div>
+    <div class="row"><span class="n">3</span><i class="g8"></i><span><b>bad guy</b>Billie Eilish</span><span>WHEN WE ALL FALL ASLEEP</span><span>3:14</span></div>
+    <div class="row"><span class="n">4</span><i class="g4"></i><span><b>China</b>Anuel AA, Daddy Yankee…</span><span>Emmanuel</span><span>5:01</span></div>
+  </div>
+</div></template>
+
+<!-- B -->
+<template id="B-lib"><div class="scroll" style="padding:24px">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px"><h3n style="font-size:32px;font-weight:800">Biblioteca</h3n><span class="chips" style="margin-left:14px"><span class="chip on">Todo</span><span class="chip">Playlists</span><span class="chip">Álbumes</span><span class="chip">Artistas</span><span class="chip">Canciones</span></span><span style="flex:1"></span><span class="chip"><span class="ms" style="font-size:18px">search</span>Buscar</span></div>
+  <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;grid-template-rows:150px;gap:14px;margin-bottom:22px">
+    <div class="tile liked" style="display:flex;flex-direction:column;justify-content:flex-end"><b style="font-size:26px">Me gusta</b><small>1.272 canciones · actualizada hoy</small></div>
+    <div class="tile g5" style="display:flex;flex-direction:column;justify-content:flex-end"><span class="ms f" style="font-size:34px">download_done</span><b style="font-size:18px">Descargadas</b><small>128 · 3,2 GB</small></div>
+    <div class="tile" style="display:flex;gap:12px;align-items:center"><i class="g1" style="width:84px;height:84px;border-radius:6px;display:block;flex:none"></i><div><h4>Seguir escuchando</h4><b>Funkkk 2025</b><br><small class="sub">hace 2 h</small></div></div>
+    <div class="tile" style="display:flex;gap:12px;align-items:center"><i class="g7" style="width:84px;height:84px;border-radius:50%;display:block;flex:none"></i><div><h4>Más escuchado</h4><b>Rosalía</b><br><small class="sub">212 escuchas</small></div></div>
+  </div>
+  <div class="thead" style="grid-template-columns:40px 1fr 120px 150px 150px"><span></span><span style="grid-column:auto">Título</span><span>Tipo</span><span>Añadido</span><span>Última escucha</span></div>
+  <div class="row" style="grid-template-columns:40px 1fr 120px 150px 150px"><i class="g1"></i><span><b>Funkkk 2025 Visualizer</b>cevicheee · 30 canciones</span><span>Playlist</span><span>12 nov 2026</span><span>hace 2 h</span></div>
+  <div class="row h" style="grid-template-columns:40px 1fr 120px 150px 150px"><i class="g8"></i><span><b>Nightmare</b>Avenged Sevenfold</span><span>Álbum</span><span>3 oct 2026</span><span>ayer</span></div>
+  <div class="row" style="grid-template-columns:40px 1fr 120px 150px 150px"><i class="g7" style="border-radius:50%"></i><span><b>Rosalía</b>212 escuchas</span><span>Artista</span><span>1 ago 2026</span><span>hoy</span></div>
+  <div class="row" style="grid-template-columns:40px 1fr 120px 150px 150px"><i class="g4"></i><span><b>before i fall aesthetic</b>Quiet Dezzy · 128 canciones</span><span>Playlist</span><span>20 jul 2026</span><span>hace 5 días</span></div>
+</div></template>
+
+<template id="B-dl"><div class="scroll" style="padding:24px;display:grid;grid-template-columns:1.6fr 1fr;gap:20px">
+  <div><div style="display:flex;align-items:center;gap:12px;margin-bottom:16px"><h3n style="font-size:32px;font-weight:800">Descargas</h3n><span style="flex:1"></span><span class="chip"><span class="ms" style="font-size:18px">pause</span>Pausar todo</span><span class="chip"><span class="ms" style="font-size:18px">refresh</span>Reintentar</span></div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="tile" style="display:flex;gap:14px;align-items:center"><i class="g7" style="width:56px;height:56px;border-radius:6px;display:block"></i><div style="flex:1"><b>DESPECHÁ</b> <span class="sub">· Rosalía</span><div class="bar2" style="margin:8px 0 4px"><span style="right:38%"></span></div><small class="sub">Guardando FLAC · 21 de 34 MB · 2,1 MB/s</small></div><span class="ms sub">close</span></div>
+      <div class="tile" style="display:flex;gap:14px;align-items:center"><i class="g3" style="width:56px;height:56px;border-radius:6px;display:block"></i><div style="flex:1"><b>DtMF</b> <span class="sub">· Bad Bunny</span><div class="bar2" style="margin:8px 0 4px"><span style="right:88%"></span></div><small class="sub">Resolviendo la mejor fuente…</small></div><span class="ms sub">close</span></div>
+      <div class="tile" style="display:flex;gap:14px;align-items:center;opacity:.7"><i class="g1" style="width:56px;height:56px;border-radius:6px;display:block"></i><div style="flex:1"><b>LUNA</b> <span class="sub">· Feid</span><br><small class="sub">En cola · 9 más detrás</small></div><span class="ms sub">drag_indicator</span></div>
+      <div class="tile" style="display:flex;gap:14px;align-items:center;border:1px solid rgba(255,120,120,.35)"><i class="g10" style="width:56px;height:56px;border-radius:6px;display:block"></i><div style="flex:1"><b>SAOKO</b> <span class="sub">· Rosalía</span><br><small style="color:#ff8a8a">No se encontró una fuente sin pérdida</small></div><span class="chip">Reintentar</span></div>
+    </div>
+    <div class="sh" style="margin-top:22px;font-size:18px">Descargadas <small>128 · Ver todas</small></div>
+    <div class="cards"><div class="card"><i class="g2"></i><b>Tití Me Preguntó</b><small>FLAC</small></div><div class="card"><i class="g5"></i><b>Me Porto Bonito</b><small>M4A</small></div><div class="card"><i class="g4"></i><b>Dakiti</b><small>FLAC</small></div></div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:14px;padding-top:58px">
+    <div class="tile" style="display:flex;gap:18px;align-items:center"><div style="width:120px;height:120px;border-radius:50%;background:conic-gradient(var(--acc) 0 32%,#4ee08f 32% 44%,#333 44%);display:grid;place-items:center"><div style="width:86px;height:86px;border-radius:50%;background:var(--el);display:grid;place-items:center;text-align:center;line-height:1.1"><b style="font-size:20px">3,2</b><small class="sub">de 10 GB</small></div></div><div><h4>Espacio</h4><div style="font-size:13px;line-height:1.9"><span style="color:var(--acc)">●</span> FLAC 2,4 GB<br><span style="color:#4ee08f">●</span> M4A 0,8 GB<br><span class="sub">●</span> Libre 6,8 GB</div></div></div>
+    <div class="tile"><h4>Ajustes</h4>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #2a2a2a">Calidad <b>Sin pérdida (FLAC)</b></div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #2a2a2a">A la vez <b>2</b></div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #2a2a2a">Carpeta <b>C:\Música\Dezzy</b></div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0">Solo con Wi-Fi/cable <b style="color:var(--acc)">Sí</b></div></div>
+  </div>
+</div></template>
+
+<template id="B-st"><div class="scroll" style="padding:24px">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px"><h3n style="font-size:32px;font-weight:800">Estadísticas</h3n><span class="chips" style="margin-left:14px"><span class="chip">Semana</span><span class="chip on">Mes</span><span class="chip">Año</span><span class="chip">Siempre</span></span><span style="flex:1"></span><span class="chip"><span class="ms" style="font-size:18px">ios_share</span>Compartir</span></div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr) 1.4fr;grid-template-rows:118px 150px 170px;gap:14px">
+    <div class="tile kpi"><h4>Tiempo</h4><b>86 h</b><small>3 h 10 min al día</small></div>
+    <div class="tile kpi"><h4>Escuchas</h4><b>1.942</b><small>412 canciones distintas</small></div>
+    <div class="tile kpi"><h4>Racha</h4><b>23 días</b><small>récord: 41</small></div>
+    <div class="tile kpi"><h4>Frente al mes pasado</h4><b style="color:#4ee08f">+18 %</b><small>+13 h</small></div>
+    <div class="tile g7" style="grid-row:span 2;display:flex;flex-direction:column;justify-content:flex-end"><div style="position:absolute;inset:0;display:grid;place-items:center"><span class="ms f" style="font-size:240px;color:rgba(255,255,255,.18)">person</span></div><h4 style="color:#fff;position:relative">Tu artista nº 1</h4><b style="font-size:38px;font-weight:800;position:relative">Rosalía</b><small style="position:relative">14 h · 212 escuchas · 16 % de tu mes</small></div>
+    <div class="tile" style="grid-column:span 4"><h4>Cada día del último año</h4><div class="heat" id="heatB"></div></div>
+    <div class="tile" style="grid-column:span 2"><h4>Por día de la semana</h4><div class="wk" style="height:110px"><div><span style="height:40%"></span>L</div><div><span style="height:55%"></span>M</div><div><span style="height:48%"></span>X</div><div><span style="height:62%"></span>J</div><div><span class="top" style="height:96%"></span>V</div><div><span style="height:80%"></span>S</div><div><span style="height:44%"></span>D</div></div></div>
+    <div class="tile" style="grid-column:span 3"><h4>Top canciones</h4>
+      <div class="row" style="grid-template-columns:20px 34px 1fr 60px;padding:3px 0"><span class="n">1</span><i class="g7" style="width:34px;height:34px"></i><span><b style="font-size:14px">DESPECHÁ</b></span><span>64</span></div>
+      <div class="row" style="grid-template-columns:20px 34px 1fr 60px;padding:3px 0"><span class="n">2</span><i class="g3" style="width:34px;height:34px"></i><span><b style="font-size:14px">DtMF</b></span><span>51</span></div>
+      <div class="row" style="grid-template-columns:20px 34px 1fr 60px;padding:3px 0"><span class="n">3</span><i class="g1" style="width:34px;height:34px"></i><span><b style="font-size:14px">LUNA</b></span><span>47</span></div></div>
+  </div>
+</div></template>
+
+<template id="B-tm"><div class="scroll" style="padding:24px">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px"><h3n style="font-size:32px;font-weight:800">Máquina del tiempo</h3n></div>
+  <p class="sub" style="margin:0 0 18px">Cada punto es un año. Cuanto más grande, más escuchaste de esa época.</p>
+  <div class="tile" style="padding:26px 30px 18px;margin-bottom:18px"><div style="position:relative;height:70px">
+    <div style="position:absolute;left:0;right:0;top:30px;height:2px;background:#3a3a3a"></div>
+    <div style="position:absolute;inset:0;display:flex;justify-content:space-between;align-items:flex-start">
+      <div style="text-align:center"><div style="width:12px;height:12px;border-radius:50%;background:#555;margin:25px auto 8px"></div><small class="sub">2012</small></div>
+      <div style="text-align:center"><div style="width:16px;height:16px;border-radius:50%;background:#666;margin:23px auto 6px"></div><small class="sub">2014</small></div>
+      <div style="text-align:center"><div style="width:20px;height:20px;border-radius:50%;background:#777;margin:21px auto 4px"></div><small class="sub">2016</small></div>
+      <div style="text-align:center"><div style="width:24px;height:24px;border-radius:50%;background:#888;margin:19px auto 2px"></div><small class="sub">2018</small></div>
+      <div style="text-align:center"><div style="width:34px;height:34px;border-radius:50%;background:var(--acc);margin:14px auto 0;box-shadow:0 0 0 6px rgba(242,96,109,.25)"></div><b>2019</b></div>
+      <div style="text-align:center"><div style="width:28px;height:28px;border-radius:50%;background:#999;margin:17px auto 0"></div><small class="sub">2021</small></div>
+      <div style="text-align:center"><div style="width:22px;height:22px;border-radius:50%;background:#888;margin:20px auto 3px"></div><small class="sub">2023</small></div>
+      <div style="text-align:center"><div style="width:18px;height:18px;border-radius:50%;background:#777;margin:22px auto 5px"></div><small class="sub">2025</small></div>
+    </div></div></div>
+  <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:18px">
+    <div class="tile g3" style="height:330px;display:flex;flex-direction:column;justify-content:flex-end"><b style="font-size:90px;font-weight:800;letter-spacing:-.05em;line-height:.9">2019</b><small style="margin-top:8px">50 canciones · 12 tuyas</small><span class="playc" style="position:absolute;right:18px;bottom:18px"><span class="ms f">play_arrow</span></span></div>
+    <div class="tile"><h4>Lo que sonaba</h4>
+      <div class="row" style="grid-template-columns:40px 1fr 80px;padding:6px 0"><i class="g10"></i><span><b>Con Altura</b>Rosalía, J Balvin</span><span class="badge">Tuya</span></div>
+      <div class="row" style="grid-template-columns:40px 1fr 80px;padding:6px 0"><i class="g2"></i><span><b>Callaita</b>Bad Bunny</span><span class="badge">Tuya</span></div>
+      <div class="row" style="grid-template-columns:40px 1fr 80px;padding:6px 0"><i class="g8"></i><span><b>bad guy</b>Billie Eilish</span><span></span></div>
+      <div class="row" style="grid-template-columns:40px 1fr 80px;padding:6px 0"><i class="g4"></i><span><b>China</b>Anuel AA, Daddy Yankee</span><span></span></div>
+      <div class="row" style="grid-template-columns:40px 1fr 80px;padding:6px 0"><i class="g5"></i><span><b>Señorita</b>Shawn Mendes, Camila Cabello</span><span></span></div></div>
+  </div>
+</div></template>
+
+<!-- C -->
+<template id="C-lib"><div class="scroll">
+  <div style="position:absolute;top:0;left:0;right:0;height:64px;display:flex;align-items:center;gap:12px;padding:0 24px;background:linear-gradient(180deg,rgba(18,18,18,.95),transparent);z-index:2"><h3n style="font-size:24px;font-weight:800">Tu biblioteca</h3n><span class="chips" style="margin-left:10px"><span class="chip on">Todo</span><span class="chip">Playlists</span><span class="chip">Álbumes</span><span class="chip">Artistas</span></span></div>
+  <div style="position:absolute;inset:0 44px 0 0;display:grid;grid-template-columns:repeat(5,1fr);grid-auto-rows:206px;gap:6px;padding:6px">
+    <i class="liked" style="grid-row:span 2;grid-column:span 2;display:grid;place-items:end start;padding:22px;font-style:normal"><span><b style="font-size:40px;font-weight:800">Me gusta</b><br>1.272 canciones</span></i>
+    <i class="g1"></i><i class="g2"></i><i class="g3" style="position:relative"><span style="position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;flex-direction:column;justify-content:flex-end;padding:14px;font-style:normal"><b>Mis pistas en Shazam</b><small class="sub">Playlist · 64</small><span class="playc s" style="position:absolute;right:12px;top:12px"><span class="ms f">play_arrow</span></span></span></i>
+    <i class="g4"></i><i class="g8" style="border-radius:50%;margin:10px"></i><i class="g10"></i>
+    <i class="g5"></i><i class="g6"></i><i class="g7" style="border-radius:50%;margin:10px"></i><i class="g9"></i><i class="g2"></i>
+  </div>
+  <div style="position:absolute;right:8px;top:70px;bottom:10px;width:28px;display:flex;flex-direction:column;justify-content:space-between;align-items:center;font-size:11px;color:var(--sub);font-weight:600"><span>#</span><span style="color:var(--acc)">A</span><span>B</span><span>C</span><span>D</span><span>F</span><span>L</span><span>M</span><span>N</span><span>R</span><span>S</span><span>T</span><span>Z</span></div>
+</div></template>
+
+<template id="C-dl"><div class="scroll" style="background:radial-gradient(60% 60% at 50% 30%,rgba(78,224,143,.18),transparent)">
+  <div style="display:flex;flex-direction:column;align-items:center;padding-top:34px">
+    <div style="width:230px;height:230px;border-radius:50%;background:conic-gradient(#4ee08f 0 62%,#2a2a2a 62%);display:grid;place-items:center;box-shadow:0 20px 60px rgba(0,0,0,.6)"><div style="width:196px;height:196px;border-radius:50%;background:var(--panel);display:grid;place-items:center;text-align:center"><div><span class="ms f" style="font-size:40px;color:#4ee08f">downloading</span><br><b style="font-size:26px">3 de 12</b><br><small class="sub">2,1 MB/s · ~4 min</small></div></div></div>
+    <div style="display:flex;gap:12px;margin-top:22px;align-items:center"><span class="chip"><span class="ms" style="font-size:18px">pause</span>Pausar</span><span class="chip" style="background:rgba(78,224,143,.18);color:#4ee08f"><span class="ms f" style="font-size:18px">toggle_on</span>Solo descargadas</span><span class="chip"><span class="ms" style="font-size:18px">folder_open</span>Carpeta</span></div>
+  </div>
+  <div class="pad" style="margin-top:26px">
+    <div class="sh" style="font-size:18px">En curso</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+      <div class="tile" style="display:flex;gap:12px;align-items:center"><i class="g7" style="width:52px;height:52px;border-radius:50%;display:block;box-shadow:0 0 0 3px #4ee08f"></i><div style="flex:1"><b>DESPECHÁ</b><br><small class="sub">62 % · FLAC</small></div></div>
+      <div class="tile" style="display:flex;gap:12px;align-items:center"><i class="g3" style="width:52px;height:52px;border-radius:50%;display:block;box-shadow:0 0 0 3px #4ee08f55"></i><div style="flex:1"><b>DtMF</b><br><small class="sub">Resolviendo…</small></div></div>
+      <div class="tile" style="display:flex;gap:12px;align-items:center"><i class="g1" style="width:52px;height:52px;border-radius:50%;display:block"></i><div style="flex:1"><b>LUNA</b><br><small class="sub">En cola</small></div></div>
+    </div>
+  </div>
+</div></template>
+
+<template id="C-st"><div class="scroll" style="background:radial-gradient(80% 90% at 75% 30%,#e0335d 0,#5a1430 50%,#12060a 90%)">
+  <div style="position:absolute;top:20px;left:24px;right:24px;display:flex;gap:6px">
+    <span style="flex:1;height:4px;border-radius:2px;background:#fff"></span><span style="flex:1;height:4px;border-radius:2px;background:#fff"></span><span style="flex:1;height:4px;border-radius:2px;background:linear-gradient(90deg,#fff 40%,rgba(255,255,255,.3) 40%)"></span><span style="flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.3)"></span><span style="flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.3)"></span></div>
+  <div style="position:absolute;top:40px;left:24px;display:flex;gap:8px"><span class="chip">Semana</span><span class="chip on">Mes</span><span class="chip">Año</span></div>
+  <div style="position:absolute;right:60px;bottom:-40px;width:430px;height:560px;display:grid;place-items:end center"><span class="ms f" style="font-size:560px;color:rgba(255,255,255,.16);line-height:.8">person</span></div>
+  <div style="position:absolute;left:60px;top:150px;max-width:640px">
+    <div style="font-size:20px;font-weight:600;opacity:.85">3 / 5 · Tu artista nº 1 del mes</div>
+    <h3n style="display:block;font-size:120px;font-weight:800;letter-spacing:-.05em;line-height:.95;margin:10px 0 18px">Rosalía</h3n>
+    <div style="font-size:22px;line-height:1.5">Le diste <b>14 horas</b>, el <b>16 %</b> de tu mes.<br>Tu canción suya: <b>DESPECHÁ</b>, 64 veces.</div>
+    <div style="display:flex;gap:14px;margin-top:28px;align-items:center"><span class="playc"><span class="ms f">play_arrow</span></span><span class="chip" style="background:#fff;color:#000;height:40px;padding:0 18px"><span class="ms" style="font-size:20px">ios_share</span>Compartir esta tarjeta</span></div>
+  </div>
+  <span style="position:absolute;left:14px;top:50%;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.4);display:grid;place-items:center"><span class="ms">chevron_left</span></span>
+  <span style="position:absolute;right:14px;top:50%;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.4);display:grid;place-items:center"><span class="ms">chevron_right</span></span>
+</div></template>
+
+<template id="C-tm"><div class="scroll" style="background:radial-gradient(70% 80% at 30% 50%,#6b4a12,#1a1206 70%)">
+  <div style="position:absolute;left:70px;top:90px;width:440px;height:440px;border-radius:50%;background:repeating-radial-gradient(circle,#111 0 2px,#1d1d1d 2px 5px);box-shadow:0 30px 80px rgba(0,0,0,.7);display:grid;place-items:center">
+    <div style="width:170px;height:170px;border-radius:50%;display:grid;place-items:center;text-align:center" class="g3"><div><b style="font-size:46px;font-weight:800;letter-spacing:-.04em">2019</b><br><small>lado A · 50 canciones</small></div></div></div>
+  <div style="position:absolute;left:540px;top:60px;display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--sub);font-weight:700">
+    <span class="ms">expand_less</span><span style="font-size:22px;opacity:.4">2017</span><span style="font-size:30px;opacity:.7">2018</span><span style="font-size:46px;color:#fff">2019</span><span style="font-size:30px;opacity:.7">2020</span><span style="font-size:22px;opacity:.4">2021</span><span class="ms">expand_more</span></div>
+  <div style="position:absolute;left:680px;right:24px;top:70px">
+    <div style="font-size:14px;opacity:.85;margin-bottom:12px">Lo que sonaba · <span class="badge">12 tuyas</span></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px">
+      <div style="background:#f3efe6;color:#111;padding:8px 8px 14px;border-radius:3px;transform:rotate(-3deg);box-shadow:0 10px 24px rgba(0,0,0,.5)"><i class="g10" style="display:block;aspect-ratio:1"></i><b style="font-size:13px">Con Altura</b><br><small>Rosalía ★ tuya</small></div>
+      <div style="background:#f3efe6;color:#111;padding:8px 8px 14px;border-radius:3px;transform:rotate(2deg);box-shadow:0 10px 24px rgba(0,0,0,.5)"><i class="g2" style="display:block;aspect-ratio:1"></i><b style="font-size:13px">Callaita</b><br><small>Bad Bunny ★ tuya</small></div>
+      <div style="background:#f3efe6;color:#111;padding:8px 8px 14px;border-radius:3px;transform:rotate(-1deg);box-shadow:0 10px 24px rgba(0,0,0,.5)"><i class="g8" style="display:block;aspect-ratio:1"></i><b style="font-size:13px">bad guy</b><br><small>Billie Eilish</small></div>
+      <div style="background:#f3efe6;color:#111;padding:8px 8px 14px;border-radius:3px;transform:rotate(3deg);box-shadow:0 10px 24px rgba(0,0,0,.5)"><i class="g4" style="display:block;aspect-ratio:1"></i><b style="font-size:13px">China</b><br><small>Anuel AA</small></div>
+      <div style="background:#f3efe6;color:#111;padding:8px 8px 14px;border-radius:3px;transform:rotate(-2deg);box-shadow:0 10px 24px rgba(0,0,0,.5)"><i class="g5" style="display:block;aspect-ratio:1"></i><b style="font-size:13px">Señorita</b><br><small>Shawn Mendes</small></div>
+      <div style="background:#f3efe6;color:#111;padding:8px 8px 14px;border-radius:3px;transform:rotate(1deg);box-shadow:0 10px 24px rgba(0,0,0,.5)"><i class="g1" style="display:block;aspect-ratio:1"></i><b style="font-size:13px">Otro Trago</b><br><small>Sech ★ tuya</small></div>
+    </div>
+    <div style="display:flex;gap:14px;margin-top:22px;align-items:center"><span class="playc"><span class="ms f">play_arrow</span></span><b>Poner el disco de 2019</b></div>
+  </div>
+</div></template>
+
+<script>
+let v = 'A', s = 'lib'
+const main = document.getElementById('main')
+function heat(el) {
+  if (!el) return
+  let h = ''
+  for (let i = 0; i < 371; i++) { const r = Math.random(); h += `<b class="${r > .85 ? 'l4' : r > .65 ? 'l3' : r > .45 ? 'l2' : r > .25 ? 'l1' : ''}"></b>` }
+  el.innerHTML = h
+}
+function render() {
+  main.innerHTML = document.getElementById(`${v}-${s}`).innerHTML
+  heat(main.querySelector('.heat'))
+  if (v === 'A' && s === 'st') {
+    const extra = document.createElement('div')
+    extra.className = 'pad'
+    extra.style.marginTop = '18px'
+    extra.innerHTML = '<div class="sh" style="font-size:18px">Cada día del último año</div><div class="heat"></div>'
+    main.querySelector('.scroll').appendChild(extra)
+    heat(extra.querySelector('.heat'))
+  }
+  document.getElementById('icoDl').classList.toggle('on', s === 'dl')
+  document.querySelectorAll('.vdesc').forEach((d) => d.classList.toggle('hide', d.dataset.v !== v))
+  document.querySelectorAll('#segV button').forEach((b) => b.classList.toggle('on', b.dataset.v === v))
+  document.querySelectorAll('#segS button').forEach((b) => b.classList.toggle('on', b.dataset.s === s))
+  history.replaceState(null, '', `#${v}-${s}`)
+}
+document.getElementById('segV').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { v = b.dataset.v; render() } })
+document.getElementById('segS').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { s = b.dataset.s; render() } })
+const m = location.hash.match(/^#([ABC])-(lib|dl|st|tm)$/)
+if (m) { v = m[1]; s = m[2] }
+render()
+</script>
+</body>
+</html>

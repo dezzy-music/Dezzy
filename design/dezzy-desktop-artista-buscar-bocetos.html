@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dezzy escritorio · Artista y Buscar</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..600,0..1,0&display=swap" rel="stylesheet">
+<style>
+:root{--doc:#f4f1f1;--ink:#22191a;--muted:#6b5b5c;--line:#e3d6d6;
+  --bg:#000;--panel:#121212;--el:#1f1f1f;--hov:#2a2a2a;--hi:#fff;--sub:#b3b3b3;--dim:#7a7a7a;--acc:#f2606d;--acc-d:#ED5564}
+*{box-sizing:border-box}
+body{margin:0;background:var(--doc);color:var(--ink);font:15px/1.5 Poppins,system-ui,sans-serif}
+.doc{max-width:1340px;margin:0 auto;padding:40px 24px 80px}
+h1{font-size:30px;margin:0 0 6px}
+.lead{color:var(--muted);max-width:960px;margin:0}
+h2{font-size:22px;margin:58px 0 4px;display:flex;align-items:center;gap:12px}
+h2 .tag{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--ink);color:#fff;font-size:17px}
+h3{font-size:15px;margin:22px 0 0;color:var(--muted);font-weight:600}
+.desc{color:var(--muted);max-width:1000px;margin:0 0 8px}
+ul.chg{margin:6px 0 14px;padding-left:20px;font-size:14px;columns:2;column-gap:40px;max-width:1120px}
+ul.chg li{margin-bottom:4px;break-inside:avoid}
+.ms{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;font-size:22px;line-height:1;display:inline-block;-webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400;vertical-align:middle}
+.ms.f{font-variation-settings:'FILL' 1,'wght' 500}
+.zoom{zoom:.92;margin-top:8px}
+@media (max-width:1300px){.zoom{zoom:.7}}
+@media (max-width:900px){.zoom{zoom:.45}ul.chg{columns:1}}
+.note{margin-top:44px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 20px;font-size:14px;color:var(--muted)}
+
+/* ventana */
+.win{width:1300px;height:780px;border-radius:12px;overflow:hidden;background:var(--bg);color:var(--hi);display:flex;flex-direction:column;box-shadow:0 18px 50px rgba(0,0,0,.3);font-family:Poppins,sans-serif;font-size:14px}
+.top{height:64px;display:flex;align-items:center;gap:10px;padding:0 14px;flex:none}
+.logo{width:30px;height:30px;border-radius:9px;background:var(--acc-d);display:grid;place-items:center;font-weight:800;font-size:16px;color:#fff}
+.back{width:32px;height:32px;border-radius:50%;background:var(--panel);display:grid;place-items:center}
+.circ{width:48px;height:48px;border-radius:24px;background:var(--el);display:grid;place-items:center}
+.search{width:470px;height:48px;border-radius:24px;background:var(--el);display:flex;align-items:center;gap:12px;padding:0 16px;color:var(--sub)}
+.search.on{border:2px solid #fff;color:#fff}
+.search b{font-weight:400;color:#fff}
+.mid{flex:1;display:flex;justify-content:center;gap:8px}
+.ico{display:flex;gap:14px;color:var(--sub);align-items:center}
+.av{width:32px;height:32px;border-radius:50%;background:#1a8f86;display:grid;place-items:center;font-weight:700}
+.body{flex:1;display:flex;gap:8px;padding:0 8px;min-height:0}
+.p{background:var(--panel);border-radius:8px;overflow:hidden;position:relative}
+.lib{width:76px;flex:none;display:flex;flex-direction:column;align-items:center;gap:8px;padding-top:14px;color:var(--sub)}
+.lib i{width:48px;height:48px;border-radius:4px;display:block}
+.main{flex:1;min-width:0}
+.bar{height:72px;flex:none;display:grid;grid-template-columns:1fr 1.6fr 1fr;align-items:center;padding:0 16px 0 10px}
+.np{display:flex;gap:12px;align-items:center}
+.np i{width:52px;height:52px;border-radius:4px}
+.np small{display:block;color:var(--sub);font-size:12px}
+.tr{display:flex;flex-direction:column;align-items:center;gap:6px}
+.tr .b{display:flex;gap:20px;align-items:center;color:var(--sub)}
+.tr .pp{width:34px;height:34px;border-radius:50%;background:#fff;color:#000;display:grid;place-items:center}
+.prog{width:100%;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--sub)}
+.prog span.t{flex:1;height:4px;border-radius:2px;background:#4d4d4d;position:relative}
+.prog span.t::before{content:'';position:absolute;inset:0 62% 0 0;background:#fff;border-radius:2px}
+.ex{display:flex;justify-content:flex-end;gap:12px;color:var(--sub);align-items:center}
+.vol{width:90px;height:4px;border-radius:2px;background:linear-gradient(90deg,#fff 70%,#4d4d4d 70%)}
+
+/* comunes */
+.g1{background:linear-gradient(135deg,#7b2ff7,#f2606d)}.g2{background:linear-gradient(135deg,#0f9b8e,#183b5a)}
+.g3{background:linear-gradient(135deg,#f7b733,#fc4a1a)}.g4{background:linear-gradient(135deg,#355c7d,#c06c84)}
+.g5{background:linear-gradient(135deg,#11998e,#38ef7d)}.g6{background:linear-gradient(135deg,#232526,#5b5b5b)}
+.g7{background:linear-gradient(135deg,#ee0979,#ff6a00)}.g8{background:linear-gradient(135deg,#4568dc,#b06ab3)}
+.g9{background:linear-gradient(135deg,#e0c3fc,#8ec5fc)}.g10{background:linear-gradient(135deg,#a8071a,#3a0a12)}
+.playc{width:56px;height:56px;border-radius:50%;background:var(--acc);color:#1a0407;display:grid;place-items:center;box-shadow:0 8px 18px rgba(0,0,0,.35);flex:none}
+.playc .ms{font-size:32px}
+.out{height:32px;padding:0 16px;border-radius:16px;border:1px solid #7c7c7c;display:inline-flex;align-items:center;font-weight:700;font-size:13px}
+.chip{height:32px;padding:0 14px;border-radius:16px;background:rgba(255,255,255,.1);display:inline-flex;align-items:center;font-size:13px;font-weight:500;white-space:nowrap}
+.chip.on{background:#fff;color:#000}
+.sh{font-size:22px;font-weight:700;margin:0 0 12px;display:flex;align-items:baseline;gap:10px}
+.sh small{margin-left:auto;font-size:13px;color:var(--sub);font-weight:600}
+.row{display:grid;grid-template-columns:28px 40px 1fr 110px 50px;gap:14px;align-items:center;padding:6px 12px;border-radius:4px;color:var(--sub)}
+.row i{width:40px;height:40px;border-radius:3px;display:block}
+.row b{color:#fff;font-weight:400;font-size:15px;display:block}
+.row.on b,.row.on .n{color:var(--acc)}
+.row:hover,.row.h{background:rgba(255,255,255,.08)}
+.n{text-align:center;font-size:15px}
+.cards{display:flex;gap:4px;margin:0 -12px}
+.card{width:176px;padding:12px;border-radius:6px;flex:none;position:relative}
+.card.h{background:var(--el)}
+.card i{display:block;aspect-ratio:1;border-radius:6px;margin-bottom:8px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.card i.r{border-radius:50%}
+.card b{display:block;font-weight:500;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card small{color:var(--sub);font-size:13px}
+.card .hp{position:absolute;right:20px;top:128px;width:46px;height:46px;border-radius:50%;background:var(--acc);color:#1a0407;display:grid;place-items:center;box-shadow:0 8px 16px rgba(0,0,0,.45)}
+.ver{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:500}
+.ver .ms{color:#3d91f4;font-size:24px}
+.person{position:absolute;inset:0;display:grid;place-items:end center;overflow:hidden}
+.person .ms{font-size:520px;color:rgba(255,255,255,.18);margin-bottom:-120px}
+.scroll{position:absolute;inset:0;overflow:hidden}
+.pad{padding:0 24px}
+.lbl{position:absolute;top:10px;right:12px;font-size:11px;background:rgba(0,0,0,.6);color:#fff;padding:3px 9px;border-radius:10px;z-index:5}
+
+/* ── A ── */
+.A .hero{height:340px;position:relative;background:linear-gradient(160deg,#5a2a6b,#a8344a 55%,#2b0d17)}
+.A .hero::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.55))}
+.A .hero .txt{position:absolute;left:24px;bottom:22px;z-index:2}
+.A .hero h3n{display:block;font-size:92px;font-weight:800;letter-spacing:-.04em;line-height:1;margin:6px 0 10px}
+.A .acts{display:flex;align-items:center;gap:22px;padding:22px 24px;background:linear-gradient(180deg,rgba(90,30,50,.55),transparent)}
+.A .split{display:grid;grid-template-columns:1.6fr 1fr;gap:28px;padding:0 24px}
+.A .pick{background:var(--el);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.A .pick .who{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--sub)}
+.A .pick .who i{width:28px;height:28px;border-radius:50%}
+.A .pick .big{display:flex;gap:14px;align-items:center}
+.A .pick .big i{width:110px;height:110px;border-radius:6px}
+.A .tiles{display:grid;grid-template-columns:repeat(5,1fr);gap:20px;padding:0 24px}
+.A .tile{height:120px;border-radius:8px;position:relative;overflow:hidden;padding:14px;font-size:22px;font-weight:700}
+.A .tile i{position:absolute;right:-14px;bottom:-6px;width:84px;height:84px;border-radius:4px;transform:rotate(25deg);box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.A .best{display:grid;grid-template-columns:1fr 1.4fr;gap:24px;padding:0 24px}
+.A .bestc{background:var(--el);border-radius:8px;padding:20px;position:relative;height:244px}
+.A .bestc i{display:block;width:96px;height:96px;border-radius:50%;margin-bottom:18px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.A .bestc b{display:block;font-size:30px;font-weight:700}
+.A .bestc .pill{display:inline-block;margin-top:6px;font-size:12px;font-weight:600;background:#121212;padding:3px 10px;border-radius:12px}
+.A .bestc .playc{position:absolute;right:20px;bottom:20px}
+
+/* ── B ── */
+.B .head{display:grid;grid-template-columns:auto 1fr 300px;gap:28px;align-items:center;padding:28px 28px 22px;background:linear-gradient(180deg,#2e3f6b,#121212)}
+.B .ph{width:200px;height:200px;border-radius:50%;box-shadow:0 12px 40px rgba(0,0,0,.6);position:relative;overflow:hidden}
+.B .ph .ms{position:absolute;inset:auto 0 -30px;text-align:center;font-size:210px;color:rgba(255,255,255,.25)}
+.B .head h3n{display:block;font-size:64px;font-weight:800;letter-spacing:-.03em;line-height:1.05;margin:4px 0 8px}
+.B .stats{display:flex;gap:22px;color:var(--sub);font-size:13px}
+.B .stats b{display:block;color:#fff;font-size:18px}
+.B .latest{background:rgba(0,0,0,.35);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.B .latest .t{display:flex;gap:12px;align-items:center}
+.B .latest i{width:72px;height:72px;border-radius:6px}
+.B .latest small{color:var(--sub);font-size:12px}
+.B .tabs{display:flex;gap:26px;padding:0 28px;border-bottom:1px solid #2a2a2a;font-weight:600;color:var(--sub)}
+.B .tabs span{padding:12px 0}
+.B .tabs .on{color:#fff;box-shadow:inset 0 -3px 0 var(--acc)}
+.B .two{display:grid;grid-template-columns:1fr 1fr;gap:0 24px}
+.B .about{display:grid;grid-template-columns:260px 1fr;border-radius:10px;overflow:hidden;background:var(--el);height:170px}
+.B .about p{margin:0;color:var(--sub);font-size:13px}
+.B .recent{display:flex;gap:12px}
+.B .rc{width:150px;background:var(--el);border-radius:8px;padding:10px;position:relative}
+.B .rc i{display:block;aspect-ratio:1;border-radius:4px;margin-bottom:6px}
+.B .rc i.r{border-radius:50%}
+.B .rc .x{position:absolute;right:8px;top:8px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.6);display:grid;place-items:center}
+.B .rc .x .ms{font-size:16px}
+.B .gen{display:grid;grid-template-columns:2fr 1fr 1fr;grid-template-rows:118px 118px;gap:14px}
+.B .gen div{border-radius:10px;padding:14px;font-weight:700;font-size:20px;position:relative;overflow:hidden}
+.B .gen div:first-child{grid-row:span 2;font-size:34px}
+.B .gen small{display:block;font-size:12px;font-weight:500;opacity:.8}
+.B .res{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.B .rcard{background:var(--el);border-radius:8px;padding:12px}
+.B .rcard i{display:block;aspect-ratio:1;border-radius:6px;margin-bottom:8px}
+.B .rcard i.r{border-radius:50%}
+.B .rcard small{color:var(--sub);font-size:12px}
+
+/* ── C ── */
+.C .imm{height:100%;position:relative;background:radial-gradient(70% 90% at 70% 20%,#c2405a 0,#4a1a2c 45%,#0b0507 85%)}
+.C .imm .person .ms{font-size:640px;color:rgba(255,255,255,.14);margin-bottom:-170px}
+.C .imm .person{place-items:end end;padding-right:60px}
+.C .ctop{position:absolute;top:0;left:0;right:0;height:64px;display:flex;align-items:center;gap:12px;padding:0 20px;z-index:3}
+.C .live{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;background:rgba(0,0,0,.45);padding:5px 12px;border-radius:14px}
+.C .live i{width:8px;height:8px;border-radius:50%;background:#ff4e45;box-shadow:0 0 0 4px rgba(255,78,69,.25)}
+.C .cbottom{position:absolute;left:0;right:0;bottom:0;padding:0 28px 26px;display:grid;grid-template-columns:1fr 420px;gap:30px;align-items:end;z-index:2;background:linear-gradient(180deg,transparent,rgba(0,0,0,.75) 45%)}
+.C h3n{display:block;font-size:110px;font-weight:800;letter-spacing:-.05em;line-height:.95;margin:6px 0 14px}
+.C .glass{background:rgba(20,10,14,.55);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:12px}
+.C .glass .row{grid-template-columns:22px 40px 1fr 44px}
+.C .fans{display:flex;gap:14px;margin-top:6px}
+.C .fans i{width:58px;height:58px;border-radius:50%;display:block;border:2px solid rgba(255,255,255,.2)}
+.C .s-center{display:flex;flex-direction:column;align-items:center;padding-top:56px;background:radial-gradient(60% 50% at 50% 0,rgba(242,96,109,.28),transparent)}
+.C .bigsearch{width:680px;height:64px;border-radius:32px;background:#fff;color:#000;display:flex;align-items:center;gap:14px;padding:0 24px;font-size:20px;box-shadow:0 18px 40px rgba(0,0,0,.5)}
+.C .bigsearch .ms{font-size:28px}
+.C .sugg{width:680px;background:#1f1f1f;border-radius:16px;margin-top:10px;padding:8px;box-shadow:0 18px 40px rgba(0,0,0,.5)}
+.C .sg{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:8px}
+.C .sg.h{background:#2a2a2a}
+.C .sg i{width:44px;height:44px;border-radius:4px}
+.C .sg i.r{border-radius:50%}
+.C .sg small{display:block;color:var(--sub);font-size:12px}
+.C .sg .k{margin-left:auto;font-size:11px;color:var(--sub);border:1px solid #444;border-radius:6px;padding:1px 6px}
+.C .world{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;width:100%;padding:0 28px;margin-top:26px}
+.C .world div{height:96px;border-radius:10px;padding:12px;font-weight:700;font-size:16px;position:relative;overflow:hidden}
+.C .world small{display:block;font-weight:500;font-size:11px;opacity:.85}
+</style>
+</head>
+<body>
+<div class="doc">
+<h1>Dezzy escritorio · Artista y Buscar</h1>
+<p class="lead">Siguiente fase del estilo Spotify. Tres propuestas para las dos pantallas que aún tienen el aspecto anterior. Las tres usan la base ya aplicada (negro, coral #f2606d, Poppins, barra superior y «Tu biblioteca»); aquí la biblioteca aparece plegada para dar sitio. También incluyen el botón coral que aparece al pasar el ratón por una tarjeta y reproduce sin abrirla.</p>
+
+<!-- ═════════════════ A ═════════════════ -->
+<h2><span class="tag">A</span> Clásico: foto ancha y cuadrícula de géneros</h2>
+<p class="desc">Lo más cercano a Spotify. Artista con la foto a todo lo ancho y el nombre enorme encima; Buscar con tarjetas de colores al estar vacío y «Mejor resultado» al escribir.</p>
+<ul class="chg">
+<li>Artista: portada de 340 px con la foto, insignia y oyentes; el nombre a 92 px.</li>
+<li>Botón coral, «Seguir», aleatorio y más; el degradado sigue el color de la foto.</li>
+<li>«Populares» numeradas (5, con «Ver más») y a la derecha «Selección de Dezzy» (último lanzamiento).</li>
+<li>Discografía con chips Álbumes / Sencillos / EP y tarjetas de 176 px.</li>
+<li>Buscar vacío: «Explorar todo», tarjetas de géneros y estados de ánimo con una portada inclinada.</li>
+<li>Buscar con texto: chips de tipo, «Mejor resultado» grande y 4 canciones al lado.</li>
+</ul>
+<h3>Artista</h3>
+<div class="zoom"><div class="win A">
+  <div class="top"><span class="logo">d</span><span class="back"><span class="ms">chevron_left</span></span>
+    <div class="mid"><span class="circ"><span class="ms">home</span></span><span class="search"><span class="ms">search</span>¿Qué quieres reproducir?</span></div>
+    <div class="ico"><span class="ms">public</span><span class="ms">leaderboard</span><span class="ms">groups</span><span class="ms">download</span><span class="ms">settings</span><span class="av">Q</span></div></div>
+  <div class="body">
+    <div class="p lib"><span class="ms f">library_music</span><i class="g1"></i><i class="g4"></i><i class="g2"></i><i class="g3"></i><i class="g8"></i></div>
+    <div class="p main"><div class="scroll">
+      <div class="hero"><div class="person"><span class="ms f">person</span></div>
+        <div class="txt"><span class="ver"><span class="ms f">verified</span>Artista verificado</span><h3n>Rosalía</h3n><span>38.214.502 oyentes mensuales</span></div></div>
+      <div class="acts"><span class="playc"><span class="ms f">play_arrow</span></span><span class="ms" style="font-size:32px;color:var(--sub)">shuffle</span><span class="out">Seguir</span><span class="ms" style="color:var(--sub)">more_horiz</span></div>
+      <div class="split">
+        <div><div class="sh">Populares</div>
+          <div class="row on"><span class="n"><span class="ms" style="font-size:18px">equalizer</span></span><i class="g7"></i><span><b>DESPECHÁ</b></span><span>812.440.211</span><span>2:37</span></div>
+          <div class="row h"><span class="n">2</span><i class="g1"></i><span><b>LA FAMA</b></span><span>640.118.902</span><span>3:08</span></div>
+          <div class="row"><span class="n">3</span><i class="g3"></i><span><b>Malamente</b></span><span>402.990.115</span><span>2:30</span></div>
+          <div class="row"><span class="n">4</span><i class="g4"></i><span><b>BIZCOCHITO</b></span><span>290.004.871</span><span>1:49</span></div>
+          <div class="row"><span class="n">5</span><i class="g10"></i><span><b>SAOKO</b></span><span>211.552.090</span><span>2:17</span></div>
+          <div style="padding:8px 12px;color:var(--sub);font-weight:600;font-size:13px">Ver más</div></div>
+        <div><div class="sh">Selección de Dezzy</div>
+          <div class="pick"><div class="who"><i class="g7"></i>Último lanzamiento · hace 3 días</div>
+            <div class="big"><i class="g8"></i><div><b style="font-size:18px">LUX</b><br><small style="color:var(--sub)">Álbum · 2025 · 18 canciones</small></div></div></div></div>
+      </div>
+    </div></div>
+  </div>
+  <div class="bar"><div class="np"><i class="g7"></i><div>DESPECHÁ<small>Rosalía</small></div></div><div class="tr"><div class="b"><span class="ms">shuffle</span><span class="ms f">skip_previous</span><span class="pp"><span class="ms f">pause</span></span><span class="ms f">skip_next</span><span class="ms">repeat</span></div><div class="prog">1:02<span class="t"></span>2:37</div></div><div class="ex"><span class="ms">view_sidebar</span><span class="ms">lyrics</span><span class="ms">queue_music</span><span class="ms">devices</span><span class="ms">volume_up</span><span class="vol"></span></div></div>
+</div></div>
+
+<h3>Buscar (vacío y con texto)</h3>
+<div class="zoom"><div class="win A">
+  <div class="top"><span class="logo">d</span><span class="back"><span class="ms">chevron_left</span></span>
+    <div class="mid"><span class="circ"><span class="ms">home</span></span><span class="search on"><span class="ms">search</span><b>rosa</b><span style="margin-left:auto" class="ms">close</span></span></div>
+    <div class="ico"><span class="ms">public</span><span class="ms">leaderboard</span><span class="ms">groups</span><span class="ms">download</span><span class="ms">settings</span><span class="av">Q</span></div></div>
+  <div class="body">
+    <div class="p lib"><span class="ms f">library_music</span><i class="g1"></i><i class="g4"></i><i class="g2"></i><i class="g3"></i><i class="g8"></i></div>
+    <div class="p main"><div class="scroll" style="padding-top:18px">
+      <div class="pad" style="display:flex;gap:8px;margin-bottom:22px"><span class="chip on">Todo</span><span class="chip">Canciones</span><span class="chip">Artistas</span><span class="chip">Álbumes</span><span class="chip">Playlists</span><span class="chip">Letras</span><span class="chip">Videos</span></div>
+      <div class="best">
+        <div><div class="sh">Mejor resultado</div><div class="bestc"><i class="g7"></i><b>Rosalía</b><span class="pill">Artista</span><span class="playc"><span class="ms f">play_arrow</span></span></div></div>
+        <div><div class="sh">Canciones</div>
+          <div class="row h" style="grid-template-columns:40px 1fr 50px"><i class="g7"></i><span><b>DESPECHÁ</b>Rosalía</span><span>2:37</span></div>
+          <div class="row" style="grid-template-columns:40px 1fr 50px"><i class="g1"></i><span><b>LA FAMA</b>Rosalía, The Weeknd</span><span>3:08</span></div>
+          <div class="row" style="grid-template-columns:40px 1fr 50px"><i class="g9"></i><span><b>Rosas</b>La Oreja de Van Gogh</span><span>3:52</span></div>
+          <div class="row" style="grid-template-columns:40px 1fr 50px"><i class="g4"></i><span><b>Rosa Pastel</b>Belanova</span><span>3:47</span></div></div>
+      </div>
+      <div class="pad" style="margin-top:28px"><div class="sh">Explorar todo <small>(lo que se ve con el buscador vacío)</small></div></div>
+      <div class="tiles">
+        <div class="tile" style="background:#e1335a">Pop<i class="g3"></i></div>
+        <div class="tile" style="background:#1e7d5a">Urbano latino<i class="g7"></i></div>
+        <div class="tile" style="background:#7b3fe4">Rock<i class="g6"></i></div>
+        <div class="tile" style="background:#d9701e">Para entrenar<i class="g5"></i></div>
+        <div class="tile" style="background:#2b5bc4">Relax<i class="g9"></i></div>
+      </div>
+    </div></div>
+  </div>
+  <div class="bar"><div class="np"><i class="g7"></i><div>DESPECHÁ<small>Rosalía</small></div></div><div class="tr"><div class="b"><span class="ms">shuffle</span><span class="ms f">skip_previous</span><span class="pp"><span class="ms f">pause</span></span><span class="ms f">skip_next</span><span class="ms">repeat</span></div><div class="prog">1:02<span class="t"></span>2:37</div></div><div class="ex"><span class="ms">view_sidebar</span><span class="ms">lyrics</span><span class="ms">queue_music</span><span class="ms">devices</span><span class="ms">volume_up</span><span class="vol"></span></div></div>
+</div></div>
+
+<!-- ═════════════════ B ═════════════════ -->
+<h2><span class="tag">B</span> Editorial: ficha con pestañas y búsquedas recientes</h2>
+<p class="desc">Más ordenado y con más datos. El artista es una ficha con foto redonda, cifras y pestañas; Buscar recuerda lo último que buscaste y destaca tus géneros.</p>
+<ul class="chg">
+<li>Artista: foto redonda de 200 px, nombre a 64 px y cifras (oyentes, seguidores, tus escuchas).</li>
+<li>A la derecha, tarjeta «Último lanzamiento» con botón para reproducirlo.</li>
+<li>Pestañas: Resumen · Canciones · Álbumes · Similares · Sobre el artista.</li>
+<li>«Populares» en dos columnas (10 sin desplazarse) y «Sobre el artista» con foto y biografía.</li>
+<li>Buscar vacío: tarjetas de búsquedas recientes (con ✕) y «Tus géneros» a partir de lo que escuchas.</li>
+<li>Buscar con texto: resultados en cuadrícula de tarjetas, con pestañas por tipo.</li>
+</ul>
+<h3>Artista</h3>
+<div class="zoom"><div class="win B">
+  <div class="top"><span class="logo">d</span><span class="back"><span class="ms">chevron_left</span></span>
+    <div class="mid"><span class="circ"><span class="ms">home</span></span><span class="search"><span class="ms">search</span>¿Qué quieres reproducir?</span></div>
+    <div class="ico"><span class="ms">public</span><span class="ms">leaderboard</span><span class="ms">groups</span><span class="ms">download</span><span class="ms">settings</span><span class="av">Q</span></div></div>
+  <div class="body">
+    <div class="p lib"><span class="ms f">library_music</span><i class="g1"></i><i class="g4"></i><i class="g2"></i><i class="g3"></i><i class="g8"></i></div>
+    <div class="p main"><div class="scroll">
+      <div class="head">
+        <div class="ph g8"><span class="ms f">person</span></div>
+        <div><span class="ver"><span class="ms f">verified</span>Artista</span><h3n>Bad Bunny</h3n>
+          <div class="stats"><span><b>71,4 M</b>oyentes al mes</span><span><b>89 M</b>seguidores</span><span><b>312</b>escuchas tuyas</span></div>
+          <div style="display:flex;gap:18px;align-items:center;margin-top:18px"><span class="playc"><span class="ms f">play_arrow</span></span><span class="out">Siguiendo</span><span class="ms" style="color:var(--sub)">more_horiz</span></div></div>
+        <div class="latest"><small>ÚLTIMO LANZAMIENTO</small><div class="t"><i class="g3"></i><div><b>DeBÍ TiRAR MáS FOToS</b><br><small>Álbum · 17 canciones</small></div></div><span class="out" style="align-self:flex-start"><span class="ms f" style="font-size:18px">play_arrow</span>&nbsp;Escuchar</span></div>
+      </div>
+      <div class="tabs"><span class="on">Resumen</span><span>Canciones</span><span>Álbumes</span><span>Similares</span><span>Sobre el artista</span></div>
+      <div class="pad" style="padding-top:18px"><div class="sh">Populares</div>
+        <div class="two">
+          <div class="row h" style="grid-template-columns:24px 40px 1fr 44px"><span class="n">1</span><i class="g3"></i><span><b>DtMF</b>1.204 M</span><span>3:57</span></div>
+          <div class="row" style="grid-template-columns:24px 40px 1fr 44px"><span class="n">6</span><i class="g2"></i><span><b>Tití Me Preguntó</b>1.880 M</span><span>4:03</span></div>
+          <div class="row on" style="grid-template-columns:24px 40px 1fr 44px"><span class="n">2</span><i class="g7"></i><span><b>BAILE INoLVIDABLE</b>802 M</span><span>6:07</span></div>
+          <div class="row" style="grid-template-columns:24px 40px 1fr 44px"><span class="n">7</span><i class="g5"></i><span><b>Me Porto Bonito</b>2.010 M</span><span>2:58</span></div>
+          <div class="row" style="grid-template-columns:24px 40px 1fr 44px"><span class="n">3</span><i class="g1"></i><span><b>NUEVAYoL</b>650 M</span><span>3:03</span></div>
+          <div class="row" style="grid-template-columns:24px 40px 1fr 44px"><span class="n">8</span><i class="g4"></i><span><b>Dakiti</b>1.990 M</span><span>3:25</span></div>
+        </div>
+        <div class="sh" style="margin-top:20px">Sobre el artista</div>
+        <div class="about"><div class="g8" style="position:relative"><div class="person"><span class="ms f" style="font-size:220px;margin-bottom:-60px">person</span></div></div><div style="padding:18px"><b style="font-size:17px">Benito Antonio Martínez Ocasio</b><p style="margin-top:6px">Cantante y compositor puertorriqueño. La biografía sale de la misma fuente que ya usa el panel «Reproduciendo», con «Leer más» si es larga.</p></div></div>
+      </div>
+    </div></div>
+  </div>
+  <div class="bar"><div class="np"><i class="g7"></i><div>BAILE INoLVIDABLE<small>Bad Bunny</small></div></div><div class="tr"><div class="b"><span class="ms">shuffle</span><span class="ms f">skip_previous</span><span class="pp"><span class="ms f">pause</span></span><span class="ms f">skip_next</span><span class="ms">repeat</span></div><div class="prog">2:40<span class="t"></span>6:07</div></div><div class="ex"><span class="ms">view_sidebar</span><span class="ms">lyrics</span><span class="ms">queue_music</span><span class="ms">devices</span><span class="ms">volume_up</span><span class="vol"></span></div></div>
+</div></div>
+
+<h3>Buscar (vacío)</h3>
+<div class="zoom"><div class="win B">
+  <div class="top"><span class="logo">d</span><span class="back"><span class="ms">chevron_left</span></span>
+    <div class="mid"><span class="circ"><span class="ms">home</span></span><span class="search on"><span class="ms">search</span>¿Qué quieres reproducir?</span></div>
+    <div class="ico"><span class="ms">public</span><span class="ms">leaderboard</span><span class="ms">groups</span><span class="ms">download</span><span class="ms">settings</span><span class="av">Q</span></div></div>
+  <div class="body">
+    <div class="p lib"><span class="ms f">library_music</span><i class="g1"></i><i class="g4"></i><i class="g2"></i><i class="g3"></i><i class="g8"></i></div>
+    <div class="p main"><div class="scroll" style="padding-top:20px">
+      <div class="pad">
+        <div class="sh">Búsquedas recientes <small>Borrar todo</small></div>
+        <div class="recent">
+          <div class="rc"><span class="x"><span class="ms">close</span></span><i class="g8 r"></i><b>Bad Bunny</b><br><small style="color:var(--sub)">Artista</small></div>
+          <div class="rc"><span class="x"><span class="ms">close</span></span><i class="g3"></i><b>DtMF</b><br><small style="color:var(--sub)">Canción</small></div>
+          <div class="rc"><span class="x"><span class="ms">close</span></span><i class="g2"></i><b>Lo-fi beats</b><br><small style="color:var(--sub)">Playlist</small></div>
+          <div class="rc"><span class="x"><span class="ms">close</span></span><i class="g7 r"></i><b>Rosalía</b><br><small style="color:var(--sub)">Artista</small></div>
+          <div class="rc"><span class="x"><span class="ms">close</span></span><i class="g5"></i><b>Motomami</b><br><small style="color:var(--sub)">Álbum</small></div>
+          <div class="rc"><span class="x"><span class="ms">close</span></span><i class="g4"></i><b>"me porto bonito"</b><br><small style="color:var(--sub)">Letra</small></div>
+        </div>
+        <div class="sh" style="margin-top:26px">Tus géneros <small>según lo que escuchas</small></div>
+        <div class="gen">
+          <div class="g7">Urbano latino<small>52 % de tus escuchas</small></div>
+          <div class="g8">Pop<small>36 %</small></div>
+          <div class="g2">Hip-hop<small>4 %</small></div>
+          <div class="g3">Latina<small>4 %</small></div>
+          <div class="g6">Electrónica<small>4 %</small></div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+  <div class="bar"><div class="np"><i class="g7"></i><div>BAILE INoLVIDABLE<small>Bad Bunny</small></div></div><div class="tr"><div class="b"><span class="ms">shuffle</span><span class="ms f">skip_previous</span><span class="pp"><span class="ms f">pause</span></span><span class="ms f">skip_next</span><span class="ms">repeat</span></div><div class="prog">2:40<span class="t"></span>6:07</div></div><div class="ex"><span class="ms">view_sidebar</span><span class="ms">lyrics</span><span class="ms">queue_music</span><span class="ms">devices</span><span class="ms">volume_up</span><span class="vol"></span></div></div>
+</div></div>
+
+<!-- ═════════════════ C ═════════════════ -->
+<h2><span class="tag">C</span> Inmersivo: el artista a pantalla completa y un buscador central</h2>
+<p class="desc">El más llamativo. El artista ocupa todo el panel (con su Canvas o foto si hay) y la información flota encima en cristal. Buscar pone un buscador grande en el centro con sugerencias mientras escribes.</p>
+<ul class="chg">
+<li>Artista: fondo a todo el panel con la foto o el Canvas de su canción más popular.</li>
+<li>Nombre a 110 px abajo a la izquierda; al hacer scroll se encoge en una barra fija.</li>
+<li>«Populares» en una tarjeta de cristal a la derecha; debajo, «Los fans también escuchan» en círculos.</li>
+<li>Marca «Sonando ahora en Dezzy» si alguien de tu Dezzy Connect lo escucha (opcional).</li>
+<li>Buscar: buscador blanco de 680 px en el centro, sugerencias al teclear con ↵ para reproducir.</li>
+<li>Debajo, «Lo que suena en el mundo»: países del Mapa musical como tarjetas (enlaza con Rankings).</li>
+</ul>
+<h3>Artista</h3>
+<div class="zoom"><div class="win C">
+  <div class="top"><span class="logo">d</span><span class="back"><span class="ms">chevron_left</span></span>
+    <div class="mid"><span class="circ"><span class="ms">home</span></span><span class="search"><span class="ms">search</span>¿Qué quieres reproducir?</span></div>
+    <div class="ico"><span class="ms">public</span><span class="ms">leaderboard</span><span class="ms">groups</span><span class="ms">download</span><span class="ms">settings</span><span class="av">Q</span></div></div>
+  <div class="body">
+    <div class="p lib"><span class="ms f">library_music</span><i class="g1"></i><i class="g4"></i><i class="g2"></i><i class="g3"></i><i class="g8"></i></div>
+    <div class="p main"><div class="imm">
+      <div class="person"><span class="ms f">person</span></div>
+      <div class="ctop"><span class="live"><i></i>Canvas · Malamente</span><span style="flex:1"></span><span class="ms" style="color:#fff">volume_off</span></div>
+      <div class="cbottom">
+        <div><span class="ver"><span class="ms f">verified</span>Artista verificado · 38,2 M oyentes al mes</span><h3n>Rosalía</h3n>
+          <div style="display:flex;gap:18px;align-items:center"><span class="playc"><span class="ms f">play_arrow</span></span><span class="ms" style="font-size:32px;color:#ddd">shuffle</span><span class="out" style="border-color:#ddd">Seguir</span><span class="ms" style="color:#ddd">more_horiz</span></div>
+          <div style="margin-top:22px;font-weight:600;font-size:14px">Los fans también escuchan</div>
+          <div class="fans"><i class="g3"></i><i class="g2"></i><i class="g8"></i><i class="g5"></i><i class="g4"></i><i class="g10"></i></div></div>
+        <div class="glass"><div class="sh" style="font-size:17px;margin:4px 6px 8px">Populares</div>
+          <div class="row on"><span class="n"><span class="ms" style="font-size:18px">equalizer</span></span><i class="g7"></i><span><b>DESPECHÁ</b></span><span>2:37</span></div>
+          <div class="row h"><span class="n">2</span><i class="g1"></i><span><b>LA FAMA</b></span><span>3:08</span></div>
+          <div class="row"><span class="n">3</span><i class="g3"></i><span><b>Malamente</b></span><span>2:30</span></div>
+          <div class="row"><span class="n">4</span><i class="g4"></i><span><b>BIZCOCHITO</b></span><span>1:49</span></div>
+          <div class="row"><span class="n">5</span><i class="g10"></i><span><b>SAOKO</b></span><span>2:17</span></div></div>
+      </div>
+    </div></div>
+  </div>
+  <div class="bar"><div class="np"><i class="g7"></i><div>DESPECHÁ<small>Rosalía</small></div></div><div class="tr"><div class="b"><span class="ms">shuffle</span><span class="ms f">skip_previous</span><span class="pp"><span class="ms f">pause</span></span><span class="ms f">skip_next</span><span class="ms">repeat</span></div><div class="prog">1:02<span class="t"></span>2:37</div></div><div class="ex"><span class="ms">view_sidebar</span><span class="ms">lyrics</span><span class="ms">queue_music</span><span class="ms">devices</span><span class="ms">volume_up</span><span class="vol"></span></div></div>
+</div></div>
+
+<h3>Buscar (escribiendo)</h3>
+<div class="zoom"><div class="win C">
+  <div class="top"><span class="logo">d</span><span class="back"><span class="ms">chevron_left</span></span>
+    <div class="mid"><span class="circ"><span class="ms">home</span></span><span class="search" style="opacity:.4"><span class="ms">search</span>¿Qué quieres reproducir?</span></div>
+    <div class="ico"><span class="ms">public</span><span class="ms">leaderboard</span><span class="ms">groups</span><span class="ms">download</span><span class="ms">settings</span><span class="av">Q</span></div></div>
+  <div class="body">
+    <div class="p lib"><span class="ms f">library_music</span><i class="g1"></i><i class="g4"></i><i class="g2"></i><i class="g3"></i><i class="g8"></i></div>
+    <div class="p main"><div class="s-center" style="height:100%">
+      <div class="bigsearch"><span class="ms">search</span>feid<span style="flex:1"></span><span class="ms" style="color:#666">mic</span></div>
+      <div class="sugg">
+        <div class="sg h"><i class="g5 r"></i><div><b>Feid</b><small>Artista</small></div><span class="k">↵ abrir</span></div>
+        <div class="sg"><i class="g7"></i><div><b>LUNA</b><small>Canción · Feid, ATL Jacob</small></div><span class="k">reproducir</span></div>
+        <div class="sg"><i class="g2"></i><div><b>FERXXOCALIPSIS</b><small>Álbum · Feid</small></div></div>
+        <div class="sg"><span class="ms" style="width:44px;text-align:center;color:var(--sub)">search</span><div><b>feid normal</b><small>Búsqueda</small></div></div>
+      </div>
+      <div class="world">
+        <div class="g7">🇨🇴 Colombia<small>1 · Feid</small></div>
+        <div class="g8">🇲🇽 México<small>1 · Fuerza Regida</small></div>
+        <div class="g2">🇪🇸 España<small>1 · Shakira</small></div>
+        <div class="g3">🇦🇷 Argentina<small>1 · Milo J</small></div>
+        <div class="g4">🇺🇸 EE. UU.<small>1 · Sabrina C.</small></div>
+        <div class="g6">🌍 Mundial<small>Ver Rankings →</small></div>
+      </div>
+    </div></div>
+  </div>
+  <div class="bar"><div class="np"><i class="g5"></i><div>LUNA<small>Feid, ATL Jacob</small></div></div><div class="tr"><div class="b"><span class="ms">shuffle</span><span class="ms f">skip_previous</span><span class="pp"><span class="ms f">pause</span></span><span class="ms f">skip_next</span><span class="ms">repeat</span></div><div class="prog">0:48<span class="t"></span>3:16</div></div><div class="ex"><span class="ms">view_sidebar</span><span class="ms">lyrics</span><span class="ms">queue_music</span><span class="ms">devices</span><span class="ms">volume_up</span><span class="vol"></span></div></div>
+</div></div>
+
+<div class="note"><b>En las tres:</b> el botón coral que aparece en las tarjetas al pasar el ratón reproduce el álbum, playlist o artista sin abrirlo. Las cifras (oyentes, reproducciones) solo se muestran si la fuente las da; si no, la fila se oculta. Se pueden mezclar piezas, por ejemplo el Artista de A con el Buscar de C.</div>
+</div>
+</body>
+</html>

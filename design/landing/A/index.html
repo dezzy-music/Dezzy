@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dezzy · boceto A</title>
+<meta name="description" content="Dezzy: música sin anuncios ni cuenta, con letras sincronizadas, mapa musical y salas para escuchar juntos. Para Android y Windows.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mona+Sans:wdth,wght@100,400;100,500;125,300&display=swap">
+<style>
+/* Hallmark · shape: Conversational FAQ · genre: atmospheric · theme: Midnight (deal 2/3, seed dezzy-open-source-ad-free-music-2b73·6e135081·2026-11-19·r0) · job: try · draw: 475cd4
+ * hero: Counter · nav: banner over a retracting bar · footer: colophon block · imagery: the product, 6 desktop captures · signature: the Canvas playing beside the downloads, captured from the real app
+ * axes: dark/grotesk-sans/cool · posture: committed · contrast: pass · fold: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R5 V4 · weakest: H, a Counter hero reads like any app page; the capture is the Canvas mid-song, not a static home */
+@import url("./tokens.css");
+@import url("./base.css");
+
+/* product captures are never retouched: the duotone stays for photographs only */
+[data-kind="product"]::before { content: none; }
+[data-kind="product"] > img { filter: none; mix-blend-mode: normal; }
+[data-kind="product"] { aspect-ratio: 16 / 10; background: var(--color-paper-2); outline: 1px solid var(--color-rule-2); outline-offset: -1px; }
+
+h1, h2 { font-stretch: var(--display-stretch); }
+body { font-stretch: 100%; }
+
+/* chrome */
+.banner { background: var(--color-paper-2); border-bottom: 1px solid var(--color-rule); font-size: var(--text-sm); }
+.banner .container { display: flex; gap: var(--space-md); align-items: center; justify-content: center; min-height: 40px; color: var(--color-muted); }
+.banner a { color: var(--color-ink); }
+.bar { position: sticky; top: 0; z-index: var(--z-sticky-nav); background: color-mix(in oklab, var(--color-paper) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--color-rule); transition: transform var(--dur-short) var(--ease-out); }
+.bar.is-tucked { transform: translateY(-100%); }
+.bar .container { display: flex; align-items: center; justify-content: space-between; min-height: 64px; gap: var(--space-lg); }
+.wordmark { font-family: var(--font-display); font-stretch: 125%; font-weight: 500; font-size: var(--text-lg); text-decoration: none; }
+.bar nav { display: flex; align-items: center; gap: var(--space-xl); font-size: var(--text-sm); }
+.bar nav a:not(.btn) { color: var(--color-muted); text-decoration: none; transition: color var(--dur-micro) var(--ease-out); }
+.bar nav a:not(.btn):hover { color: var(--color-ink); }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding-inline: var(--space-lg); border: 1px solid var(--color-accent); border-radius: var(--radius-pill); font-weight: 500; font-size: var(--text-md); text-decoration: none; cursor: pointer; transition: background-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out); }
+.btn-primary { background: var(--color-accent); color: var(--color-accent-ink); }
+.btn-primary:hover { background: var(--color-focus); border-color: var(--color-focus); }
+.btn-ghost { background: transparent; color: var(--color-ink); border-color: var(--color-rule-2); }
+.btn-ghost:hover { border-color: var(--color-accent); color: var(--color-accent); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled, .btn[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; transform: none; }
+.btn:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 3px; transition: none; }
+.btn-sm { min-height: 40px; padding-inline: var(--space-md); font-size: var(--text-sm); }
+.actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); }
+
+/* hero: Counter */
+.hero { min-height: calc(100svh - 104px); display: grid; align-items: center; padding-block: var(--space-2xl); }
+.hero .container { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-2xl); align-items: center; }
+.hero h1 { max-width: 11ch; }
+.hero .lead { margin-block: var(--space-lg) var(--space-xl); color: var(--color-ink-2); max-width: 30ch; }
+.caption { margin-top: var(--space-sm); font-size: var(--text-sm); color: var(--color-muted); }
+
+/* questions */
+.q { padding-block: var(--section-gap-s); border-top: 1px solid var(--color-rule); }
+.split { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: var(--space-2xl); align-items: start; }
+.split.mirror { grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); }
+.split.mirror figure { order: -1; }
+.q h2 { max-width: 14ch; }
+.q .answer { margin-top: var(--space-lg); color: var(--color-muted); font-size: var(--text-lead); line-height: 1.5; max-width: 34ch; }
+figure { margin: 0; }
+.showcase h2 { max-width: 18ch; }
+.showcase .head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-2xl); align-items: end; margin-bottom: var(--space-xl); }
+.showcase .answer { margin-top: 0; }
+
+/* before / after */
+.compare { width: 100%; border-collapse: collapse; margin-top: var(--space-xl); font-size: var(--text-lead); }
+.compare th, .compare td { text-align: left; padding: var(--space-lg) var(--space-md) var(--space-lg) 0; border-bottom: 1px solid var(--color-rule); vertical-align: top; }
+.compare thead th { font-size: var(--text-sm); font-weight: 400; color: var(--color-muted); padding-bottom: var(--space-sm); }
+.compare tbody th { font-weight: 400; color: var(--color-muted); width: 28%; }
+.compare td.was { color: var(--color-muted); text-decoration: line-through; text-decoration-color: var(--color-rule-2); }
+.compare td.now { color: var(--color-ink); }
+
+/* switcher */
+.tabs { display: inline-flex; border: 1px solid var(--color-rule-2); margin-block: var(--space-xl) var(--space-lg); }
+.tabs button { min-height: 44px; padding-inline: var(--space-lg); background: transparent; color: var(--color-muted); border: 0; cursor: pointer; transition: background-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out); }
+.tabs button:hover { color: var(--color-ink); }
+.tabs button[aria-selected="true"] { background: var(--color-paper-3); color: var(--color-ink); box-shadow: inset 0 -2px 0 var(--color-accent); }
+.tabs button:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; transition: none; }
+.panel-note { margin-top: var(--space-md); color: var(--color-muted); max-width: 60ch; }
+
+/* close */
+.close { padding-block: var(--section-gap) var(--section-gap-s); border-top: 1px solid var(--color-rule); }
+.close .container { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-2xl); align-items: center; }
+.close .answer { margin-block: var(--space-lg) var(--space-xl); }
+
+/* footer: colophon block */
+footer { border-top: 1px solid var(--color-rule); padding-block: var(--space-3xl); }
+footer p { max-width: 70ch; color: var(--color-muted); font-size: var(--text-sm); line-height: 1.7; }
+footer a { color: var(--color-ink); }
+footer .wordmark { display: block; margin-bottom: var(--space-md); }
+
+.close [data-slot].crop-canvas { aspect-ratio: 4 / 5; }
+.close .container { grid-template-columns: minmax(0, 7fr) minmax(0, 4fr); }
+.close [data-slot].crop-canvas > img { object-position: 100% 0; }
+@media (max-width: 60rem) {
+  .hero .container, .split, .split.mirror, .showcase .head, .close .container { grid-template-columns: minmax(0, 1fr); }
+  .split.mirror figure { order: 0; }
+  .bar nav .hide-s { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .bar { transition: none; } .bar.is-tucked { transform: none; } }
+</style>
+</head>
+<body>
+<div class="banner"><div class="container"><span>Dezzy 3.0.8 ya está aquí.</span><a href="https://github.com/dezzy-music/Dezzy/releases/latest">Ver novedades</a></div></div>
+<header class="bar">
+  <div class="container">
+    <a class="wordmark" href="#">Dezzy</a>
+    <nav aria-label="Principal">
+      <a class="hide-s" href="#letras">Letras</a>
+      <a class="hide-s" href="#mapa">Mapa</a>
+      <a class="hide-s" href="#juntos">Juntos</a>
+      <a class="btn btn-primary btn-sm" href="#descargar">Descargar</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="container">
+      <div>
+        <h1>Tu música, sin anuncios ni cuenta.</h1>
+        <p class="lead">Letras al compás, un mapa del mundo y salas para escuchar juntos.</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="https://github.com/dezzy-music/Dezzy/releases/latest">Descargar para Android</a>
+          <a class="btn btn-ghost" href="https://github.com/dezzy-music/Dezzy/releases">Descargar para Windows</a>
+        </div>
+      </div>
+      <figure>
+        <div data-slot="hero" data-kind="product" data-alt="Dezzy para Windows reproduciendo una canción con su Canvas en el panel derecho"><img src="../img/playing.webp" alt="Dezzy para Windows reproduciendo una canción con su Canvas en el panel derecho"></div>
+        <figcaption class="caption">Dezzy para Windows, con el Canvas de la canción a la derecha.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="q" id="letras">
+    <div class="container split">
+      <div>
+        <h2>¿Qué pasa al darle a reproducir?</h2>
+        <p class="answer">La letra sigue a la voz palabra a palabra. Puedes traducirla o compartir un verso como tarjeta.</p>
+      </div>
+      <figure><div data-slot="lyrics" data-kind="product" data-alt="Reproductor a pantalla completa con la letra sincronizada"><img src="../img/lyrics.webp" alt="Reproductor a pantalla completa con la letra sincronizada" loading="lazy"></div></figure>
+    </div>
+  </section>
+
+  <section class="q showcase" id="mapa">
+    <div class="container">
+      <div class="head">
+        <h2>¿Qué suena en otros países?</h2>
+        <p class="answer">El mapa musical pinta el mundo por lo que se escucha. Toca un país, mira su top y ponlo entero.</p>
+      </div>
+      <figure><div data-slot="map" data-kind="product" data-alt="Mapa musical con el top de España y sus géneros"><img src="../img/map.webp" alt="Mapa musical con el top de España y sus géneros" loading="lazy"></div></figure>
+    </div>
+  </section>
+
+  <section class="q" id="juntos">
+    <div class="container split mirror">
+      <div>
+        <h2>¿Puedo escuchar con alguien?</h2>
+        <p class="answer">Crea una sala, pasa el código y oiréis lo mismo a la vez. También hay salas públicas abiertas.</p>
+      </div>
+      <figure><div data-slot="together" data-kind="product" data-alt="Pantalla Escuchar juntos con salas públicas"><img src="../img/together.webp" alt="Pantalla Escuchar juntos con salas públicas" loading="lazy"></div></figure>
+    </div>
+  </section>
+
+  <section class="q">
+    <div class="container">
+      <h2>¿Qué cambia frente a lo de siempre?</h2>
+      <table class="compare">
+        <thead><tr><th scope="col">En</th><th scope="col">Lo habitual</th><th scope="col">Dezzy</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Entre canciones</th><td class="was">un anuncio</td><td class="now">la siguiente canción</td></tr>
+          <tr><th scope="row">La letra</th><td class="was">un bloque fijo</td><td class="now">sigue la voz</td></tr>
+          <tr><th scope="row">Para empezar</th><td class="was">crear una cuenta</td><td class="now">abrir y escuchar</td></tr>
+          <tr><th scope="row">El código</th><td class="was">cerrado</td><td class="now">abierto, GPL-3.0</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="q" id="dispositivos">
+    <div class="container">
+      <h2>¿Dónde funciona?</h2>
+      <div class="tabs" role="tablist" aria-label="Dispositivos">
+        <button role="tab" id="t-win" aria-selected="true" aria-controls="p-win">En Windows</button>
+        <button role="tab" id="t-mov" aria-selected="false" aria-controls="p-mov" tabindex="-1">Con el móvil</button>
+      </div>
+      <div role="tabpanel" id="p-win" aria-labelledby="t-win">
+        <div data-slot="home" data-kind="product" data-alt="Inicio de Dezzy para Windows"><img src="../img/home.webp" alt="Inicio de Dezzy para Windows" loading="lazy"></div>
+        <p class="panel-note">La app de escritorio, con instalador para Windows.</p>
+      </div>
+      <div role="tabpanel" id="p-mov" aria-labelledby="t-mov" hidden>
+        <div data-slot="link" data-kind="product" data-alt="Pantalla para vincular el móvil con un código QR"><img src="../img/welcome.webp" alt="Pantalla para vincular el móvil con un código QR" loading="lazy"></div>
+        <p class="panel-note">Android 6.0 o superior. Escanea el QR y el móvil manda en el ordenador.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="close" id="descargar">
+    <div class="container">
+      <div>
+        <h2>¿Cuánto cuesta?</h2>
+        <p class="answer">Nada. Sin anuncios, sin suscripción y con el código a la vista.</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="https://github.com/dezzy-music/Dezzy/releases/latest">Descargar para Android</a>
+          <a class="btn btn-ghost" href="https://github.com/dezzy-music/Dezzy/releases">Descargar para Windows</a>
+        </div>
+      </div>
+      <figure><div data-slot="close" class="crop-canvas" data-kind="product" data-alt="El Canvas de la canción en el panel derecho de Dezzy"><img src="../img/playing.webp" alt="El Canvas de la canción en el panel derecho de Dezzy" loading="lazy"></div></figure>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    <span class="wordmark">Dezzy</span>
+    <p>Dezzy es software libre con licencia GPL-3.0, hecho a partir de OpenTune. El código, las versiones y los avisos de fallos viven en <a href="https://github.com/dezzy-music/Dezzy">GitHub</a>. Versión actual 3.0.8, para Android 6.0 o superior y Windows.</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const bar = document.querySelector('.bar'); let last = scrollY;
+  addEventListener('scroll', () => { const y = scrollY; bar.classList.toggle('is-tucked', y > last && y > 200); last = y; }, { passive: true });
+  const tabs = [...document.querySelectorAll('[role="tab"]')];
+  const pick = (t) => { tabs.forEach((b) => { const on = b === t; b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1; document.getElementById(b.getAttribute('aria-controls')).hidden = !on; }); t.focus(); };
+  tabs.forEach((t, i) => { t.addEventListener('click', () => pick(t)); t.addEventListener('keydown', (e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') pick(tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length]); }); });
+})();
+</script>
+<script>window.hallmarkSlots = (m) => { for (const [k, v] of Object.entries(m)) { const s = document.querySelector(`[data-slot="${k}"]`); if (!s) continue; const im = new Image(); im.src = typeof v === 'string' ? v : v.src; im.alt = (typeof v === 'object' && v.alt) || s.dataset.alt || ''; s.querySelectorAll(':scope > img').forEach((o) => o.remove()); s.prepend(im); } };
+document.querySelectorAll('[data-slot] img').forEach((i) => { if (i.complete && !i.naturalWidth) i.remove(); else i.addEventListener('error', () => i.remove(), { once: true }); });</script>
+</body>
+</html>

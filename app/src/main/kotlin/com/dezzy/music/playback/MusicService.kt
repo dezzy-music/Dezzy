@@ -6713,10 +6713,20 @@ class MusicService :
         val mediaItem = eventTime.timeline.getWindow(eventTime.windowIndex, Timeline.Window()).mediaItem
         if (mediaItem.mediaId.isBlank()) return
 
-        if (playbackStats.totalPlayTimeMs >= (
-                dataStore[HistoryDuration]?.times(1000f)
-                    ?: 30000f
-            ) &&
+        val historyThresholdMs = dataStore[HistoryDuration]?.times(1000f) ?: 30000f
+        // Saltos (de 3 s al umbral del historial): el historial no los guarda, pero el DJ los
+        // necesita para no volver a poner lo que quitas. Se ignora el paso canción↔videoclip.
+        if (playbackStats.totalPlayTimeMs in 3_000L until historyThresholdMs.toLong() &&
+            !fromVideo && !videoModeActive.value &&
+            !dataStore.get(PauseListenHistoryKey, false)
+        ) {
+            val artist = mediaItem.mediaMetadata.artist?.toString()
+            scope.launch {
+                runCatching { com.dezzy.music.ai.DjSkipMemory.recordSkip(this@MusicService, mediaItem.mediaId, artist) }
+            }
+        }
+
+        if (playbackStats.totalPlayTimeMs >= historyThresholdMs &&
             !dataStore.get(PauseListenHistoryKey, false)
         ) {
             val now = System.currentTimeMillis()

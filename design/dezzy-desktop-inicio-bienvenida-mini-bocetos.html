@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dezzy escritorio · Inicio, Bienvenida y Mini</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..600,0..1,0&display=swap" rel="stylesheet">
+<style>
+:root{--doc:#f4f1f1;--ink:#22191a;--muted:#6b5b5c;--line:#e3d6d6;
+  --bg:#000;--panel:#121212;--el:#1f1f1f;--hov:#2a2a2a;--hi:#fff;--sub:#b3b3b3;--dim:#7a7a7a;--acc:#f2606d;--acc-d:#ED5564}
+*{box-sizing:border-box}
+body{margin:0;background:var(--doc);color:var(--ink);font:15px/1.5 Poppins,system-ui,sans-serif}
+.doc{max-width:1340px;margin:0 auto;padding:40px 24px 80px}
+h1{font-size:30px;margin:0 0 6px}
+.lead{color:var(--muted);max-width:980px;margin:0}
+.pick{position:sticky;top:0;z-index:20;background:var(--doc);padding:18px 0 12px;display:flex;flex-wrap:wrap;gap:18px;align-items:center;border-bottom:1px solid var(--line);margin-top:22px}
+.seg{display:flex;gap:6px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:4px}
+.seg button{font:600 14px Poppins;border:0;background:none;padding:8px 14px;border-radius:10px;cursor:pointer;color:var(--muted)}
+.seg button.on{background:var(--ink);color:#fff}
+.vdesc{margin:18px 0 6px}
+.vdesc h2{font-size:22px;margin:0 0 4px;display:flex;align-items:center;gap:12px}
+.vdesc h2 .tag{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--ink);color:#fff;font-size:17px}
+.vdesc p{color:var(--muted);margin:0;max-width:1000px}
+ul.chg{margin:8px 0 12px;padding-left:20px;font-size:14px;max-width:1100px}
+ul.chg li{margin-bottom:3px}
+.ms{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;font-size:22px;line-height:1;display:inline-block;-webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400;vertical-align:middle}
+.ms.f{font-variation-settings:'FILL' 1,'wght' 500}
+.zoom{zoom:.92;margin-top:6px}
+@media (max-width:1300px){.zoom{zoom:.7}}
+@media (max-width:900px){.zoom{zoom:.45}}
+.note{margin-top:34px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 20px;font-size:14px;color:var(--muted)}
+.hide{display:none!important}
+
+/* ventana */
+.win{width:1300px;height:800px;border-radius:12px;overflow:hidden;background:var(--bg);color:var(--hi);display:flex;flex-direction:column;box-shadow:0 18px 50px rgba(0,0,0,.3);font-family:Poppins,sans-serif;font-size:14px}
+.top{height:64px;display:flex;align-items:center;gap:10px;padding:0 14px;flex:none}
+.logo{width:30px;height:30px;border-radius:9px;background:var(--acc-d);display:grid;place-items:center;font-weight:800;font-size:16px;color:#fff}
+.back{width:32px;height:32px;border-radius:50%;background:var(--panel);display:grid;place-items:center}
+.circ{width:48px;height:48px;border-radius:24px;background:var(--el);display:grid;place-items:center}
+.search{width:470px;height:48px;border-radius:24px;background:var(--el);display:flex;align-items:center;gap:12px;padding:0 16px;color:var(--sub)}
+.mid{flex:1;display:flex;justify-content:center;gap:8px}
+.ico{display:flex;gap:14px;color:var(--sub);align-items:center}
+.ico .on{color:#fff}
+.av{width:32px;height:32px;border-radius:50%;background:#1a8f86;display:grid;place-items:center;font-weight:700;color:#fff}
+.body{flex:1;display:flex;gap:8px;padding:0 8px;min-height:0}
+.p{background:var(--panel);border-radius:8px;overflow:hidden;position:relative}
+.lib{width:76px;flex:none;display:flex;flex-direction:column;align-items:center;gap:8px;padding-top:14px;color:var(--sub)}
+.lib i{width:48px;height:48px;border-radius:4px;display:block}
+.main{flex:1;min-width:0}
+.scroll{position:absolute;inset:0;overflow:hidden}
+.bar{height:72px;flex:none;display:grid;grid-template-columns:1fr 1.6fr 1fr;align-items:center;padding:0 16px 0 10px}
+.np{display:flex;gap:12px;align-items:center}
+.np i{width:52px;height:52px;border-radius:4px}
+.np small{display:block;color:var(--sub);font-size:12px}
+.tr{display:flex;flex-direction:column;align-items:center;gap:6px}
+.tr .b{display:flex;gap:20px;align-items:center;color:var(--sub)}
+.tr .pp{width:34px;height:34px;border-radius:50%;background:#fff;color:#000;display:grid;place-items:center}
+.prog{width:100%;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--sub)}
+.prog span.t{flex:1;height:4px;border-radius:2px;background:#4d4d4d;position:relative}
+.prog span.t::before{content:'';position:absolute;inset:0 62% 0 0;background:#fff;border-radius:2px}
+.ex{display:flex;justify-content:flex-end;gap:12px;color:var(--sub);align-items:center}
+.vol{width:90px;height:4px;border-radius:2px;background:linear-gradient(90deg,#fff 70%,#4d4d4d 70%)}
+
+/* comunes */
+.g1{background:linear-gradient(135deg,#7b2ff7,#f2606d)}.g2{background:linear-gradient(135deg,#0f9b8e,#183b5a)}
+.g3{background:linear-gradient(135deg,#f7b733,#fc4a1a)}.g4{background:linear-gradient(135deg,#355c7d,#c06c84)}
+.g5{background:linear-gradient(135deg,#11998e,#38ef7d)}.g6{background:linear-gradient(135deg,#232526,#5b5b5b)}
+.g7{background:linear-gradient(135deg,#ee0979,#ff6a00)}.g8{background:linear-gradient(135deg,#4568dc,#b06ab3)}
+.g9{background:linear-gradient(135deg,#e0c3fc,#8ec5fc)}.g10{background:linear-gradient(135deg,#a8071a,#3a0a12)}
+.liked{background:linear-gradient(135deg,#450af5,#c4efd9)}
+.playc{width:56px;height:56px;border-radius:50%;background:var(--acc);color:#1a0407;display:grid;place-items:center;box-shadow:0 8px 18px rgba(0,0,0,.35);flex:none}
+.playc .ms{font-size:32px}
+.playc.s{width:46px;height:46px}.playc.s .ms{font-size:26px}
+.chip{height:32px;padding:0 14px;border-radius:16px;background:rgba(255,255,255,.1);display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;white-space:nowrap}
+.chip.on{background:#fff;color:#000}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.sh{font-size:22px;font-weight:700;margin:0 0 12px;display:flex;align-items:baseline;gap:10px}
+.sh small{margin-left:auto;font-size:13px;color:var(--sub);font-weight:600}
+.pad{padding:0 24px}
+.sub{color:var(--sub)}
+.row{display:grid;grid-template-columns:28px 40px 1fr 160px 60px;gap:14px;align-items:center;padding:6px 12px;border-radius:4px;color:var(--sub);font-size:13px}
+.row i{width:40px;height:40px;border-radius:3px;display:block}
+.row b{color:#fff;font-weight:400;font-size:15px;display:block}
+.row.h{background:rgba(255,255,255,.08)}
+.row.on b{color:var(--acc)}
+.n{text-align:center;font-size:15px}
+.thead{display:grid;grid-template-columns:28px 40px 1fr 160px 60px;gap:14px;padding:0 12px 8px;margin-bottom:8px;border-bottom:1px solid #2a2a2a;color:var(--sub);font-size:13px}
+.thead span:nth-child(2){grid-column:2/4}
+.cards{display:flex;gap:4px;margin:0 -12px}
+.card{width:176px;padding:12px;border-radius:6px;flex:none;position:relative}
+.card.h{background:var(--el)}
+.card i{display:block;aspect-ratio:1;border-radius:6px;margin-bottom:8px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.card i.r{border-radius:50%}
+.card b{display:block;font-weight:500;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card small{color:var(--sub);font-size:13px}
+.card .hp{position:absolute;right:20px;top:122px}
+.bar2{height:4px;border-radius:2px;background:#3a3a3a;position:relative;overflow:hidden}
+.bar2 span{position:absolute;inset:0 auto 0 0;background:var(--acc);border-radius:2px}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:rgba(242,96,109,.18);color:var(--acc)}
+.badge.g{background:rgba(56,239,125,.14);color:#4ee08f}
+.heat{display:grid;grid-template-columns:repeat(53,1fr);grid-auto-flow:column;grid-template-rows:repeat(7,1fr);gap:3px}
+.heat b{aspect-ratio:1;border-radius:2px;background:#262626}
+.heat b.l1{background:rgba(242,96,109,.3)}.heat b.l2{background:rgba(242,96,109,.55)}.heat b.l3{background:rgba(242,96,109,.8)}.heat b.l4{background:#f2606d}
+.wk{display:flex;align-items:flex-end;gap:10px;height:120px}
+.wk div{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end;font-size:11px;color:var(--sub)}
+.wk div span{width:100%;border-radius:6px 6px 2px 2px;background:#3a3a3a}
+.wk div span.top{background:var(--acc)}
+.hero{display:flex;gap:24px;align-items:flex-end;padding:56px 24px 24px}
+.hero .cov{width:232px;height:232px;border-radius:6px;box-shadow:0 8px 40px rgba(0,0,0,.6);flex:none;display:grid;place-items:center}
+.hero .cov .ms{font-size:110px;color:#fff}
+.hero .tg{font-size:13px;font-weight:500}
+.hero h3n{display:block;font-size:76px;font-weight:800;letter-spacing:-.04em;line-height:1;margin:6px 0 14px}
+.acts{display:flex;align-items:center;gap:22px;padding:20px 24px;color:var(--sub)}
+.acts .ms{font-size:30px}
+.tile{background:var(--el);border-radius:12px;padding:16px;position:relative;overflow:hidden}
+.tile h4{margin:0 0 8px;font-size:13px;font-weight:600;color:var(--sub)}
+.kpi b{display:block;font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.kpi small{color:var(--sub);font-size:12px}
+/* fase 4 */
+.mini{display:grid;grid-template-columns:22px 40px 1fr auto;gap:12px;align-items:center;padding:6px 0;font-size:13px;color:var(--sub)}
+.mini i{width:40px;height:40px;border-radius:3px;display:block}
+.mini b{display:block;color:#fff;font-weight:500;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini .n{font-size:14px}
+.cc{display:inline-grid;place-items:center;min-width:28px;height:20px;padding:0 4px;border-radius:4px;background:#2c2c2c;font-size:10px;font-weight:700;letter-spacing:.04em;color:#fff}
+.world{position:absolute;inset:0}
+.world svg{width:100%;height:100%;display:block}
+.circ.s{width:40px;height:40px;border-radius:20px;background:rgba(31,31,31,.92)}
+.inp{height:40px;border-radius:20px;background:var(--el);display:flex;align-items:center;gap:10px;padding:0 14px;color:var(--sub);font-size:13px}
+.tgl{width:40px;height:22px;border-radius:11px;background:#535353;position:relative;flex:none;display:inline-block}
+.tgl::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff}
+.tgl.on{background:var(--acc)}.tgl.on::after{left:21px}
+.av2{width:36px;height:36px;border-radius:50%;display:inline-grid;place-items:center;font-weight:700;font-size:13px;color:#fff;border:2px solid var(--panel);flex:none}
+.stack{display:flex}.stack .av2+.av2{margin-left:-10px}
+.bub{background:var(--el);border-radius:14px 14px 14px 4px;padding:8px 12px;font-size:13px;max-width:250px;align-self:flex-start}
+.bub small{display:block;font-size:11px;color:var(--acc);font-weight:600}
+.bub.me{background:var(--acc);color:#1a0407;border-radius:14px 14px 4px 14px;align-self:flex-end}
+.chat{display:flex;flex-direction:column;gap:8px}
+.sel{height:36px;padding:0 12px;border-radius:18px;background:var(--el);display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:500}
+.up{color:#4ee08f}.dn{color:#f2606d}.eq{color:#7a7a7a}
+.rk{display:grid;grid-template-columns:28px 34px 40px 1fr 120px 56px;gap:14px;align-items:center;padding:6px 12px;border-radius:4px;font-size:13px;color:var(--sub)}
+.rk i{width:40px;height:40px;border-radius:3px;display:block}
+.rk b{display:block;color:#fff;font-weight:400;font-size:15px}
+.rk.h{background:rgba(255,255,255,.08)}
+.rk .d{font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.srow{display:flex;align-items:center;gap:16px;padding:13px 0;border-bottom:1px solid #222;font-size:14px}
+.srow>div{flex:1}.srow small{display:block;color:var(--sub);font-size:12px}
+.sec{font-size:20px;font-weight:700;margin:26px 0 4px}
+.sw{width:26px;height:26px;border-radius:50%;display:inline-block;border:2px solid transparent}
+.sw.on{border-color:#fff;box-shadow:0 0 0 2px #000 inset}
+.btnw{height:32px;padding:0 16px;border-radius:16px;border:1px solid #727272;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600}
+.btnf{height:32px;padding:0 16px;border-radius:16px;background:#fff;color:#000;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700}
+.vote{display:flex;align-items:center;gap:8px;font-size:12px}
+.vote .bar2{width:70px}
+.big1{font-size:260px;font-weight:800;line-height:.8;letter-spacing:-.06em;color:transparent;-webkit-text-stroke:3px rgba(255,255,255,.55)}
+/* fase 5 */
+.qt{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.q{height:56px;border-radius:4px;background:rgba(255,255,255,.08);display:flex;align-items:center;gap:12px;overflow:hidden;font-weight:600;font-size:13px;position:relative}
+.q i{width:56px;height:56px;flex:none;display:block}
+.q.h{background:rgba(255,255,255,.16)}
+.q .playc.s{position:absolute;right:8px;width:34px;height:34px}.q .playc.s .ms{font-size:22px}
+.bento{display:grid;grid-template-columns:1.4fr 1fr 1fr;grid-template-rows:150px 150px;gap:12px}
+.bt{border-radius:12px;padding:16px;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end}
+.bt small{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.8}
+.bt b{font-size:20px;font-weight:700;line-height:1.15}
+.desk{position:relative;height:560px;border-radius:12px;overflow:hidden;background:linear-gradient(160deg,#3a5a8c,#c76a4b);box-shadow:0 18px 50px rgba(0,0,0,.3)}
+.desk .taskbar{position:absolute;left:0;right:0;bottom:0;height:44px;background:rgba(20,20,20,.75);backdrop-filter:blur(10px)}
+.desk .lbl{position:absolute;color:#fff;font:600 12px Poppins;opacity:.8}
+.mp{position:absolute;color:#fff;font-family:Poppins;box-shadow:0 14px 40px rgba(0,0,0,.5);overflow:hidden}
+.mp .t b{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp .t small{display:block;font-size:12px;color:#b3b3b3}
+.qr{width:180px;height:180px;border-radius:12px;background:#fff;padding:12px;display:grid;grid-template-columns:repeat(21,1fr);gap:0}
+.qr b{background:#111;aspect-ratio:1}.qr b.o{background:transparent}
+.step{display:flex;gap:14px;align-items:flex-start;font-size:14px}
+.step .k{width:28px;height:28px;border-radius:50%;background:#2a2a2a;display:grid;place-items:center;font-weight:700;font-size:13px;flex:none}
+.step .k.on{background:var(--acc);color:#1a0407}
+.code{font:700 26px ui-monospace,'Cascadia Mono',monospace;letter-spacing:.18em}
+.wall{position:absolute;inset:-40px;display:grid;grid-template-columns:repeat(10,1fr);gap:10px;transform:rotate(-8deg) scale(1.15);opacity:.55}
+.wall i{aspect-ratio:1;border-radius:8px;display:block}
+.wall i.r{border-radius:50%}
+.lyr{font-size:15px;font-weight:700;line-height:1.3}
+.lyr span{color:rgba(255,255,255,.45)}
+</style>
+</head>
+<body>
+<div class="doc">
+<h1>Dezzy escritorio · Inicio, Bienvenida y Mini reproductor</h1>
+<p class="lead">Fase 5 del estilo Spotify: las tres pantallas que aún usan el diseño antiguo. Social sigue oculta y queda fuera. Elige arriba la propuesta (A, B o C) y la pantalla. Se pueden mezclar, como en las fases 3 y 4.</p>
+
+<div class="pick">
+  <div class="seg" id="segV"><button data-v="A" class="on">A · Clásico</button><button data-v="B">B · Panel</button><button data-v="C">C · Inmersivo</button></div>
+  <div class="seg" id="segS"><button data-s="home" class="on">Inicio</button><button data-s="wel">Bienvenida</button><button data-s="mini">Mini reproductor</button></div>
+</div>
+
+<div class="vdesc" data-v="A"><h2><span class="tag">A</span> Clásico: el inicio de Spotify</h2>
+<p>Lo más parecido a Spotify y a lo que ya está hecho.</p>
+<ul class="chg">
+<li><b>Inicio:</b> chips arriba (Todo, Música, filtros de YouTube Music), saludo, 8 accesos rápidos en cuadrícula de 4×2 con botón coral al pasar el ratón, y después las estanterías con tarjetas. «Máquina del tiempo» y «Estadísticas» pasan a ser dos tarjetas de la primera estantería.</li>
+<li><b>Bienvenida:</b> se mantienen las cintas de artistas a la izquierda; a la derecha, un panel negro con el QR, el código y tres pasos numerados.</li>
+<li><b>Mini reproductor:</b> barra horizontal negra: portada cuadrada, título, controles y una línea de progreso coral abajo. Doble clic: tarjeta con la letra.</li>
+</ul></div>
+<div class="vdesc hide" data-v="B"><h2><span class="tag">B</span> Panel: tu día en bloques</h2>
+<p>Primero lo tuyo, en bloques como Estadísticas, y luego las estanterías.</p>
+<ul class="chg">
+<li><b>Inicio:</b> saludo con tu racha de días, y un bento: «Seguir escuchando» grande con la portada, tus 2 mixes, minutos de esta semana y la Máquina del tiempo con el año de hoy. Debajo, los chips y las estanterías.</li>
+<li><b>Bienvenida:</b> una tarjeta centrada sobre negro con el logo, un indicador de pasos 1-2-3 y el QR grande. Al vincular, la tarjeta muestra tu cuenta y «Empezar».</li>
+<li><b>Mini reproductor:</b> cuadrado con la portada a todo el tamaño; los controles aparecen encima al pasar el ratón, como el mini reproductor de Spotify.</li>
+</ul></div>
+<div class="vdesc hide" data-v="C"><h2><span class="tag">C</span> Inmersivo: portada a lo grande</h2>
+<p>Más color y más imagen; menos lista.</p>
+<ul class="chg">
+<li><b>Inicio:</b> un gran destacado arriba con tu mix del día, nombre enorme y el color de su portada lavando el panel. Debajo, accesos rápidos en una fila y estanterías.</li>
+<li><b>Bienvenida:</b> un muro de portadas y artistas girado ocupa toda la ventana; encima, un título grande y una tarjeta de cristal con el QR.</li>
+<li><b>Mini reproductor:</b> píldora flotante con la portada en círculo girando, la línea de letra que suena y los controles.</li>
+</ul></div>
+
+<div class="zoom" id="stage"></div>
+
+<div class="note"><b>En las tres:</b> los datos son los que la app ya tiene (inicio de YouTube Music, tus escuchas, la racha y la vinculación por QR o código). No se quita ninguna función: los filtros, el aviso de «Vincula tu móvil», la letra del mini reproductor y sus atajos (espacio, ←, →, M) siguen igual.</div>
+</div>
+
+<template id="frame"><div class="win">
+  <div class="top"><span class="logo">d</span><span class="back"><span class="ms">chevron_left</span></span>
+    <div class="mid"><span class="circ" style="color:#fff"><span class="ms f">home</span></span><span class="search"><span class="ms">search</span>¿Qué quieres reproducir?</span></div>
+    <div class="ico"><span class="ms">public</span><span class="ms">leaderboard</span><span class="ms">groups</span><span class="ms">download</span><span class="ms">settings</span><span class="av">Q</span></div></div>
+  <div class="body">
+    <div class="p lib"><span class="ms f">library_music</span><i class="liked"></i><i class="g1"></i><i class="g4"></i><i class="g2"></i><i class="g3"></i><i class="g8"></i></div>
+    <div class="p main" id="main"></div>
+  </div>
+  <div class="bar"><div class="np"><i class="g7"></i><div>DESPECHÁ<small>Rosalía</small></div></div><div class="tr"><div class="b"><span class="ms">shuffle</span><span class="ms f">skip_previous</span><span class="pp"><span class="ms f">pause</span></span><span class="ms f">skip_next</span><span class="ms">repeat</span></div><div class="prog">1:02<span class="t"></span>2:37</div></div><div class="ex"><span class="ms">view_sidebar</span><span class="ms">lyrics</span><span class="ms">queue_music</span><span class="ms">devices</span><span class="ms">volume_up</span><span class="vol"></span></div></div>
+</div></template>
+
+<template id="shelf"><div class="sh">Hecho para ti <small>Mostrar todo</small></div>
+<div class="cards"><div class="card h"><i class="g1"></i><span class="playc s hp"><span class="ms f">play_arrow</span></span><b>Mix diario 1</b><small>Rosalía, Bad Bunny…</small></div><div class="card"><i class="g4"></i><b>Mix diario 2</b><small>Quevedo, Feid…</small></div><div class="card"><i class="g2"></i><b>Descubrimiento</b><small>Lo nuevo para ti</small></div><div class="card"><i class="g8 r"></i><b>Radio de KAROL G</b><small>Artista</small></div><div class="card"><i class="g5"></i><b>Tus favoritas 2026</b><small>Playlist</small></div><div class="card"><i class="g3"></i><b>Energía</b><small>Para moverse</small></div></div></template>
+
+<!-- ════════ INICIO ════════ -->
+<template id="A-home"><div class="scroll" style="background:linear-gradient(180deg,#5a2330,#121212 300px);padding:18px 24px">
+  <div class="chips" style="margin-bottom:22px"><span class="chip on">Todo</span><span class="chip">Relax</span><span class="chip">Energía</span><span class="chip">Fiesta</span><span class="chip">Entrenar</span><span class="chip">Concentración</span><span class="chip">Romance</span></div>
+  <div style="font-size:30px;font-weight:800;letter-spacing:-.02em;margin-bottom:14px">Buenas tardes, Quiet</div>
+  <div class="qt" style="margin-bottom:30px">
+    <div class="q"><i class="liked"></i>Tus me gusta</div><div class="q h"><i class="g7"></i>MOTOMAMI<span class="playc s"><span class="ms f">play_arrow</span></span></div><div class="q"><i class="g1"></i>Mix diario 1</div><div class="q"><i class="g3"></i>Nadie Sabe Lo Que…</div>
+    <div class="q"><i class="g4"></i>Funk</div><div class="q"><i class="g2"></i>Mis canciones de Spotify</div><div class="q"><i class="g8"></i>before i fall aesthetic</div><div class="q"><i class="g6"></i>Mis pistas en Shazam</div>
+  </div>
+  <div class="sh">Para ti <small>Mostrar todo</small></div>
+  <div class="cards" style="margin-bottom:24px"><div class="card"><i style="background:linear-gradient(135deg,#f2606d,#6d2a8a);display:grid;place-items:center"><span class="ms f" style="font-size:64px">history_toggle_off</span></i><b>Máquina del tiempo</b><small>Lo que sonaba en 2016</small></div><div class="card"><i style="background:linear-gradient(135deg,#1db954,#0b3d2a);display:grid;place-items:center"><span class="ms f" style="font-size:64px">insights</span></i><b>Estadísticas</b><small>12 h esta semana</small></div><div class="card h"><i class="g1"></i><span class="playc s hp"><span class="ms f">play_arrow</span></span><b>Mix diario 1</b><small>Rosalía, Bad Bunny…</small></div><div class="card"><i class="g4"></i><b>Mix diario 2</b><small>Quevedo, Feid…</small></div><div class="card"><i class="g2"></i><b>Descubrimiento</b><small>Lo nuevo para ti</small></div><div class="card"><i class="g8 r"></i><b>Radio de KAROL G</b><small>Artista</small></div></div>
+</div></template>
+
+<template id="B-home"><div class="scroll" style="padding:22px 24px">
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px"><div style="font-size:30px;font-weight:800;letter-spacing:-.02em">Buenas tardes, Quiet</div><span class="badge" style="font-size:13px;padding:4px 10px"><span class="ms f" style="font-size:16px">local_fire_department</span> 12 días seguidos</span></div>
+  <div class="bento" style="margin-bottom:22px">
+    <div class="bt g7" style="grid-row:1/3;justify-content:space-between"><small>Seguir escuchando</small><div><i style="display:block;width:120px;height:120px;border-radius:8px;background:rgba(0,0,0,.25);margin-bottom:14px"></i><b style="font-size:30px">DESPECHÁ</b><div style="opacity:.85">Rosalía · MOTOMAMI +</div><div style="display:flex;align-items:center;gap:12px;margin-top:12px"><span class="playc"><span class="ms f">play_arrow</span></span><span class="bar2" style="flex:1;background:rgba(0,0,0,.3)"><span style="width:40%;background:#fff"></span></span></div></div></div>
+    <div class="bt g1"><small>Tu mix</small><b>Mix diario 1</b></div>
+    <div class="bt g4"><small>Tu mix</small><b>Mix diario 2</b></div>
+    <div class="bt" style="background:var(--el)"><small style="color:var(--sub)">Esta semana</small><b style="font-size:34px">12 h 40 min</b><span class="sub" style="font-size:12px"><span class="up">▲ 18 %</span> que la anterior</span></div>
+    <div class="bt" style="background:linear-gradient(135deg,#2a1840,#121212)"><small>Máquina del tiempo</small><b>Tal día como hoy, 2016</b><span class="sub" style="font-size:12px">Lo que escuchabas y los hits del año</span></div>
+  </div>
+  <div class="chips" style="margin-bottom:18px"><span class="chip on">Todo</span><span class="chip">Relax</span><span class="chip">Energía</span><span class="chip">Fiesta</span><span class="chip">Entrenar</span></div>
+  <div data-use="shelf"></div>
+</div></template>
+
+<template id="C-home"><div class="scroll">
+  <div style="position:relative;height:330px;background:linear-gradient(180deg,#a8364a,#3a0f18 90%,#121212);padding:22px 24px;display:flex;flex-direction:column">
+    <div class="chips"><span class="chip on">Todo</span><span class="chip">Relax</span><span class="chip">Energía</span><span class="chip">Fiesta</span><span class="chip">Entrenar</span></div>
+    <div style="display:flex;align-items:flex-end;gap:26px;margin-top:auto">
+      <i class="g7" style="width:210px;height:210px;border-radius:8px;box-shadow:0 14px 40px rgba(0,0,0,.5);display:block;flex:none"></i>
+      <div style="flex:1"><div style="font-size:13px;font-weight:600;opacity:.85">Buenas tardes, Quiet · tu mix del día</div><div style="font-size:84px;font-weight:800;letter-spacing:-.05em;line-height:.95;margin:6px 0 12px">Mix diario 1</div><div style="opacity:.85;font-size:14px">Rosalía, Bad Bunny, Quevedo y más · 50 canciones · 2 h 48 min</div>
+      <div style="display:flex;align-items:center;gap:18px;margin-top:16px"><span class="playc"><span class="ms f">play_arrow</span></span><span class="ms" style="font-size:30px">shuffle</span><span class="ms" style="font-size:30px">favorite</span><span style="flex:1"></span><span class="ms">chevron_left</span><span style="display:flex;gap:6px"><b style="width:18px;height:6px;border-radius:3px;background:#fff"></b><b style="width:6px;height:6px;border-radius:3px;background:rgba(255,255,255,.4)"></b><b style="width:6px;height:6px;border-radius:3px;background:rgba(255,255,255,.4)"></b></span><span class="ms">chevron_right</span></div></div>
+    </div>
+  </div>
+  <div class="pad" style="margin-top:18px">
+    <div class="qt" style="grid-template-columns:repeat(6,1fr);margin-bottom:24px"><div class="q"><i class="liked"></i>Tus me gusta</div><div class="q"><i class="g7"></i>MOTOMAMI</div><div class="q"><i class="g3"></i>Nadie Sabe…</div><div class="q"><i class="g4"></i>Funk</div><div class="q"><i class="g2"></i>Spotify</div><div class="q"><i class="g8"></i>Shazam</div></div>
+    <div data-use="shelf"></div>
+  </div>
+</div></template>
+
+<!-- ════════ BIENVENIDA ════════ -->
+<template id="A-wel"><div class="win" style="flex-direction:row;padding:8px;gap:8px">
+  <div class="p" style="flex:1.2;background:linear-gradient(180deg,#2a0f15,#0b0b0b);padding:40px 36px;display:flex;flex-direction:column">
+    <span class="logo" style="width:40px;height:40px;font-size:20px">d</span>
+    <div style="display:flex;flex-direction:column;gap:14px;margin:34px -36px;overflow:hidden" id="ribbons"></div>
+    <div style="margin-top:auto"><div style="font-size:44px;font-weight:800;letter-spacing:-.03em;line-height:1.05">Tu música, ahora también en el ordenador</div><p class="sub" style="font-size:15px">Tu biblioteca, tus letras y tus me gusta, igual que en el móvil.</p></div>
+  </div>
+  <div class="p" style="width:440px;padding:40px 34px;display:flex;flex-direction:column;gap:18px">
+    <div style="font-size:28px;font-weight:800">Vincula tu móvil</div>
+    <div class="sub" style="font-size:14px">Dezzy usa las cuentas que ya tienes en el móvil. Aquí no hace falta iniciar sesión.</div>
+    <div style="display:flex;gap:18px;align-items:center"><div class="qr" data-qr></div><div><div class="sub" style="font-size:12px;font-weight:600">o escribe el código</div><div class="code">7KQ2-M9XD</div><div class="sub" style="font-size:12px;margin-top:6px">Caduca en 4:52</div></div></div>
+    <div class="step"><span class="k on">1</span><div>Abre Dezzy en el móvil</div></div>
+    <div class="step"><span class="k">2</span><div>Ajustes › Cuentas › Vincular ordenador</div></div>
+    <div class="step"><span class="k">3</span><div>Escanea el QR o escribe el código</div></div>
+    <div style="margin-top:auto;display:flex;align-items:center;gap:12px"><span class="sub" style="font-size:12px;flex:1">Sin vincular puedes buscar y escuchar, pero no verás tu biblioteca.</span><span class="btnw">Ahora no</span></div>
+  </div>
+</div></template>
+
+<template id="B-wel"><div class="win" style="display:grid;place-items:center;background:radial-gradient(ellipse at 50% 30%,#2a0d12,#000 70%)">
+  <div style="width:560px;background:#121212;border-radius:16px;padding:36px 40px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.6)">
+    <span class="logo" style="width:48px;height:48px;font-size:24px">d</span>
+    <div style="font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.1">Tu música, ahora en el ordenador</div>
+    <div style="display:flex;align-items:center;gap:10px;font-size:12px;font-weight:600"><span class="step"><span class="k on">1</span></span>Abre Dezzy<span style="width:30px;height:2px;background:#2a2a2a"></span><span class="step"><span class="k">2</span></span>Vincular ordenador<span style="width:30px;height:2px;background:#2a2a2a"></span><span class="step"><span class="k">3</span></span>Escanea</div>
+    <div class="qr" data-qr style="width:220px;height:220px"></div>
+    <div class="sub" style="font-size:13px">o escribe <b class="code" style="font-size:18px;color:#fff">7KQ2-M9XD</b> · caduca en 4:52</div>
+    <div style="display:flex;gap:10px;margin-top:6px"><span class="btnw">Ahora no</span></div>
+  </div>
+</div></template>
+
+<template id="C-wel"><div class="win" style="position:relative;overflow:hidden;background:#000">
+  <div class="wall" id="wall"></div>
+  <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.92) 30%,rgba(0,0,0,.35))"></div>
+  <div style="position:absolute;left:60px;top:0;bottom:0;width:560px;display:flex;flex-direction:column;justify-content:center;gap:18px">
+    <span class="logo" style="width:44px;height:44px;font-size:22px">d</span>
+    <div style="font-size:72px;font-weight:800;letter-spacing:-.05em;line-height:.95">Tu música.<br><span style="color:var(--acc)">Ahora aquí.</span></div>
+    <p class="sub" style="font-size:16px;margin:0">Tu biblioteca, tus letras y tus me gusta, igual que en el móvil. Sin iniciar sesión.</p>
+  </div>
+  <div style="position:absolute;right:70px;top:50%;transform:translateY(-50%);width:340px;padding:26px;border-radius:18px;background:rgba(30,30,30,.55);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.12);display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center">
+    <b style="font-size:18px">Escanéalo con Dezzy en el móvil</b>
+    <div class="qr" data-qr style="width:200px;height:200px"></div>
+    <div class="sub" style="font-size:12px">Ajustes › Cuentas › Vincular ordenador<br>o escribe <b class="code" style="font-size:16px;color:#fff">7KQ2-M9XD</b></div>
+    <span class="sub" style="font-size:13px;text-decoration:underline">Ahora no</span>
+  </div>
+</div></template>
+
+<!-- ════════ MINI ════════ -->
+<template id="A-mini"><div class="desk"><span class="lbl" style="left:20px;top:16px">Escritorio de Windows · el mini reproductor queda encima de todo</span>
+  <div class="mp" style="right:40px;bottom:70px;width:360px;height:88px;border-radius:10px;background:#121212;display:flex;align-items:center;gap:12px;padding:0 12px">
+    <i class="g7" style="width:64px;height:64px;border-radius:4px;display:block;flex:none"></i>
+    <div class="t" style="flex:1;min-width:0"><b>DESPECHÁ</b><small>Rosalía</small></div>
+    <span class="ms f" style="color:#b3b3b3">skip_previous</span><span style="width:34px;height:34px;border-radius:50%;background:#fff;color:#000;display:grid;place-items:center"><span class="ms f">pause</span></span><span class="ms f" style="color:#b3b3b3">skip_next</span>
+    <div style="display:flex;flex-direction:column;gap:6px;color:#b3b3b3"><span class="ms" style="font-size:16px">open_in_full</span><span class="ms f" style="font-size:16px;color:var(--acc)">favorite</span></div>
+    <span style="position:absolute;left:0;right:0;bottom:0;height:3px;background:#333"><span style="display:block;width:40%;height:100%;background:var(--acc)"></span></span>
+  </div>
+  <div class="mp" style="left:60px;top:70px;width:360px;height:250px;border-radius:10px;background:#121212;display:flex;flex-direction:column;padding:16px 12px 12px">
+    <span style="font-size:11px;color:#b3b3b3;font-weight:600;margin-bottom:auto">Doble clic: con la letra</span>
+    <div class="lyr" style="font-size:20px;margin-bottom:16px">Y ya no me importa lo que digan<br><span>Que yo me voy con mis amigas</span></div>
+    <div style="display:flex;align-items:center;gap:12px"><i class="g7" style="width:48px;height:48px;border-radius:4px;display:block"></i><div class="t" style="flex:1"><b>DESPECHÁ</b><small>Rosalía</small></div><span class="ms f" style="color:#b3b3b3">skip_previous</span><span style="width:32px;height:32px;border-radius:50%;background:#fff;color:#000;display:grid;place-items:center"><span class="ms f">pause</span></span><span class="ms f" style="color:#b3b3b3">skip_next</span></div>
+    <span style="position:absolute;left:0;right:0;bottom:0;height:3px;background:#333"><span style="display:block;width:40%;height:100%;background:var(--acc)"></span></span>
+  </div>
+  <div class="taskbar"></div>
+</div></template>
+
+<template id="B-mini"><div class="desk"><span class="lbl" style="left:20px;top:16px">Escritorio de Windows · cuadrado; controles al pasar el ratón</span>
+  <div class="mp g7" style="right:40px;bottom:70px;width:260px;height:260px;border-radius:12px">
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.1),rgba(0,0,0,.75));display:flex;flex-direction:column;justify-content:flex-end;padding:14px">
+      <div style="position:absolute;top:10px;right:10px;display:flex;gap:10px"><span class="ms f" style="font-size:18px;color:var(--acc)">favorite</span><span class="ms" style="font-size:18px">open_in_full</span></div>
+      <div class="t"><b style="font-size:16px">DESPECHÁ</b><small style="color:#ddd">Rosalía</small></div>
+      <div style="display:flex;justify-content:center;align-items:center;gap:22px;margin:10px 0 8px"><span class="ms f">skip_previous</span><span style="width:44px;height:44px;border-radius:50%;background:#fff;color:#000;display:grid;place-items:center"><span class="ms f" style="font-size:28px">pause</span></span><span class="ms f">skip_next</span></div>
+      <div class="prog" style="color:#ddd">1:02<span class="t"></span>2:37</div>
+    </div>
+  </div>
+  <div class="mp g7" style="left:60px;top:70px;width:260px;height:260px;border-radius:12px"><span style="position:absolute;left:12px;top:10px;font-size:11px;font-weight:600;background:rgba(0,0,0,.4);padding:2px 8px;border-radius:8px">Sin el ratón encima: sólo la portada</span></div>
+  <div class="mp" style="left:360px;top:70px;width:260px;height:260px;border-radius:12px;background:linear-gradient(180deg,#7a2430,#1a0a0d);padding:18px;display:flex;flex-direction:column"><span style="font-size:11px;font-weight:600;opacity:.8">Doble clic: letra</span><div class="lyr" style="font-size:22px;margin-top:auto">Y ya no me importa lo que digan<br><span>Que yo me voy con mis amigas</span></div></div>
+  <div class="taskbar"></div>
+</div></template>
+
+<template id="C-mini"><div class="desk"><span class="lbl" style="left:20px;top:16px">Escritorio de Windows · píldora flotante con la letra</span>
+  <div class="mp" style="right:40px;bottom:70px;width:440px;height:76px;border-radius:38px;background:rgba(18,18,18,.82);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:12px;padding:0 14px 0 10px">
+    <i class="g7" style="width:56px;height:56px;border-radius:50%;display:block;flex:none;box-shadow:0 0 0 3px rgba(242,96,109,.5)"></i>
+    <div style="flex:1;min-width:0"><div class="lyr" style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Y ya no me importa lo que digan</div><small style="font-size:11px;color:#b3b3b3">DESPECHÁ · Rosalía</small></div>
+    <span class="ms f" style="color:#b3b3b3">skip_previous</span><span style="width:36px;height:36px;border-radius:50%;background:var(--acc);color:#1a0407;display:grid;place-items:center"><span class="ms f">pause</span></span><span class="ms f" style="color:#b3b3b3">skip_next</span>
+    <svg width="46" height="46" style="position:absolute;left:15px;top:15px;transform:rotate(-90deg)"><circle cx="23" cy="23" r="31" fill="none"/></svg>
+  </div>
+  <div class="mp" style="left:60px;top:70px;width:440px;height:200px;border-radius:28px;background:rgba(18,18,18,.82);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.1);padding:22px 26px;display:flex;flex-direction:column">
+    <span style="font-size:11px;color:#b3b3b3;font-weight:600">Doble clic: se abre con más letra</span>
+    <div class="lyr" style="font-size:22px;margin-top:auto"><span>Y lo que pasó, pasó</span><br>Y ya no me importa lo que digan<br><span>Que yo me voy con mis amigas</span></div>
+  </div>
+  <div class="taskbar"></div>
+</div></template>
+
+<script>
+let v = 'A', s = 'home'
+const stage = document.getElementById('stage')
+const G = ['g1','g2','g3','g4','g5','g7','g8','g10','g9','g6']
+function qr(el) {
+  let h = ''
+  for (let y = 0; y < 21; y++) for (let x = 0; x < 21; x++) {
+    const f = (a, b) => x >= a && x < a + 7 && y >= b && y < b + 7
+    const fin = f(0,0) || f(14,0) || f(0,14)
+    let on
+    if (fin) { const lx = x % 14 % 7, ly = y % 14 % 7; on = lx === 0 || lx === 6 || ly === 0 || ly === 6 || (lx > 1 && lx < 5 && ly > 1 && ly < 5) }
+    else on = ((x * 7 + y * 13 + x * y) % 5) < 2
+    h += `<b class="${on ? '' : 'o'}"></b>`
+  }
+  el.innerHTML = h
+}
+function render() {
+  const inner = document.getElementById(`${v}-${s}`).innerHTML
+  if (s === 'home') { stage.innerHTML = document.getElementById('frame').innerHTML; stage.querySelector('#main').innerHTML = inner }
+  else stage.innerHTML = inner
+  stage.querySelectorAll('[data-use]').forEach((el) => (el.innerHTML = document.getElementById(el.dataset.use).innerHTML))
+  stage.querySelectorAll('[data-qr]').forEach(qr)
+  const rb = stage.querySelector('#ribbons')
+  if (rb) for (let r = 0; r < 3; r++) { let h = `<div style="display:flex;gap:14px;margin-left:${-r * 50}px">`; for (let i = 0; i < 9; i++) h += `<i class="${G[(i + r * 3) % 10]}" style="width:96px;height:96px;flex:none;display:block;border-radius:${(i + r) % 4 === 3 ? 8 : 50}%"></i>`; rb.innerHTML += h + '</div>' }
+  const wall = stage.querySelector('#wall')
+  if (wall) { let h = ''; for (let i = 0; i < 80; i++) h += `<i class="${G[(i * 7) % 10]} ${i % 3 === 0 ? 'r' : ''}"></i>`; wall.innerHTML = h }
+  document.querySelectorAll('.vdesc').forEach((d) => d.classList.toggle('hide', d.dataset.v !== v))
+  document.querySelectorAll('#segV button').forEach((b) => b.classList.toggle('on', b.dataset.v === v))
+  document.querySelectorAll('#segS button').forEach((b) => b.classList.toggle('on', b.dataset.s === s))
+  history.replaceState(null, '', `#${v}-${s}`)
+}
+document.getElementById('segV').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { v = b.dataset.v; render() } })
+document.getElementById('segS').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { s = b.dataset.s; render() } })
+const m = location.hash.match(/^#([ABC])-(home|wel|mini)$/)
+if (m) { v = m[1]; s = m[2] }
+render()
+</script>
+</body>
+</html>

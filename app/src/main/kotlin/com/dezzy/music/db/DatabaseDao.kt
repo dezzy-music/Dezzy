@@ -9,6 +9,7 @@
 package com.dezzy.music.db
 
 import com.dezzy.music.db.entities.EventPlayTime
+import com.dezzy.music.db.entities.TasteEvent
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
@@ -420,6 +421,10 @@ interface DatabaseDao {
     // ── Estadísticas: tiempo escuchado de cada evento del periodo (barras) ──
     @Query("SELECT timestamp, playTime FROM event WHERE timestamp > :fromTimeStamp AND timestamp <= :toTimeStamp")
     fun eventPlayTimes(fromTimeStamp: Long, toTimeStamp: Long): Flow<List<EventPlayTime>>
+
+    // ── DJ: escuchas sueltas del último año para el perfil de gustos (sin cargar canciones) ──
+    @Query("SELECT songId, timestamp, playTime FROM event WHERE timestamp > :fromTimeStamp")
+    suspend fun tasteEvents(fromTimeStamp: Long): List<TasteEvent>
 
     @Transaction
     @Query(

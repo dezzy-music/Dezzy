@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dezzy escritorio · Estilo Spotify</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..600,0..1,0&display=swap" rel="stylesheet">
+<style>
+:root{--doc:#f4f1f1;--ink:#22191a;--muted:#6b5b5c;--line:#e3d6d6;
+  --bg:#000;--panel:#121212;--el:#1f1f1f;--hov:#2a2a2a;--hi:#fff;--sub:#b3b3b3;--dim:#7a7a7a;--acc:#f2606d;--acc-d:#ED5564}
+*{box-sizing:border-box}
+body{margin:0;background:var(--doc);color:var(--ink);font:15px/1.5 Poppins,system-ui,sans-serif}
+.doc{max-width:1340px;margin:0 auto;padding:40px 24px 80px}
+h1{font-size:30px;margin:0 0 6px}
+.lead{color:var(--muted);max-width:940px;margin:0}
+h2{font-size:22px;margin:54px 0 4px;display:flex;align-items:center;gap:12px}
+h2 .tag{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--ink);color:#fff;font-size:17px}
+.desc{color:var(--muted);max-width:1000px;margin:0 0 8px}
+ul.chg{margin:6px 0 18px;padding-left:20px;font-size:14px;columns:2;column-gap:40px;max-width:1120px}
+ul.chg li{margin-bottom:4px;break-inside:avoid}
+.ms{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;font-size:22px;line-height:1;display:inline-block;-webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400}
+.ms.f{font-variation-settings:'FILL' 1,'wght' 500}
+.zoom{zoom:.92;margin-top:10px}
+@media (max-width:1300px){.zoom{zoom:.7}}
+@media (max-width:900px){.zoom{zoom:.45}ul.chg{columns:1}}
+.note{margin-top:40px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 20px;font-size:14px;color:var(--muted)}
+
+/* ventana */
+.win{width:1300px;height:800px;border-radius:12px;overflow:hidden;background:var(--bg);color:var(--hi);display:flex;flex-direction:column;box-shadow:0 18px 50px rgba(0,0,0,.3);font-family:Poppins,sans-serif;font-size:14px}
+.top{height:64px;display:flex;align-items:center;gap:10px;padding:0 14px;flex:none}
+.logo{width:30px;height:30px;border-radius:9px;background:var(--acc-d);display:grid;place-items:center;font-weight:800;font-size:16px;color:#fff}
+.circ{width:48px;height:48px;border-radius:24px;background:var(--el);display:grid;place-items:center;color:var(--hi)}
+.search{width:470px;height:48px;border-radius:24px;background:var(--el);display:flex;align-items:center;gap:12px;padding:0 6px 0 14px;color:var(--sub)}
+.search .sep{width:1px;height:24px;background:#444;margin-left:auto}
+.ib{width:36px;height:36px;border-radius:18px;display:grid;place-items:center;color:var(--sub)}
+.av{width:32px;height:32px;border-radius:16px;background:#7a4bd8;display:grid;place-items:center;font-weight:700;font-size:13px;border:5px solid #1f1f1f;box-sizing:content-box}
+.shell{flex:1;display:flex;gap:8px;padding:0 8px;min-height:0}
+.panel{background:var(--panel);border-radius:10px;overflow:hidden;position:relative}
+.art{background:linear-gradient(135deg,var(--a1),var(--a2));position:relative;overflow:hidden;flex:none;border-radius:6px}
+.art::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 30% 25%,rgba(255,255,255,.28),transparent 55%)}
+.round{border-radius:50%}
+.g1{--a1:#f6a07a;--a2:#b8325a}.g2{--a1:#5ec8b8;--a2:#1f5e77}.g3{--a1:#f3d36b;--a2:#d8653a}.g4{--a1:#9d8cf2;--a2:#3b2f8f}
+.g5{--a1:#7bd389;--a2:#1f6b45}.g6{--a1:#f08fb6;--a2:#7a2a6b}.g7{--a1:#8fc6f0;--a2:#2c4f8a}.g8{--a1:#c9b49a;--a2:#5a4434}
+.t1{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t2{font-size:12.5px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chips{display:flex;gap:8px}
+.chip{height:32px;padding:0 14px;border-radius:16px;background:var(--el);display:inline-flex;align-items:center;font-size:13px;font-weight:500}
+.chip.on{background:var(--acc);color:#1a0003}
+.sec{display:flex;align-items:flex-end;justify-content:space-between;margin:26px 0 8px}
+.sec h3{margin:0;font-size:22px;font-weight:700;letter-spacing:-.3px}
+.sec a{font-size:13px;font-weight:600;color:var(--sub)}
+.shelf{display:flex;gap:6px;margin:0 -10px}
+.tile{width:178px;padding:10px;border-radius:8px}
+.tile .art{width:158px;height:158px;margin-bottom:10px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.tile.h{background:var(--el)}
+.tile .pp{position:absolute}
+.bigplay{width:48px;height:48px;border-radius:24px;background:var(--acc);color:#1a0003;display:grid;place-items:center;box-shadow:0 8px 16px rgba(0,0,0,.4)}
+/* reproductor inferior */
+.pbar{height:80px;display:flex;align-items:center;padding:0 16px;flex:none}
+.pbar .l{width:30%;display:flex;align-items:center;gap:12px}
+.pbar .c{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;max-width:720px}
+.pbar .r{width:30%;display:flex;align-items:center;justify-content:flex-end;gap:4px}
+.ctl{display:flex;align-items:center;gap:18px;color:var(--sub)}
+.pp{width:34px;height:34px;border-radius:17px;background:#fff;color:#000;display:grid;place-items:center}
+.prog{display:flex;align-items:center;gap:8px;width:100%;font-size:11.5px;color:var(--sub)}
+.bar{flex:1;height:4px;border-radius:2px;background:#4d4d4d;position:relative}
+.bar i{position:absolute;left:0;top:0;bottom:0;width:var(--v,62%);background:#fff;border-radius:2px}
+.bar.a i{background:var(--acc)}
+.bar.a::after{content:"";position:absolute;left:var(--v,62%);top:50%;width:12px;height:12px;border-radius:6px;background:#fff;transform:translate(-50%,-50%)}
+.on-acc{color:var(--acc)!important}
+
+/* biblioteca lateral */
+.lib{width:300px;display:flex;flex-direction:column}
+.lib .hd{display:flex;align-items:center;gap:10px;padding:14px 16px 6px;color:var(--sub);font-weight:600}
+.lib .hd .ib{margin-left:auto}
+.lib .chips{padding:6px 16px 8px}
+.lib .tools{display:flex;justify-content:space-between;align-items:center;padding:2px 16px 6px;color:var(--sub);font-size:13px}
+.lrow{display:flex;align-items:center;gap:12px;padding:7px 8px;margin:0 8px;border-radius:6px}
+.lrow .art{width:48px;height:48px}
+.lrow.on{background:var(--hov)}
+.lrow.on .t1{color:var(--acc)}
+.pin{color:var(--acc);font-size:14px;vertical-align:-2px}
+
+/* ── A ── */
+.A main{flex:1;overflow:hidden}
+.A .wash{position:absolute;left:0;right:0;top:0;height:330px;background:linear-gradient(180deg,#6b2230 0%,rgba(18,18,18,0) 100%)}
+.A .in{position:relative;padding:14px 24px}
+.A .quick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:16px}
+.A .q{height:56px;border-radius:6px;background:rgba(255,255,255,.08);display:flex;align-items:center;gap:12px;overflow:hidden;font-weight:600;font-size:13.5px}
+.A .q .art{width:56px;height:56px;border-radius:0}
+.A .q.h{background:rgba(255,255,255,.18)}
+.A .q.h .bigplay{width:34px;height:34px;margin:0 10px 0 auto}
+.A .np{width:330px;display:flex;flex-direction:column;padding:14px 16px;gap:14px;overflow:hidden}
+.A .np .hd{display:flex;align-items:center;font-weight:700;font-size:15px}
+.A .np .hd .ib{margin-left:auto}
+.A .np .big{width:298px;height:298px;border-radius:8px}
+.A .about{background:var(--el);border-radius:8px;overflow:hidden;position:relative}
+.A .about .art{height:130px;border-radius:0}
+.A .about .lab{position:absolute;left:12px;top:10px;z-index:1;font-weight:700;font-size:13px}
+.A .follow{height:32px;padding:0 14px;border-radius:16px;border:1px solid #777;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center}
+.A .nextq{background:var(--el);border-radius:8px;padding:12px}
+
+/* ── B ── */
+.B .lib{width:76px;align-items:center;padding-top:10px;gap:6px}
+.B .lib .art{width:48px;height:48px}
+.B .lib .art.on{outline:2px solid var(--acc);outline-offset:3px}
+.B main{flex:1;overflow:hidden}
+.B .head{height:330px;background:linear-gradient(180deg,#2a7a6e,#174a43);display:flex;align-items:flex-end;gap:24px;padding:24px}
+.B .head .art{width:232px;height:232px;box-shadow:0 10px 40px rgba(0,0,0,.55)}
+.B .head .k{font-size:13px;font-weight:600}
+.B .head h1{font-size:76px;font-weight:800;margin:2px 0 10px;letter-spacing:-3px;line-height:1}
+.B .head .m{font-size:13.5px;color:#e6e6e6}
+.B .head .m b{color:#fff}
+.B .body{background:linear-gradient(180deg,rgba(23,74,67,.55),var(--panel) 220px);padding:22px 24px}
+.B .acts{display:flex;align-items:center;gap:22px;color:var(--sub)}
+.B .acts .bigplay{width:56px;height:56px;border-radius:28px}
+.B table{width:100%;border-collapse:collapse;margin-top:18px;font-size:13.5px}
+.B th{text-align:left;font-weight:500;color:var(--sub);font-size:12.5px;padding:0 10px 8px;border-bottom:1px solid #2c2c2c}
+.B td{padding:7px 10px;color:var(--sub)}
+.B td .art{width:40px;height:40px;border-radius:4px}
+.B td.tt{display:flex;align-items:center;gap:12px}
+.B td .t1{color:var(--hi)}
+.B tr.on td .t1{color:var(--acc)}
+.B tr.h td{background:var(--hov)}
+.B tr.h td:first-child{border-radius:6px 0 0 6px}.B tr.h td:last-child{border-radius:0 6px 6px 0}
+.B .side{width:330px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.B .side .hd{display:flex;gap:8px}
+.B .tab{height:32px;padding:0 14px;border-radius:16px;background:var(--el);font-size:13px;font-weight:600;display:inline-flex;align-items:center}
+.B .tab.on{background:#fff;color:#000}
+.B .lyr{flex:1;border-radius:10px;background:linear-gradient(180deg,#b8325a,#7a1f3c);padding:18px;font-size:22px;font-weight:700;line-height:1.45;color:rgba(0,0,0,.55);overflow:hidden}
+.B .lyr .cur{color:#fff}
+.B .lyr .done{color:rgba(255,255,255,.75)}
+
+/* ── C ── */
+.C .shell{padding-bottom:8px}
+.C .lib{width:300px}
+.C main{flex:1;overflow:hidden;background:linear-gradient(180deg,#5c2a12,#2b160c 55%,#121212)}
+.C .full{display:grid;grid-template-columns:1fr 1fr;height:100%}
+.C .left{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:18px;padding:30px}
+.C .left .art{width:400px;height:400px;border-radius:10px;box-shadow:0 30px 70px rgba(0,0,0,.6)}
+.C .meta{width:400px;display:flex;align-items:center}
+.C .meta h2{all:unset;font-size:30px;font-weight:800;letter-spacing:-.6px;display:block}
+.C .right{padding:40px 36px 30px 10px;font-size:30px;font-weight:700;line-height:1.5;color:rgba(255,255,255,.35);overflow:hidden;position:relative}
+.C .right .cur{color:#fff}
+.C .right .done{color:rgba(255,255,255,.7)}
+.C .right .ky{font-size:13px;font-weight:600;color:var(--sub);letter-spacing:.4px;margin-bottom:12px;display:flex;gap:8px;align-items:center}
+.C .dj{position:absolute;right:36px;bottom:26px;display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.45);border-radius:28px;padding:8px 16px 8px 8px;font-size:13px;font-weight:500;color:#fff}
+.C .dj .o{width:36px;height:36px;border-radius:18px;background:radial-gradient(circle at 35% 30%,#ffd1d6,var(--acc) 60%,#7a1f3c)}
+.C .pbar{background:var(--bg)}
+</style>
+</head>
+<body><div class="doc">
+<h1>Dezzy escritorio con el estilo de Spotify</h1>
+<p class="lead">Tres propuestas inspiradas en el estilo de Spotify para escritorio: fondo casi negro, paneles redondeados, búsqueda en una píldora grande, biblioteca a la izquierda, degradados del color de la carátula y reproductor plano abajo. Es inspiración, no copia: el acento es el coral de Dezzy (no el verde), con el logo, los iconos y la letra Poppins de Dezzy. Se mantienen todas las pantallas y funciones actuales.</p>
+
+<!-- ═════════════ A ═════════════ -->
+<h2><span class="tag">A</span>Tres paneles clásico</h2>
+<p class="desc">La disposición más reconocible. A la izquierda va la biblioteca entera, con chips y filas de carátula. En el centro, Inicio abre con una franja de color y 8 accesos rápidos. A la derecha está «Reproduciendo» con la carátula grande, la tarjeta del artista y lo siguiente de la cola.</p>
+<ul class="chg">
+  <li>Arriba: Inicio redondo + búsqueda en píldora + avatar. Mapa, Rankings y Juntos pasan a la barra superior como iconos.</li>
+  <li>La biblioteca lateral reemplaza al menú actual (Inicio, Biblioteca…).</li>
+  <li>El color de la franja de Inicio cambia según la tarjeta sobre la que pasas el ratón.</li>
+  <li>Es lo más parecido a lo que ya tienes, porque el panel derecho ya existe.</li>
+</ul>
+<div class="zoom"><div class="win A">
+  <div class="top">
+    <div class="logo">d</div><span class="ib ms">chevron_left</span><span class="ib ms">chevron_right</span>
+    <div style="flex:1"></div>
+    <div class="circ"><span class="ms f">home</span></div>
+    <div class="search"><span class="ms">search</span>¿Qué quieres reproducir?<span class="sep"></span><span class="ib ms">public</span></div>
+    <div style="flex:1"></div>
+    <span class="ib ms">leaderboard</span><span class="ib ms">groups</span><span class="ib ms">download</span><span class="ib ms">notifications</span><div class="av">Q</div>
+  </div>
+  <div class="shell">
+    <aside class="panel lib">
+      <div class="hd"><span class="ms">library_music</span>Tu biblioteca<span class="ib ms">add</span></div>
+      <div class="chips"><span class="chip">Playlists</span><span class="chip">Artistas</span><span class="chip">Álbumes</span></div>
+      <div class="tools"><span class="ms" style="font-size:18px">search</span><span>Recientes <span class="ms" style="font-size:16px;vertical-align:-3px">list</span></span></div>
+      <div class="lrow"><div class="art g6"></div><div><div class="t1">Me gusta</div><div class="t2"><span class="ms f pin">push_pin</span> Playlist · 312 canciones</div></div></div>
+      <div class="lrow on"><div class="art g1"></div><div><div class="t1">Mix regional</div><div class="t2">Playlist · Dezzy</div></div></div>
+      <div class="lrow"><div class="art g5 round"></div><div><div class="t1">Grupo 360</div><div class="t2">Artista</div></div></div>
+      <div class="lrow"><div class="art g4"></div><div><div class="t1">Corridos 2026</div><div class="t2">Playlist · Dezzy</div></div></div>
+      <div class="lrow"><div class="art g3 round"></div><div><div class="t1">Legado 7</div><div class="t2">Artista</div></div></div>
+      <div class="lrow"><div class="art g8"></div><div><div class="t1">Desde la oficina</div><div class="t2">Álbum · Grupo 360</div></div></div>
+      <div class="lrow"><div class="art g2"></div><div><div class="t1">Descargas</div><div class="t2">24 canciones sin conexión</div></div></div>
+    </aside>
+    <main class="panel">
+      <div class="wash"></div>
+      <div class="in">
+        <div class="chips"><span class="chip on">Todo</span><span class="chip">Música</span><span class="chip">Videos</span><span class="chip">Podcasts</span></div>
+        <div class="quick">
+          <div class="q"><div class="art g6"></div>Me gusta</div>
+          <div class="q h"><div class="art g1"></div>Mix regional<div class="bigplay"><span class="ms f">play_arrow</span></div></div>
+          <div class="q"><div class="art g5"></div>Grupo 360</div>
+          <div class="q"><div class="art g4"></div>Corridos 2026</div>
+          <div class="q"><div class="art g2"></div>DJ Dezzy</div>
+          <div class="q"><div class="art g3"></div>Legado 7</div>
+          <div class="q"><div class="art g8"></div>Desde la oficina</div>
+          <div class="q"><div class="art g7"></div>Recuerdos 2024</div>
+        </div>
+        <div class="sec"><h3>Hecho para Dezzy</h3><a>Mostrar todo</a></div>
+        <div class="shelf">
+          <div class="tile"><div class="art g4"></div><div class="t1">Mix diario 1</div><div class="t2">Grupo 360, Legado 7 y más</div></div>
+          <div class="tile h"><div class="art g1"></div><div class="t1">Mix descubre</div><div class="t2">Nuevo para ti cada lunes</div></div>
+          <div class="tile"><div class="art g5"></div><div class="t1">Mix diario 2</div><div class="t2">Herencia de Grandes…</div></div>
+          <div class="tile"><div class="art g7"></div><div class="t1">En repeat</div><div class="t2">Lo que no dejas de oír</div></div>
+          <div class="tile"><div class="art g3"></div><div class="t1">Recuerdos</div><div class="t2">Lo que ponías en 2024</div></div>
+        </div>
+      </div>
+    </main>
+    <aside class="panel np">
+      <div class="hd">Mix regional<span class="ib ms">more_horiz</span><span class="ib ms" style="margin-left:0">close</span></div>
+      <div class="art g1 big"></div>
+      <div style="display:flex;align-items:center"><div><div class="t1" style="font-size:22px;font-weight:700">El Hijo Del 7</div><div class="t2" style="font-size:14px">Grupo 360</div></div><span class="ms f on-acc" style="margin-left:auto">check_circle</span></div>
+      <div class="about"><span class="lab">Sobre el artista</span><div class="art g5"></div><div style="padding:12px;display:flex;align-items:center"><div><div class="t1">Grupo 360</div><div class="t2">2,1 M oyentes al mes</div></div><span class="follow" style="margin-left:auto">Seguir</span></div></div>
+    </aside>
+  </div>
+  <div class="pbar">
+    <div class="l"><div class="art g1" style="width:56px;height:56px"></div><div style="min-width:0"><div class="t1">El Hijo Del 7</div><div class="t2">Grupo 360</div></div><span class="ms f on-acc" style="font-size:20px">check_circle</span></div>
+    <div class="c"><div class="ctl"><span class="ms on-acc">shuffle</span><span class="ms f">skip_previous</span><div class="pp"><span class="ms f">pause</span></div><span class="ms f">skip_next</span><span class="ms">repeat</span></div><div class="prog">2:49<div class="bar"><i></i></div>4:12</div></div>
+    <div class="r"><span class="ib ms on-acc">play_circle</span><span class="ib ms">lyrics</span><span class="ib ms">queue_music</span><span class="ib ms">devices</span><span class="ib ms">volume_up</span><div class="bar" style="flex:none;width:96px;--v:70%"><i></i></div><span class="ib ms">open_in_full</span></div>
+  </div>
+</div></div>
+
+<!-- ═════════════ B ═════════════ -->
+<h2><span class="tag">B</span>Biblioteca compacta y páginas con degradado</h2>
+<p class="desc">La biblioteca se pliega a una columna de carátulas para dar todo el ancho al contenido. Aquí se ve una playlist: cabecera con el color de la portada, título enorme, botón de reproducir grande y tabla de canciones. El panel derecho alterna entre «Letra», «Cola» y «Artista», con la letra en vivo sobre el color de la canción.</p>
+<ul class="chg">
+  <li>Mismo estilo de cabecera para álbum, playlist y artista (en artista, la foto a todo lo ancho).</li>
+  <li>Tabla con #, título, álbum, fecha en que la añadiste y duración; doble clic para reproducir.</li>
+  <li>La biblioteca se despliega al pulsar el icono (y se recuerda cómo la dejaste).</li>
+  <li>Cambio medio: nuevas cabeceras, tabla y panel con pestañas.</li>
+</ul>
+<div class="zoom"><div class="win B">
+  <div class="top">
+    <div class="logo">d</div><span class="ib ms">chevron_left</span><span class="ib ms">chevron_right</span>
+    <div style="flex:1"></div>
+    <div class="circ"><span class="ms">home</span></div>
+    <div class="search"><span class="ms">search</span>¿Qué quieres reproducir?<span class="sep"></span><span class="ib ms">public</span></div>
+    <div style="flex:1"></div>
+    <span class="ib ms">leaderboard</span><span class="ib ms">groups</span><span class="ib ms">notifications</span><div class="av">Q</div>
+  </div>
+  <div class="shell">
+    <aside class="panel lib">
+      <span class="ib ms" style="color:var(--sub)">library_music</span>
+      <div class="art g6"></div><div class="art g2 on"></div><div class="art g5 round"></div><div class="art g4"></div><div class="art g3 round"></div><div class="art g8"></div><div class="art g7"></div>
+    </aside>
+    <main class="panel">
+      <div class="head"><div class="art g2"></div><div><div class="k">Playlist pública</div><h1>Corridos 2026</h1><div class="m"><b>Dezzy</b> · 48 canciones, 2 h 41 min</div></div></div>
+      <div class="body">
+        <div class="acts"><div class="bigplay"><span class="ms f" style="font-size:30px">play_arrow</span></div><span class="ms" style="font-size:30px">shuffle</span><span class="ms" style="font-size:28px">download_for_offline</span><span class="ms" style="font-size:28px">person_add</span><span class="ms" style="font-size:28px">more_horiz</span><span style="margin-left:auto;font-size:13px">Lista <span class="ms" style="font-size:18px;vertical-align:-4px">list</span></span></div>
+        <table>
+          <tr><th style="width:40px">#</th><th>Título</th><th>Álbum</th><th>Añadida</th><th style="width:60px"><span class="ms" style="font-size:18px">schedule</span></th></tr>
+          <tr class="on"><td><span class="ms f on-acc" style="font-size:16px">equalizer</span></td><td class="tt"><div class="art g1"></div><div><div class="t1">El Hijo Del 7</div><div class="t2">Grupo 360</div></div></td><td>Desde la oficina</td><td>hace 2 días</td><td>4:12</td></tr>
+          <tr class="h"><td>2</td><td class="tt"><div class="art g3"></div><div><div class="t1">Coronamos</div><div class="t2">Grupo 360</div></div></td><td>Coronamos</td><td>hace 3 días</td><td>3:05</td></tr>
+          <tr><td>3</td><td class="tt"><div class="art g5"></div><div><div class="t1">Noche de Perros</div><div class="t2">Grupo 360, Legado 7</div></div></td><td>Noche de Perros</td><td>hace 1 semana</td><td>2:58</td></tr>
+          <tr><td>4</td><td class="tt"><div class="art g4"></div><div><div class="t1">La Ramera</div><div class="t2">Herencia de Grandes</div></div></td><td>Lo he logrado</td><td>hace 1 semana</td><td>3:40</td></tr>
+          <tr><td>5</td><td class="tt"><div class="art g8"></div><div><div class="t1">Desde Que Llegaste</div><div class="t2">Grupo H100</div></div></td><td>Mera Sierra</td><td>hace 2 semanas</td><td>3:22</td></tr>
+        </table>
+      </div>
+    </main>
+    <aside class="panel side">
+      <div class="hd"><span class="tab on">Letra</span><span class="tab">Cola</span><span class="tab">Artista</span></div>
+      <div class="lyr"><div class="done">Desde la oficina se escucha</div><div class="done">el radio sonando fuerte</div><div class="cur">y la plebada está lista</div><div>pa' lo que se ofrezca</div><div>con el siete en la mira</div><div>nomás pa' que lo sepan</div></div>
+    </aside>
+  </div>
+  <div class="pbar">
+    <div class="l"><div class="art g1" style="width:56px;height:56px"></div><div style="min-width:0"><div class="t1">El Hijo Del 7</div><div class="t2">Grupo 360</div></div><span class="ms" style="font-size:20px;color:var(--sub)">add_circle</span></div>
+    <div class="c"><div class="ctl"><span class="ms">shuffle</span><span class="ms f">skip_previous</span><div class="pp"><span class="ms f">pause</span></div><span class="ms f">skip_next</span><span class="ms on-acc">repeat_one</span></div><div class="prog">2:49<div class="bar a"><i></i></div>4:12</div></div>
+    <div class="r"><span class="ib ms on-acc">lyrics</span><span class="ib ms">queue_music</span><span class="ib ms">devices</span><span class="ib ms">volume_up</span><div class="bar" style="flex:none;width:96px;--v:70%"><i></i></div><span class="ib ms">open_in_full</span></div>
+  </div>
+</div></div>
+
+<!-- ═════════════ C ═════════════ -->
+<h2><span class="tag">C</span>Reproduciendo a pantalla completa</h2>
+<p class="desc">Base de tres paneles como A, pero «Reproduciendo» se abre a lo grande dentro del panel central, con el degradado de la carátula. A la izquierda va la carátula (o el canvas) y a la derecha la letra que se desplaza sola. El DJ Dezzy aparece abajo como una burbuja cuando habla. Se abre con el botón de ampliar o con un clic en la carátula de abajo.</p>
+<ul class="chg">
+  <li>El resto de pantallas como en A (Inicio, biblioteca y barra superior).</li>
+  <li>El modo «Video» usaría este mismo espacio para el videoclip.</li>
+  <li>La burbuja del DJ muestra los subtítulos de lo que dice.</li>
+  <li>Sustituye a la vista actual de «Reproduciendo» expandida.</li>
+</ul>
+<div class="zoom"><div class="win C">
+  <div class="top">
+    <div class="logo">d</div><span class="ib ms">chevron_left</span><span class="ib ms">chevron_right</span>
+    <div style="flex:1"></div>
+    <div class="circ"><span class="ms">home</span></div>
+    <div class="search"><span class="ms">search</span>¿Qué quieres reproducir?<span class="sep"></span><span class="ib ms">public</span></div>
+    <div style="flex:1"></div>
+    <span class="ib ms">leaderboard</span><span class="ib ms">groups</span><span class="ib ms">notifications</span><div class="av">Q</div>
+  </div>
+  <div class="shell">
+    <aside class="panel lib">
+      <div class="hd"><span class="ms">library_music</span>Tu biblioteca<span class="ib ms">add</span></div>
+      <div class="chips"><span class="chip">Playlists</span><span class="chip">Artistas</span><span class="chip">Álbumes</span></div>
+      <div class="tools"><span class="ms" style="font-size:18px">search</span><span>Recientes</span></div>
+      <div class="lrow"><div class="art g6"></div><div><div class="t1">Me gusta</div><div class="t2">Playlist · 312 canciones</div></div></div>
+      <div class="lrow"><div class="art g1"></div><div><div class="t1">Mix regional</div><div class="t2">Playlist · Dezzy</div></div></div>
+      <div class="lrow on"><div class="art g3"></div><div><div class="t1">Coronamos</div><div class="t2">Álbum · Grupo 360</div></div></div>
+      <div class="lrow"><div class="art g4"></div><div><div class="t1">Corridos 2026</div><div class="t2">Playlist · Dezzy</div></div></div>
+      <div class="lrow"><div class="art g5 round"></div><div><div class="t1">Grupo 360</div><div class="t2">Artista</div></div></div>
+    </aside>
+    <main class="panel">
+      <div class="full">
+        <div class="left">
+          <div class="art g3"></div>
+          <div class="meta"><div><h2>Coronamos</h2><div class="t2" style="font-size:15px;color:#ddd">Grupo 360</div></div><span class="ms" style="margin-left:auto;font-size:28px;color:#ddd">add_circle</span></div>
+        </div>
+        <div class="right">
+          <div class="ky"><span class="ms" style="font-size:18px">lyrics</span>LETRA · sincronizada</div>
+          <div class="done">Ya se escucha en la colonia</div>
+          <div class="done">que llegamos a la cima</div>
+          <div class="cur">coronamos sin pedir permiso</div>
+          <div>con la gente que me cuida</div>
+          <div>no se olvida de dónde vino</div>
+          <div>el que sabe lo que vale</div>
+          <div class="dj"><span class="o"></span>«Ésta la pones mucho a esta hora…»</div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div class="pbar">
+    <div class="l"><div class="art g3" style="width:56px;height:56px"></div><div style="min-width:0"><div class="t1">Coronamos</div><div class="t2">Grupo 360</div></div></div>
+    <div class="c"><div class="ctl"><span class="ms on-acc">shuffle</span><span class="ms f">skip_previous</span><div class="pp"><span class="ms f">pause</span></div><span class="ms f">skip_next</span><span class="ms">repeat</span></div><div class="prog">1:12<div class="bar a" style="--v:38%"><i></i></div>3:05</div></div>
+    <div class="r"><span class="ib ms on-acc">lyrics</span><span class="ib ms">queue_music</span><span class="ib ms">devices</span><span class="ib ms">volume_up</span><div class="bar" style="flex:none;width:96px;--v:70%"><i></i></div><span class="ib ms on-acc">close_fullscreen</span></div>
+  </div>
+</div></div>
+
+<p class="note">Puedes elegir una o mezclar, por ejemplo «A como base + las páginas de B + Reproduciendo de C», porque encajan entre sí. Al elegir se aplica a todo el escritorio y se deriva un tema claro para quien lo use. No se toca nada hasta que apruebes.</p>
+</div></body></html>

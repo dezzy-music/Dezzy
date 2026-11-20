@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dezzy escritorio · Estilo Android</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..600,0..1,0&display=swap" rel="stylesheet">
+<style>
+:root{
+  --doc:#f4f1f1;--ink:#22191a;--muted:#6b5b5c;--line:#e3d6d6;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--doc);color:var(--ink);font:15px/1.5 Poppins,system-ui,sans-serif}
+.doc{max-width:1320px;margin:0 auto;padding:40px 24px 80px}
+h1{font-size:30px;margin:0 0 6px}
+.lead{color:var(--muted);max-width:900px;margin:0}
+.now{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:22px 0 10px}
+.now div{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:13px}
+.now b{display:block;font-size:12px;color:var(--muted);font-weight:500;margin-bottom:2px}
+h2{font-size:22px;margin:54px 0 4px;display:flex;align-items:center;gap:12px}
+h2 .tag{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--ink);color:#fff;font-size:17px}
+.desc{color:var(--muted);max-width:980px;margin:0 0 8px}
+ul.chg{margin:6px 0 18px;padding-left:20px;color:var(--ink);font-size:14px;columns:2;column-gap:40px;max-width:1100px}
+ul.chg li{margin-bottom:4px;break-inside:avoid}
+.ms{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;font-size:22px;line-height:1;display:inline-block;-webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400}
+.ms.f{font-variation-settings:'FILL' 1,'wght' 500}
+
+/* ventana común */
+.win{width:1280px;height:780px;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 50px rgba(34,25,26,.16);border:1px solid var(--line);background:var(--surface);color:var(--on-s);font-family:Poppins,sans-serif}
+.titlebar{height:34px;display:flex;align-items:center;gap:10px;padding:0 14px;font-size:12.5px;color:var(--on-sv)}
+.logo{width:18px;height:18px;border-radius:5px;background:var(--primary);display:grid;place-items:center;color:var(--on-p);font-size:11px;font-weight:700}
+.body{flex:1;display:flex;min-height:0}
+.art{border-radius:12px;background:linear-gradient(135deg,var(--a1),var(--a2));position:relative;overflow:hidden;flex:none}
+.art::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 30% 25%,rgba(255,255,255,.35),transparent 55%)}
+.g1{--a1:#f6a07a;--a2:#b8325a}.g2{--a1:#5ec8b8;--a2:#1f5e77}.g3{--a1:#f3d36b;--a2:#d8653a}.g4{--a1:#9d8cf2;--a2:#3b2f8f}
+.g5{--a1:#7bd389;--a2:#1f6b45}.g6{--a1:#f08fb6;--a2:#7a2a6b}.g7{--a1:#8fc6f0;--a2:#2c4f8a}.g8{--a1:#c9b49a;--a2:#5a4434}
+.t1{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t2{font-size:12.5px;color:var(--on-sv);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chips{display:flex;gap:8px}
+.chip{height:34px;padding:0 16px;border-radius:10px;border:1px solid var(--ov);display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--on-sv);background:transparent}
+.chip.on{background:var(--sc);color:var(--on-sc);border-color:transparent}
+.sec{display:flex;align-items:center;justify-content:space-between;margin:22px 0 12px}
+.sec h3{margin:0;font-size:19px;font-weight:600}
+.sec a{font-size:13px;font-weight:500;color:var(--primary);text-decoration:none}
+.row{display:flex;gap:16px}
+.card{width:150px}
+.card .art{width:150px;height:150px;margin-bottom:8px}
+.iconbtn{width:40px;height:40px;border-radius:20px;display:grid;place-items:center;color:var(--on-sv)}
+.play{width:48px;height:48px;border-radius:24px;background:var(--primary);color:var(--on-p);display:grid;place-items:center}
+.bar{height:4px;border-radius:2px;background:var(--s-highest);position:relative;flex:1}
+.bar i{position:absolute;left:0;top:0;bottom:0;width:62%;border-radius:2px;background:var(--primary)}
+.avatar{width:38px;height:38px;border-radius:19px;background:var(--tc);color:var(--on-tc);display:grid;place-items:center;font-weight:600}
+
+/* ── A · Material You fiel (coral) ── */
+.A{--primary:#9c3f48;--on-p:#fff;--pc:#ffdadb;--on-pc:#40000f;--sc:#ffd9dc;--on-sc:#2c1517;--tc:#ffdcbf;--on-tc:#2d1600;
+  --surface:#fff8f7;--s-low:#fff0f0;--s-cont:#fceaea;--s-high:#f6e4e4;--s-highest:#f0dede;--on-s:#22191a;--on-sv:#524344;--ov:#d7c1c2}
+.A .rail{width:96px;display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 0 16px}
+.A .fab{width:56px;height:56px;border-radius:16px;background:var(--pc);color:var(--on-pc);display:grid;place-items:center;margin-bottom:14px}
+.A .dest{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;font-weight:500;color:var(--on-sv);width:80px}
+.A .dest .pill{width:56px;height:32px;border-radius:16px;display:grid;place-items:center}
+.A .dest.on .pill{background:var(--sc);color:var(--on-sc)}
+.A .dest.on{color:var(--on-s);font-weight:600}
+.A main{flex:1;background:var(--surface);padding:6px 28px 0 12px;overflow:hidden}
+.A .top{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.A .search{flex:1;max-width:560px;height:52px;border-radius:26px;background:var(--s-high);display:flex;align-items:center;gap:12px;padding:0 18px;color:var(--on-sv);font-size:14px}
+.A .hello{display:flex;align-items:flex-end;justify-content:space-between;margin:4px 0 14px}
+.A .hello h1{margin:0;font-size:30px;font-weight:600;letter-spacing:-.3px}
+.A .hello p{margin:2px 0 0;color:var(--on-sv);font-size:13.5px}
+.A .streak{display:flex;gap:8px}
+.A .streak span{height:32px;padding:0 12px;border-radius:16px;background:var(--tc);color:var(--on-tc);font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:5px}
+.A .hero{display:grid;grid-template-columns:1.35fr 1fr;gap:16px;margin-top:16px}
+.A .resume{height:210px;border-radius:28px;position:relative;overflow:hidden;padding:20px;color:#fff;display:flex;flex-direction:column;justify-content:flex-end}
+.A .resume .art{position:absolute;inset:0;border-radius:0}
+.A .resume>*:not(.art){position:relative;z-index:1}
+.A .resume .lbl{font-size:12px;font-weight:600;background:rgba(0,0,0,.35);padding:3px 10px;border-radius:10px;align-self:flex-start;margin-bottom:auto}
+.A .resume h4{margin:0;font-size:22px;font-weight:600}
+.A .resume .rp{display:flex;align-items:center;gap:12px;margin-top:10px}
+.A .resume .rp .bar{background:rgba(255,255,255,.35)}.A .resume .rp .bar i{background:#fff}
+.A .resume .play{background:#fff;color:#9c3f48}
+.A .bento{display:grid;grid-template-columns:1.2fr 1fr;grid-template-rows:1fr 1fr;gap:10px;height:210px}
+.A .bento div{border-radius:24px;padding:14px;color:#fff;font-weight:600;font-size:15px;display:flex;align-items:flex-end;position:relative;overflow:hidden}
+.A .bento div:first-child{grid-row:span 2;font-size:19px}
+.A .tools{display:flex;gap:10px;margin-top:18px}
+.A .tool{flex:1;height:64px;border-radius:20px;background:var(--s-cont);display:flex;align-items:center;gap:12px;padding:0 14px;font-weight:500;font-size:13.5px}
+.A .tool .ms{width:38px;height:38px;border-radius:19px;background:var(--pc);color:var(--on-pc);display:grid;place-items:center;font-size:20px}
+.A .player{height:84px;margin:0 16px 12px 108px;border-radius:24px;background:var(--s-high);display:flex;align-items:center;gap:16px;padding:0 18px 0 12px;position:relative;overflow:hidden}
+.A .player .prog{position:absolute;left:24px;right:24px;bottom:0;height:3px;background:var(--s-highest);border-radius:2px}
+.A .player .prog i{position:absolute;left:0;top:0;bottom:0;width:62%;background:var(--primary);border-radius:2px}
+
+/* ── B · Tarjetas tonales (Android 16) ── */
+.B{--primary:#9c3f48;--on-p:#fff;--pc:#ffdadb;--on-pc:#40000f;--sc:#ffd9dc;--on-sc:#2c1517;--tc:#ffdcbf;--on-tc:#2d1600;
+  --surface:#f7eded;--s-low:#fff8f7;--s-cont:#fff8f7;--s-high:#f6e4e4;--s-highest:#ead6d6;--on-s:#22191a;--on-sv:#524344;--ov:#d7c1c2}
+.B .side{width:268px;padding:4px 10px 12px 12px;display:flex;flex-direction:column;gap:12px}
+.B .acct{background:var(--s-low);border-radius:24px;padding:14px;display:flex;align-items:center;gap:12px}
+.B .group{display:flex;flex-direction:column;gap:3px}
+.B .item{background:var(--s-low);height:52px;display:flex;align-items:center;gap:12px;padding:0 12px;font-weight:500;font-size:14px;border-radius:6px}
+.B .group .item:first-child{border-radius:22px 22px 6px 6px}.B .group .item:last-child{border-radius:6px 6px 22px 22px}
+.B .item .ic{width:34px;height:34px;border-radius:17px;background:var(--s-high);color:var(--on-sv);display:grid;place-items:center;font-size:19px}
+.B .item.on{background:var(--pc);color:var(--on-pc)}.B .item.on .ic{background:var(--primary);color:#fff}
+.B main{flex:1;background:var(--s-low);border-radius:28px;margin:0 12px 12px 0;padding:18px 26px;overflow:hidden}
+.B .top{display:flex;align-items:center;gap:12px}
+.B .search{flex:1;height:48px;border-radius:24px;background:var(--s-high);display:flex;align-items:center;gap:12px;padding:0 16px;color:var(--on-sv);font-size:14px}
+.B .hello{margin:20px 0 14px;display:flex;align-items:center;gap:14px}
+.B .hello h1{margin:0;font-size:26px;font-weight:600}
+.B .hello .s{margin-left:auto;display:flex;gap:8px}
+.B .stat{background:var(--s-high);border-radius:18px;padding:8px 14px;font-size:12px;color:var(--on-sv)}
+.B .stat b{display:block;font-size:17px;color:var(--on-s)}
+.B .list{display:grid;grid-template-columns:repeat(2,1fr);gap:3px 12px;margin-top:4px}
+.B .li{background:var(--surface);height:64px;display:flex;align-items:center;gap:12px;padding:0 12px;border-radius:6px}
+.B .li .art{width:44px;height:44px;border-radius:10px}
+.B .li:nth-child(1),.B .li:nth-child(2){border-radius:20px 20px 6px 6px}
+.B .li:nth-child(5),.B .li:nth-child(6){border-radius:6px 6px 20px 20px}
+.B .now{width:300px;background:var(--s-low);border-radius:28px;margin:0 12px 12px 0;padding:16px;display:flex;flex-direction:column;gap:12px}
+.B .now .art{width:268px;height:268px;border-radius:24px}
+.B .ctl{display:flex;align-items:center;justify-content:center;gap:14px}
+.B .ctl .play{width:64px;height:64px;border-radius:20px}
+.B .lyr{background:var(--pc);color:var(--on-pc);border-radius:22px;padding:14px;font-size:14px;font-weight:600;line-height:1.6;flex:1}
+.B .lyr span{opacity:.45;font-weight:500}
+
+/* ── C · Inmersivo dinámico (color de la canción) ── */
+.C{--primary:#a6f0d0;--on-p:#00382a;--pc:#0f5040;--on-pc:#c2ffe6;--sc:#1d4a3f;--on-sc:#cfeee2;--tc:#3c4a6e;--on-tc:#dbe1ff;
+  --surface:#0e1513;--s-low:#161d1b;--s-cont:#1a2120;--s-high:#252b2a;--s-highest:#2f3634;--on-s:#dde4e1;--on-sv:#a9b8b2;--ov:#3e4946}
+.C{background:radial-gradient(900px 520px at 78% -10%,rgba(46,160,120,.45),transparent 60%),radial-gradient(700px 500px at 0% 100%,rgba(31,94,119,.35),transparent 60%),var(--surface)}
+.C .titlebar{color:var(--on-sv)}
+.C .navpill{position:absolute;left:50%;top:48px;transform:translateX(-50%);display:flex;gap:4px;padding:6px;border-radius:32px;background:rgba(37,43,42,.72);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.08);z-index:3}
+.C .navpill span{height:42px;padding:0 16px;border-radius:21px;display:inline-flex;align-items:center;gap:8px;font-size:13.5px;font-weight:500;color:var(--on-sv)}
+.C .navpill span.on{background:var(--primary);color:var(--on-p)}
+.C .body{position:relative;padding:76px 32px 0}
+.C main{flex:1;overflow:hidden}
+.C .hero{display:flex;gap:28px;align-items:flex-end;margin-top:20px}
+.C .hero .art{width:250px;height:250px;border-radius:32px;box-shadow:0 30px 60px rgba(0,0,0,.45)}
+.C .hero .k{font-size:13px;font-weight:600;color:var(--primary);letter-spacing:.4px}
+.C .hero h1{font-size:44px;margin:4px 0 6px;font-weight:700;letter-spacing:-.8px;line-height:1.05}
+.C .hero p{margin:0 0 16px;color:var(--on-sv)}
+.C .acts{display:flex;gap:10px;align-items:center}
+.C .btn{height:48px;padding:0 22px;border-radius:24px;background:var(--primary);color:var(--on-p);display:inline-flex;align-items:center;gap:8px;font-weight:600}
+.C .btn.t{background:rgba(255,255,255,.08);color:var(--on-s)}
+.C .card{width:156px}.C .card .art{width:156px;height:156px;border-radius:20px}
+.C .sec h3{color:var(--on-s)}
+.C .player{height:86px;margin:0 22px 14px;border-radius:30px;background:rgba(37,43,42,.75);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:18px;padding:0 20px 0 12px}
+.C .player .art{width:62px;height:62px;border-radius:18px}
+.C .wave{display:flex;gap:3px;align-items:center;height:28px;flex:1}
+.C .wave i{width:3px;border-radius:2px;background:var(--on-sv);opacity:.5}
+.C .wave i.p{background:var(--primary);opacity:1}
+.C .sw{display:flex;gap:6px;margin-left:auto}
+.C .sw b{width:14px;height:14px;border-radius:7px;display:block}
+
+.zoom{zoom:.92;margin-top:10px}
+@media (max-width:1300px){.zoom{zoom:.7}}
+@media (max-width:900px){.zoom{zoom:.45}ul.chg{columns:1}}
+.note{margin-top:40px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 20px;font-size:14px;color:var(--muted)}
+</style>
+</head>
+<body><div class="doc">
+<h1>Dezzy escritorio con el estilo de la app de Android</h1>
+<p class="lead">Lo que hoy separa a las dos apps. Android usa Material You con el coral de Dezzy (#ED5564) como semilla, la fuente Poppins, superficies tonales, botones en píldora y el saludo con racha en Inicio. El escritorio usa grises neutros, Roboto, ningún color de acento y una lista lateral plana. Son tres maneras de acercarlo; todas conservan las mismas pantallas y funciones.</p>
+<div class="now">
+  <div><b>Color</b>Hoy: gris sin acento → coral tonal</div>
+  <div><b>Letra</b>Hoy: Roboto → Poppins (como Android)</div>
+  <div><b>Navegación</b>Hoy: lista plana sin marcar → indicador en píldora</div>
+  <div><b>Inicio</b>Hoy: solo estanterías → saludo, racha, «Sigue donde ibas», mixes</div>
+</div>
+
+<!-- ═════════════ A ═════════════ -->
+<h2><span class="tag">A</span>Material You fiel</h2>
+<p class="desc">La traducción más directa del móvil: riel de navegación de Material 3 con el indicador en píldora y un botón de búsqueda grande arriba. Inicio igual que en Android, con el saludo y la racha, la tarjeta «Sigue donde ibas» con el canvas de fondo, los mixes en bento y las Herramientas Dezzy. El reproductor de abajo es una tarjeta tonal, como el mini reproductor del móvil.</p>
+<ul class="chg">
+  <li>Barra lateral → riel de 96 px (más espacio para el contenido).</li>
+  <li>Chips Para ti / Música / Videos / Podcasts como en Android.</li>
+  <li>El panel derecho de «Reproduciendo» se queda igual, con los colores nuevos.</li>
+  <li>Cambio de menor riesgo: sobre todo colores, letra y la barra lateral.</li>
+</ul>
+<div class="zoom"><div class="win A">
+  <div class="titlebar"><span class="logo">d</span>Dezzy</div>
+  <div class="body">
+    <nav class="rail">
+      <div class="fab"><span class="ms">search</span></div>
+      <div class="dest on"><div class="pill"><span class="ms f">home</span></div>Inicio</div>
+      <div class="dest"><div class="pill"><span class="ms">library_music</span></div>Biblioteca</div>
+      <div class="dest"><div class="pill"><span class="ms">public</span></div>Mapa</div>
+      <div class="dest"><div class="pill"><span class="ms">leaderboard</span></div>Rankings</div>
+      <div class="dest"><div class="pill"><span class="ms">groups</span></div>Juntos</div>
+      <div class="dest"><div class="pill"><span class="ms">download</span></div>Descargas</div>
+      <div style="flex:1"></div>
+      <div class="dest"><div class="pill"><span class="ms">settings</span></div>Ajustes</div>
+    </nav>
+    <main>
+      <div class="top">
+        <div class="search"><span class="ms">search</span>Canciones, artistas, letras…<span style="margin-left:auto;font-size:12px;border:1px solid var(--ov);border-radius:8px;padding:1px 7px">Ctrl K</span></div>
+        <div style="flex:1"></div>
+        <span class="iconbtn ms">devices</span><span class="iconbtn ms">notifications</span><div class="avatar">Q</div>
+      </div>
+      <div class="hello">
+        <div><h1>Buenas noches, Dezzy</h1><p>Miércoles 19 de noviembre · hoy llevas 42 min</p></div>
+        <div class="streak"><span><span class="ms f" style="font-size:17px">local_fire_department</span>12 días</span></div>
+      </div>
+      <div class="chips"><span class="chip on"><span class="ms" style="font-size:18px">check</span>Para ti</span><span class="chip">Música</span><span class="chip">Videos</span><span class="chip">Podcasts</span><span class="chip">Entrenar</span><span class="chip">Relax</span></div>
+      <div class="hero">
+        <div class="resume"><div class="art g1"></div><span class="lbl">Sigue donde ibas</span><h4>El Hijo Del 7</h4><div class="t2" style="color:#fff;opacity:.85">Grupo 360</div><div class="rp"><span style="font-size:12px">2:49</span><div class="bar"><i></i></div><span style="font-size:12px">4:12</span><div class="play"><span class="ms f">play_arrow</span></div></div></div>
+        <div class="bento"><div class="art g4">Mix regional</div><div class="art g3">Mix corridos</div><div class="art g2">Mix descubre</div></div>
+      </div>
+      <div class="tools">
+        <div class="tool"><span class="ms">graphic_eq</span>DJ Dezzy</div>
+        <div class="tool"><span class="ms">bar_chart</span>Estadísticas</div>
+        <div class="tool"><span class="ms">history</span>Máquina del tiempo</div>
+        <div class="tool"><span class="ms">shuffle</span>Aleatorio</div>
+        <div class="tool"><span class="ms">favorite</span>Me gusta</div>
+      </div>
+    </main>
+  </div>
+  <div class="player">
+    <div class="art g1" style="width:60px;height:60px;border-radius:14px"></div>
+    <div style="width:220px"><div class="t1">El Hijo Del 7</div><div class="t2">Grupo 360</div></div>
+    <span class="iconbtn ms">favorite</span>
+    <div style="flex:1;display:flex;justify-content:center;align-items:center;gap:6px"><span class="iconbtn ms">shuffle</span><span class="iconbtn ms f">skip_previous</span><div class="play" style="border-radius:16px"><span class="ms f">pause</span></div><span class="iconbtn ms f">skip_next</span><span class="iconbtn ms">repeat</span></div>
+    <span class="iconbtn ms">lyrics</span><span class="iconbtn ms">queue_music</span><span class="iconbtn ms">devices</span><span class="iconbtn ms">volume_up</span>
+    <div class="prog"><i></i></div>
+  </div>
+</div></div>
+
+<!-- ═════════════ B ═════════════ -->
+<h2><span class="tag">B</span>Tarjetas tonales (como los Ajustes de Android)</h2>
+<p class="desc">Lleva a todo el escritorio el estilo de los Ajustes de Android, ya aprobado en la fase 7: grupos de tarjetas con esquinas de 24 y 6 px, iconos dentro de círculos tonales y la tarjeta de cuenta arriba. El contenido va en una gran superficie redondeada y «Reproduciendo» en otra, con controles grandes y letras en una tarjeta de color.</p>
+<ul class="chg">
+  <li>Barra lateral agrupada: Descubrir / Tu música / Juntos.</li>
+  <li>Cuenta, racha y minutos de hoy siempre a la vista.</li>
+  <li>Listas en filas tonales, como las de Biblioteca en Android.</li>
+  <li>Cambio medio: barra lateral, superficies y panel derecho.</li>
+</ul>
+<div class="zoom"><div class="win B">
+  <div class="titlebar"><span class="logo">d</span>Dezzy</div>
+  <div class="body">
+    <nav class="side">
+      <div class="acct"><div class="avatar">Q</div><div><div class="t1">Dezzy</div><div class="t2">Sincronizado con tu móvil</div></div><span class="ms" style="margin-left:auto;color:var(--on-sv)">chevron_right</span></div>
+      <div class="group">
+        <div class="item on"><span class="ic ms f">home</span>Inicio</div>
+        <div class="item"><span class="ic ms">search</span>Buscar</div>
+        <div class="item"><span class="ic ms">public</span>Mapa musical</div>
+        <div class="item"><span class="ic ms">leaderboard</span>Rankings</div>
+      </div>
+      <div class="group">
+        <div class="item"><span class="ic ms">library_music</span>Biblioteca</div>
+        <div class="item"><span class="ic ms">download</span>Descargas</div>
+      </div>
+      <div class="group">
+        <div class="item"><span class="ic ms">groups</span>Escuchar juntos</div>
+        <div class="item"><span class="ic ms">settings</span>Ajustes</div>
+      </div>
+    </nav>
+    <main>
+      <div class="top"><div class="search"><span class="ms">search</span>Canciones, artistas, letras…</div><span class="iconbtn ms">devices</span></div>
+      <div class="hello"><h1>Buenas noches, Dezzy</h1>
+        <div class="s"><div class="stat"><b>12 días</b>de racha</div><div class="stat"><b>42 min</b>hoy</div></div></div>
+      <div class="chips"><span class="chip on">Para ti</span><span class="chip">Música</span><span class="chip">Videos</span><span class="chip">Relax</span></div>
+      <div class="sec"><h3>Sigue escuchando</h3><a>Ver todo</a></div>
+      <div class="list">
+        <div class="li"><div class="art g1"></div><div><div class="t1">El Hijo Del 7</div><div class="t2">Grupo 360</div></div></div>
+        <div class="li"><div class="art g3"></div><div><div class="t1">Coronamos</div><div class="t2">Grupo 360</div></div></div>
+        <div class="li"><div class="art g5"></div><div><div class="t1">Mix regional</div><div class="t2">Lista · 50 canciones</div></div></div>
+        <div class="li"><div class="art g2"></div><div><div class="t1">Me gusta</div><div class="t2">312 canciones</div></div></div>
+        <div class="li"><div class="art g4"></div><div><div class="t1">Mix descubre</div><div class="t2">Nuevo para ti</div></div></div>
+        <div class="li"><div class="art g6"></div><div><div class="t1">Noche de Perros</div><div class="t2">Grupo 360</div></div></div>
+      </div>
+      <div class="sec"><h3>Mixes para ti</h3><a>Ver todo</a></div>
+      <div class="row"><div class="card"><div class="art g4" style="border-radius:22px"></div><div class="t1">Mix corridos</div></div><div class="card"><div class="art g7" style="border-radius:22px"></div><div class="t1">Mix relax</div></div><div class="card"><div class="art g8" style="border-radius:22px"></div><div class="t1">Mix 2024</div></div></div>
+    </main>
+    <aside class="now">
+      <div class="art g1"></div>
+      <div><div class="t1" style="font-size:18px">El Hijo Del 7</div><div class="t2">Grupo 360</div></div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--on-sv)">2:49<div class="bar"><i></i></div>4:12</div>
+      <div class="ctl"><span class="iconbtn ms">shuffle</span><span class="iconbtn ms f">skip_previous</span><div class="play"><span class="ms f">pause</span></div><span class="iconbtn ms f">skip_next</span><span class="iconbtn ms">repeat</span></div>
+      <div class="lyr"><span>Desde la oficina se escucha</span><br>el radio sonando fuerte<br><span>y la plebada lista</span></div>
+    </aside>
+  </div>
+</div></div>
+
+<!-- ═════════════ C ═════════════ -->
+<h2><span class="tag">C</span>Inmersivo con el color de la canción</h2>
+<p class="desc">Como el reproductor del móvil, que saca el color de la carátula: aquí toda la ventana toma la paleta de lo que suena (en el ejemplo, una carátula verde azulada) y cambia en cada canción. La navegación es una píldora flotante con cristal, como la barra flotante del móvil con liquid glass. Inicio abre con un héroe grande y el reproductor flota abajo con forma de onda.</p>
+<ul class="chg">
+  <li>Funciona en claro y en oscuro; aquí se muestra oscuro.</li>
+  <li>Opción en Ajustes: «Color de la canción» o «Coral de Dezzy» fijo.</li>
+  <li>Es el más llamativo, y el cambio más grande (otra disposición).</li>
+  <li>El panel «Reproduciendo» se abriría como capa encima, no fijo.</li>
+</ul>
+<div class="zoom"><div class="win C">
+  <div class="titlebar"><span class="logo">d</span>Dezzy</div>
+  <div class="body">
+    <div class="navpill"><span class="on"><span class="ms f">home</span>Inicio</span><span><span class="ms">search</span>Buscar</span><span><span class="ms">library_music</span>Biblioteca</span><span><span class="ms">public</span>Mapa</span><span><span class="ms">groups</span>Juntos</span><span><span class="ms">more_horiz</span></span></div>
+    <main>
+      <div class="hero">
+        <div class="art g2"></div>
+        <div>
+          <div class="k">BUENAS NOCHES, DEZZY · 12 DÍAS DE RACHA</div>
+          <h1>Sigue donde ibas</h1>
+          <p>El Hijo Del 7 · Grupo 360 · te quedaste en el 2:49</p>
+          <div class="acts"><span class="btn"><span class="ms f">play_arrow</span>Continuar</span><span class="btn t"><span class="ms">graphic_eq</span>DJ Dezzy</span><span class="btn t"><span class="ms">shuffle</span>Aleatorio</span></div>
+        </div>
+      </div>
+      <div class="sec"><h3>Mixes para ti</h3><a>Ver todo</a></div>
+      <div class="row">
+        <div class="card"><div class="art g5"></div><div class="t1">Mix regional</div><div class="t2">Grupo 360, Legado 7…</div></div>
+        <div class="card"><div class="art g7"></div><div class="t1">Mix descubre</div><div class="t2">Nuevo para ti</div></div>
+        <div class="card"><div class="art g4"></div><div class="t1">Mix corridos</div><div class="t2">Herencia de Grandes…</div></div>
+        <div class="card"><div class="art g8"></div><div class="t1">Recuerdos</div><div class="t2">Lo que ponías en 2024</div></div>
+        <div class="card"><div class="art g6"></div><div class="t1">Me gusta</div><div class="t2">312 canciones</div></div>
+        <div class="card"><div class="art g3"></div><div class="t1">Para entrenar</div><div class="t2">Según tu hora</div></div>
+      </div>
+    </main>
+  </div>
+  <div class="player">
+    <div class="art g2"></div>
+    <div style="width:200px"><div class="t1">El Hijo Del 7</div><div class="t2">Grupo 360</div></div>
+    <span class="iconbtn ms f" style="color:var(--primary)">favorite</span>
+    <span class="iconbtn ms f">skip_previous</span><div class="play"><span class="ms f">pause</span></div><span class="iconbtn ms f">skip_next</span>
+    <div class="wave" id="wave"></div>
+    <span class="iconbtn ms">lyrics</span><span class="iconbtn ms">queue_music</span><span class="iconbtn ms">devices</span>
+    <div class="sw" title="Paleta sacada de la carátula"><b style="background:#a6f0d0"></b><b style="background:#0f5040"></b><b style="background:#3c4a6e"></b></div>
+  </div>
+</div></div>
+
+<p class="note">Elige una (o mezcla, por ejemplo «colores de A con la barra lateral de B»). Al elegir, también se deriva el tema oscuro (o el claro, en C) y se aplica a todas las pantallas del escritorio: Inicio, Biblioteca, Artista, Reproduciendo, Ajustes, etc. No se toca nada hasta que apruebes.</p>
+</div>
+<script>
+const w=document.getElementById('wave');for(let i=0;i<70;i++){const b=document.createElement('i');b.style.height=(6+Math.abs(Math.sin(i*.55)*16+Math.sin(i*1.7)*6))+'px';if(i<43)b.className='p';w.appendChild(b)}
+</script>
+</body></html>

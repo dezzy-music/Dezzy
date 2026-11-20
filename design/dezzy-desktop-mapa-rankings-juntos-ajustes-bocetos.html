@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dezzy escritorio · Mapa, Rankings, Juntos y Ajustes</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..600,0..1,0&display=swap" rel="stylesheet">
+<style>
+:root{--doc:#f4f1f1;--ink:#22191a;--muted:#6b5b5c;--line:#e3d6d6;
+  --bg:#000;--panel:#121212;--el:#1f1f1f;--hov:#2a2a2a;--hi:#fff;--sub:#b3b3b3;--dim:#7a7a7a;--acc:#f2606d;--acc-d:#ED5564}
+*{box-sizing:border-box}
+body{margin:0;background:var(--doc);color:var(--ink);font:15px/1.5 Poppins,system-ui,sans-serif}
+.doc{max-width:1340px;margin:0 auto;padding:40px 24px 80px}
+h1{font-size:30px;margin:0 0 6px}
+.lead{color:var(--muted);max-width:980px;margin:0}
+.pick{position:sticky;top:0;z-index:20;background:var(--doc);padding:18px 0 12px;display:flex;flex-wrap:wrap;gap:18px;align-items:center;border-bottom:1px solid var(--line);margin-top:22px}
+.seg{display:flex;gap:6px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:4px}
+.seg button{font:600 14px Poppins;border:0;background:none;padding:8px 14px;border-radius:10px;cursor:pointer;color:var(--muted)}
+.seg button.on{background:var(--ink);color:#fff}
+.vdesc{margin:18px 0 6px}
+.vdesc h2{font-size:22px;margin:0 0 4px;display:flex;align-items:center;gap:12px}
+.vdesc h2 .tag{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--ink);color:#fff;font-size:17px}
+.vdesc p{color:var(--muted);margin:0;max-width:1000px}
+ul.chg{margin:8px 0 12px;padding-left:20px;font-size:14px;max-width:1100px}
+ul.chg li{margin-bottom:3px}
+.ms{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;font-size:22px;line-height:1;display:inline-block;-webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400;vertical-align:middle}
+.ms.f{font-variation-settings:'FILL' 1,'wght' 500}
+.zoom{zoom:.92;margin-top:6px}
+@media (max-width:1300px){.zoom{zoom:.7}}
+@media (max-width:900px){.zoom{zoom:.45}}
+.note{margin-top:34px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 20px;font-size:14px;color:var(--muted)}
+.hide{display:none!important}
+
+/* ventana */
+.win{width:1300px;height:800px;border-radius:12px;overflow:hidden;background:var(--bg);color:var(--hi);display:flex;flex-direction:column;box-shadow:0 18px 50px rgba(0,0,0,.3);font-family:Poppins,sans-serif;font-size:14px}
+.top{height:64px;display:flex;align-items:center;gap:10px;padding:0 14px;flex:none}
+.logo{width:30px;height:30px;border-radius:9px;background:var(--acc-d);display:grid;place-items:center;font-weight:800;font-size:16px;color:#fff}
+.back{width:32px;height:32px;border-radius:50%;background:var(--panel);display:grid;place-items:center}
+.circ{width:48px;height:48px;border-radius:24px;background:var(--el);display:grid;place-items:center}
+.search{width:470px;height:48px;border-radius:24px;background:var(--el);display:flex;align-items:center;gap:12px;padding:0 16px;color:var(--sub)}
+.mid{flex:1;display:flex;justify-content:center;gap:8px}
+.ico{display:flex;gap:14px;color:var(--sub);align-items:center}
+.ico .on{color:#fff}
+.av{width:32px;height:32px;border-radius:50%;background:#1a8f86;display:grid;place-items:center;font-weight:700;color:#fff}
+.body{flex:1;display:flex;gap:8px;padding:0 8px;min-height:0}
+.p{background:var(--panel);border-radius:8px;overflow:hidden;position:relative}
+.lib{width:76px;flex:none;display:flex;flex-direction:column;align-items:center;gap:8px;padding-top:14px;color:var(--sub)}
+.lib i{width:48px;height:48px;border-radius:4px;display:block}
+.main{flex:1;min-width:0}
+.scroll{position:absolute;inset:0;overflow:hidden}
+.bar{height:72px;flex:none;display:grid;grid-template-columns:1fr 1.6fr 1fr;align-items:center;padding:0 16px 0 10px}
+.np{display:flex;gap:12px;align-items:center}
+.np i{width:52px;height:52px;border-radius:4px}
+.np small{display:block;color:var(--sub);font-size:12px}
+.tr{display:flex;flex-direction:column;align-items:center;gap:6px}
+.tr .b{display:flex;gap:20px;align-items:center;color:var(--sub)}
+.tr .pp{width:34px;height:34px;border-radius:50%;background:#fff;color:#000;display:grid;place-items:center}
+.prog{width:100%;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--sub)}
+.prog span.t{flex:1;height:4px;border-radius:2px;background:#4d4d4d;position:relative}
+.prog span.t::before{content:'';position:absolute;inset:0 62% 0 0;background:#fff;border-radius:2px}
+.ex{display:flex;justify-content:flex-end;gap:12px;color:var(--sub);align-items:center}
+.vol{width:90px;height:4px;border-radius:2px;background:linear-gradient(90deg,#fff 70%,#4d4d4d 70%)}
+
+/* comunes */
+.g1{background:linear-gradient(135deg,#7b2ff7,#f2606d)}.g2{background:linear-gradient(135deg,#0f9b8e,#183b5a)}
+.g3{background:linear-gradient(135deg,#f7b733,#fc4a1a)}.g4{background:linear-gradient(135deg,#355c7d,#c06c84)}
+.g5{background:linear-gradient(135deg,#11998e,#38ef7d)}.g6{background:linear-gradient(135deg,#232526,#5b5b5b)}
+.g7{background:linear-gradient(135deg,#ee0979,#ff6a00)}.g8{background:linear-gradient(135deg,#4568dc,#b06ab3)}
+.g9{background:linear-gradient(135deg,#e0c3fc,#8ec5fc)}.g10{background:linear-gradient(135deg,#a8071a,#3a0a12)}
+.liked{background:linear-gradient(135deg,#450af5,#c4efd9)}
+.playc{width:56px;height:56px;border-radius:50%;background:var(--acc);color:#1a0407;display:grid;place-items:center;box-shadow:0 8px 18px rgba(0,0,0,.35);flex:none}
+.playc .ms{font-size:32px}
+.playc.s{width:46px;height:46px}.playc.s .ms{font-size:26px}
+.chip{height:32px;padding:0 14px;border-radius:16px;background:rgba(255,255,255,.1);display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;white-space:nowrap}
+.chip.on{background:#fff;color:#000}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.sh{font-size:22px;font-weight:700;margin:0 0 12px;display:flex;align-items:baseline;gap:10px}
+.sh small{margin-left:auto;font-size:13px;color:var(--sub);font-weight:600}
+.pad{padding:0 24px}
+.sub{color:var(--sub)}
+.row{display:grid;grid-template-columns:28px 40px 1fr 160px 60px;gap:14px;align-items:center;padding:6px 12px;border-radius:4px;color:var(--sub);font-size:13px}
+.row i{width:40px;height:40px;border-radius:3px;display:block}
+.row b{color:#fff;font-weight:400;font-size:15px;display:block}
+.row.h{background:rgba(255,255,255,.08)}
+.row.on b{color:var(--acc)}
+.n{text-align:center;font-size:15px}
+.thead{display:grid;grid-template-columns:28px 40px 1fr 160px 60px;gap:14px;padding:0 12px 8px;margin-bottom:8px;border-bottom:1px solid #2a2a2a;color:var(--sub);font-size:13px}
+.thead span:nth-child(2){grid-column:2/4}
+.cards{display:flex;gap:4px;margin:0 -12px}
+.card{width:176px;padding:12px;border-radius:6px;flex:none;position:relative}
+.card.h{background:var(--el)}
+.card i{display:block;aspect-ratio:1;border-radius:6px;margin-bottom:8px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.card i.r{border-radius:50%}
+.card b{display:block;font-weight:500;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card small{color:var(--sub);font-size:13px}
+.card .hp{position:absolute;right:20px;top:122px}
+.bar2{height:4px;border-radius:2px;background:#3a3a3a;position:relative;overflow:hidden}
+.bar2 span{position:absolute;inset:0 auto 0 0;background:var(--acc);border-radius:2px}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:rgba(242,96,109,.18);color:var(--acc)}
+.badge.g{background:rgba(56,239,125,.14);color:#4ee08f}
+.heat{display:grid;grid-template-columns:repeat(53,1fr);grid-auto-flow:column;grid-template-rows:repeat(7,1fr);gap:3px}
+.heat b{aspect-ratio:1;border-radius:2px;background:#262626}
+.heat b.l1{background:rgba(242,96,109,.3)}.heat b.l2{background:rgba(242,96,109,.55)}.heat b.l3{background:rgba(242,96,109,.8)}.heat b.l4{background:#f2606d}
+.wk{display:flex;align-items:flex-end;gap:10px;height:120px}
+.wk div{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end;font-size:11px;color:var(--sub)}
+.wk div span{width:100%;border-radius:6px 6px 2px 2px;background:#3a3a3a}
+.wk div span.top{background:var(--acc)}
+.hero{display:flex;gap:24px;align-items:flex-end;padding:56px 24px 24px}
+.hero .cov{width:232px;height:232px;border-radius:6px;box-shadow:0 8px 40px rgba(0,0,0,.6);flex:none;display:grid;place-items:center}
+.hero .cov .ms{font-size:110px;color:#fff}
+.hero .tg{font-size:13px;font-weight:500}
+.hero h3n{display:block;font-size:76px;font-weight:800;letter-spacing:-.04em;line-height:1;margin:6px 0 14px}
+.acts{display:flex;align-items:center;gap:22px;padding:20px 24px;color:var(--sub)}
+.acts .ms{font-size:30px}
+.tile{background:var(--el);border-radius:12px;padding:16px;position:relative;overflow:hidden}
+.tile h4{margin:0 0 8px;font-size:13px;font-weight:600;color:var(--sub)}
+.kpi b{display:block;font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.kpi small{color:var(--sub);font-size:12px}
+/* fase 4 */
+.mini{display:grid;grid-template-columns:22px 40px 1fr auto;gap:12px;align-items:center;padding:6px 0;font-size:13px;color:var(--sub)}
+.mini i{width:40px;height:40px;border-radius:3px;display:block}
+.mini b{display:block;color:#fff;font-weight:500;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini .n{font-size:14px}
+.cc{display:inline-grid;place-items:center;min-width:28px;height:20px;padding:0 4px;border-radius:4px;background:#2c2c2c;font-size:10px;font-weight:700;letter-spacing:.04em;color:#fff}
+.world{position:absolute;inset:0}
+.world svg{width:100%;height:100%;display:block}
+.circ.s{width:40px;height:40px;border-radius:20px;background:rgba(31,31,31,.92)}
+.inp{height:40px;border-radius:20px;background:var(--el);display:flex;align-items:center;gap:10px;padding:0 14px;color:var(--sub);font-size:13px}
+.tgl{width:40px;height:22px;border-radius:11px;background:#535353;position:relative;flex:none;display:inline-block}
+.tgl::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff}
+.tgl.on{background:var(--acc)}.tgl.on::after{left:21px}
+.av2{width:36px;height:36px;border-radius:50%;display:inline-grid;place-items:center;font-weight:700;font-size:13px;color:#fff;border:2px solid var(--panel);flex:none}
+.stack{display:flex}.stack .av2+.av2{margin-left:-10px}
+.bub{background:var(--el);border-radius:14px 14px 14px 4px;padding:8px 12px;font-size:13px;max-width:250px;align-self:flex-start}
+.bub small{display:block;font-size:11px;color:var(--acc);font-weight:600}
+.bub.me{background:var(--acc);color:#1a0407;border-radius:14px 14px 4px 14px;align-self:flex-end}
+.chat{display:flex;flex-direction:column;gap:8px}
+.sel{height:36px;padding:0 12px;border-radius:18px;background:var(--el);display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:500}
+.up{color:#4ee08f}.dn{color:#f2606d}.eq{color:#7a7a7a}
+.rk{display:grid;grid-template-columns:28px 34px 40px 1fr 120px 56px;gap:14px;align-items:center;padding:6px 12px;border-radius:4px;font-size:13px;color:var(--sub)}
+.rk i{width:40px;height:40px;border-radius:3px;display:block}
+.rk b{display:block;color:#fff;font-weight:400;font-size:15px}
+.rk.h{background:rgba(255,255,255,.08)}
+.rk .d{font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.srow{display:flex;align-items:center;gap:16px;padding:13px 0;border-bottom:1px solid #222;font-size:14px}
+.srow>div{flex:1}.srow small{display:block;color:var(--sub);font-size:12px}
+.sec{font-size:20px;font-weight:700;margin:26px 0 4px}
+.sw{width:26px;height:26px;border-radius:50%;display:inline-block;border:2px solid transparent}
+.sw.on{border-color:#fff;box-shadow:0 0 0 2px #000 inset}
+.btnw{height:32px;padding:0 16px;border-radius:16px;border:1px solid #727272;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600}
+.btnf{height:32px;padding:0 16px;border-radius:16px;background:#fff;color:#000;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700}
+.vote{display:flex;align-items:center;gap:8px;font-size:12px}
+.vote .bar2{width:70px}
+.big1{font-size:260px;font-weight:800;line-height:.8;letter-spacing:-.06em;color:transparent;-webkit-text-stroke:3px rgba(255,255,255,.55)}
+</style>
+</head>
+<body>
+<div class="doc">
+<h1>Dezzy escritorio · Mapa, Rankings, Juntos y Ajustes</h1>
+<p class="lead">Fase 4 del estilo Spotify. Tres propuestas para estas cuatro pantallas. Elige arriba la propuesta (A, B o C) y la pantalla. Lo ya hecho en las fases 1 a 3 no cambia: negro, coral, Poppins, barra superior y biblioteca plegable.</p>
+
+<div class="pick">
+  <div class="seg" id="segV"><button data-v="A" class="on">A · Clásico</button><button data-v="B">B · Panel</button><button data-v="C">C · Inmersivo</button></div>
+  <div class="seg" id="segS"><button data-s="map" class="on">Mapa</button><button data-s="rk">Rankings</button><button data-s="jt">Juntos</button><button data-s="set">Ajustes</button></div>
+</div>
+
+<div class="vdesc" data-v="A"><h2><span class="tag">A</span> Clásico: como una lista de Spotify</h2>
+<p>Sigue el lenguaje de las fases 1 a 3: cabecera con degradado, botón coral y tablas. Es lo más coherente con lo que ya está hecho.</p>
+<ul class="chg">
+<li><b>Mapa:</b> el mapa ocupa todo el panel y lleva encima el buscador y los chips (Todo, Países, Personas, Canciones, Género). Al pulsar un país se abre a la derecha su top, como una playlist: nombre grande, botón coral y las 50 canciones.</li>
+<li><b>Rankings:</b> se presenta como la playlist «Top 50 · Mundial», con portada, botón coral, selector de país y las pestañas Top, Tendencias y Mis canciones. La tabla muestra si cada canción sube o baja. Al pulsar una fila, debajo aparecen sus datos: mejor puesto, países y sello.</li>
+<li><b>Juntos:</b> la sala se ve como una playlist compartida, con el nombre, el código, las caras de quienes están y los botones Invitar y Ajustes. La cola es una tabla con quién propuso cada canción y sus votos, y el chat va en una columna a la derecha.</li>
+<li><b>Ajustes:</b> una sola página larga, como en Spotify, con un buscador arriba y secciones con interruptores a la derecha. No hay menú lateral.</li>
+</ul></div>
+<div class="vdesc hide" data-v="B"><h2><span class="tag">B</span> Panel: mosaicos y columnas</h2>
+<p>Hace lo mismo que el estilo de Estadísticas B: varias piezas a la vista a la vez, para ver mucho sin entrar y salir.</p>
+<ul class="chg">
+<li><b>Mapa:</b> a la izquierda, la lista de países con su nº 1 y un buscador. A la derecha, el mapa en un mosaico y, debajo, dos más: «Escuchando ahora» (personas que comparten, con «Escuchar lo mismo») y los géneros del país.</li>
+<li><b>Rankings:</b> chips con los países y un podio con los tres primeros. Debajo, el resto de la lista y, al lado, la ficha de la canción elegida.</li>
+<li><b>Juntos:</b> tres columnas: participantes (con anfitrión y peticiones para entrar), lo que suena con la cola y los votos, y el chat.</li>
+<li><b>Ajustes:</b> menú lateral con las secciones y, a la derecha, tarjetas. Apariencia lleva miniaturas del tema, los colores de acento y el icono.</li>
+</ul></div>
+<div class="vdesc hide" data-v="C"><h2><span class="tag">C</span> Inmersivo: a pantalla completa</h2>
+<p>Lo más llamativo: portadas grandes, fondos de color y menos tablas. Es como la Máquina del tiempo C.</p>
+<ul class="chg">
+<li><b>Mapa:</b> el mundo brilla en coral a pantalla completa, y al pasar por un país sale una tarjeta flotante con su nº 1. Abajo hay un carrusel «Suena en el mundo ahora» y un botón «Viajar al azar».</li>
+<li><b>Rankings:</b> el nº 1 ocupa toda la cabecera, con un «1» gigante, su portada y cuántos días lleva arriba. Debajo van los carruseles «Sube con fuerza» y «Tus canciones en el top», y después la lista.</li>
+<li><b>Juntos:</b> la portada que suena va grande en el centro, rodeada de las caras de la sala con sus reacciones. El chat flota abajo y la cola se vota con tarjetas.</li>
+<li><b>Ajustes:</b> arriba, una tarjeta con tu cuenta y el móvil vinculado. Debajo, un mosaico de secciones con su estado («Oscuro · coral», «Crossfade 6 s»), y cada una se abre en un panel lateral.</li>
+</ul></div>
+
+<div class="zoom"><div class="win" id="win">
+  <div class="top"><span class="logo">d</span><span class="back"><span class="ms">chevron_left</span></span>
+    <div class="mid"><span class="circ"><span class="ms">home</span></span><span class="search"><span class="ms">search</span>¿Qué quieres reproducir?</span></div>
+    <div class="ico"><span class="ms" id="ico-map">public</span><span class="ms" id="ico-rk">leaderboard</span><span class="ms" id="ico-jt">groups</span><span class="ms">download</span><span class="ms" id="ico-set">settings</span><span class="av">Q</span></div></div>
+  <div class="body">
+    <div class="p lib"><span class="ms f">library_music</span><i class="liked"></i><i class="g1"></i><i class="g4"></i><i class="g2"></i><i class="g3"></i><i class="g8"></i></div>
+    <div class="p main" id="main"></div>
+  </div>
+  <div class="bar"><div class="np"><i class="g7"></i><div>DESPECHÁ<small>Rosalía</small></div></div><div class="tr"><div class="b"><span class="ms">shuffle</span><span class="ms f">skip_previous</span><span class="pp"><span class="ms f">pause</span></span><span class="ms f">skip_next</span><span class="ms">repeat</span></div><div class="prog">1:02<span class="t"></span>2:37</div></div><div class="ex"><span class="ms">view_sidebar</span><span class="ms">lyrics</span><span class="ms">queue_music</span><span class="ms">devices</span><span class="ms">volume_up</span><span class="vol"></span></div></div>
+</div></div>
+
+<div class="note"><b>En las tres:</b> los datos son los que la app ya tiene: los tops por país, las personas que comparten por la red P2P, las salas de Escuchar juntos y los ajustes actuales. No se quita ninguna función. La entrada de Juntos (crear sala, unirse con código y salas públicas) se hace en el mismo estilo que la sala. Se pueden mezclar piezas, como en la fase 3.</div>
+</div>
+
+<!-- ════════ MAPA ════════ -->
+<template id="A-map"><div class="scroll" style="background:#0b0b0b">
+  <div class="world" data-glow="1"></div>
+  <div style="position:absolute;left:20px;top:18px;right:400px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <span class="inp" style="width:240px;background:rgba(31,31,31,.92)"><span class="ms">search</span>Busca un país o artista</span>
+    <span class="chip on">Todo</span><span class="chip">Países</span><span class="chip">Personas · 12</span><span class="chip">Canciones</span>
+    <span class="chip">Género: todos <span class="ms" style="font-size:18px">expand_more</span></span>
+  </div>
+  <div style="position:absolute;left:20px;bottom:20px;display:flex;flex-direction:column;gap:6px"><span class="circ s"><span class="ms">add</span></span><span class="circ s"><span class="ms">remove</span></span><span class="circ s"><span class="ms">public</span></span></div>
+  <aside style="position:absolute;right:0;top:0;bottom:0;width:380px;background:linear-gradient(180deg,#6b1f2a,#121212 320px);padding:20px 22px">
+    <div style="display:flex;align-items:center;gap:10px"><span class="cc">ES</span><span class="sub" style="font-size:13px;font-weight:600">Top del país</span><span style="flex:1"></span><span class="ms sub">close</span></div>
+    <div style="font-size:48px;font-weight:800;letter-spacing:-.04em;margin:22px 0 4px">España</div>
+    <div class="sub" style="font-size:13px">50 canciones · actualizado hace 2 h · <span style="color:#4ee08f">3 personas escuchando</span></div>
+    <div style="display:flex;align-items:center;gap:18px;margin:18px 0 10px"><span class="playc"><span class="ms f">play_arrow</span></span><span class="ms sub" style="font-size:28px">shuffle</span><span class="ms sub" style="font-size:28px">leaderboard</span><span class="ms sub" style="font-size:28px">more_horiz</span></div>
+    <div class="mini"><span class="n">1</span><i class="g7"></i><span><b>DESPECHÁ</b>Rosalía</span><span class="up">▲2</span></div>
+    <div class="mini"><span class="n">2</span><i class="g3"></i><span><b>DtMF</b>Bad Bunny</span><span class="dn">▼1</span></div>
+    <div class="mini"><span class="n">3</span><i class="g1"></i><span><b>LUNA</b>Feid, ATL Jacob</span><span class="eq">=</span></div>
+    <div class="mini"><span class="n">4</span><i class="g8"></i><span><b>Si Antes Te Hubiera Conocido</b>KAROL G</span><span class="up">▲5</span></div>
+    <div class="mini"><span class="n">5</span><i class="g4"></i><span><b>Tu Misterioso Alguien</b>Quevedo</span><span class="badge">Nuevo</span></div>
+    <div class="mini"><span class="n">6</span><i class="g2"></i><span><b>BAILE INoLVIDABLE</b>Bad Bunny</span><span class="dn">▼3</span></div>
+  </aside>
+</div></template>
+
+<template id="B-map"><div class="scroll" style="display:grid;grid-template-columns:320px 1fr;gap:16px;padding:20px">
+  <div class="tile" style="background:#181818;padding:16px 14px;display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;align-items:center;gap:8px"><b style="font-size:20px">Mapa</b><span style="flex:1"></span><span class="chip">Pop <span class="ms" style="font-size:18px">expand_more</span></span></div>
+    <span class="inp"><span class="ms">search</span>Busca un país</span>
+    <div class="chips"><span class="chip on">Países</span><span class="chip">Personas · 12</span><span class="chip">Canciones</span></div>
+    <div class="mini" style="grid-template-columns:34px 40px 1fr;background:rgba(242,96,109,.14);border-radius:6px;padding:6px 8px"><span class="cc">ES</span><i class="g7"></i><span><b>España</b>DESPECHÁ · Rosalía</span></div>
+    <div class="mini" style="grid-template-columns:34px 40px 1fr;padding:6px 8px"><span class="cc">MX</span><i class="g3"></i><span><b>México</b>Si No Es Contigo · Cris MJ</span></div>
+    <div class="mini" style="grid-template-columns:34px 40px 1fr;padding:6px 8px"><span class="cc">CO</span><i class="g8"></i><span><b>Colombia</b>LUNA · Feid</span></div>
+    <div class="mini" style="grid-template-columns:34px 40px 1fr;padding:6px 8px"><span class="cc">AR</span><i class="g4"></i><span><b>Argentina</b>Tu Misterioso Alguien</span></div>
+    <div class="mini" style="grid-template-columns:34px 40px 1fr;padding:6px 8px"><span class="cc">US</span><i class="g2"></i><span><b>Estados Unidos</b>Espresso · Sabrina C.</span></div>
+    <div class="mini" style="grid-template-columns:34px 40px 1fr;padding:6px 8px"><span class="cc">JP</span><i class="g9"></i><span><b>Japón</b>Bling-Bang-Bang-Born</span></div>
+  </div>
+  <div style="display:grid;grid-template-rows:1fr 210px;gap:16px;min-height:0">
+    <div class="tile" style="padding:0;background:#0d0d0d"><div class="world" data-glow="1"></div>
+      <div style="position:absolute;right:14px;top:14px;display:flex;gap:6px"><span class="circ s"><span class="ms">add</span></span><span class="circ s"><span class="ms">remove</span></span></div>
+      <div style="position:absolute;left:16px;bottom:14px;display:flex;align-items:center;gap:12px;background:rgba(18,18,18,.92);border-radius:10px;padding:8px 14px 8px 8px"><i class="g7" style="width:44px;height:44px;border-radius:4px;display:block"></i><span><b style="display:block">España · DESPECHÁ</b><small class="sub">Rosalía · nº 1 desde hace 6 días</small></span><span class="playc s" style="margin-left:8px"><span class="ms f">play_arrow</span></span></div></div>
+    <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px">
+      <div class="tile"><h4>Escuchando ahora en España</h4>
+        <div class="mini" style="grid-template-columns:36px 1fr auto"><span class="av2" style="background:#7b2ff7">L</span><span><b>Lucía</b>LUNA · Feid</span><span class="btnw">Escuchar lo mismo</span></div>
+        <div class="mini" style="grid-template-columns:36px 1fr auto"><span class="av2" style="background:#0f9b8e">M</span><span><b>Mario</b>Espresso · Sabrina Carpenter</span><span class="btnw">Escuchar lo mismo</span></div>
+        <div class="mini" style="grid-template-columns:36px 1fr auto"><span class="av2" style="background:#f7b733">A</span><span><b>Ana</b>DtMF · Bad Bunny</span><span class="btnw">Escuchar lo mismo</span></div></div>
+      <div class="tile"><h4>Géneros en España</h4>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;font-size:13px">
+          <div>Urbano latino <span class="sub" style="float:right">46 %</span><div class="bar2" style="margin-top:4px"><span style="right:54%"></span></div></div>
+          <div>Pop <span class="sub" style="float:right">28 %</span><div class="bar2" style="margin-top:4px"><span style="right:72%"></span></div></div>
+          <div>Flamenco y rumba <span class="sub" style="float:right">12 %</span><div class="bar2" style="margin-top:4px"><span style="right:88%"></span></div></div>
+        </div></div>
+    </div>
+  </div>
+</div></template>
+
+<template id="C-map"><div class="scroll" style="background:radial-gradient(ellipse at 50% 40%,#2a0d12,#050505 70%)">
+  <div class="world" data-glow="2" style="bottom:150px"></div>
+  <div style="position:absolute;left:28px;top:24px"><div style="font-size:44px;font-weight:800;letter-spacing:-.04em;line-height:1">El mundo, ahora</div><div class="sub" style="margin-top:6px">62 países · 12 personas cerca compartiendo · actualizado hace 2 h</div></div>
+  <div style="position:absolute;right:24px;top:24px;display:flex;gap:8px"><span class="chip on">Todo</span><span class="chip">Personas</span><span class="chip">Género <span class="ms" style="font-size:18px">expand_more</span></span><span class="btnf"><span class="ms" style="font-size:18px">casino</span>Viajar al azar</span></div>
+  <div style="position:absolute;left:52%;top:120px;width:250px;background:rgba(24,24,24,.96);border-radius:12px;padding:12px;box-shadow:0 18px 40px rgba(0,0,0,.6)">
+    <i class="g7" style="display:block;height:120px;border-radius:8px;margin-bottom:10px"></i>
+    <div style="display:flex;align-items:center;gap:8px"><span class="cc">ES</span><span class="sub" style="font-size:12px">Nº 1 en España</span></div>
+    <b style="display:block;font-size:18px;margin-top:4px">DESPECHÁ</b><small class="sub">Rosalía · 6 días arriba</small>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:10px"><span class="playc s"><span class="ms f">play_arrow</span></span><span class="btnw">Ver el top 50</span></div>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:0;height:160px;background:linear-gradient(180deg,transparent,#050505 40%);padding:0 24px">
+    <div class="sh" style="font-size:16px;margin-bottom:10px">Suena en el mundo ahora <small>Ver todo</small></div>
+    <div style="display:flex;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center;background:#1a1a1a;border-radius:8px;padding:8px 14px 8px 8px;width:230px"><i class="g3" style="width:56px;height:56px;border-radius:4px;display:block"></i><span><span class="cc">MX</span><b style="display:block;font-size:13px;margin-top:3px">Si No Es Contigo</b><small class="sub">Cris MJ</small></span></div>
+      <div style="display:flex;gap:10px;align-items:center;background:#1a1a1a;border-radius:8px;padding:8px 14px 8px 8px;width:230px"><i class="g2" style="width:56px;height:56px;border-radius:4px;display:block"></i><span><span class="cc">US</span><b style="display:block;font-size:13px;margin-top:3px">Espresso</b><small class="sub">Sabrina Carpenter</small></span></div>
+      <div style="display:flex;gap:10px;align-items:center;background:#1a1a1a;border-radius:8px;padding:8px 14px 8px 8px;width:230px"><i class="g9" style="width:56px;height:56px;border-radius:4px;display:block"></i><span><span class="cc">JP</span><b style="display:block;font-size:13px;margin-top:3px">Bling-Bang-Bang-Born</b><small class="sub">Creepy Nuts</small></span></div>
+      <div style="display:flex;gap:10px;align-items:center;background:#1a1a1a;border-radius:8px;padding:8px 14px 8px 8px;width:230px"><i class="g5" style="width:56px;height:56px;border-radius:4px;display:block"></i><span><span class="cc">BR</span><b style="display:block;font-size:13px;margin-top:3px">Let's Go 4</b><small class="sub">DJ GBR</small></span></div>
+    </div>
+  </div>
+</div></template>
+
+<!-- ════════ RANKINGS ════════ -->
+<template id="A-rk"><div class="scroll" style="background:linear-gradient(180deg,#7a2430,#121212 400px)">
+  <div class="hero"><div class="cov" style="background:linear-gradient(135deg,#f2606d,#5a0f1a);flex-direction:column;align-content:center;gap:4px;text-align:center"><span style="font-size:72px;font-weight:800;letter-spacing:-.04em;line-height:1">Top 50</span><span style="font-size:18px;font-weight:600;opacity:.9">Mundial</span></div>
+    <div><span class="tg">Ranking público</span><h3n>Top mundial</h3n><span style="font-size:14px"><b>50 canciones</b> • actualizado hace 3 h • se actualiza cada día</span></div></div>
+  <div class="acts"><span class="playc"><span class="ms f">play_arrow</span></span><span class="ms">shuffle</span><span class="ms">playlist_add</span><span class="sel"><span class="ms" style="font-size:18px">public</span>Mundial<span class="ms" style="font-size:18px">expand_more</span></span><span style="flex:1"></span><span class="chips"><span class="chip on">Top</span><span class="chip">Tendencias</span><span class="chip">Mis canciones</span></span><span class="ms">search</span></div>
+  <div class="pad">
+    <div class="thead" style="grid-template-columns:28px 34px 40px 1fr 120px 56px"><span>#</span><span></span><span style="grid-column:3/5">Título</span><span>Escuchas</span><span class="ms" style="font-size:18px">schedule</span></div>
+    <div class="rk"><span class="n">1</span><span class="d up">▲2</span><i class="g7"></i><span><b>DESPECHÁ</b>Rosalía</span><span>612.408.120</span><span>2:37</span></div>
+    <div class="rk h"><span class="n">2</span><span class="d dn">▼1</span><i class="g3"></i><span><b>DtMF</b>Bad Bunny</span><span>598.002.311</span><span>3:57</span></div>
+    <div style="margin:2px 12px 8px 108px;background:#1c1c1c;border-radius:8px;padding:12px 16px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;font-size:12px" class="sub">
+      <div>Mejor puesto<b style="display:block;color:#fff;font-size:20px">1</b></div><div>Puesto anterior<b style="display:block;color:#fff;font-size:20px">1</b></div>
+      <div>En el top de<b style="display:block;color:#fff;font-size:20px">41 países</b></div><div>Sello<b style="display:block;color:#fff;font-size:15px;margin-top:4px">Rimas Entertainment</b></div></div>
+    <div class="rk"><span class="n">3</span><span class="d eq">=</span><i class="g1"></i><span><b>LUNA</b>Feid, ATL Jacob</span><span>540.117.004</span><span>3:16</span></div>
+    <div class="rk"><span class="n">4</span><span class="d"><span class="badge">Nuevo</span></span><i class="g2"></i><span><b>Espresso</b>Sabrina Carpenter</span><span>522.900.873</span><span>2:55</span></div>
+  </div>
+</div></template>
+
+<template id="B-rk"><div class="scroll" style="padding:22px 24px">
+  <div style="display:flex;align-items:center;gap:14px"><b style="font-size:34px;letter-spacing:-.03em">Rankings</b><span class="chips" style="margin-left:10px"><span class="chip on">Top</span><span class="chip">Tendencias</span><span class="chip">Mis canciones</span></span><span style="flex:1"></span><span class="inp" style="width:220px"><span class="ms">search</span>Buscar en el ranking</span></div>
+  <div class="chips" style="margin:14px 0 18px"><span class="chip on"><span class="ms" style="font-size:16px">public</span>Mundial</span><span class="chip"><span class="cc">ES</span>España</span><span class="chip"><span class="cc">MX</span>México</span><span class="chip"><span class="cc">CO</span>Colombia</span><span class="chip"><span class="cc">AR</span>Argentina</span><span class="chip"><span class="cc">US</span>EE. UU.</span><span class="chip">+ 56 países</span></div>
+  <div style="display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:14px;align-items:end">
+    <div class="tile" style="display:flex;gap:14px;align-items:center;height:130px"><i class="g3" style="width:96px;height:96px;border-radius:6px;display:block;flex:none"></i><span><b style="font-size:36px;color:#c0c0c0;line-height:1">2</b><b style="display:block">DtMF</b><small class="sub">Bad Bunny · <span class="dn">▼1</span></small></span></div>
+    <div class="tile" style="display:flex;gap:16px;align-items:center;height:160px;background:linear-gradient(135deg,#5a1a22,#1f1f1f)"><i class="g7" style="width:124px;height:124px;border-radius:6px;display:block;flex:none;box-shadow:0 10px 30px rgba(0,0,0,.5)"></i><span><b style="font-size:48px;color:var(--acc);line-height:1">1</b><b style="display:block;font-size:20px">DESPECHÁ</b><small class="sub">Rosalía · <span class="up">▲2</span></small><br><span class="playc s" style="margin-top:8px"><span class="ms f">play_arrow</span></span></span></div>
+    <div class="tile" style="display:flex;gap:14px;align-items:center;height:118px"><i class="g1" style="width:84px;height:84px;border-radius:6px;display:block;flex:none"></i><span><b style="font-size:32px;color:#c98a5a;line-height:1">3</b><b style="display:block">LUNA</b><small class="sub">Feid · =</small></span></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 330px;gap:16px;margin-top:16px">
+    <div>
+      <div class="rk h" style="grid-template-columns:28px 34px 40px 1fr 56px"><span class="n">4</span><span class="d"><span class="badge">Nuevo</span></span><i class="g2"></i><span><b>Espresso</b>Sabrina Carpenter</span><span>2:55</span></div>
+      <div class="rk" style="grid-template-columns:28px 34px 40px 1fr 56px"><span class="n">5</span><span class="d up">▲5</span><i class="g8"></i><span><b>Si Antes Te Hubiera Conocido</b>KAROL G</span><span>3:15</span></div>
+      <div class="rk" style="grid-template-columns:28px 34px 40px 1fr 56px"><span class="n">6</span><span class="d dn">▼2</span><i class="g4"></i><span><b>Tu Misterioso Alguien</b>Quevedo</span><span>3:02</span></div>
+    </div>
+    <div class="tile"><h4>Espresso · dónde está en el top</h4>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0 12px" class="kpi"><div><b>4</b><small>Mejor puesto</small></div><div><b>27</b><small>Países en el top</small></div></div>
+      <div class="chips"><span class="chip"><span class="cc">US</span>1</span><span class="chip"><span class="cc">GB</span>2</span><span class="chip"><span class="cc">AU</span>2</span><span class="chip"><span class="cc">ES</span>11</span><span class="chip">+ 23</span></div></div>
+  </div>
+</div></template>
+
+<template id="C-rk"><div class="scroll" style="overflow:hidden">
+  <div style="position:relative;height:330px;background:linear-gradient(120deg,#ee0979,#ff6a00);overflow:hidden">
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(18,18,18,1))"></div>
+    <div style="position:absolute;left:24px;bottom:20px;display:flex;align-items:flex-end;gap:26px">
+      <span class="big1">1</span>
+      <i class="g7" style="width:200px;height:200px;border-radius:8px;display:block;box-shadow:0 20px 50px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.2)"></i>
+      <div style="padding-bottom:6px"><span style="font-size:13px;font-weight:600">Nº 1 del top mundial</span><div style="font-size:66px;font-weight:800;letter-spacing:-.04em;line-height:1;margin:6px 0 10px">DESPECHÁ</div><div style="font-size:14px">Rosalía · <span class="up" style="color:#fff">▲2</span> · 6 días en el nº 1 · en el top de 41 países</div>
+        <div style="display:flex;align-items:center;gap:16px;margin-top:14px"><span class="playc"><span class="ms f">play_arrow</span></span><span class="btnw" style="border-color:#fff">Toda la lista</span><span class="sel" style="background:rgba(0,0,0,.35)"><span class="ms" style="font-size:18px">public</span>Mundial<span class="ms" style="font-size:18px">expand_more</span></span></div></div>
+    </div>
+  </div>
+  <div class="pad" style="display:grid;grid-template-columns:1.4fr 1fr;gap:22px;margin-top:4px">
+    <div><div class="sh" style="font-size:18px">Sube con fuerza <small>Tendencias</small></div>
+      <div class="cards" style="margin:0 -12px">
+        <div class="card" style="width:150px"><i class="g8"></i><b>Si Antes Te…</b><small class="up">▲5 · KAROL G</small></div>
+        <div class="card" style="width:150px"><i class="g2"></i><b>Espresso</b><small><span class="badge">Nuevo</span></small></div>
+        <div class="card" style="width:150px"><i class="g5"></i><b>Let's Go 4</b><small class="up">▲12 · DJ GBR</small></div>
+      </div></div>
+    <div><div class="sh" style="font-size:18px">Tus canciones en el top</div>
+      <div class="mini"><span class="n">3</span><i class="g1"></i><span><b>LUNA</b>La has puesto 41 veces</span><span class="eq">=</span></div>
+      <div class="mini"><span class="n">9</span><i class="g10"></i><span><b>Pa' Ti</b>La has puesto 18 veces</span><span class="up">▲3</span></div>
+      <div class="mini"><span class="n">23</span><i class="g4"></i><span><b>Monaco</b>La has puesto 12 veces</span><span class="dn">▼4</span></div></div>
+  </div>
+</div></template>
+
+<!-- ════════ JUNTOS ════════ -->
+<template id="A-jt"><div class="scroll" style="background:linear-gradient(180deg,#3b1f5c,#121212 380px)">
+  <div class="hero" style="padding-top:44px"><div class="cov" style="background:#2a1840;grid-template-columns:1fr 1fr;padding:22px;gap:10px"><span class="av2" style="width:86px;height:86px;font-size:32px;background:#f2606d">Q</span><span class="av2" style="width:86px;height:86px;font-size:32px;background:#7b2ff7">L</span><span class="av2" style="width:86px;height:86px;font-size:32px;background:#0f9b8e">M</span><span class="av2" style="width:86px;height:86px;font-size:32px;background:#f7b733">+2</span></div>
+    <div><span class="tg">Sala pública · Escuchar juntos</span><h3n style="font-size:64px">Viernes de reggaetón</h3n><span style="font-size:14px"><b>Anfitrión: Quiet Dezzy</b> • 5 personas • código <b style="letter-spacing:.08em">K7Q-2MX</b> • en sincronía <span class="up">●</span></span></div></div>
+  <div class="acts"><span class="playc"><span class="ms f">pause</span></span><span class="btnw"><span class="ms" style="font-size:18px">qr_code_2</span>Invitar</span><span class="ms">add_circle</span><span class="ms">tune</span><span style="flex:1"></span><span class="btnw">Salir de la sala</span></div>
+  <div class="pad" style="display:grid;grid-template-columns:1fr 300px;gap:20px">
+    <div><div class="thead" style="grid-template-columns:28px 40px 1fr 120px 130px"><span>#</span><span style="grid-column:2/4">A continuación</span><span>Propuesta por</span><span>Votos</span></div>
+      <div class="row" style="grid-template-columns:28px 40px 1fr 120px 130px"><span class="n">1</span><i class="g3"></i><span><b>DtMF</b>Bad Bunny</span><span>Lucía</span><span class="vote">entra ya <span class="ms f up" style="font-size:18px">check_circle</span></span></div>
+      <div class="row h" style="grid-template-columns:28px 40px 1fr 120px 130px"><span class="n">2</span><i class="g1"></i><span><b>LUNA</b>Feid</span><span>Mario</span><span class="vote"><span class="bar2"><span style="right:40%"></span></span>3/5</span></div>
+      <div class="row" style="grid-template-columns:28px 40px 1fr 120px 130px"><span class="n">3</span><i class="g8"></i><span><b>Si Antes Te Hubiera Conocido</b>KAROL G</span><span>Ana</span><span class="vote"><span class="bar2"><span style="right:80%"></span></span>1/5</span></div>
+    </div>
+    <div class="tile" style="background:#181818;display:flex;flex-direction:column;height:260px"><h4>Chat de la sala</h4>
+      <div class="chat" style="flex:1"><div class="bub"><small>Lucía</small>¡ponme esa después!</div><div class="bub"><small>Mario</small>votad LUNA 🔥</div><div class="bub me">hecho, entra la siguiente</div></div>
+      <span class="inp" style="margin-top:10px">Escribe en la sala…<span style="flex:1"></span><span class="ms">send</span></span></div>
+  </div>
+</div></template>
+
+<template id="B-jt"><div class="scroll" style="display:grid;grid-template-columns:250px 1fr 300px;gap:14px;padding:18px">
+  <div class="tile" style="background:#181818"><h4>En la sala · 5</h4>
+    <div class="mini" style="grid-template-columns:36px 1fr"><span class="av2" style="background:#f2606d">Q</span><span><b>Quiet Dezzy</b><span class="badge">Anfitrión</span></span></div>
+    <div class="mini" style="grid-template-columns:36px 1fr auto"><span class="av2" style="background:#7b2ff7">L</span><span><b>Lucía</b>escuchando</span><span class="ms sub" style="font-size:18px">more_vert</span></div>
+    <div class="mini" style="grid-template-columns:36px 1fr auto"><span class="av2" style="background:#0f9b8e">M</span><span><b>Mario</b>escuchando</span><span class="ms sub" style="font-size:18px">more_vert</span></div>
+    <div class="mini" style="grid-template-columns:36px 1fr auto"><span class="av2" style="background:#f7b733">A</span><span><b>Ana</b>escuchando</span><span class="ms sub" style="font-size:18px">more_vert</span></div>
+    <h4 style="margin-top:14px">Pendiente de aprobación</h4>
+    <div class="mini" style="grid-template-columns:36px 1fr"><span class="av2" style="background:#555">J</span><span><b>Javi</b><span style="display:flex;gap:6px;margin-top:4px"><span class="btnf" style="height:26px;padding:0 10px;font-size:12px">Aceptar</span><span class="btnw" style="height:26px;padding:0 10px;font-size:12px">Rechazar</span></span></span></div>
+    <div style="position:absolute;left:16px;right:16px;bottom:16px;background:#232323;border-radius:10px;padding:10px;text-align:center"><span class="sub" style="font-size:12px">Código de la sala</span><b style="display:block;font-size:22px;letter-spacing:.12em">K7Q-2MX</b></div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+    <div class="tile" style="display:flex;gap:18px;align-items:center;background:linear-gradient(135deg,#5a1a22,#1f1f1f)"><i class="g7" style="width:150px;height:150px;border-radius:8px;display:block;flex:none"></i>
+      <div style="flex:1"><span class="badge g">● En sincronía</span><div style="font-size:30px;font-weight:800;letter-spacing:-.03em;margin:8px 0 2px">DESPECHÁ</div><div class="sub">Rosalía · la puso Quiet Dezzy</div><div class="prog" style="margin-top:14px">1:02<span class="t"></span>2:37</div></div></div>
+    <div class="tile" style="flex:1"><h4 style="display:flex">A continuación<span style="flex:1"></span><span class="btnw" style="height:28px"><span class="ms" style="font-size:16px">add</span>Proponer</span></h4>
+      <div class="mini" style="grid-template-columns:22px 40px 1fr auto"><span class="n">1</span><i class="g3"></i><span><b>DtMF</b>Bad Bunny · Lucía</span><span class="badge g">entra ya</span></div>
+      <div class="mini" style="grid-template-columns:22px 40px 1fr auto"><span class="n">2</span><i class="g1"></i><span><b>LUNA</b>Feid · Mario</span><span class="vote"><span class="ms f" style="font-size:18px;color:var(--acc)">thumb_up</span>3/5</span></div>
+      <div class="mini" style="grid-template-columns:22px 40px 1fr auto"><span class="n">3</span><i class="g8"></i><span><b>Si Antes Te Hubiera Conocido</b>KAROL G · Ana</span><span class="vote"><span class="ms" style="font-size:18px">thumb_up</span>1/5</span></div></div>
+  </div>
+  <div class="tile" style="background:#181818;display:flex;flex-direction:column"><h4>Chat</h4>
+    <div class="chat" style="flex:1"><div class="bub"><small>Lucía</small>¡ponme esa después!</div><div class="bub"><small>Mario</small>votad LUNA 🔥</div><div class="bub me">hecho, entra la siguiente</div><div class="bub"><small>Ana</small>temazo 💃</div></div>
+    <span class="inp" style="margin-top:10px">Escribe en la sala…<span style="flex:1"></span><span class="ms">send</span></span></div>
+</div></template>
+
+<template id="C-jt"><div class="scroll" style="background:radial-gradient(circle at 50% 38%,#c2185b 0,#4a0d2a 34%,#0b0b0b 72%)">
+  <div style="position:absolute;left:24px;top:20px"><span class="badge g">● En sincronía · 5 personas</span><div style="font-size:30px;font-weight:800;letter-spacing:-.03em;margin-top:6px">Viernes de reggaetón</div></div>
+  <div style="position:absolute;right:24px;top:20px;display:flex;gap:10px;align-items:center"><span class="sel" style="background:rgba(0,0,0,.4)"><span class="ms" style="font-size:18px">qr_code_2</span>K7Q-2MX</span><span class="circ s"><span class="ms">tune</span></span><span class="circ s"><span class="ms">logout</span></span></div>
+  <div style="position:absolute;left:50%;top:70px;transform:translateX(-50%);text-align:center">
+    <i class="g7" style="display:block;width:250px;height:250px;border-radius:10px;box-shadow:0 30px 70px rgba(0,0,0,.6);margin:0 auto"></i>
+    <div style="font-size:28px;font-weight:800;margin-top:14px">DESPECHÁ</div><div class="sub">Rosalía · la puso Quiet Dezzy</div></div>
+  <span class="av2" style="position:absolute;left:calc(50% - 230px);top:110px;width:54px;height:54px;font-size:18px;background:#7b2ff7">L<em style="position:absolute;right:-8px;top:-10px;font-style:normal;font-size:20px">🔥</em></span>
+  <span class="av2" style="position:absolute;left:calc(50% + 180px);top:90px;width:54px;height:54px;font-size:18px;background:#0f9b8e">M</span>
+  <span class="av2" style="position:absolute;left:calc(50% - 270px);top:260px;width:54px;height:54px;font-size:18px;background:#f7b733">A<em style="position:absolute;right:-8px;top:-10px;font-style:normal;font-size:20px">💃</em></span>
+  <span class="av2" style="position:absolute;left:calc(50% + 220px);top:250px;width:54px;height:54px;font-size:18px;background:#f2606d">Q</span>
+  <div class="chat" style="position:absolute;left:24px;bottom:24px;width:260px"><div class="bub" style="background:rgba(31,31,31,.85)"><small>Lucía</small>¡ponme esa después!</div><div class="bub" style="background:rgba(31,31,31,.85)"><small>Mario</small>votad LUNA 🔥</div><span class="inp" style="background:rgba(31,31,31,.85)">Escribe…<span style="flex:1"></span><span class="ms">send</span></span></div>
+  <div style="position:absolute;right:24px;bottom:24px;width:520px"><div class="sh" style="font-size:15px;margin-bottom:8px">Votad lo siguiente <small>+ Proponer</small></div>
+    <div style="display:flex;gap:10px">
+      <div style="flex:1;background:rgba(31,31,31,.85);border-radius:10px;padding:10px"><i class="g3" style="display:block;height:70px;border-radius:6px"></i><b style="display:block;font-size:13px;margin-top:6px">DtMF</b><span class="badge g">entra ya</span></div>
+      <div style="flex:1;background:rgba(31,31,31,.85);border-radius:10px;padding:10px;outline:2px solid var(--acc)"><i class="g1" style="display:block;height:70px;border-radius:6px"></i><b style="display:block;font-size:13px;margin-top:6px">LUNA</b><span class="vote"><span class="ms f" style="font-size:16px;color:var(--acc)">thumb_up</span>3/5</span></div>
+      <div style="flex:1;background:rgba(31,31,31,.85);border-radius:10px;padding:10px"><i class="g8" style="display:block;height:70px;border-radius:6px"></i><b style="display:block;font-size:13px;margin-top:6px">Si Antes Te…</b><span class="vote"><span class="ms" style="font-size:16px">thumb_up</span>1/5</span></div>
+    </div></div>
+</div></template>
+
+<!-- ════════ AJUSTES ════════ -->
+<template id="A-set"><div class="scroll" style="overflow:hidden"><div style="max-width:780px;margin:0 auto;padding:28px 24px">
+  <div style="display:flex;align-items:center;gap:14px"><b style="font-size:36px;letter-spacing:-.03em">Ajustes</b><span style="flex:1"></span><span class="inp" style="width:260px"><span class="ms">search</span>Buscar ajustes</span></div>
+  <div class="sec">Cuenta y móvil</div>
+  <div class="srow"><span class="av2" style="background:#1a8f86">Q</span><div>Quiet Dezzy<small>Móvil vinculado: Pixel 8 · sincronizado hace 1 min</small></div><span class="btnw">Desvincular</span></div>
+  <div class="sec">Apariencia</div>
+  <div class="srow"><div>Tema<small>Oscuro, claro o el de Windows</small></div><span class="sel">Oscuro<span class="ms" style="font-size:18px">expand_more</span></span></div>
+  <div class="srow"><div>Color de acento</div><span style="display:flex;gap:8px"><span class="sw on" style="background:#f2606d"></span><span class="sw" style="background:#7b2ff7"></span><span class="sw" style="background:#1db954"></span><span class="sw" style="background:#3b82f6"></span><span class="sw" style="background:#f7b733"></span></span></div>
+  <div class="srow"><div>Icono de la app<small>d·play con estrella</small></div><span class="btnw">Cambiar</span></div>
+  <div class="sec">Reproductor y audio</div>
+  <div class="srow"><div>Fundido entre canciones<small>6 segundos</small></div><span style="width:160px" class="bar2"><span style="right:50%"></span></span></div>
+  <div class="srow"><div>Normalizar volumen<small>Todas las canciones suenan igual de alto</small></div><span class="tgl on"></span></div>
+  <div class="srow"><div>Calidad de audio</div><span class="sel">Muy alta<span class="ms" style="font-size:18px">expand_more</span></span></div>
+  <div class="sec">Windows</div>
+  <div class="srow"><div>Abrir Dezzy al iniciar Windows</div><span class="tgl"></span></div>
+</div></div></template>
+
+<template id="B-set"><div class="scroll" style="display:grid;grid-template-columns:250px 1fr">
+  <nav style="background:#0e0e0e;padding:22px 12px;display:flex;flex-direction:column;gap:2px;font-size:14px">
+    <b style="font-size:26px;letter-spacing:-.03em;padding:0 12px 14px">Ajustes</b>
+    <span class="inp" style="height:36px;margin:0 4px 12px"><span class="ms" style="font-size:18px">search</span>Buscar</span>
+    <span style="display:flex;gap:12px;align-items:center;padding:9px 12px;border-radius:6px" class="sub"><span class="ms">phonelink</span>Móvil vinculado</span>
+    <span style="display:flex;gap:12px;align-items:center;padding:9px 12px;border-radius:6px;background:#232323;box-shadow:inset 3px 0 var(--acc)"><span class="ms f" style="color:var(--acc)">palette</span>Apariencia</span>
+    <span style="display:flex;gap:12px;align-items:center;padding:9px 12px" class="sub"><span class="ms">tune</span>Reproductor y audio</span>
+    <span style="display:flex;gap:12px;align-items:center;padding:9px 12px" class="sub"><span class="ms">download</span>Descargas</span>
+    <span style="display:flex;gap:12px;align-items:center;padding:9px 12px" class="sub"><span class="ms">keyboard</span>Atajos</span>
+    <span style="display:flex;gap:12px;align-items:center;padding:9px 12px" class="sub"><span class="ms">extension</span>Integraciones</span>
+    <span style="display:flex;gap:12px;align-items:center;padding:9px 12px" class="sub"><span class="ms">desktop_windows</span>Windows</span>
+    <span style="display:flex;gap:12px;align-items:center;padding:9px 12px" class="sub"><span class="ms">info</span>Acerca de</span>
+  </nav>
+  <div style="padding:26px 28px;display:flex;flex-direction:column;gap:14px">
+    <b style="font-size:30px;letter-spacing:-.03em">Apariencia</b>
+    <div class="tile"><h4>Tema</h4><div style="display:flex;gap:14px">
+      <div style="text-align:center;font-size:13px"><div style="width:150px;height:92px;border-radius:8px;background:#000;border:2px solid var(--acc);padding:8px;display:grid;grid-template-columns:24px 1fr;gap:5px"><i style="background:#1f1f1f;border-radius:3px"></i><i style="background:#1f1f1f;border-radius:3px"></i></div>Oscuro</div>
+      <div style="text-align:center;font-size:13px" class="sub"><div style="width:150px;height:92px;border-radius:8px;background:#f4f1f1;border:2px solid #333;padding:8px;display:grid;grid-template-columns:24px 1fr;gap:5px"><i style="background:#fff;border-radius:3px"></i><i style="background:#fff;border-radius:3px"></i></div>Claro</div>
+      <div style="text-align:center;font-size:13px" class="sub"><div style="width:150px;height:92px;border-radius:8px;background:linear-gradient(90deg,#000 50%,#f4f1f1 50%);border:2px solid #333"></div>Como Windows</div></div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="tile"><h4>Color de acento</h4><span style="display:flex;gap:10px;margin-top:6px"><span class="sw on" style="background:#f2606d"></span><span class="sw" style="background:#7b2ff7"></span><span class="sw" style="background:#1db954"></span><span class="sw" style="background:#3b82f6"></span><span class="sw" style="background:#f7b733"></span><span class="sw" style="background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red)"></span></span></div>
+      <div class="tile"><h4>Icono de la app</h4><span style="display:flex;gap:10px;align-items:center"><span class="logo" style="width:40px;height:40px">d</span><span class="logo" style="width:40px;height:40px;background:#7b2ff7">d</span><span class="logo" style="width:40px;height:40px;background:#111;border:1px solid #444">d</span><span class="btnw" style="margin-left:auto">Ver los 16</span></span></div>
+    </div>
+    <div class="tile" style="padding:4px 16px"><div class="srow"><div>Animaciones<small>Transiciones y vinilo girando</small></div><span class="tgl on"></span></div><div class="srow" style="border:0"><div>Fondo con el color de la portada</div><span class="tgl on"></span></div></div>
+  </div>
+</div></template>
+
+<template id="C-set"><div class="scroll" style="padding:24px">
+  <div style="display:flex;align-items:center;gap:18px;padding:20px;border-radius:14px;background:linear-gradient(120deg,#1a8f86,#183b5a)"><span class="av2" style="width:72px;height:72px;font-size:28px;background:#0e5f59;border:0">Q</span><div><b style="font-size:26px">Quiet Dezzy</b><div style="font-size:13px;opacity:.9">Móvil vinculado: Pixel 8 · <span style="color:#7dffb0">● sincronizado</span></div></div><span style="flex:1"></span><span class="btnw" style="border-color:#fff">Gestionar</span></div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px;opacity:.45">
+    <div class="tile" style="height:120px"><span class="ms f" style="color:var(--acc);font-size:28px">palette</span><b style="display:block;margin-top:10px">Apariencia</b><small class="sub">Oscuro · coral</small></div>
+    <div class="tile" style="height:120px;outline:2px solid var(--acc)"><span class="ms f" style="color:#4ee08f;font-size:28px">tune</span><b style="display:block;margin-top:10px">Reproductor</b><small class="sub">Fundido 6 s · volumen normalizado</small></div>
+    <div class="tile" style="height:120px"><span class="ms f" style="color:#7db7ff;font-size:28px">download</span><b style="display:block;margin-top:10px">Descargas</b><small class="sub">3,2 GB · Opus</small></div>
+    <div class="tile" style="height:120px"><span class="ms f" style="color:#f7b733;font-size:28px">keyboard</span><b style="display:block;margin-top:10px">Atajos</b><small class="sub">24 atajos</small></div>
+    <div class="tile" style="height:120px"><span class="ms f" style="color:#b06ab3;font-size:28px">extension</span><b style="display:block;margin-top:10px">Integraciones</b><small class="sub">Discord · Last.fm</small></div>
+    <div class="tile" style="height:120px"><span class="ms f" style="color:#ccc;font-size:28px">desktop_windows</span><b style="display:block;margin-top:10px">Windows</b><small class="sub">Bandeja del sistema</small></div>
+    <div class="tile" style="height:120px"><span class="ms f" style="color:#ccc;font-size:28px">info</span><b style="display:block;margin-top:10px">Acerca de</b><small class="sub">v1.4.0 · al día</small></div>
+  </div>
+  <aside style="position:absolute;right:0;top:0;bottom:0;width:420px;background:#181818;box-shadow:-20px 0 50px rgba(0,0,0,.6);padding:22px 24px">
+    <div style="display:flex;align-items:center;gap:10px"><span class="ms f" style="color:#4ee08f">tune</span><b style="font-size:22px">Reproductor y audio</b><span style="flex:1"></span><span class="ms sub">close</span></div>
+    <div class="srow" style="margin-top:10px"><div>Fundido entre canciones<small>6 segundos</small></div><span style="width:110px" class="bar2"><span style="right:50%"></span></span></div>
+    <div class="srow"><div>Normalizar volumen</div><span class="tgl on"></span></div>
+    <div class="srow"><div>Calidad del videoclip</div><span class="sel">720p<span class="ms" style="font-size:18px">expand_more</span></span></div>
+    <div class="srow"><div>Calidad</div><span class="sel">Muy alta<span class="ms" style="font-size:18px">expand_more</span></span></div>
+    <div class="srow"><div>Salida de audio<small>Altavoces (Realtek)</small></div><span class="ms sub">chevron_right</span></div>
+    
+  </aside>
+</div></template>
+
+<script>
+let v = 'A', s = 'map'
+const main = document.getElementById('main')
+const LAND = [[22,14,13,8],[27,23,5,4],[33,34,6,10],[51,12,6,5],[52,28,8,11],[70,14,17,9],[77,25,6,4],[85,37,6,4],[40,6,4,3]]
+const PINS = [['ES',49,15],['MX',23,23],['US',20,16],['BR',34,32],['AR',31,41],['GB',48,10],['DE',53,11],['JP',87,15],['CO',29,28],['NG',51,27],['IN',72,22],['AU',85,37],['KR',82,15]]
+function world(el) {
+  const glow = Number(el.dataset.glow || 1)
+  let d = ''
+  for (let y = 1; y < 50; y++) for (let x = 1; x < 100; x++) {
+    if (!LAND.some(([cx, cy, rx, ry]) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 < 1)) continue
+    const hot = glow > 1 && Math.random() > .82
+    d += `<circle cx="${x}" cy="${y}" r=".34" fill="${hot ? 'rgba(242,96,109,.55)' : glow > 1 ? '#3a1d22' : '#2e2e2e'}"/>`
+  }
+  for (const [c, x, y] of PINS) {
+    const sel = c === 'ES'
+    d += `<circle cx="${x}" cy="${y}" r="${sel ? 2.6 : 1.6}" fill="rgba(242,96,109,${sel ? .25 : .16})"/><circle cx="${x}" cy="${y}" r="${sel ? .9 : .6}" fill="#f2606d"/>`
+    if (glow === 1 || sel) d += `<text x="${x + 1.4}" y="${y + .5}" font-size="1.5" font-family="Poppins" font-weight="700" fill="${sel ? '#fff' : '#9a9a9a'}">${c}</text>`
+  }
+  el.innerHTML = `<svg viewBox="0 0 100 50" preserveAspectRatio="xMidYMid meet">${d}</svg>`
+}
+function render() {
+  main.innerHTML = document.getElementById(`${v}-${s}`).innerHTML
+  main.querySelectorAll('.world').forEach(world)
+  for (const k of ['map', 'rk', 'jt', 'set']) document.getElementById(`ico-${k}`).classList.toggle('on', s === k)
+  document.querySelectorAll('.vdesc').forEach((d) => d.classList.toggle('hide', d.dataset.v !== v))
+  document.querySelectorAll('#segV button').forEach((b) => b.classList.toggle('on', b.dataset.v === v))
+  document.querySelectorAll('#segS button').forEach((b) => b.classList.toggle('on', b.dataset.s === s))
+  history.replaceState(null, '', `#${v}-${s}`)
+}
+function go(V, S) { v = V; s = S; render() }
+document.getElementById('segV').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { v = b.dataset.v; render() } })
+document.getElementById('segS').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { s = b.dataset.s; render() } })
+const m = location.hash.match(/^#([ABC])-(map|rk|jt|set)$/)
+if (m) { v = m[1]; s = m[2] }
+render()
+</script>
+</body>
+</html>

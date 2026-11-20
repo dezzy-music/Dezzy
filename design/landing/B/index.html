@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dezzy · boceto B</title>
+<meta name="description" content="Dezzy: música sin anuncios con Canvas, letras sincronizadas, mapa musical y salas para escuchar juntos. Para Android y Windows.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500&family=Figtree:wght@400;500&display=swap">
+<style>
+/* Hallmark · shape: Split Studio · genre: atmospheric · theme: Ribbon (deal 3/3, seed dezzy-open-source-ad-free-music-2b73·6e135081·2026-11-19·r0) · job: try · draw: db0571
+ * hero: Counter · nav: floating pill · footer: statement (swapped from index columns: no real sitemap) · imagery: the product, 6 desktop captures · signature: the night drawn as slow light behind a capture of the Canvas playing · ribbon: two-in-the-morning
+ * axes: dark/grotesk-sans/warm · posture: committed · contrast: pass · fold: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H5 E4 S4 R4 V4 · weakest: R, five split rows risk monotony; the lead row gives the proof the larger share and the before/after is a machined panel, not a sixth split */
+@import url("./tokens.css");
+@import url("./base.css");
+
+:root {
+  color-scheme: dark;
+  --color-paper: oklch(13.2% 0.022 258); --color-paper-2: oklch(16.4% 0.024 258); --color-paper-3: oklch(20% 0.026 258);
+  --color-ink: oklch(93.5% 0.012 85); --color-ink-2: oklch(84% 0.014 85); --color-muted: oklch(72% 0.02 255);
+  --color-rule: oklch(27% 0.024 258); --color-rule-2: oklch(33% 0.024 258);
+  --color-accent: oklch(82% 0.095 68); --color-accent-ink: oklch(20% 0.03 62); --color-accent-soft: oklch(30% 0.045 68); --color-focus: oklch(86% 0.1 68);
+  --metal-hi: oklch(44% 0.012 255); --metal-lo: oklch(25% 0.014 255);
+  --sky-hi: oklch(11% 0.02 262); --sky-lo: oklch(19% 0.03 250); --land: oklch(9% 0.015 258);
+  --edge-light: inset 0 1px 0 oklch(70% 0.01 255 / 0.18);
+  --shadow-part: 0 1px 0 oklch(4% 0.01 258 / 0.6), 0 10px 18px -6px oklch(4% 0.01 258 / 0.7);
+  --shadow-panel: 0 1px 0 oklch(4% 0.01 258 / 0.5), 0 24px 48px -16px oklch(4% 0.01 258 / 0.8);
+  --pill-h: 52px; --shadow-well: inset 0 2px 6px oklch(4% 0.01 258 / 0.7);
+}
+
+[data-kind="product"] { aspect-ratio: 16 / 10; border-radius: var(--radius-card); background: var(--color-paper-2); outline: 1px solid var(--color-rule-2); outline-offset: -1px; box-shadow: var(--shadow-panel); }
+[data-kind="product"] > img { filter: none; }
+body { font-size: 1.0625rem; line-height: 1.6; }
+h1, h2 { line-height: 1.04; }
+.muted { color: var(--color-muted); }
+
+/* nav: floating pill */
+.pill-nav { position: fixed; top: var(--space-md); left: 50%; translate: -50% 0; z-index: var(--z-sticky-nav); display: flex; align-items: center; gap: var(--space-lg); padding: var(--space-2xs) var(--space-2xs) var(--space-2xs) var(--space-lg); min-height: 56px; border-radius: var(--radius-pill); background: color-mix(in oklab, var(--color-paper-2) 78%, transparent); backdrop-filter: blur(14px); box-shadow: var(--edge-light), var(--shadow-panel); }
+.wordmark { font-family: var(--font-display); font-weight: 500; font-size: var(--text-lg); text-decoration: none; }
+.pill-nav a:not(.part) { font-size: var(--text-sm); color: var(--color-muted); text-decoration: none; transition: color var(--dur-micro) var(--ease-out); }
+.pill-nav a:not(.part):hover { color: var(--color-ink); }
+
+/* machined pills */
+.part { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-xs); min-height: var(--pill-h); padding-inline: var(--space-lg); border-radius: var(--radius-pill); font-weight: 500; text-decoration: none; cursor: pointer; border: 1px solid var(--color-rule-2); color: var(--color-ink); background: linear-gradient(to bottom, var(--metal-hi), var(--metal-lo)); box-shadow: var(--edge-light), var(--shadow-part); transition: transform var(--dur-micro) var(--ease-out), box-shadow var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out); }
+.part.lit { background: var(--color-accent); color: var(--color-accent-ink); border-color: var(--color-accent); }
+.part:hover { transform: translateY(-1px); }
+.part:not(.lit):hover { color: var(--color-accent); }
+.part:active { transform: translateY(1px); box-shadow: var(--edge-light); }
+.part:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 3px; transition: none; }
+.part:disabled, .part[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; transform: none; }
+.part.small { min-height: 44px; padding-inline: var(--space-md); font-size: var(--text-sm); }
+.actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); }
+
+/* hero: Counter over the drawn night */
+.hero { position: relative; min-height: 100svh; display: grid; align-items: center; padding-block: 112px var(--space-2xl); isolation: isolate; background: linear-gradient(to bottom, var(--sky-hi), var(--sky-lo) 70%, var(--land)); }
+.hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; }
+.hero::after { content: ""; position: absolute; inset: auto 0 0 0; height: 30%; z-index: -1; background: linear-gradient(to bottom, transparent, var(--color-paper)); }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-2xl); align-items: center; }
+.hero .split { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+.hero h1 { max-width: 10ch; }
+.hero .lead { margin-block: var(--space-lg) var(--space-xl); color: var(--color-ink-2); max-width: 30ch; }
+.caption { margin-top: var(--space-sm); font-size: var(--text-sm); color: var(--color-muted); }
+figure { margin: 0; }
+
+/* rows: text left, proof right, always */
+.row { padding-block: var(--section-gap-s); }
+.row.lead-row .split { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); }
+.row h2 { max-width: 12ch; }
+.row p.body { margin-top: var(--space-lg); color: var(--color-muted); max-width: 34ch; }
+
+/* before / after: one machined panel with a real switch */
+.panel { border-radius: var(--radius-card); background: linear-gradient(to bottom, var(--color-paper-3), var(--color-paper-2)); box-shadow: var(--edge-light), var(--shadow-panel); padding: var(--space-2xl); }
+.panel-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: var(--space-lg); margin-bottom: var(--space-xl); }
+.seg { display: inline-flex; padding: var(--space-2xs); border-radius: var(--radius-pill); background: var(--color-paper); box-shadow: var(--shadow-well); }
+.seg button { min-height: 44px; padding-inline: var(--space-lg); border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--color-muted); white-space: nowrap; cursor: pointer; transition: background-color var(--dur-short) var(--ease-out), color var(--dur-short) var(--ease-out); }
+.seg button:hover { color: var(--color-ink); }
+.seg button[aria-pressed="true"] { background: linear-gradient(to bottom, var(--metal-hi), var(--metal-lo)); color: var(--color-ink); box-shadow: var(--edge-light), var(--shadow-part); }
+.seg button:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; transition: none; }
+.levels { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-lg); }
+.levels li { border-top: 1px solid var(--color-rule-2); padding-top: var(--space-md); }
+.levels .k { display: block; font-size: var(--text-sm); color: var(--color-muted); }
+.levels .v { display: block; margin-top: var(--space-xs); font-family: var(--font-display); font-size: var(--text-xl); line-height: 1.2; transition: opacity var(--dur-short) var(--ease-out); }
+.levels[data-state="was"] .v { color: var(--color-muted); }
+
+/* close */
+.close { padding-block: var(--section-gap) var(--section-gap-s); }
+.close .note { margin-block: var(--space-lg) var(--space-xl); color: var(--color-muted); max-width: 36ch; }
+
+/* footer: statement */
+footer { border-top: 1px solid var(--color-rule); padding-block: var(--space-3xl) var(--space-2xl); }
+footer .say { font-family: var(--font-display); font-size: var(--text-2xl); line-height: 1.2; max-width: 26ch; }
+footer ul { list-style: none; padding: 0; margin: var(--space-xl) 0 var(--space-lg); display: flex; flex-wrap: wrap; gap: var(--space-xl); font-size: var(--text-sm); }
+footer a { color: var(--color-muted); text-decoration: none; }
+footer a:hover { color: var(--color-ink); text-decoration: underline; }
+footer small { color: var(--color-muted); font-size: var(--text-sm); }
+
+@media (max-width: 60rem) {
+  .split, .hero .split, .row.lead-row .split { grid-template-columns: minmax(0, 1fr); }
+  .levels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pill-nav .hide-s { display: none; }
+  .panel { padding: var(--space-lg); }
+  .seg button { padding-inline: var(--space-md); }
+}
+</style>
+</head>
+<body>
+<nav class="pill-nav" aria-label="Principal">
+  <a class="wordmark" href="#">Dezzy</a>
+  <a class="hide-s" href="#mapa">Mapa</a>
+  <a class="hide-s" href="#letra">Letra</a>
+  <a class="hide-s" href="#juntos">Juntos</a>
+  <a class="part lit small" href="#descargar">Descargar</a>
+</nav>
+
+<main>
+  <section class="hero">
+    <canvas aria-hidden="true"></canvas>
+    <div class="container split">
+      <div>
+        <h1>La música que suena a deshoras.</h1>
+        <p class="lead">Sin anuncios entre canciones, con la letra siguiendo cada palabra.</p>
+        <div class="actions">
+          <a class="part lit" href="https://github.com/dezzy-music/Dezzy/releases/latest">Descargar para Android</a>
+          <a class="part" href="https://github.com/dezzy-music/Dezzy/releases">Descargar para Windows</a>
+        </div>
+      </div>
+      <figure>
+        <div data-slot="hero" data-kind="product" data-alt="Dezzy para Windows reproduciendo una canción con su Canvas"><img src="../img/playing.webp" alt="Dezzy para Windows reproduciendo una canción con su Canvas"></div>
+        <figcaption class="caption">Dezzy para Windows, con el Canvas de la canción a la derecha.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="row lead-row" id="letra">
+    <div class="container split">
+      <div>
+        <h2>Canta sin perderte un verso.</h2>
+        <p class="body">Cada palabra se ilumina cuando suena. Tradúcela o comparte una línea como tarjeta.</p>
+      </div>
+      <figure><div data-slot="lyrics" data-kind="product" data-alt="Reproductor a pantalla completa con la letra sincronizada"><img src="../img/lyrics.webp" alt="Reproductor a pantalla completa con la letra sincronizada" loading="lazy"></div></figure>
+    </div>
+  </section>
+
+  <section class="row" id="mapa">
+    <div class="container split">
+      <div>
+        <h2>Lo que suena en cada país.</h2>
+        <p class="body">Toca un país en el mapa, mira su top con sus géneros y ponlo entero.</p>
+      </div>
+      <figure><div data-slot="map" data-kind="product" data-alt="Mapa musical con el top de España"><img src="../img/map.webp" alt="Mapa musical con el top de España" loading="lazy"></div></figure>
+    </div>
+  </section>
+
+  <section class="row" id="juntos">
+    <div class="container split">
+      <div>
+        <h2>Una sala, un código, la misma canción.</h2>
+        <p class="body">Crea una sala y comparte el código, o entra en una de las salas públicas abiertas ahora.</p>
+      </div>
+      <figure><div data-slot="together" data-kind="product" data-alt="Pantalla Escuchar juntos con salas públicas"><img src="../img/together.webp" alt="Pantalla Escuchar juntos con salas públicas" loading="lazy"></div></figure>
+    </div>
+  </section>
+
+  <section class="row">
+    <div class="container">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Pasa de lo de siempre a Dezzy.</h2>
+          <div class="seg" role="group" aria-label="Comparar">
+            <button type="button" aria-pressed="false" data-set="was">Lo de siempre</button>
+            <button type="button" aria-pressed="true" data-set="now">Con Dezzy</button>
+          </div>
+        </div>
+        <ul class="levels" data-state="now" aria-live="polite">
+          <li><span class="k">Entre canciones</span><span class="v" data-was="un anuncio" data-now="la siguiente">la siguiente</span></li>
+          <li><span class="k">La letra</span><span class="v" data-was="un bloque fijo" data-now="sigue la voz">sigue la voz</span></li>
+          <li><span class="k">Para empezar</span><span class="v" data-was="crear una cuenta" data-now="abrir y escuchar">abrir y escuchar</span></li>
+          <li><span class="k">El código</span><span class="v" data-was="cerrado" data-now="abierto, GPL-3.0">abierto, GPL-3.0</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="close" id="descargar">
+    <div class="container split">
+      <div>
+        <h2>En el móvil y en el ordenador.</h2>
+        <p class="note">Android 6.0 o superior y Windows. Vincula el móvil con un QR y manda desde el bolsillo.</p>
+        <div class="actions">
+          <a class="part lit" href="https://github.com/dezzy-music/Dezzy/releases/latest">Descargar para Android</a>
+          <a class="part" href="https://github.com/dezzy-music/Dezzy/releases">Descargar para Windows</a>
+        </div>
+      </div>
+      <figure><div data-slot="link" data-kind="product" data-alt="Pantalla para vincular el móvil con un código QR"><img src="../img/welcome.webp" alt="Pantalla para vincular el móvil con un código QR" loading="lazy"></div></figure>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    <p class="say">Gratis, sin anuncios y con el código a la vista.</p>
+    <ul>
+      <li><a href="https://github.com/dezzy-music/Dezzy">Código en GitHub</a></li>
+      <li><a href="https://github.com/dezzy-music/Dezzy/releases">Versiones</a></li>
+      <li><a href="https://github.com/dezzy-music/Dezzy/issues">Avisar de un fallo</a></li>
+    </ul>
+    <small>Dezzy 3.0.8. Software libre con licencia GPL-3.0, hecho a partir de OpenTune.</small>
+  </div>
+</footer>
+
+<script>
+(() => {
+  /* the hour drawn as light: a far row of lit windows on a low horizon, long slow streaks above */
+  const cv = document.querySelector('.hero canvas'); const cx = cv.getContext('2d');
+  const css = getComputedStyle(document.documentElement);
+  const lit = css.getPropertyValue('--color-accent').trim(); const ink = css.getPropertyValue('--color-muted').trim();
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let w, h, pts, lines;
+  const seed = (n) => { let s = n; return () => (s = (s * 16807) % 2147483647) / 2147483647; };
+  const size = () => {
+    const r = devicePixelRatio || 1; w = cv.clientWidth; h = cv.clientHeight; cv.width = w * r; cv.height = h * r; cx.setTransform(r, 0, 0, r, 0, 0);
+    const rnd = seed(73); pts = Array.from({ length: Math.round(w / 9) }, () => ({ x: rnd() * w, y: h * 0.78 + rnd() * h * 0.06, a: 0.25 + rnd() * 0.75, p: rnd() * 6.28 }));
+    lines = Array.from({ length: 14 }, () => ({ y: h * (0.08 + rnd() * 0.55), x: rnd() * w, len: 120 + rnd() * 360, v: 0.08 + rnd() * 0.22 }));
+  };
+  const frame = (t) => {
+    cx.clearRect(0, 0, w, h);
+    cx.globalAlpha = 0.18; cx.strokeStyle = ink; cx.lineWidth = 1;
+    for (const l of lines) { const x = ((l.x + t * l.v * 0.06) % (w + l.len)) - l.len; cx.beginPath(); cx.moveTo(x, l.y); cx.lineTo(x + l.len, l.y - l.len * 0.04); cx.stroke(); }
+    cx.fillStyle = lit;
+    for (const p of pts) { cx.globalAlpha = p.a * (0.7 + 0.3 * Math.sin(t / 1400 + p.p)); cx.fillRect(p.x, p.y, 1.6, 1.6); }
+    cx.globalAlpha = 1;
+    if (!still) requestAnimationFrame(frame);
+  };
+  size(); addEventListener('resize', size); requestAnimationFrame(frame);
+
+  const seg = document.querySelectorAll('.seg button'); const lv = document.querySelector('.levels');
+  seg.forEach((b) => b.addEventListener('click', () => {
+    seg.forEach((o) => o.setAttribute('aria-pressed', o === b)); lv.dataset.state = b.dataset.set;
+    lv.querySelectorAll('.v').forEach((v) => { v.textContent = v.dataset[b.dataset.set]; });
+  }));
+})();
+</script>
+<script>window.hallmarkSlots = (m) => { for (const [k, v] of Object.entries(m)) { const s = document.querySelector(`[data-slot="${k}"]`); if (!s) continue; const im = new Image(); im.src = typeof v === 'string' ? v : v.src; im.alt = (typeof v === 'object' && v.alt) || s.dataset.alt || ''; s.querySelectorAll(':scope > img').forEach((o) => o.remove()); s.prepend(im); } };
+document.querySelectorAll('[data-slot] img').forEach((i) => { if (i.complete && !i.naturalWidth) i.remove(); else i.addEventListener('error', () => i.remove(), { once: true }); });</script>
+</body>
+</html>

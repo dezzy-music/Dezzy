@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dezzy · boceto oscuro</title>
+<meta name="description" content="Dezzy: toda tu música sin anuncios, gratis y libre para Android y Windows.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mona+Sans:wdth,wght@100,400;100,500;125,300;125,500&display=swap">
+<style>
+/* Hallmark · shape: Poster then Rows · genre: atmospheric · theme: custom (by request: pure black, no screenshots) · job: try · draw: manual
+ * hero: Poster · nav: edge-aligned · footer: mast · imagery: none, type only (by request) · signature: a lyric line lighting word by word, set huge
+ * axes: dark/grotesk-sans/neutral · surface: absolute · posture: committed · contrast: pass · fold: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E5 S4 R4 V4 · weakest: H, a type-only hero can read as any app; the lyric line below it shows the one thing Dezzy does that others do not */
+/* Hallmark · waive 84 · user asked for no app screenshots · the product is shown as type: the synced lyric line */
+/* Hallmark · waive 7b · stamp says surface: absolute, contrast passes · el fondo negro puro de Dezzy lo pidió el usuario, el texto queda al 96% */
+/* Hallmark · waive 22 · no anchor hue on the page · Dezzy va en blanco y negro sin ningún tono, por petición expresa del usuario */
+@import url("./tokens.css");
+@import url("./base.css");
+
+:root {
+  color-scheme: dark;
+  --color-paper: oklch(0% 0 0); --color-paper-2: oklch(11% 0 0); --color-paper-3: oklch(16% 0 0);
+  --color-ink: oklch(96% 0 0); --color-ink-2: oklch(84% 0 0); --color-muted: oklch(66% 0 0); --color-dim: oklch(34% 0 0);
+  --color-rule: oklch(22% 0 0); --color-rule-2: oklch(32% 0 0);
+  --color-accent: oklch(96% 0 0); --color-accent-ink: oklch(0% 0 0); --color-focus: oklch(96% 0 0);
+  --font-display: "Mona Sans", ui-sans-serif, system-ui, sans-serif; --font-body: var(--font-display);
+  --display-weight: 500; --tracking-display: -0.03em;
+}
+h1, h2, h3 { font-stretch: 125%; }
+body { font-stretch: 100%; }
+
+/* nav */
+.nav { position: sticky; top: 0; z-index: var(--z-sticky-nav); background: color-mix(in oklab, var(--color-paper) 86%, transparent); backdrop-filter: blur(12px); }
+.nav .container { display: flex; align-items: center; justify-content: space-between; min-height: 72px; gap: var(--space-lg); }
+.wordmark { font-family: var(--font-display); font-stretch: 125%; font-weight: 500; font-size: var(--text-xl); letter-spacing: -0.03em; text-decoration: none; }
+.nav nav { display: flex; gap: var(--space-xl); align-items: center; font-size: var(--text-sm); }
+.nav nav a:not(.btn) { color: var(--color-muted); text-decoration: none; transition: color var(--dur-micro) var(--ease-out); }
+.nav nav a:not(.btn):hover { color: var(--color-ink); }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding-inline: var(--space-xl); border-radius: var(--radius-pill); border: 1px solid var(--color-ink); font-weight: 500; text-decoration: none; cursor: pointer; transition: background-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out); }
+.btn-primary { background: var(--color-ink); color: var(--color-accent-ink); }
+.btn-primary:hover { background: var(--color-ink-2); border-color: var(--color-ink-2); }
+.btn-ghost { background: transparent; color: var(--color-ink); border-color: var(--color-rule-2); }
+.btn-ghost:hover { border-color: var(--color-ink); }
+.btn:active { transform: translateY(1px); }
+.btn:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 4px; transition: none; }
+.btn:disabled, .btn[aria-disabled="true"] { opacity: 0.4; cursor: not-allowed; transform: none; }
+.btn-sm { min-height: 40px; padding-inline: var(--space-lg); font-size: var(--text-sm); }
+.actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); }
+:root { --radius-pill: 999px; }
+
+/* hero: Poster */
+.hero { padding-block: var(--space-4xl) var(--space-3xl); text-align: center; }
+.hero h1 { font-size: clamp(3.25rem, 10vw, 10.5rem); font-weight: 300; line-height: 0.96; max-width: 11ch; margin-inline: auto; }
+.hero .lead { margin: var(--space-xl) auto var(--space-2xl); color: var(--color-muted); max-width: 34ch; }
+.hero .actions { justify-content: center; }
+.hero .meta { margin-top: var(--space-lg); font-size: var(--text-sm); color: var(--color-muted); }
+
+/* signature: the lyric line */
+.lyric { padding-block: var(--space-xl) var(--section-gap); }
+.lyric .line { font-family: var(--font-display); font-stretch: 125%; font-weight: 300; font-size: clamp(2.5rem, 6vw, 6rem); line-height: 1.04; letter-spacing: -0.03em; max-width: 16ch; overflow-wrap: break-word; min-width: 0; }
+.lyric .line span { transition: color var(--dur-short) var(--ease-out); }
+.lyric.playing .line span { color: var(--color-dim); }
+.lyric.playing .line span.on { color: var(--color-ink); }
+.lyric .note { margin-top: var(--space-xl); color: var(--color-muted); max-width: 40ch; }
+
+/* features: Rows */
+.features { padding-block: var(--section-gap-s); }
+.features h2 { margin-bottom: var(--space-2xl); }
+.rows { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--color-rule); }
+.rows li { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--space-2xl); align-items: baseline; padding-block: var(--space-xl); border-bottom: 1px solid var(--color-rule); }
+.rows h3 { font-size: clamp(1.75rem, 3.2vw, 3rem); font-weight: 300; max-width: none; }
+.rows p { color: var(--color-muted); font-size: var(--text-lead); line-height: 1.45; }
+
+/* before / after */
+.compare-wrap { padding-block: var(--section-gap-s); }
+.compare { width: 100%; border-collapse: collapse; margin-top: var(--space-2xl); font-size: var(--text-lead); }
+.compare th, .compare td { text-align: left; padding: var(--space-lg) var(--space-md) var(--space-lg) 0; border-bottom: 1px solid var(--color-rule); }
+.compare thead th { font-size: var(--text-sm); font-weight: 400; color: var(--color-muted); }
+.compare tbody th { font-weight: 400; color: var(--color-muted); width: 30%; }
+.compare td.was { color: var(--color-muted); text-decoration: line-through; text-decoration-color: var(--color-rule-2); }
+
+/* close */
+.close { padding-block: var(--section-gap) var(--section-gap-s); text-align: center; border-top: 1px solid var(--color-rule); }
+.close h2 { margin-inline: auto; max-width: 12ch; font-size: clamp(3rem, 9vw, 9rem); line-height: 0.96; font-weight: 300; }
+.close .facts { margin: var(--space-xl) auto var(--space-2xl); color: var(--color-muted); max-width: 44ch; }
+.close .actions { justify-content: center; }
+
+/* footer: mast */
+footer { border-top: 1px solid var(--color-rule); padding-block: var(--space-3xl) var(--space-xl); }
+footer .mast { font-family: var(--font-display); font-stretch: 125%; font-weight: 500; letter-spacing: -0.05em; font-size: clamp(4.5rem, 17vw, 16rem); line-height: 0.85; }
+footer ul { list-style: none; padding: 0; margin: var(--space-xl) 0 var(--space-lg); display: flex; flex-wrap: wrap; gap: var(--space-xl); font-size: var(--text-sm); }
+footer a { color: var(--color-muted); text-decoration: none; }
+footer a:hover { color: var(--color-ink); text-decoration: underline; }
+footer small { color: var(--color-muted); font-size: var(--text-sm); }
+
+@media (max-width: 60rem) {
+  .rows li { grid-template-columns: minmax(0, 1fr); gap: var(--space-sm); }
+  .nav nav .hide-s { display: none; }
+}
+</style>
+</head>
+<body>
+<header class="nav">
+  <div class="container">
+    <a class="wordmark" href="#">Dezzy</a>
+    <nav aria-label="Principal">
+      <a class="hide-s" href="#funciones">Funciones</a>
+      <a class="hide-s" href="#cambia">Qué cambia</a>
+      <a class="btn btn-primary btn-sm" href="#descargar">Descargar</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="container">
+      <h1>Toda tu música. Ningún anuncio.</h1>
+      <p class="lead">Gratis y libre para Android y Windows, sin cuenta ni cortes.</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="https://github.com/dezzy-music/Dezzy/releases/latest">Descargar para Android</a>
+        <a class="btn btn-ghost" href="https://github.com/dezzy-music/Dezzy/releases">Descargar para Windows</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="lyric" aria-label="Letras sincronizadas">
+    <div class="container">
+      <p class="line" aria-label="Cada palabra se enciende justo cuando suena."><span>Cada</span> <span>palabra</span> <span>se</span> <span>enciende</span> <span>justo</span> <span>cuando</span> <span>suena.</span></p>
+      <p class="note">Así se ven las letras en Dezzy: sincronizadas con la voz y listas para traducir o compartir.</p>
+    </div>
+  </section>
+
+  <section class="features" id="funciones">
+    <div class="container">
+      <h2>Lo que trae dentro.</h2>
+      <ul class="rows">
+        <li><h3>Canvas</h3><p>El vídeo corto de cada canción, en bucle mientras suena.</p></li>
+        <li><h3>Mapa musical</h3><p>El top de cada país, a un toque de distancia.</p></li>
+        <li><h3>Escuchar juntos</h3><p>Una sala, un código y la misma canción a la vez.</p></li>
+        <li><h3>Dezzy Connect</h3><p>El móvil como mando del ordenador, vinculado con un QR.</p></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="compare-wrap" id="cambia">
+    <div class="container">
+      <h2>Lo que cambia.</h2>
+      <table class="compare">
+        <thead><tr><th scope="col">En</th><th scope="col">Lo habitual</th><th scope="col">Dezzy</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Entre canciones</th><td class="was">un anuncio</td><td>la siguiente</td></tr>
+          <tr><th scope="row">Para empezar</th><td class="was">crear una cuenta</td><td>abrir y escuchar</td></tr>
+          <tr><th scope="row">El precio</th><td class="was">una suscripción</td><td>gratis</td></tr>
+          <tr><th scope="row">El código</th><td class="was">cerrado</td><td>abierto, GPL-3.0</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="close" id="descargar">
+    <div class="container">
+      <h2>Ponle play esta noche.</h2>
+      <p class="facts">Dezzy 3.0.8 para Android 6.0 o superior y para Windows.</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="https://github.com/dezzy-music/Dezzy/releases/latest">Descargar para Android</a>
+        <a class="btn btn-ghost" href="https://github.com/dezzy-music/Dezzy/releases">Descargar para Windows</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="mast">Dezzy</div>
+    <ul>
+      <li><a href="https://github.com/dezzy-music/Dezzy">Código en GitHub</a></li>
+      <li><a href="https://github.com/dezzy-music/Dezzy/releases">Versiones</a></li>
+      <li><a href="https://github.com/dezzy-music/Dezzy/issues">Avisar de un fallo</a></li>
+    </ul>
+    <small>Software libre con licencia GPL-3.0, hecho a partir de OpenTune.</small>
+  </div>
+</footer>
+
+<script>
+(() => {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const box = document.querySelector('.lyric'); const words = [...box.querySelectorAll('.line span')];
+  let i = 0, timer = null;
+  const tick = () => { words.forEach((w, n) => w.classList.toggle('on', n < i)); i = i > words.length + 3 ? 0 : i + 1; };
+  new IntersectionObserver(([e]) => {
+    if (e.isIntersecting && !timer) { box.classList.add('playing'); timer = setInterval(tick, 460); }
+    else if (!e.isIntersecting && timer) { clearInterval(timer); timer = null; }
+  }, { threshold: 0.4 }).observe(box);
+})();
+</script>
+</body>
+</html>

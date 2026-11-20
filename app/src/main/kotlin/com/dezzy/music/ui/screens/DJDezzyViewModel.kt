@@ -12,6 +12,7 @@ import androidx.media3.common.MediaMetadata
 import com.dezzy.music.R
 import com.dezzy.music.ai.DjDezzyClient
 import com.dezzy.music.ai.DjSetBuilder
+import com.dezzy.music.ai.TasteProfile
 import com.dezzy.music.ai.ElevenLabsTtsClient
 import com.dezzy.music.ai.OmniVoiceTtsClient
 import com.dezzy.music.ai.GeminiDjClient
@@ -112,14 +113,37 @@ class DJDezzyViewModel @Inject constructor(
     @Volatile private var djSet: DjSetBuilder.DjSet? = null
     private var djJob: kotlinx.coroutines.Job? = null
 
-    fun handleUserRequest(requestText: String, playerConnection: PlayerConnection) {
-        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            val prefsForApi = context.dataStore.data.first()
+    /** Gustos del oyente; se recalcula al empezar cada sesión. */
+    @Volatile private var profile: TasteProfile? = null
 
+    private suspend fun loadProfile(): TasteProfile? =
+        runCatching { TasteProfile.build(database, context) }.getOrNull()?.also { profile = it }
+
+    /** Búsqueda de respaldo con tu gusto (tu artista más escuchado), no un «Top Hits» genérico. */
+    private fun tasteQuery(): String? {
+        val p = profile ?: return null
+        val top = p.songScore.entries.sortedByDescending { it.value }.take(10)
+            .mapNotNull { p.songs[it.key]?.artists?.firstOrNull()?.name }
+            .groupingBy { it }.eachCount().maxByOrNull { it.value }?.key
+        return top?.let { "$it mix" }
+    }
+
+    /** «Canción de Artista» de lo que más escuchas ahora, para dar contexto a la IA. */
+    private fun tasteContext(): String? {
+        val p = profile ?: return null
+        return p.songScore.entries.sortedByDescending { it.value }.take(8)
+            .mapNotNull { p.songs[it.key] }
+            .joinToString(", ") { "${it.title} de ${it.artists.firstOrNull()?.name ?: "?"}" }
+            .ifBlank { null }
+    }
+
+    fun handleUserRequest(requestText: String, playerConnection: PlayerConnection) {
+        djJob?.cancel()
+        djJob = viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             _statusText.value = "Analizando el sentimiento de tu mensaje..."
             val sentiment = fetchSentiment(requestText)
-            val moodQuery = if (sentiment == "negative") "triste" else if (sentiment == "positive") "feliz" else ""
             val contextualRequest = "$requestText (El usuario se siente $sentiment)"
+            loadProfile()
 
             _statusText.value = "Interpretando tu petición con IA..."
             _uiState.value = DJUiState.GENERATING
@@ -127,10 +151,11 @@ class DJDezzyViewModel @Inject constructor(
 
             _statusText.value = "Buscando \"$intelligentQuery\"..."
             val result = com.dezzy.music.innertube.YouTube.search(intelligentQuery, com.dezzy.music.innertube.YouTube.SearchFilter.FILTER_SONG).getOrNull()
-            _statusText.value = "Armando la sesión sin repetir artistas..."
+            _statusText.value = "Armando la sesión a tu gusto..."
             val requestSet = DjSetBuilder.buildFromRequest(
                 intelligentQuery,
                 result?.items?.filterIsInstance<com.dezzy.music.innertube.models.SongItem>().orEmpty(),
+                profile,
             )
             val mediaItems = requestSet.items
 
@@ -172,7 +197,7 @@ class DJDezzyViewModel @Inject constructor(
 
                 if (userRequest == null) {
                     _statusText.value = "Armando tu sesión: favoritas, recuerdos y descubrimientos..."
-                    val session = runCatching { DjSetBuilder.buildSession(database) }.getOrNull()
+                    val session = loadProfile()?.let { p -> runCatching { DjSetBuilder.buildSession(p) }.getOrNull() }
                     if (session != null && session.items.size >= 5) {
                         djSet = session
                         withContext(Dispatchers.Main) {
@@ -194,8 +219,10 @@ class DJDezzyViewModel @Inject constructor(
                     }
                 }
 
+                if (profile == null) loadProfile()
                 val topSongs = database.songsByPlayTimeAsc().first().reversed().take(5)
-                val topContext = topSongs.joinToString(", ") { "${it.title} de ${it.artists.firstOrNull()?.name ?: "Unknown"}" }
+                val topContext = tasteContext()
+                    ?: topSongs.joinToString(", ") { "${it.title} de ${it.artists.firstOrNull()?.name ?: "Unknown"}" }
 
                 val geminiClient = GeminiDjClient(httpClient)
                 val requestText = userRequest ?: "Armame un mix para descubrir musica fresca basándote en: $topContext"
@@ -207,7 +234,7 @@ class DJDezzyViewModel @Inject constructor(
                     agentResponseResult.getOrThrow()
                 } else {
                     // Fallback autónomo inteligente cuando la IA externa no está disponible
-                    val fallbackSearch = if (topSongs.isNotEmpty()) {
+                    val fallbackSearch = tasteQuery() ?: if (topSongs.isNotEmpty()) {
                         val favArtist = topSongs.first().artists.firstOrNull()?.name ?: topSongs.first().title
                         "$favArtist mix"
                     } else {
@@ -271,13 +298,16 @@ class DJDezzyViewModel @Inject constructor(
                     var agentSet = DjSetBuilder.buildFromRequest(
                         agentRes.searchQuery,
                         result?.items?.filterIsInstance<com.dezzy.music.innertube.models.SongItem>().orEmpty(),
+                        profile,
                     )
 
                     if (agentSet.items.isEmpty()) {
-                        val fallbackResult = com.dezzy.music.innertube.YouTube.search("Top Hits 2026", com.dezzy.music.innertube.YouTube.SearchFilter.FILTER_SONG).getOrNull()
+                        val backup = tasteQuery() ?: "Top Hits 2026"
+                        val fallbackResult = com.dezzy.music.innertube.YouTube.search(backup, com.dezzy.music.innertube.YouTube.SearchFilter.FILTER_SONG).getOrNull()
                         agentSet = DjSetBuilder.buildFromRequest(
-                            "Top Hits 2026",
+                            backup,
                             fallbackResult?.items?.filterIsInstance<com.dezzy.music.innertube.models.SongItem>().orEmpty(),
+                            profile,
                         )
                     }
                     val mediaItems = agentSet.items
@@ -300,10 +330,12 @@ class DJDezzyViewModel @Inject constructor(
                 }
 
                 // Fallback seguro a música popular si la búsqueda anterior no arrojó items
-                val fallbackResult = com.dezzy.music.innertube.YouTube.search("Grandes exitos", com.dezzy.music.innertube.YouTube.SearchFilter.FILTER_SONG).getOrNull()
+                val lastResort = tasteQuery() ?: "Grandes exitos"
+                val fallbackResult = com.dezzy.music.innertube.YouTube.search(lastResort, com.dezzy.music.innertube.YouTube.SearchFilter.FILTER_SONG).getOrNull()
                 val fallbackSet = DjSetBuilder.buildFromRequest(
-                    "Grandes exitos",
+                    lastResort,
                     fallbackResult?.items?.filterIsInstance<com.dezzy.music.innertube.models.SongItem>().orEmpty(),
+                    profile,
                 )
                 djSet = fallbackSet
                 val mediaItems = fallbackSet.items
@@ -342,6 +374,18 @@ class DJDezzyViewModel @Inject constructor(
             var lastSpokenIndex = 0
             var previousSongTitle = ""
             var previousArtistName = ""
+            var previousIndex = -1
+            var expansions = 0
+            val blockSkips = HashMap<Int, Int>()
+            // Última posición vista de cada canción: al cambiar, dice si la anterior se saltó o se oyó entera.
+            val lastSeen = java.util.concurrent.ConcurrentHashMap<String, Pair<Long, Long>>()
+            launch(Dispatchers.Main) {
+                while (true) {
+                    val p = playerConnection.player
+                    p.currentMediaItem?.mediaId?.let { id -> lastSeen[id] = p.currentPosition to p.duration.coerceAtLeast(0L) }
+                    kotlinx.coroutines.delay(1_000)
+                }
+            }
 
             playerConnection.currentMediaItemIndex.collect { index ->
                 val title = playerConnection.queueTitle.value ?: ""
@@ -350,6 +394,23 @@ class DJDezzyViewModel @Inject constructor(
                     monitorJob?.cancel()
                     return@collect
                 }
+
+                // Se adapta a lo que haces, como el DJ de Spotify: si saltas, quita lo parecido que
+                // venía; si te encanta algo nuevo, trae más en esa línea justo después.
+                val prevPick = djSet?.picks?.getOrNull(previousIndex)
+                if (prevPick != null && index == previousIndex + 1) {
+                    val (pos, dur) = lastSeen[prevPick.item.mediaId] ?: (0L to 0L)
+                    val skipped = pos in 1L until 30_000L && dur > 60_000L
+                    val heard = dur > 0 && pos >= dur * 0.85
+                    val liked = !skipped && runCatching { database.getSongById(prevPick.item.mediaId)?.song?.liked }.getOrNull() == true
+                    if (skipped) {
+                        adaptToSkip(playerConnection, previousIndex, prevPick, index, blockSkips)
+                    } else if ((heard || liked) && prevPick.kind in NEW_KINDS && expansions < 4) {
+                        expansions++
+                        launch { expandAfter(playerConnection, prevPick) }
+                    }
+                }
+                previousIndex = index
 
                 val currentItem = withContext(Dispatchers.Main) { playerConnection.player.currentMediaItem }
                 val songTitle = currentItem?.mediaMetadata?.title?.toString() ?: "una canción"
@@ -388,6 +449,60 @@ class DJDezzyViewModel @Inject constructor(
                 previousArtistName = artistName
             }
         }
+    }
+
+    /**
+     * Saltaste [skipped]: fuera las novedades que venían del mismo artista y, si ya van dos saltos
+     * en un bloque de novedades, el resto de ese bloque. La cola del reproductor y [djSet] cambian
+     * a la vez (sólo detrás de la canción actual, así los índices de lo que suena no se mueven).
+     */
+    private suspend fun adaptToSkip(
+        playerConnection: PlayerConnection,
+        skippedIndex: Int,
+        skipped: DjSetBuilder.Pick,
+        currentIndex: Int,
+        blockSkips: MutableMap<Int, Int>,
+    ) = withContext(Dispatchers.Main) {
+        val set = djSet ?: return@withContext
+        if (playerConnection.player.currentMediaItem?.mediaId != set.items.getOrNull(currentIndex)?.mediaId) return@withContext
+        val keys = DjSetBuilder.artistKeys(skipped.item)
+        val block = set.blockAt(skippedIndex)
+        val skipsInBlock = block?.let { b -> ((blockSkips[b.start] ?: 0) + 1).also { blockSkips[b.start] = it } } ?: 0
+        val dropBlock = skipped.kind in NEW_KINDS && skipsInBlock >= 2 && block != null
+        val drop = set.picks.indices.filter { i ->
+            val p = set.picks[i]
+            i > currentIndex && p.kind in NEW_KINDS && (
+                (DjSetBuilder.artistKeys(p.item) intersect keys).isNotEmpty() ||
+                    (dropBlock && i < block!!.start + block.size)
+                )
+        }
+        if (drop.isEmpty()) return@withContext
+        drop.sortedDescending().forEach { playerConnection.player.removeMediaItem(it) }
+        val gone = drop.toHashSet()
+        djSet = DjSetBuilder.DjSet(set.picks.filterIndexed { i, _ -> i !in gone })
+    }
+
+    /** Te gustó [seed] (escuchada entera o con me gusta): mete tres parecidas justo después de lo que suena. */
+    private suspend fun expandAfter(playerConnection: PlayerConnection, seed: DjSetBuilder.Pick) {
+        val exclude = djSet?.items?.mapTo(HashSet()) { it.mediaId } ?: return
+        val more = runCatching { DjSetBuilder.moreLike(seed.item, profile, exclude) }.getOrNull().orEmpty()
+        if (more.isEmpty()) return
+        withContext(Dispatchers.Main) {
+            val set = djSet ?: return@withContext
+            val player = playerConnection.player
+            val current = player.currentMediaItemIndex
+            if (set.items.getOrNull(current)?.mediaId != player.currentMediaItem?.mediaId) return@withContext
+            val inSet = set.items.mapTo(HashSet()) { it.mediaId }
+            val fresh = more.filter { it.item.mediaId !in inSet }
+            if (fresh.isEmpty()) return@withContext
+            val at = current + 1
+            player.addMediaItems(at, fresh.map { it.item })
+            djSet = DjSetBuilder.DjSet(set.picks.take(at) + fresh + set.picks.drop(at))
+        }
+    }
+
+    private companion object {
+        val NEW_KINDS = setOf(DjSetBuilder.Kind.DISCOVERY, DjSetBuilder.Kind.ARTIST_NEW)
     }
 
 
@@ -489,7 +604,8 @@ class DJDezzyViewModel @Inject constructor(
             try {
                 val url = "https://dezzyyyy-listen-together.hf.space/api/sentiment"
                 val mediaType = "application/json".toMediaTypeOrNull()
-                val body = "{\"text\":\"$text\"}".toRequestBody(mediaType)
+                // JSONObject escapa comillas y saltos de línea (antes se rompía el JSON con «"»).
+                val body = JSONObject().put("text", text).toString().toRequestBody(mediaType)
                 val request = Request.Builder()
                     .url(url)
                     .post(body)
