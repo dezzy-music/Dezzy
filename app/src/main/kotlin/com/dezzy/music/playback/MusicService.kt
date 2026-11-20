@@ -1405,6 +1405,9 @@ class MusicService :
             }
     }
 
+    private val serviceListener: Player.Listener by lazy { SafePlayerListener(this) }
+    private var sleepTimerListener: Player.Listener? = null
+
     override fun onCreate() {
         super.onCreate()
         ensureScopesActive()
@@ -1444,9 +1447,13 @@ class MusicService :
                 .setDeviceVolumeControlEnabled(true)
                 .build()
                 .apply {
-                    addListener(this@MusicService)
+                    // Envueltos: una excepción en estos oyentes no debe impedir que la
+                    // MediaSession (registrada después) actualice la notificación.
+                    addListener(serviceListener)
                     sleepTimer = SleepTimer(scope, this)
-                    addListener(sleepTimer)
+                    val safeSleep = SafePlayerListener(sleepTimer)
+                    sleepTimerListener = safeSleep
+                    addListener(safeSleep)
                     addAnalyticsListener(PlaybackStatsListener(false, this@MusicService))
                     setOffloadEnabled(false)
                     currentPlayingMediaId = currentMediaItem?.mediaId
@@ -7078,8 +7085,8 @@ class MusicService :
             if (wakeLock?.isHeld == true) wakeLock?.release()
         } catch (_: Exception) {}
         try {
-            player.removeListener(this)
-            player.removeListener(sleepTimer)
+            player.removeListener(serviceListener)
+            sleepTimerListener?.let { player.removeListener(it) }
             player.release()
         } catch (_: Exception) {}
         scopeJob.cancel()

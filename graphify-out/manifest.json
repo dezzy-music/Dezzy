@@ -116,8 +116,8 @@
     "hash": "2eddedf703705b49eaddd03f42911d39"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\connect\\DezzyConnect.kt": {
-    "mtime": 1795128416.8362038,
-    "hash": "ad62a534e663be2a6e194587215e7c8d"
+    "mtime": 1795191903.8536153,
+    "hash": "ba475fbc0a8251a621c8ae26e2489972"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\connect\\DezzyConnectSession.kt": {
     "mtime": 1795128677.8763924,
@@ -636,8 +636,8 @@
     "hash": "9163fbddfe5c882509ee250b759a7b7c"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\playback\\MusicService.kt": {
-    "mtime": 1795148950.959889,
-    "hash": "7405373d3713bc01474c1fa4ea0633e5"
+    "mtime": 1795192907.3837326,
+    "hash": "4b32cdcb39b49dc9d1757111d70b8974"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\playback\\OmegaMathIntegration.kt": {
     "mtime": 1786380148.7124875,
@@ -650,6 +650,10 @@
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\playback\\PlayerConnection.kt": {
     "mtime": 1794768706.6280262,
     "hash": "71a0d185d6f52e6cd95b5b0942e4e5b7"
+  },
+  "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\playback\\SafePlayerListener.kt": {
+    "mtime": 1795191633.4007046,
+    "hash": "bab600c4cc887788cc3d5f2163e9a4d1"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\playback\\SleepTimer.kt": {
     "mtime": 1786382861.9528766,

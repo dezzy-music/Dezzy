@@ -92,6 +92,8 @@ object DezzyConnect {
     private const val SEARCH_EVERY_MS = 3_000L
     private const val AVAILABLE_MS = 40_000L
     private const val HANDSHAKE_MS = 6_000
+    private const val OPEN_TRIES = 3
+    private const val REFRESH_WAIT_MS = 2_000L
     private const val PING_MS = 4_000L
     private const val IDLE_MS = 20_000
     private const val MAX_FRAME = 512 * 1024
@@ -586,28 +588,77 @@ object DezzyConnect {
         return !l.closed
     }
 
-    /** Abre conexión con un dispositivo del grupo. Devuelve null si fue bien o el motivo del fallo. */
+    /**
+     * Abre conexión con un dispositivo del grupo. Devuelve null si fue bien o el motivo del fallo.
+     *
+     * Reintenta sola hasta [OPEN_TRIES] veces: lo normal es que el primer intento falle porque la
+     * dirección que teníamos del otro ya no vale (cambió de puerto al reabrirse, el Wi-Fi se
+     * durmió o aún no había contestado a la búsqueda). Antes de cada reintento se le pregunta
+     * «¿dónde estás?» y se espera un momento a su respuesta.
+     */
     suspend fun open(id: String): String? {
+        var last: String? = null
+        for (attempt in 0 until OPEN_TRIES) {
+            if (attempt > 0) refresh(id)
+            val (problem, retry) = openOnce(id)
+            if (problem == null) return null
+            last = problem
+            if (!retry) break
+        }
+        return last
+    }
+
+    /** Pide al dispositivo que se anuncie y espera (poco) a que conteste con su dirección. */
+    private suspend fun refresh(id: String) {
+        val before = withContext(logic) {
+            announce("look", null)
+            // También directo a la última dirección conocida, por si la difusión se pierde.
+            seen[id]?.let { announce("look", it.ip to PORT) }
+            seen[id]?.lastSeen ?: 0L
+        }
+        val until = now() + REFRESH_WAIT_MS
+        while (now() < until) {
+            delay(150)
+            if ((withContext(logic) { seen[id]?.lastSeen } ?: 0L) > before) return
+        }
+    }
+
+    /** Un intento. Devuelve (motivo del fallo o null, si merece la pena reintentar). */
+    private suspend fun openOnce(id: String): Pair<String?, Boolean> {
         var problem: String? = null
+        var retry = true
+        var already = false
         val where: Seen? = withContext(logic) {
             when {
-                disc == null -> null.also { problem = "Dezzy Connect no está listo" }
+                disc == null -> null.also { problem = "Dezzy Connect no está listo"; retry = false }
                 // Ya estamos conectados a ese.
-                links[id]?.let { it.key != null && !it.closed } == true -> null
+                links[id]?.let { it.key != null && !it.closed } == true -> null.also { already = true }
+                links.size >= MAX_LINKS ->
+                    null.also { problem = "Ya hay ${MAX_LINKS + 1} dispositivos conectados"; retry = false }
                 else -> seen[id]?.takeIf { isAvailable(id) } ?: null.also { problem = "No disponible ahora" }
             }
         }
-        if (where == null) return problem
+        if (already) return null to false
+        if (where == null) return problem to retry
         val ready = CompletableDeferred<String?>()
         val sock = withContext(Dispatchers.IO) {
             runCatching { Socket().apply { connect(InetSocketAddress(where.ip, where.port), HANDSHAKE_MS) } }.getOrNull()
-        } ?: return "No se pudo conectar"
-        withContext(logic) {
-            val l = attach(sock, incoming = false, id = id)
-            l.ready = ready
-            sendPlain(l, hello(l))
+        } ?: return "No se pudo conectar" to true
+        val link = withContext(logic) {
+            attach(sock, incoming = false, id = id).also {
+                it.ready = ready
+                sendPlain(it, hello(it))
+            }
         }
-        return withTimeoutOrNull(HANDSHAKE_MS + 2_000L) { ready.await() } ?: "No responde"
+        val result = withTimeoutOrNull(HANDSHAKE_MS + 2_000L) { ready.await() }
+        if (result == null && !ready.isCompleted) {
+            // Sin respuesta: se cierra este intento para que no quede a medias.
+            withContext(logic) { drop(link, "No responde") }
+            return "No responde" to true
+        }
+        val message = result ?: return null to false
+        val fatal = message.startsWith("Ya hay") || message.contains("no es de tu grupo")
+        return message to !fatal
     }
 
     /**
