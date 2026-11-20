@@ -77,6 +77,8 @@ import com.dezzy.music.constants.AutoTranslateLyricsKey
 import com.dezzy.music.constants.ContentLanguageKey
 import com.dezzy.music.constants.DarkModeKey
 import com.dezzy.music.constants.DiscordTokenKey
+import com.dezzy.music.constants.DjTtsProviderKey
+import com.dezzy.music.constants.DjVoiceNameKey
 import com.dezzy.music.constants.DynamicThemeKey
 import com.dezzy.music.constants.LastFMSessionKey
 import com.dezzy.music.constants.ListenBrainzTokenKey
@@ -544,6 +546,14 @@ fun rememberDezzySettingsGroups(
         connected.joinToString(", ")
     }
 
+    val (djProvider) = rememberPreference(DjTtsProviderKey, "free")
+    val (djVoiceName) = rememberPreference(DjVoiceNameKey, "")
+    val djValue = when (djProvider) {
+        "elevenlabs", "openai" -> listOf(if (djProvider == "openai") "OpenAI" else "ElevenLabs", djVoiceName)
+            .filter { it.isNotBlank() }.joinToString(" · ")
+        else -> "Cerebro, voz y personalidad"
+    }
+
     val go: (String) -> () -> Unit = { route -> { navController.navigate(route) } }
 
     return listOf(
@@ -554,6 +564,10 @@ fun rememberDezzySettingsGroups(
                 "lyrics_ai", R.drawable.lyrics, "Letras e IA",
                 if (autoTranslate) "Traducción automática activada" else "Traducción y proveedor de IA",
                 DezzyIconTone.SECONDARY, onClick = go("settings/ai"),
+            ),
+            DezzySettingsEntry(
+                "dj", R.drawable.headphones, "DJ Dezzy", djValue,
+                DezzyIconTone.TERTIARY, onClick = go("settings/dj"),
             ),
             DezzySettingsEntry("content", R.drawable.language, "Contenido", languageValue, DezzyIconTone.PRIMARY, onClick = go("settings/content")),
             DezzySettingsEntry(

@@ -20,8 +20,8 @@
     "hash": "bd87a1b70c0d0a8c245d72d99051bede"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\build.gradle.kts": {
-    "mtime": 1795107135.5251362,
-    "hash": "5bdb7d45a307bfcf523123a70417d199"
+    "mtime": 1795207337.9805698,
+    "hash": "879a0aa3ae89dc08ae9411719316472d"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\cpp\\dezzy_dsp.cpp": {
     "mtime": 1792282561.8866804,
@@ -32,15 +32,15 @@
     "hash": "091f7894dd7bf286d7bbfd36a453ac16"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\App.kt": {
-    "mtime": 1794767477.023063,
-    "hash": "adba5228996e3a9ac9406da5019953aa"
+    "mtime": 1795194814.6193662,
+    "hash": "d9584e786e586e880ffcc7293894a3f8"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\DebugActivity.kt": {
     "mtime": 1786382858.7728071,
     "hash": "259cbf283419c3e7916932db4fdb0ac8"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\MainActivity.kt": {
-    "mtime": 1795102746.7601714,
+    "mtime": 1795194814.6223779,
     "hash": "b038fb75ddf7cd1b611425009a55633d"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ai\\DjDezzyClient.kt": {
@@ -48,24 +48,24 @@
     "hash": "933ba1c0616dd40c66f209670156d52e"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ai\\DjSetBuilder.kt": {
-    "mtime": 1795149076.5246236,
-    "hash": "c2aca2e22b2d3eb5da063b838c2d3a19"
+    "mtime": 1795214485.6703846,
+    "hash": "f74baa1a24d39bb5f03f7c891b9359ac"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ai\\DjTaste.kt": {
-    "mtime": 1795148749.6509118,
-    "hash": "b1364d6e10b118063b46da5acc223682"
+    "mtime": 1795194814.6258898,
+    "hash": "5125d084c566d87b600f2f09e28f9bfb"
+  },
+  "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ai\\DjVoice.kt": {
+    "mtime": 1795207337.9956045,
+    "hash": "b0b8328fc925fc50f7f05f5677e57307"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ai\\EdgeTtsClient.kt": {
     "mtime": 1787349104.1436803,
     "hash": "01a96ff4002eec9651ae9f3ce48c9319"
   },
-  "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ai\\ElevenLabsTtsClient.kt": {
-    "mtime": 1793252531.2203588,
-    "hash": "c920c5a9a42b3b6e239a25ca7b92b42c"
-  },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ai\\GeminiDjClient.kt": {
-    "mtime": 1794773147.027851,
-    "hash": "3a6ba83940aec783867fd7e27b874ab3"
+    "mtime": 1795214498.62704,
+    "hash": "25f9dd0809abaa8f016683a149e46202"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ai\\OmniVoiceTtsClient.kt": {
     "mtime": 1788621911.0222447,
@@ -92,12 +92,12 @@
     "hash": "7181fb62643deeb3813077bcba5416f8"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\appicon\\AppIcon.kt": {
-    "mtime": 1795126193.576645,
-    "hash": "0e1d9f748279b9e45afe0d1e5a5eb413"
+    "mtime": 1795194814.6309128,
+    "hash": "78bbb59bb4fe998bcc28def669364957"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\appicon\\AppIconViews.kt": {
-    "mtime": 1795110219.5425985,
-    "hash": "3656b169f3c53e2d03b0fcb10d7ebaef"
+    "mtime": 1795194814.6319008,
+    "hash": "4e212b83c5bc37f554cf4c617da10885"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\audio\\DezzyBiquadAudioProcessor.kt": {
     "mtime": 1787752087.9727583,
@@ -116,15 +116,15 @@
     "hash": "2eddedf703705b49eaddd03f42911d39"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\connect\\DezzyConnect.kt": {
-    "mtime": 1795191903.8536153,
-    "hash": "ba475fbc0a8251a621c8ae26e2489972"
+    "mtime": 1795206017.1995237,
+    "hash": "a3c189f251b31948fe8ed1abf9760d49"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\connect\\DezzyConnectSession.kt": {
-    "mtime": 1795128677.8763924,
+    "mtime": 1795194814.6364098,
     "hash": "8f63169736d4b41d8fa176dc9aa520d7"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\connect\\LinerConnectManager.kt": {
-    "mtime": 1794756891.1772585,
+    "mtime": 1795194814.639422,
     "hash": "7b5838a6147f0f6482e90a1ef34eadbe"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\constants\\Dimensions.kt": {
@@ -144,12 +144,12 @@
     "hash": "a48bd9f94eb15af2d26a894a9bc73148"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\constants\\PreferenceKeys.kt": {
-    "mtime": 1795137742.2820592,
-    "hash": "8c88144b31243212ae9e99d64aca3426"
+    "mtime": 1795212098.2999508,
+    "hash": "a673d800394eaf2d7898f25815b545fd"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\constants\\SocialFeatures.kt": {
-    "mtime": 1795049149.811998,
-    "hash": "9ea00d013d1af04d10863519faeea6f3"
+    "mtime": 1795194814.642421,
+    "hash": "14e1b359d477fb1b2d7a41d4889fbf16"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\constants\\StatPeriod.kt": {
     "mtime": 1786382859.2329564,
@@ -160,7 +160,7 @@
     "hash": "d84f3cf5d0017ddf76593e1c5d150745"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\db\\DatabaseDao.kt": {
-    "mtime": 1795148688.1204188,
+    "mtime": 1795194814.6444206,
     "hash": "0d54705823bed78c8151070214831cbd"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\db\\MusicDatabase.kt": {
@@ -288,8 +288,8 @@
     "hash": "23556b175c59464f3142a53838f3ac2a"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\db\\entities\\TasteEvent.kt": {
-    "mtime": 1795148687.9688213,
-    "hash": "ba0e0273dac91fda7550f5f0a06e5082"
+    "mtime": 1795194814.6459374,
+    "hash": "b0fb9a4dd81e0e4fb56a6a440dd20b92"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\di\\AppModule.kt": {
     "mtime": 1786382859.772589,
@@ -336,7 +336,7 @@
     "hash": "c2bef62af7ec52dc6e6b18a322e8f9d6"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\extensions\\PlayerExt.kt": {
-    "mtime": 1795106336.9810236,
+    "mtime": 1795194814.6479511,
     "hash": "a8620dfe836a895391c69f0b3ea51e1f"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\extensions\\QueueExt.kt": {
@@ -356,20 +356,20 @@
     "hash": "6867db6fe8a053d7234c830e3ab3f2b4"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\listentogether\\ListenTogetherClient.kt": {
-    "mtime": 1794771420.0100665,
-    "hash": "f88c19a4ae96e871b0137a2a2f1f0f5a"
+    "mtime": 1795194814.6499498,
+    "hash": "8dd856a2ee1ed8b78ce5f4e36a239a48"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\listentogether\\ListenTogetherServers.kt": {
     "mtime": 1786380147.1146595,
     "hash": "2a7d003f68f8f2b186034d722c2b7838"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\listentogether\\MessageCodec.kt": {
-    "mtime": 1794771419.9632337,
-    "hash": "a38af3ac7e7a4209f88dd161aee4445a"
+    "mtime": 1795194814.6524827,
+    "hash": "dfc32b5e304ea961d3a219e42fb6ddb1"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\listentogether\\Protocol.kt": {
-    "mtime": 1794771419.9297912,
-    "hash": "c550ef0e3cf7188860e7a4d10b84ac79"
+    "mtime": 1795194814.6544733,
+    "hash": "88d1aeff670bafa8c57cc17d0583b0dc"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\lossless\\DeezerSearchClient.kt": {
     "mtime": 1794709150.2199514,
@@ -456,7 +456,7 @@
     "hash": "5f31e277ebeac614b9fdd963f8fcab17"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\lyrics\\OfflineTranslationService.kt": {
-    "mtime": 1795053370.9651926,
+    "mtime": 1795194814.6559832,
     "hash": "ee6aae5cb4003f7c889e4153ae73c183"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\lyrics\\PlaylistTranslationManager.kt": {
@@ -504,12 +504,12 @@
     "hash": "c1b48bfbc1780c82afebf658fdf596bb"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\musicmap\\MusicMapCharts.kt": {
-    "mtime": 1794773669.3390954,
-    "hash": "99843e463b52426ffadb143b8257b734"
+    "mtime": 1795194814.659001,
+    "hash": "7ed30d41bc4834163a74809fa1443458"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\musicmap\\MusicMapGenres.kt": {
-    "mtime": 1794773669.337842,
-    "hash": "e8bea0564357afbcc0fee75694ce2224"
+    "mtime": 1795194814.6599975,
+    "hash": "791e7bd2e9e78cb912169f0d53db5a2c"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\musicmap\\MusicMapLocation.kt": {
     "mtime": 1794700111.6114297,
@@ -520,11 +520,11 @@
     "hash": "11cd7136ff62bdd5c350eae8bbb2df22"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\musicmap\\SongChartStats.kt": {
-    "mtime": 1794787544.1990874,
-    "hash": "95505bbbf8c2cc312b6549c06144affd"
+    "mtime": 1795194814.661005,
+    "hash": "f557efe57cc8376d478218c978f7eccc"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\p2p\\DesktopLink.kt": {
-    "mtime": 1794815496.8595505,
+    "mtime": 1795194814.6630003,
     "hash": "6d45f9e9fa4e704fbaccdc7673c186f8"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\p2p\\P2PIdentity.kt": {
@@ -532,7 +532,7 @@
     "hash": "653f361e433790cfb534936bf50e92ba"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\p2p\\P2PInboxWorker.kt": {
-    "mtime": 1794753077.2492943,
+    "mtime": 1795194814.6639974,
     "hash": "f70e36a80a116d024e747049974dc840"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\p2p\\P2PMap.kt": {
@@ -540,19 +540,19 @@
     "hash": "27c6682991e442d3795d6391da864dca"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\p2p\\P2PMessaging.kt": {
-    "mtime": 1794772157.0335548,
-    "hash": "838bfaa6a46b8074b58276a22de2bbaa"
+    "mtime": 1795194814.6665022,
+    "hash": "84ef33de38ce85acc0eada8b709d671d"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\p2p\\P2PModels.kt": {
-    "mtime": 1794866820.1272643,
-    "hash": "36ba5f9f9d8a257e5560fe66fc441c05"
+    "mtime": 1795194814.667517,
+    "hash": "34ddc30b9f6d78382a35d1c2a3fa497a"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\p2p\\P2PNearby.kt": {
     "mtime": 1794713747.8123512,
     "hash": "c02a75c9a320695c40505943b35e9027"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\p2p\\P2PNotifications.kt": {
-    "mtime": 1794753077.2421567,
+    "mtime": 1795194814.6685228,
     "hash": "826081a65f2c27695bbef42fac2d4c62"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\p2p\\P2PPresence.kt": {
@@ -560,8 +560,8 @@
     "hash": "b699a0924e30af98060c3954185e91e1"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\p2p\\P2PSocial.kt": {
-    "mtime": 1794866820.1282482,
-    "hash": "c3f87c0f954f4e7248efdf3aa050d5b1"
+    "mtime": 1795194814.6715403,
+    "hash": "41bdbec0a628226a47d503ff0b07963e"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\p2p\\crypto\\Bech32.kt": {
     "mtime": 1794712717.0359964,
@@ -584,8 +584,8 @@
     "hash": "85b8717a20ab77aa13cc952b3ce01db5"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\p2p\\data\\P2PDatabase.kt": {
-    "mtime": 1794866820.1282482,
-    "hash": "4760df0b1988037599b3145c5733036e"
+    "mtime": 1795194814.6745436,
+    "hash": "ad6efb4953e3a7ad3c6080db738fdc28"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\p2p\\nostr\\GiftWrap.kt": {
     "mtime": 1794712717.0420146,
@@ -608,15 +608,15 @@
     "hash": "1e120c0dc2b36bb839eed90f38b6679d"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\playback\\DownloadExporter.kt": {
-    "mtime": 1795050152.0908568,
-    "hash": "3648542078c25ba973ee7e67eb0781c8"
+    "mtime": 1795194814.6775897,
+    "hash": "5ff7e5add0b34aed50ab57a7f7248d0b"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\playback\\DownloadPostProcessor.kt": {
-    "mtime": 1795050802.0447874,
-    "hash": "754d74d9b15642672a97ef079a2c1aea"
+    "mtime": 1795194814.6816075,
+    "hash": "8d87e661fa464560b31fe8cf4fceb019"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\playback\\DownloadUtil.kt": {
-    "mtime": 1795050802.3285637,
+    "mtime": 1795194814.6836033,
     "hash": "4ecc909a10388a3cdf35d210fb18fb03"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\playback\\EqualizerModels.kt": {
@@ -624,7 +624,7 @@
     "hash": "a534adb764a02a0ca91f29b105b1d66f"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\playback\\ExoDownloadService.kt": {
-    "mtime": 1794748946.9861205,
+    "mtime": 1795194814.686123,
     "hash": "1fa4f4b70c1161f8798ef07f9abc946b"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\playback\\LocalFileRoutingDataSource.kt": {
@@ -632,12 +632,12 @@
     "hash": "79a66ce45a6ec0e37a588c9990300233"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\playback\\MediaLibrarySessionCallback.kt": {
-    "mtime": 1786382861.6474996,
-    "hash": "9163fbddfe5c882509ee250b759a7b7c"
+    "mtime": 1795209453.2355373,
+    "hash": "5ecd6a2d6bef53ff46bd1693ea5e1789"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\playback\\MusicService.kt": {
-    "mtime": 1795192907.3837326,
-    "hash": "4b32cdcb39b49dc9d1757111d70b8974"
+    "mtime": 1795209440.219311,
+    "hash": "25e80a20bcf670d195d21f52ba88ee05"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\playback\\OmegaMathIntegration.kt": {
     "mtime": 1786380148.7124875,
@@ -648,12 +648,12 @@
     "hash": "bf4a1870ac3a8ef80a92cb323c6f3a35"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\playback\\PlayerConnection.kt": {
-    "mtime": 1794768706.6280262,
-    "hash": "71a0d185d6f52e6cd95b5b0942e4e5b7"
+    "mtime": 1795194814.6976984,
+    "hash": "7558239df33d768865b6b28c99b0004d"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\playback\\SafePlayerListener.kt": {
-    "mtime": 1795191633.4007046,
-    "hash": "bab600c4cc887788cc3d5f2163e9a4d1"
+    "mtime": 1795194814.700766,
+    "hash": "3de28e3c12ce7e000d65bc1d9f968995"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\playback\\SleepTimer.kt": {
     "mtime": 1786382861.9528766,
@@ -712,16 +712,16 @@
     "hash": "9a935abe3c345fa5d46b4cbeffb92543"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\security\\SessionBackup.kt": {
-    "mtime": 1794753743.660625,
-    "hash": "8be2f933ca32971f7226766f4f1fb61f"
+    "mtime": 1795194814.7027879,
+    "hash": "957d85ab19b281a065ec4afc6c564b45"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\security\\SessionCrypto.kt": {
-    "mtime": 1794753743.6596236,
-    "hash": "8ee7a1feb868df1dfcc4988190ef7c4c"
+    "mtime": 1795194814.7047808,
+    "hash": "64875a9de4b2597aace10a45f85dc58e"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\social\\ContactsRepository.kt": {
-    "mtime": 1794767703.3542607,
-    "hash": "58e54175bcc2848a09ba2d56435d6426"
+    "mtime": 1795194814.7083168,
+    "hash": "d9b4b5d5b57f710dcc9ab5fc3b39f5dd"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\social\\DezzySocial.kt": {
     "mtime": 1786380149.3743148,
@@ -760,16 +760,16 @@
     "hash": "e663cecbfcc65e7f8329d6b25f52ef2c"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\spotify\\SpotifyFeatures.kt": {
-    "mtime": 1794787544.2974744,
-    "hash": "9dc5e949463085d5531cec6030a230a1"
+    "mtime": 1795194814.7118056,
+    "hash": "ded5af61578e58b796aa9d2531b5c23c"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\spotify\\SpotifyHashProvider.kt": {
     "mtime": 1786382863.0019653,
     "hash": "81d91f17ae8c7d62ca901701272dc5b6"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\spotify\\SpotifyLibrarySync.kt": {
-    "mtime": 1795050648.238172,
-    "hash": "5eb8cb0a9389398c97ac7bf662ef32e7"
+    "mtime": 1795194814.715423,
+    "hash": "39b766a0477d7eeccfe2d59650ec7305"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\spotify\\SpotifyPreloadManager.kt": {
     "mtime": 1786380149.9558785,
@@ -784,8 +784,8 @@
     "hash": "6ebc7edb44dd9a8e3ac404bd32692bc6"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\spotify\\SpotifyTokenManager.kt": {
-    "mtime": 1794753743.6827285,
-    "hash": "d6cdade07f8d61d0a007ce7b766730c7"
+    "mtime": 1795194814.7169497,
+    "hash": "4f157eba03cc787bec5e539e7d569586"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\spotify\\SpotifyYouTubeMapper.kt": {
     "mtime": 1786382863.2771852,
@@ -808,7 +808,7 @@
     "hash": "9542282832db3cd2676f62d786e03532"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\together\\TogetherLink.kt": {
-    "mtime": 1795107135.9418404,
+    "mtime": 1795194814.7209637,
     "hash": "7d89304f1871c2abbc5ac67986bae9a0"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\together\\TogetherMembership.kt": {
@@ -872,12 +872,12 @@
     "hash": "14783ac6d0d63f6a47c9357e6cbce6ea"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\component\\ConnectDeviceBottomSheet.kt": {
-    "mtime": 1795128850.9179878,
+    "mtime": 1795194814.725177,
     "hash": "624dc24a59f0654c801da42965ba2fd3"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\component\\CountryFlag.kt": {
-    "mtime": 1794787458.1039548,
-    "hash": "ae8e22b0c43b66c6ff4db966be2d90e3"
+    "mtime": 1795194814.7263868,
+    "hash": "d4b7d8e8aa422fe086086ac78762bf74"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\component\\CreatePlaylistDialog.kt": {
     "mtime": 1794608791.1773162,
@@ -888,8 +888,8 @@
     "hash": "cc94d65f43d5facf5de24c7f940c642b"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\component\\DevicesButton.kt": {
-    "mtime": 1795105915.7569356,
-    "hash": "7f6fe9008437a1ff11bdfe87eff15981"
+    "mtime": 1795194814.7291653,
+    "hash": "da7ba881bbe1931b7dfb37685308d7c5"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\component\\DezzyNavigationBar.kt": {
     "mtime": 1794684907.4720519,
@@ -948,15 +948,15 @@
     "hash": "03d823535d4c5db44cd4209a1ea2eec5"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\component\\Lyrics.kt": {
-    "mtime": 1794767476.890756,
-    "hash": "da72482cd6a65eda7f14ee788b7f1c1c"
+    "mtime": 1795194814.7329786,
+    "hash": "d9046cd7b85912d428196a50b8077e82"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\component\\LyricsCardConfig.kt": {
     "mtime": 1786382864.392776,
     "hash": "38ae15ce1cb65d9873d46f70de36bcb3"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\component\\LyricsCardLayouts.kt": {
-    "mtime": 1795110338.7608142,
+    "mtime": 1795194814.7360578,
     "hash": "de7bfcc1bcb34f317484000e97a795c9"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\component\\LyricsGlassStyle.kt": {
@@ -968,12 +968,12 @@
     "hash": "6096bea09c0a374de3d2fe6a674b071f"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\component\\LyricsShareCarouselSheet.kt": {
-    "mtime": 1794767682.9447615,
-    "hash": "0a127c953dd6360686b605353384eccb"
+    "mtime": 1795194814.7397544,
+    "hash": "71739abc4112e1763e157586df12ec2c"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\component\\LyricsV2.kt": {
-    "mtime": 1794767476.8952827,
-    "hash": "fe727cf28ed0c7b158c64a5af6a192a2"
+    "mtime": 1795194814.7439418,
+    "hash": "bb48ff3b4e6f54e1dc03a1ee9bc39802"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\component\\MarkdownText.kt": {
     "mtime": 1786382864.5939727,
@@ -996,7 +996,7 @@
     "hash": "a513342fd71ca089f51968e4158cd0b9"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\component\\PlayerSlider.kt": {
-    "mtime": 1795103905.6633446,
+    "mtime": 1795194814.7459435,
     "hash": "e7be6088b4c96b4278ed84502ff1eb14"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\component\\PlayingIndicator.kt": {
@@ -1016,8 +1016,8 @@
     "hash": "c592c6fb5b29f25fd510fa0533268509"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\component\\ShareBottomSheet.kt": {
-    "mtime": 1795110338.7628212,
-    "hash": "485c6c5f8b498be3ea47e81ede95e5c8"
+    "mtime": 1795194814.751492,
+    "hash": "ae12c1b9f06edbc27b19c7dab849425f"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\component\\SortHeader.kt": {
     "mtime": 1786382864.9206629,
@@ -1056,8 +1056,8 @@
     "hash": "c8f99e24067711e297a69ea966482382"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\component\\WelcomeGuideCard.kt": {
-    "mtime": 1794767703.9326212,
-    "hash": "79980f2ab0586332690561099182e03e"
+    "mtime": 1795194814.7560868,
+    "hash": "2fb48727b57cbb62e3b23eedd92d7192"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\component\\shimmer\\ButtonPlaceholder.kt": {
     "mtime": 1786382865.139463,
@@ -1112,7 +1112,7 @@
     "hash": "339fb1a47b98ed6aa0be2cd0b8aa83b5"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\menu\\PlayerMenu.kt": {
-    "mtime": 1795127654.0698514,
+    "mtime": 1795194814.7608545,
     "hash": "ee098252fa3de4250fa2cf8d57c03fe9"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\menu\\PlaylistMenu.kt": {
@@ -1124,8 +1124,8 @@
     "hash": "09e5ba191e5d0b0c2d9ab61dacfc6d66"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\menu\\SongMenu.kt": {
-    "mtime": 1794767703.852452,
-    "hash": "1817b39fc27a48f526ce6d1d9aa5e5e8"
+    "mtime": 1795194814.7643206,
+    "hash": "792c4661ac080b0bd4413b60a093106f"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\menu\\SongModDialog.kt": {
     "mtime": 1786380152.947674,
@@ -1152,12 +1152,12 @@
     "hash": "e5adfcd214e6884f8458e3cf81a1dfa4"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\AppleMusicParts.kt": {
-    "mtime": 1795102580.707739,
-    "hash": "626a6a5bbdab52d3c413eee394812d9c"
+    "mtime": 1795194814.7678757,
+    "hash": "e7a0c0c54282d60cab1c7e921a9580a1"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\AuroraPlayer.kt": {
-    "mtime": 1794756891.7409675,
-    "hash": "a51c06f489105b7bd891f83de6ebf0ca"
+    "mtime": 1795194814.7732742,
+    "hash": "a7f784994e71ae8e54589a4cd33d7b07"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\CanvasArtworkPlayer.kt": {
     "mtime": 1786380153.2729325,
@@ -1168,19 +1168,19 @@
     "hash": "1b571e4b8bea628f260ceb68adfca404"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\CarModePlayer.kt": {
-    "mtime": 1795127671.0112627,
+    "mtime": 1795194814.7773447,
     "hash": "16dec37338b6ef5c7b84080eae02f1bf"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\ClassicPlayer.kt": {
-    "mtime": 1795127746.4833763,
+    "mtime": 1795194814.7804065,
     "hash": "c082835cac0eccb166f7af1b222aa2b2"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\DeezerPlayer.kt": {
-    "mtime": 1795127671.0166256,
+    "mtime": 1795194814.7844055,
     "hash": "e5d522293aedd434eea4bb2664a01a66"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\DezzyPlayer.kt": {
-    "mtime": 1795127671.0248847,
+    "mtime": 1795194814.7874968,
     "hash": "88a7207f2fc60748cd783a2d5510606d"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\DJDezzyPlayerSheet.kt": {
@@ -1188,28 +1188,28 @@
     "hash": "d33f4fcd277c8482bafac9022ce3e3ac"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\IpodParts.kt": {
-    "mtime": 1795066895.1849494,
-    "hash": "ed6737371143ba593361cd36844c6948"
+    "mtime": 1795194814.7895122,
+    "hash": "2ce7bfa3055a2488543474761f1d7206"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\IpodPlayer.kt": {
-    "mtime": 1795067004.1540537,
-    "hash": "3e2bddc5a4d5135c1f3a16d8873aa9fc"
+    "mtime": 1795194814.7935126,
+    "hash": "48c22e01f7b66277af1769ab7e82f66a"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\LyricsScreen.kt": {
-    "mtime": 1794767476.9407315,
-    "hash": "29cb506627b51721b536308967e958b3"
+    "mtime": 1795194814.80056,
+    "hash": "6c6a2c29378609227dc91123e1456aea"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\MiniPlayer.kt": {
     "mtime": 1794684907.4911919,
     "hash": "4360aea470a610eafad9dd1db612bec8"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\MiniPlayerComponents.kt": {
-    "mtime": 1795126156.4977322,
-    "hash": "017bc55c142cff8de28a63371fc22374"
+    "mtime": 1795194814.8035798,
+    "hash": "89b19de74920ba6b1d0946478830cac0"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\NcsVisualizerScreen.kt": {
-    "mtime": 1795137745.0366318,
-    "hash": "7187208243324fe68f589d7020b64951"
+    "mtime": 1795194814.8071978,
+    "hash": "4afd4020d46072d6c685172e6624e677"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\PlaybackCanvasState.kt": {
     "mtime": 1786382866.7159648,
@@ -1224,64 +1224,64 @@
     "hash": "3b34c813c50234dc2f062344a2fe2fe1"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\Player.kt": {
-    "mtime": 1795127789.1050668,
+    "mtime": 1795194814.8113985,
     "hash": "9b1382111d19ef94d16e65a6ca8f4839"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\PlayerComponents.kt": {
-    "mtime": 1795127696.5325882,
+    "mtime": 1795194814.8156986,
     "hash": "7ea2d8e7f329aaa1f1f47e9e75c96806"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\Queue.kt": {
-    "mtime": 1794767476.9087534,
-    "hash": "5e1b10d68359aca7011fefa8ab40b323"
+    "mtime": 1795194814.8191957,
+    "hash": "89c1d9e845a7a790be166646e667500c"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\QueueComponents.kt": {
     "mtime": 1794680590.8619277,
     "hash": "ce7e433340fe47b6596f35eef91eb604"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\RedesignedPlayers.kt": {
-    "mtime": 1795127696.525887,
+    "mtime": 1795194814.8215322,
     "hash": "443ea9c51975513921cbcf2754d308b4"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\SpotifyPlayer.kt": {
-    "mtime": 1795127671.0676265,
+    "mtime": 1795194814.8260682,
     "hash": "efdc3661b027f6da9ed8c3042db6f658"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\Thumbnail.kt": {
-    "mtime": 1795110338.770333,
-    "hash": "cc2ba3da43189d82435281f8252179a1"
+    "mtime": 1795194814.8296194,
+    "hash": "6139f74778f1579b668e40e673acd0da"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\VideoFeedScreen.kt": {
-    "mtime": 1795068073.7394862,
-    "hash": "55cf829b473d36c865c76cae37fc355c"
+    "mtime": 1795194814.8336165,
+    "hash": "cc1bb1389bc2f4aa87759215df38ef9b"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\VideoModePlayer.kt": {
-    "mtime": 1795102746.831563,
-    "hash": "e74c1b540c6422fb2f30f7673606d42e"
+    "mtime": 1795194814.8391714,
+    "hash": "369aabea4b29c09d924accd8e5faccec"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\VideoPip.kt": {
-    "mtime": 1794768706.7713144,
-    "hash": "b190e6a813afe7989bd8b79b6fed5987"
+    "mtime": 1795194814.841167,
+    "hash": "0dca7aa020c8f2ac4f46c2b2791c1c89"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\VideoRecommendations.kt": {
-    "mtime": 1794768706.5882514,
-    "hash": "8de4e9a3412ea6fa2cf2d0226ce908e0"
+    "mtime": 1795194814.843167,
+    "hash": "de732911b58b0d1103e2751a79ac1790"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\VideoSearch.kt": {
-    "mtime": 1795068052.6416867,
-    "hash": "165ba5ef75461808734eacc2338dbf0f"
+    "mtime": 1795194814.8441715,
+    "hash": "acb9793e7f3c1ae232f8762d23ba0203"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\VinylPlayer.kt": {
-    "mtime": 1795127789.1020422,
+    "mtime": 1795194814.8477082,
     "hash": "1c14344b15e15430f10e601f227f3b97"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\VisualizerPreview.kt": {
-    "mtime": 1795126726.6983414,
-    "hash": "e5b60f6d713275f439a32b1a178d9795"
+    "mtime": 1795194814.8497293,
+    "hash": "49aa1b88711f54c83fd443b949089cd4"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\player\\VisualizerStyles.kt": {
-    "mtime": 1795126644.4564867,
-    "hash": "e89287d28fda1bd1e5856077265f8288"
+    "mtime": 1795194814.8527288,
+    "hash": "0648770e0870a1a98d167f0b22d23c1e"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\AccountScreen.kt": {
     "mtime": 1786382867.3167255,
@@ -1304,12 +1304,12 @@
     "hash": "4daebd98884da071abb1ab0416ad3cb5"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\ChartsScreen.kt": {
-    "mtime": 1794788020.5441604,
-    "hash": "0b1f87ca4e44155772d8533c7e4b7501"
+    "mtime": 1795194814.8557558,
+    "hash": "374987d34c2a44c43ac02d3136c370af"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\CommentSheet.kt": {
-    "mtime": 1795052141.078016,
-    "hash": "404f1dcc47d9356f498a505eb6f055d1"
+    "mtime": 1795194814.858801,
+    "hash": "d41f9db1d533c03de18aa8c231ca2bb6"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\CommentTogether.kt": {
     "mtime": 1786382867.6209042,
@@ -1324,20 +1324,20 @@
     "hash": "e7dd4b78c7d9c9077b959e90a0884bf1"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\DezzyIAScreen.kt": {
-    "mtime": 1795110338.7638211,
+    "mtime": 1795194814.874856,
     "hash": "4b4aa2a33e254f7e19896f66aaa0b73e"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\DJDezzyScreen.kt": {
-    "mtime": 1794768883.6672642,
-    "hash": "2041bf1d796ede9da99d630fdfc827f9"
+    "mtime": 1795212185.1400652,
+    "hash": "caaa40a05836e2619f98c916f5412b8a"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\DJDezzyViewModel.kt": {
-    "mtime": 1795149058.3554616,
-    "hash": "2eba9327a20ec59e9d4fd79f1c9f4f24"
+    "mtime": 1795214485.6723943,
+    "hash": "caafbc14920d18e9b34324a1552092e3"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\DJInteractionBottomSheet.kt": {
-    "mtime": 1794750715.3978243,
-    "hash": "3263d0b912c16124490de3920d553fdc"
+    "mtime": 1795194814.8693256,
+    "hash": "3efb34df93cf3bf8271935e3592dac57"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\DJVisualizerBox.kt": {
     "mtime": 1793336342.5284421,
@@ -1348,12 +1348,12 @@
     "hash": "f6e7b058517f5fed2452bcaa66925611"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\ExperiencesScreen.kt": {
-    "mtime": 1795049979.4204106,
+    "mtime": 1795194814.8772943,
     "hash": "8408df4fdb0ed8ffd70fc6d0ed23be85"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\ExploreScreen.kt": {
-    "mtime": 1794767682.9372158,
-    "hash": "4713eb88b6d531a84380a909b58f32c5"
+    "mtime": 1795194814.87931,
+    "hash": "bbbd576a88c29b77be08481ee01232f8"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\HistoryScreen.kt": {
     "mtime": 1794608687.0838113,
@@ -1364,20 +1364,20 @@
     "hash": "2d299947168b2eec62f086da92cd73b3"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\HomeScreen.kt": {
-    "mtime": 1795126247.989814,
-    "hash": "3ab6c739ebae358c4dac86050277bec5"
+    "mtime": 1795194814.8813074,
+    "hash": "9ed921d88d3103e7858e79f9af005410"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\HomeScreenComponents.kt": {
-    "mtime": 1795053358.9070446,
+    "mtime": 1795194814.8858268,
     "hash": "f7cdaa187bf91841e946c139376e83bd"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\ListenTogetherChatScreen.kt": {
-    "mtime": 1794767682.9427376,
-    "hash": "5038fe033bf56d9c0c385987dc8ce0af"
+    "mtime": 1795194814.8888671,
+    "hash": "2a6ba7a7e847b3e3a14e674afba5cb04"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\ListenTogetherDashboardScreen.kt": {
-    "mtime": 1794771647.9883826,
-    "hash": "dc49d6c0f251aeeae143dbcd165351af"
+    "mtime": 1795194814.8908668,
+    "hash": "089cde2d49cef05a1abf8d32e9166beb"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\LoginScreen.kt": {
     "mtime": 1794608161.2309327,
@@ -1396,15 +1396,15 @@
     "hash": "e1522878c7d95ca228b501504a026b84"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\NavigationBuilder.kt": {
-    "mtime": 1795110303.467503,
-    "hash": "2c5974cf237ccf0be87ab9310c40d02b"
+    "mtime": 1795207188.729679,
+    "hash": "90023862dd0843cf9237e0cd457be18f"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\NewReleaseScreen.kt": {
     "mtime": 1794680590.9343603,
     "hash": "7e75560aea611ecefc7b27f2842b86c6"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\Screens.kt": {
-    "mtime": 1795049150.1326885,
+    "mtime": 1795194814.8948667,
     "hash": "8ccd33e6b26ef529dc512ea8ab930b18"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\SearchHomeScreen.kt": {
@@ -1412,7 +1412,7 @@
     "hash": "1614f2c692fb32a89a6850ed9bd285e9"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\SongDnaScreen.kt": {
-    "mtime": 1794750456.9090488,
+    "mtime": 1795194814.8973966,
     "hash": "dd324297173941f0df9eee9a14626e2f"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\SpotifyLoginScreen.kt": {
@@ -1428,23 +1428,23 @@
     "hash": "aed7110f8fc1caebf6fae540f51a3d38"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\TimeMachineScreen.kt": {
-    "mtime": 1794751038.6979167,
+    "mtime": 1795194814.8993964,
     "hash": "140fce842462a0ab9093acdde6565ea7"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\WelcomeLoginDialog.kt": {
-    "mtime": 1794767616.5568523,
+    "mtime": 1795194814.9019294,
     "hash": "93e8aead2f638f72940c63251477a118"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\WelcomeScreen.kt": {
-    "mtime": 1795106571.5436008,
-    "hash": "844b91863b24f2da312a1dc4755b67d0"
+    "mtime": 1795194814.9064417,
+    "hash": "c3e618221ff250cb5b0a4f670983259f"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\WorldMapData.kt": {
     "mtime": 1786382868.714279,
     "hash": "ff64579a3cc2b428403be08dae9b52c0"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\YearInMusicScreen.kt": {
-    "mtime": 1795110338.7658243,
+    "mtime": 1795194814.909474,
     "hash": "173d417a5adb0128a74cd1a0aac437cc"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\YouTubeBrowseScreen.kt": {
@@ -1504,20 +1504,20 @@
     "hash": "e9ba4c011a24220d62db7045fc3ed5b4"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\musicmap\\MusicMapScreen.kt": {
-    "mtime": 1795049150.1445174,
+    "mtime": 1795194814.9144807,
     "hash": "cd1049480d00cf34efafc36782d18d89"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\musicmap\\MusicMapSections.kt": {
-    "mtime": 1794787880.4461236,
-    "hash": "16a4641dd0849f24aa1ecdace5b8cab7"
+    "mtime": 1795194814.9159956,
+    "hash": "f9164581746eb770b08b8fe9ef30e43c"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\musicmap\\RankingsSections.kt": {
-    "mtime": 1794788020.4497373,
-    "hash": "bf0e9a4424c7acb8f08f500b2659741a"
+    "mtime": 1795194814.9180143,
+    "hash": "aea51f78908381e85e8ddb8e7537c870"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\musicmap\\SongStatsScreen.kt": {
-    "mtime": 1794787752.722541,
-    "hash": "35dcfc88fa45e788828d64ac651d5516"
+    "mtime": 1795194814.9195287,
+    "hash": "a27f6f1072fcf2ae8cafc139bab1be46"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\musicrecognition\\MusicRecognitionScreen.kt": {
     "mtime": 1794680590.9220865,
@@ -1528,44 +1528,44 @@
     "hash": "b0491600b9225ee408325a1f61971090"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\p2p\\P2PAddFriendSheet.kt": {
-    "mtime": 1794767682.9518566,
-    "hash": "b929d068d539567e6bd26054ca156b62"
+    "mtime": 1795194814.9225445,
+    "hash": "51e955c9db8e4139e86656e5e3c259c6"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\p2p\\P2PChatScreen.kt": {
-    "mtime": 1794753077.3299596,
+    "mtime": 1795194814.9250753,
     "hash": "cc146ef572ee8f6c1cd93e06d3f7b556"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\p2p\\P2PComponents.kt": {
-    "mtime": 1794866855.9962785,
-    "hash": "2fe9c40e3aad7f73bbead8fb93019b87"
+    "mtime": 1795194814.9275978,
+    "hash": "c753a6a9240c54a9efc3c140d193499c"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\p2p\\P2PNearbyTab.kt": {
-    "mtime": 1794753291.5234487,
+    "mtime": 1795194814.9296086,
     "hash": "f25cc90e8821954aa3910230a03db8a4"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\p2p\\P2PPhotoViewer.kt": {
-    "mtime": 1794772263.8085012,
-    "hash": "8a658668e99197f102db549ce5727e62"
+    "mtime": 1795194814.9316115,
+    "hash": "04012e73b7eab9125faf308b15adc9d8"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\p2p\\P2PPostComponents.kt": {
-    "mtime": 1794772335.9615035,
-    "hash": "33d6623b58de3ab82c09bddd9750b1f9"
+    "mtime": 1795194814.9336078,
+    "hash": "1d97cfa2568326ea305779cc27dc883c"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\p2p\\P2PProfileScreen.kt": {
-    "mtime": 1794866820.1312082,
-    "hash": "e1fa5e2dc5101ce50d272925830286c8"
+    "mtime": 1795194814.937129,
+    "hash": "3c4bd6b33d110d949586b4293e228749"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\p2p\\P2PShareSongSheet.kt": {
-    "mtime": 1794767703.239671,
-    "hash": "56225d1148f40870e65839b85bbf5b9d"
+    "mtime": 1795194814.9391437,
+    "hash": "91269d39ae21112a5c74b08a73673df0"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\p2p\\P2PWelcomeScreen.kt": {
     "mtime": 1794712717.052745,
     "hash": "c66acc37164da8ef52a9c64384d870fe"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\p2p\\SocialHubScreen.kt": {
-    "mtime": 1794787330.7725754,
-    "hash": "aa099b9b50cf4313389bf4b130c8c3e0"
+    "mtime": 1795194814.9421456,
+    "hash": "bc66730ccfa675822267ca2834a14e02"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\playlist\\AddSongsToLikedScreen.kt": {
     "mtime": 1794710086.5411623,
@@ -1612,28 +1612,28 @@
     "hash": "58256fc299a1e668ff8f590bc891bdf6"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\settings\\AboutScreen.kt": {
-    "mtime": 1795058482.792408,
+    "mtime": 1795194814.9466512,
     "hash": "69f61aa3aee733014c406ce1e242cab5"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\settings\\AccountSettings.kt": {
-    "mtime": 1795110338.7741883,
+    "mtime": 1795194814.9496782,
     "hash": "e4c71a91070742b61a4c5b30706ae7e9"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\settings\\AiSettings.kt": {
-    "mtime": 1794767703.9284153,
-    "hash": "47754f530b4ce69422710fa0325691c2"
+    "mtime": 1795207188.7276673,
+    "hash": "f777a0100f2eef8314e145b2c922b982"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\settings\\AlwaysOnDisplaySettings.kt": {
     "mtime": 1794680591.2009294,
     "hash": "b4b5561a2ea2e16e8dd90ed5288793a3"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\settings\\AppearanceSettings.kt": {
-    "mtime": 1795137743.5347025,
-    "hash": "9e063bddec0d72095e75b37b89879b30"
+    "mtime": 1795194814.9587429,
+    "hash": "5b40f8fbdf00fabd6d7d9fb8a83de29f"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\settings\\AppIconScreen.kt": {
-    "mtime": 1795110295.0932734,
-    "hash": "453301214de8e8cd0dadee9e852b1030"
+    "mtime": 1795194814.955192,
+    "hash": "b9e63c00b57cf878dcdadd0111531856"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\settings\\BackupAndRestore.kt": {
     "mtime": 1786382870.4978306,
@@ -1656,8 +1656,8 @@
     "hash": "dd4fec40c5e51770d29612141fc6a5f9"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\settings\\DesktopLinkScreen.kt": {
-    "mtime": 1795049166.6273606,
-    "hash": "627bc17e63582616b581b7a2447c1a97"
+    "mtime": 1795194814.9627433,
+    "hash": "4709a476d594cec40c6c33391dfb5363"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\settings\\DiscordExperimental.kt": {
     "mtime": 1786382870.7414186,
@@ -1675,9 +1675,17 @@
     "mtime": 1786382870.9208107,
     "hash": "bf507f0b4c10558529ca5510bd10c5bb"
   },
+  "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\settings\\DjSettings.kt": {
+    "mtime": 1795207629.658549,
+    "hash": "ed7920efbef04128325c4c6d92d2616a"
+  },
+  "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\settings\\DjVoiceSetup.kt": {
+    "mtime": 1795207550.2951822,
+    "hash": "74aeba297e9675f664a81fa77c535bc1"
+  },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\settings\\DJVoteSheet.kt": {
-    "mtime": 1794767692.8893812,
-    "hash": "c4e31225f81d618677f2be1419bafa9f"
+    "mtime": 1795194814.9607437,
+    "hash": "c215e005cb3761c7c791d8214780acb8"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\settings\\IntegrationScreen.kt": {
     "mtime": 1786382871.0455296,
@@ -1696,16 +1704,16 @@
     "hash": "c3161a23aa03ec2815d0192746f91414"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\settings\\MusicTogetherScreen.kt": {
-    "mtime": 1795107226.3746567,
-    "hash": "4433bcd606a7cdbe3e2c8eb30dc11e09"
+    "mtime": 1795194814.9662569,
+    "hash": "aa3d186bf01415459767542f925329f9"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\settings\\PalettePickerScreen.kt": {
     "mtime": 1786382871.3403516,
     "hash": "9d541cadee6f9fd217e179b2b51fb055"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\settings\\PlayerSettings.kt": {
-    "mtime": 1794768706.531925,
-    "hash": "6b06a150ef8e3672a5c1a6d388a5ba58"
+    "mtime": 1795194814.9692965,
+    "hash": "15e3a1782bb5768faf4081487b385b02"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\settings\\PoTokenExtractionActivity.kt": {
     "mtime": 1786380158.3654165,
@@ -1720,20 +1728,20 @@
     "hash": "8301cc78c14877a5fd842a4436935c47"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\settings\\PublicRoomsScreen.kt": {
-    "mtime": 1795107255.1909893,
+    "mtime": 1795194814.9722943,
     "hash": "ff0520a68b5107a7cb9b779a2bfe8d50"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\settings\\SettingsComponents.kt": {
-    "mtime": 1795110338.7781935,
+    "mtime": 1795194814.9742928,
     "hash": "4765c2d6f55276fd9e75fee31d61b2e7"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\settings\\SettingsDataBuilders.kt": {
-    "mtime": 1787504978.4588132,
-    "hash": "44995ff1c441a57fdec72fb46fa099ac"
+    "mtime": 1795207575.6391387,
+    "hash": "10799995f106249574884a53419998ec"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\settings\\SettingsDezzyComponents.kt": {
-    "mtime": 1794693604.1070023,
-    "hash": "6570aef36e4de8dac0908244ec940de5"
+    "mtime": 1795207588.7494125,
+    "hash": "3157ba722e412427762865c834bc8070"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\settings\\SettingsDimensions.kt": {
     "mtime": 1786382871.6870618,
@@ -1780,8 +1788,8 @@
     "hash": "e08088332e845b3d2bdb099c07eeb64b"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\settings\\TogetherDezzyComponents.kt": {
-    "mtime": 1795107233.5691395,
-    "hash": "9394d7d9f85dc3db2272b3c996177c3b"
+    "mtime": 1795194814.9788256,
+    "hash": "013f291e3d20037dca35ec9863defe9b"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\settings\\UpdateScreen.kt": {
     "mtime": 1786396006.0807333,
@@ -1792,7 +1800,7 @@
     "hash": "507c60c9d8c5c8f3c77309c745a35345"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\social\\DezzyAuthScreen.kt": {
-    "mtime": 1795110338.7807014,
+    "mtime": 1795194814.9813473,
     "hash": "1f50094569878fd6739743e5b330a582"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\screens\\social\\FeedScreen.kt": {
@@ -1852,8 +1860,8 @@
     "hash": "68152bb167ecbc35aff0823c8a9f58de"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\theme\\Theme.kt": {
-    "mtime": 1794767476.8798258,
-    "hash": "8168ca78e2cbc47301e5069722c58612"
+    "mtime": 1795194814.9833686,
+    "hash": "2c069b39d96624dbb437b5654a91b89e"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\theme\\Type.kt": {
     "mtime": 1794697942.7580361,
@@ -1884,7 +1892,7 @@
     "hash": "bb9ad662e3bc025a9f8b58eaf50b3a12"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\utils\\ReduceMotion.kt": {
-    "mtime": 1794750461.1213388,
+    "mtime": 1795194814.9843657,
     "hash": "d35237f6bb47a8a205a629f46ff6b3b9"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\ui\\utils\\Responsive.kt": {
@@ -1948,11 +1956,11 @@
     "hash": "d657be599d0ec68400a701b02d14d59b"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\utils\\ComposeToImage.kt": {
-    "mtime": 1795110338.7582977,
+    "mtime": 1795194814.9889288,
     "hash": "0c2f980da8f7cd5b07b92002316d9daa"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\utils\\DataStore.kt": {
-    "mtime": 1794753743.6636374,
+    "mtime": 1795194814.9909258,
     "hash": "f56672811b27f0b630d0cf8ee39d2b21"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\utils\\DiscordImageResolver.kt": {
@@ -2004,7 +2012,7 @@
     "hash": "bb04933dbdae8d6a0693ff62e83e38d3"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\utils\\OfflineArtworkInterceptor.kt": {
-    "mtime": 1795050170.587744,
+    "mtime": 1795194814.9919257,
     "hash": "b228ec545ced9ccf6a97606d39562af9"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\utils\\PlaylistSuggestionQueryBuilder.kt": {
@@ -2060,7 +2068,7 @@
     "hash": "9434cb809db35c563e2b285794fdd803"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\utils\\UpdateNotificationManager.kt": {
-    "mtime": 1795110338.7572966,
+    "mtime": 1795194814.9939287,
     "hash": "2671f7e40f504b9b0e8d050461f22534"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\utils\\Updater.kt": {
@@ -2076,24 +2084,24 @@
     "hash": "086c8a5de8b2e32381df568a1d708fd3"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\utils\\YTPlayerUtils.kt": {
-    "mtime": 1795058435.8040998,
-    "hash": "b3e63dd98171b1025cbf65aae6da3410"
+    "mtime": 1795209424.735304,
+    "hash": "a16d0c0dd28c59c08dcd6a3475e9f358"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\video\\MusicVideoCache.kt": {
     "mtime": 1794700110.8751655,
     "hash": "95bab1e9322df77319c7b68618aae524"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\video\\MusicVideoDownloader.kt": {
-    "mtime": 1794768393.6389692,
-    "hash": "f0903956669b28060d4738a64f59d84d"
+    "mtime": 1795194815.0010033,
+    "hash": "20f444fd1135ac98b72112b5ea30c952"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\video\\MusicVideoResolver.kt": {
     "mtime": 1794700110.872167,
     "hash": "e61f6a28c0ed1f1af9362cb761bb21ac"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\video\\VideoPipState.kt": {
-    "mtime": 1794768706.8422315,
-    "hash": "fca5b26915367f9773ace2cbfa8df7ec"
+    "mtime": 1795194815.002025,
+    "hash": "3135dcdd8ce459578388eeaaf1327562"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\viewmodels\\AboutViewModel.kt": {
     "mtime": 1786382874.5825818,
@@ -2156,15 +2164,15 @@
     "hash": "688ba59fe66022e992a07307a77dd7b9"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\viewmodels\\HomeViewModel.kt": {
-    "mtime": 1795126237.019227,
-    "hash": "c4599146df7eb09a2853e077e5b4a714"
+    "mtime": 1795194815.0050263,
+    "hash": "0f15b25eb20afcde1d9d3d8e8138b6eb"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\viewmodels\\LibraryGenresViewModel.kt": {
     "mtime": 1786380161.8772554,
     "hash": "47913e6121f25b1ba541b44bbcd2e590"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\viewmodels\\LibraryViewModels.kt": {
-    "mtime": 1795050648.4826798,
+    "mtime": 1795194815.0075722,
     "hash": "82ebf1fe4f650e8636f9c05953e527ea"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\viewmodels\\LocalPlaylistViewModel.kt": {
@@ -2220,7 +2228,7 @@
     "hash": "62d91cdd73eb33b7838f3546c2325091"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\viewmodels\\YearInMusicViewModel.kt": {
-    "mtime": 1794751176.3797696,
+    "mtime": 1795194815.0131137,
     "hash": "6f6629bc7111553304f83cfd88b91e12"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\main\\kotlin\\com\\dezzy\\music\\viewmodels\\YouTubeBrowseViewModel.kt": {
@@ -2244,8 +2252,8 @@
     "hash": "3f7125170519a7c88c555501646bf957"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\test\\kotlin\\com\\dezzy\\music\\playback\\DownloadPostProcessorStressTest.kt": {
-    "mtime": 1795050802.0929773,
-    "hash": "e4dda88dee20c0daa5e4c76ff0f4b909"
+    "mtime": 1795194815.2891674,
+    "hash": "12e8cfe119d47e5ce4fa4f5df7f47209"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\app\\src\\test\\kotlin\\com\\dezzy\\music\\playback\\StopMusicOnTaskClearTest.kt": {
     "mtime": 1786380166.9735117,
@@ -2872,12 +2880,12 @@
     "hash": "1957bfef37e13a058036e726d2e18a42"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\lrclib\\src\\main\\kotlin\\com\\dezzy\\music\\lrclib\\LrcLib.kt": {
-    "mtime": 1795147144.1088963,
-    "hash": "aec713a88bedd21ccc579dd323346ae3"
+    "mtime": 1795194818.3905914,
+    "hash": "008a86cf3b94a56234030d24a22b8b96"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\lrclib\\src\\main\\kotlin\\com\\dezzy\\music\\lrclib\\models\\Track.kt": {
-    "mtime": 1795147136.3270338,
-    "hash": "dfbf449ce4772859802220d384e0434d"
+    "mtime": 1795194818.392605,
+    "hash": "ce916cafabbb8e09f5ba929de411c721"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\native\\dezzy_video_resolver\\src\\lib.rs": {
     "mtime": 1793343394.9348254,
@@ -3044,8 +3052,8 @@
     "hash": "552bc5d67be42b710b64c426225f515d"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\CLAUDE.md": {
-    "mtime": 1794787086.0450504,
-    "hash": "585cd93ffa7390016769eb2202bc67d0"
+    "mtime": 1795194814.611863,
+    "hash": "c91eef5d393c49daca4cd73e09824d58"
   },
   "C:\\Users\\dezzy\\antigravity\\OpenTune\\CODE_OF_CONDUCT.md": {
     "mtime": 1786382809.8341494,

@@ -122,17 +122,9 @@ android {
                 ?: ""
         buildConfigField("String", "TOGETHER_BEARER_TOKEN", "\"$togetherBearerToken\"")
 
-        val geminiApiKey =
-            localProperties.getProperty("GEMINI_API_KEY")
-                ?: System.getenv("GEMINI_API_KEY")
-                ?: ""
-        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
+        // El guion del DJ (Gemini) usa la clave que pone cada usuario en Ajustes › DJ.
 
-        val elevenLabsApiKey =
-            localProperties.getProperty("ELEVENLABS_API_KEY")
-                ?: System.getenv("ELEVENLABS_API_KEY")
-                ?: ""
-        buildConfigField("String", "ELEVENLABS_API_KEY", "\"$elevenLabsApiKey\"")
+        // La voz del DJ usa la clave que pone cada usuario en Ajustes › DJ (nunca una nuestra en el APK).
 
         buildConfigField("String", "GIT_COMMIT", "\"$gitCommit\"")
 

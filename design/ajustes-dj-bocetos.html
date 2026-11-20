@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ajustes del DJ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<style>
+:root{
+  --page:#F4EFEF; --ink:#22191A; --muted:#5E5051; --doc-line:#D8C1C2; --doc-accent:#9C3F48;
+  --primary:#FFB2B9; --on-primary:#5F1320; --pc:#7D2833; --on-pc:#FFDADC;
+  --sc2:#5C3F41; --on-sc2:#FFDADC; --tertiary:#E8C08E; --tc:#5D4219; --on-tc:#FFDDB3;
+  --surface:#1A1112; --s-low:#22191A; --s:#261D1E; --s-high:#312828; --s-highest:#3C3233;
+  --on-s:#F0DEDF; --on-sv:#D7C1C2; --outline:#A08C8D; --ov:#524344;
+  --ok:#9BD3A6; --okc:#1F4A2A; --warn:#FFD180;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--page);color:var(--ink);font-family:Roboto,system-ui,sans-serif;line-height:1.45}
+.ms{font-family:'Material Symbols Outlined';font-weight:400;font-style:normal;font-size:24px;line-height:1;display:inline-block;white-space:nowrap;
+  -webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;user-select:none}
+.ms.f{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+.s18{font-size:18px!important}.s20{font-size:20px!important}.s28{font-size:28px!important}
+.wrap{max-width:1240px;margin:0 auto;padding:40px 16px 80px}
+header h1{font-family:'Roboto Flex',Roboto;font-size:36px;font-weight:700;letter-spacing:-.5px}
+header p{font-size:16px;color:var(--muted);max-width:880px;margin-top:8px}
+.today{margin-top:20px;background:#fff;border:1px solid var(--doc-line);border-radius:20px;padding:18px 20px;font-size:14px;max-width:980px}
+.today h4{font-size:15px;margin-bottom:6px}.today ul{padding-left:18px}.today li{margin:3px 0}
+section{margin-top:56px;padding-top:28px;border-top:3px solid var(--doc-accent)}
+.head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.tag{font:700 13px Roboto;letter-spacing:1px;background:var(--doc-accent);color:#fff;border-radius:8px;padding:4px 10px}
+.head h3{font-family:'Roboto Flex',Roboto;font-size:28px;font-weight:700}
+.head p{flex-basis:100%;color:var(--muted);font-size:15px;max-width:900px}
+.row{display:flex;gap:28px;flex-wrap:wrap;margin-top:22px;align-items:flex-start}
+.cap{font-size:13px;color:var(--muted);margin-top:10px;max-width:360px;text-align:center}
+.notes{flex:1;min-width:260px;max-width:380px;background:#fff;border:1px solid var(--doc-line);border-radius:20px;padding:18px 20px;font-size:14px}
+.notes h4{font-size:15px;margin:10px 0 4px}.notes h4:first-child{margin-top:0}.notes ul{padding-left:18px}.notes li{margin:3px 0}
+
+/* Teléfono */
+.phone{width:360px;height:760px;border-radius:36px;background:var(--surface);color:var(--on-s);overflow:hidden;position:relative;
+  box-shadow:0 24px 50px rgba(0,0,0,.25);border:8px solid #0B0809;display:flex;flex-direction:column;font-size:14px}
+.sb{height:28px;display:flex;justify-content:space-between;align-items:center;padding:0 18px;font-size:12px;color:var(--on-sv);flex:none}
+.top{display:flex;align-items:center;gap:12px;padding:6px 8px 10px;flex:none}
+.top .t{font-family:'Roboto Flex',Roboto;font-size:22px;font-weight:500}
+.ib{width:40px;height:40px;border-radius:20px;display:grid;place-items:center;color:var(--on-s)}
+.body{flex:1;overflow:auto;padding:0 14px 24px}
+.body::-webkit-scrollbar{display:none}
+.lbl{font-size:13px;font-weight:500;color:var(--primary);margin:16px 6px 8px;letter-spacing:.2px}
+.grp{background:var(--s-low);border-radius:20px;overflow:hidden}
+.it{display:flex;align-items:center;gap:14px;padding:14px 16px;border-top:1px solid #2c2223}
+.it:first-child{border-top:0}
+.it .ms{color:var(--on-sv)}
+.it .tx{flex:1;min-width:0}.it .tx b{display:block;font-weight:500;font-size:15px}.it .tx span{font-size:13px;color:var(--on-sv)}
+.chip{font-size:11px;font-weight:700;border-radius:8px;padding:3px 8px;letter-spacing:.3px}
+.chip.ok{background:var(--okc);color:var(--ok)}.chip.free{background:var(--sc2);color:var(--on-sc2)}.chip.pro{background:var(--tc);color:var(--on-tc)}
+.sw{width:52px;height:32px;border-radius:16px;background:var(--primary);position:relative;flex:none}
+.sw:after{content:'';position:absolute;right:4px;top:4px;width:24px;height:24px;border-radius:12px;background:var(--on-primary)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;border-radius:22px;padding:0 20px;font-weight:500;font-size:14px}
+.btn.fill{background:var(--primary);color:var(--on-primary)}.btn.ton{background:var(--sc2);color:var(--on-sc2)}.btn.out{border:1px solid var(--outline);color:var(--on-s)}
+.field{background:var(--s-high);border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:10px;border:1px solid var(--ov)}
+.field .v{flex:1;font-family:ui-monospace,Consolas,monospace;letter-spacing:1px;color:var(--on-s);font-size:14px}
+.field small{display:block;font-size:11px;color:var(--on-sv);font-family:Roboto;letter-spacing:0}
+.hint{font-size:12px;color:var(--on-sv);margin:8px 6px 0;display:flex;gap:6px;align-items:flex-start}
+.hint .ms{font-size:16px}
+.seg{display:flex;background:var(--s-high);border-radius:20px;padding:4px;gap:4px}
+.seg div{flex:1;text-align:center;padding:8px 4px;border-radius:16px;font-size:13px;color:var(--on-sv)}
+.seg .on{background:var(--pc);color:var(--on-pc);font-weight:500}
+.slider{height:4px;background:var(--s-highest);border-radius:2px;position:relative;margin:14px 4px 6px}
+.slider i{position:absolute;left:0;top:0;bottom:0;background:var(--primary);border-radius:2px}
+.slider b{position:absolute;top:-8px;width:20px;height:20px;border-radius:10px;background:var(--primary)}
+.ends{display:flex;justify-content:space-between;font-size:11px;color:var(--on-sv)}
+
+/* A: lista */
+.dlg{position:absolute;left:16px;right:16px;bottom:22px;background:var(--s-high);border-radius:28px;padding:22px 20px 16px;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+.dlg h5{font-family:'Roboto Flex',Roboto;font-size:20px;font-weight:500;margin-bottom:6px}
+.dlg p{font-size:13px;color:var(--on-sv);margin-bottom:14px}
+.acts{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+
+/* B: pasos */
+.steps{display:flex;gap:6px;padding:0 18px 4px;flex:none}
+.steps div{flex:1;height:4px;border-radius:2px;background:var(--s-highest)}.steps .on{background:var(--primary)}
+.stepn{font-size:12px;color:var(--on-sv);padding:8px 20px 0;flex:none}
+.big{font-family:'Roboto Flex',Roboto;font-size:26px;font-weight:600;line-height:1.15;padding:4px 20px 6px}
+.sub{font-size:14px;color:var(--on-sv);padding:0 20px 14px}
+.prov{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:20px;background:var(--s-low);border:2px solid transparent;margin-bottom:10px}
+.prov.on{border-color:var(--primary);background:#2d1e20}
+.prov .lg{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-weight:700;font-size:16px;flex:none}
+.radio{width:20px;height:20px;border-radius:10px;border:2px solid var(--outline);flex:none}
+.radio.on{border:6px solid var(--primary)}
+.guide{background:var(--s-low);border-radius:20px;padding:14px 16px;margin-top:12px}
+.guide ol{padding-left:18px;font-size:13px;color:var(--on-sv)}.guide li{margin:5px 0}.guide b{color:var(--on-s);font-weight:500}
+.foot{flex:none;padding:12px 16px 18px;display:flex;gap:10px;background:linear-gradient(transparent,var(--surface) 30%)}
+.foot .btn{flex:1}
+
+/* C: estudio */
+.hero{border-radius:28px;padding:18px;background:radial-gradient(120% 100% at 0% 0%,#7D2833 0%,#3a1d22 55%,#22191A 100%);position:relative;overflow:hidden}
+.hero .av{width:64px;height:64px;border-radius:32px;background:conic-gradient(from 200deg,#FFB2B9,#E8C08E,#FFB2B9);display:grid;place-items:center;color:#5F1320}
+.hero h4{font-family:'Roboto Flex',Roboto;font-size:24px;font-weight:700;margin-top:12px}
+.hero .st{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--on-pc);margin-top:2px}
+.dot{width:8px;height:8px;border-radius:4px;background:var(--ok)}
+.wave{position:absolute;right:16px;top:22px;display:flex;gap:3px;align-items:center;height:40px}
+.wave i{width:4px;border-radius:2px;background:rgba(255,218,220,.6)}
+.hero .btn{margin-top:14px;height:40px}
+.cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.pc{background:var(--s-low);border-radius:18px;padding:12px 10px;text-align:center;border:2px solid transparent;font-size:12px}
+.pc.on{border-color:var(--primary);background:#2d1e20}
+.pc .lg{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;margin:0 auto 6px;font-weight:700}
+.pc b{display:block;font-size:13px;font-weight:500;margin-bottom:4px}
+.voices{display:flex;gap:10px;overflow:hidden}
+.vc{flex:none;width:100px;background:var(--s-low);border-radius:18px;padding:12px 10px;text-align:center;border:2px solid transparent}
+.vc.on{border-color:var(--primary)}
+.vc .a{width:44px;height:44px;border-radius:22px;margin:0 auto 6px;display:grid;place-items:center}
+.vc b{font-size:13px;font-weight:500;display:block}.vc span{font-size:11px;color:var(--on-sv)}
+.card{background:var(--s-low);border-radius:20px;padding:14px 16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Ajustes › DJ Dezzy</h1>
+  <p>Una pestaña nueva en Ajustes con todo lo del DJ. Cada usuario pone su propia clave de voz (ElevenLabs u OpenAI). Sin clave, el DJ sigue hablando con una voz gratuita. Tu clave ya no va dentro del APK.</p>
+  <div class="today">
+    <h4>Qué lleva la pestaña en las tres versiones</h4>
+    <ul>
+      <li><b>Voz:</b> proveedor (Gratis · ElevenLabs · OpenAI), clave API, elección de voz con «Escuchar» y botón «Probar voz».</li>
+      <li><b>Personalidad:</b> nombre del DJ, idioma, estilo (Radio · Fiesta · Tranquilo) y cada cuánto habla.</li>
+      <li><b>Privacidad:</b> la clave se guarda cifrada en el móvil, sólo se envía al proveedor, y hay un botón para borrarla.</li>
+      <li><b>Comprobación:</b> al pegar la clave se verifica al momento («Clave válida · 8.400 caracteres restantes»).</li>
+    </ul>
+  </div>
+</header>
+
+<!-- ───────── A ───────── -->
+<section>
+  <div class="head"><span class="tag">BOCETO A</span><h3>Lista de ajustes clásica</h3>
+    <p>Igual que el resto de Ajustes: filas agrupadas y un diálogo para la clave. Es lo más familiar y lo más rápido de usar si ya sabes lo que buscas.</p></div>
+  <div class="row">
+    <div>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>▮▮ ▲ ●</span></div>
+        <div class="top"><span class="ib ms">arrow_back</span><span class="t">DJ Dezzy</span></div>
+        <div class="body">
+          <div class="grp"><div class="it"><span class="ms f" style="color:var(--primary)">graphic_eq</span><div class="tx"><b>DJ con voz</b><span>Habla entre canciones</span></div><span class="sw"></span></div></div>
+          <div class="lbl">Voz</div>
+          <div class="grp">
+            <div class="it"><span class="ms">record_voice_over</span><div class="tx"><b>Proveedor</b><span>ElevenLabs</span></div><span class="chip pro">TU CLAVE</span></div>
+            <div class="it"><span class="ms">key</span><div class="tx"><b>Clave API</b><span>sk_••••••••••3f9a</span></div><span class="chip ok">VÁLIDA</span></div>
+            <div class="it"><span class="ms">person</span><div class="tx"><b>Voz</b><span>Sarah · Cálida, español</span></div><span class="ms">play_circle</span></div>
+            <div class="it"><span class="ms">tune</span><div class="tx"><b>Calidad</b><span>Multilingüe v2 (recomendada)</span></div></div>
+          </div>
+          <div class="lbl">Personalidad</div>
+          <div class="grp">
+            <div class="it"><span class="ms">badge</span><div class="tx"><b>Nombre del DJ</b><span>Dezzy</span></div></div>
+            <div class="it"><span class="ms">translate</span><div class="tx"><b>Idioma</b><span>Español (México)</span></div></div>
+            <div class="it"><span class="ms">mood</span><div class="tx"><b>Estilo</b><span>Radio</span></div></div>
+            <div class="it"><span class="ms">schedule</span><div class="tx"><b>Cada cuánto habla</b><span>Cada 3 canciones</span></div></div>
+          </div>
+          <div style="margin-top:16px;display:flex;gap:10px"><span class="btn fill" style="flex:1"><span class="ms s20">campaign</span>Probar voz</span></div>
+        </div>
+        <div class="scrim"></div>
+        <div class="dlg">
+          <h5>Clave de ElevenLabs</h5>
+          <p>Pégala desde elevenlabs.io › Perfil › API Keys. Se guarda cifrada en este móvil.</p>
+          <div class="field"><span class="ms s20">key</span><span class="v">sk_7e21…3f9a</span><span class="ms s20">content_paste</span></div>
+          <div class="hint"><span class="ms" style="color:var(--ok)">check_circle</span><span>Clave válida · 8.400 caracteres restantes este mes</span></div>
+          <div class="acts"><span class="btn out" style="height:40px">Cómo conseguirla</span><span class="btn fill" style="height:40px">Guardar</span></div>
+        </div>
+      </div>
+      <div class="cap">Pantalla con el diálogo de la clave abierto.</div>
+    </div>
+    <div class="notes">
+      <h4>A favor</h4><ul><li>Consistente con Ajustes y con los componentes que ya hay (SettingsComponents).</li><li>Es la que menos código lleva y la que menos se rompe.</li></ul>
+      <h4>En contra</h4><ul><li>Para quien no sabe qué es una «clave API» es la menos guiada.</li><li>Elegir la voz es una lista de texto: no luce.</li></ul>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── B ───────── -->
+<section>
+  <div class="head"><span class="tag">BOCETO B</span><h3>Asistente por pasos</h3>
+    <p>La primera vez se configura en 3 pasos: 1) proveedor, 2) clave con guía, 3) voz y prueba. Después la pestaña es una lista corta con «Cambiar voz» que vuelve a abrir el asistente. Es la más fácil para quien nunca ha visto una clave API.</p></div>
+  <div class="row">
+    <div>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>▮▮ ▲ ●</span></div>
+        <div class="top"><span class="ib ms">close</span><span class="t" style="font-size:16px;color:var(--on-sv)">Configurar la voz</span></div>
+        <div class="steps"><div class="on"></div><div class="on"></div><div></div></div>
+        <div class="stepn">Paso 2 de 3</div>
+        <div class="big">Conecta tu cuenta de ElevenLabs</div>
+        <div class="sub">Tu DJ usará tu cuenta. El plan gratuito da unos 10.000 caracteres al mes, unas 60 locuciones.</div>
+        <div class="body">
+          <div class="field" style="border-color:var(--primary)"><span class="ms s20">key</span><div class="v"><small>Clave API</small>sk_7e21…3f9a</div><span class="ms s20">content_paste</span></div>
+          <div class="hint"><span class="ms" style="color:var(--ok)">check_circle</span><span>¡Lista! Clave válida · 8.400 caracteres restantes</span></div>
+          <div class="guide">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span class="ms s20" style="color:var(--tertiary)">lightbulb</span><b style="font-weight:500">Cómo conseguirla (1 minuto)</b></div>
+            <ol><li>Abre <b>elevenlabs.io</b> y crea una cuenta gratis.</li><li>Ve a <b>Perfil › API Keys</b> y pulsa <b>Create</b>.</li><li>Copia la clave y vuelve aquí: se pega sola.</li></ol>
+            <span class="btn ton" style="height:36px;margin-top:10px;font-size:13px"><span class="ms s18">open_in_new</span>Abrir ElevenLabs</span>
+          </div>
+          <div class="hint" style="margin-top:14px"><span class="ms">lock</span><span>Se guarda cifrada en este móvil y sólo se envía a ElevenLabs.</span></div>
+        </div>
+        <div class="foot"><span class="btn out">Atrás</span><span class="btn fill">Siguiente</span></div>
+      </div>
+      <div class="cap">Paso 2: pegar la clave. El paso 1 elige el proveedor y el 3 la voz, con «Escuchar».</div>
+    </div>
+    <div>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>▮▮ ▲ ●</span></div>
+        <div class="top"><span class="ib ms">close</span><span class="t" style="font-size:16px;color:var(--on-sv)">Configurar la voz</span></div>
+        <div class="steps"><div class="on"></div><div></div><div></div></div>
+        <div class="stepn">Paso 1 de 3</div>
+        <div class="big">¿Con qué voz habla tu DJ?</div>
+        <div class="sub">Puedes cambiarlo cuando quieras.</div>
+        <div class="body">
+          <div class="prov"><span class="lg" style="background:var(--sc2);color:var(--on-sc2)"><span class="ms">volume_up</span></span><div class="tx" style="flex:1"><b style="font-weight:500">Voz gratuita</b><div style="font-size:12px;color:var(--on-sv)">Sin cuenta. Suena más robótica.</div></div><span class="chip free">GRATIS</span><span class="radio"></span></div>
+          <div class="prov on"><span class="lg" style="background:#fff;color:#000">11</span><div class="tx" style="flex:1"><b style="font-weight:500">ElevenLabs</b><div style="font-size:12px;color:var(--on-sv)">La más natural. Plan gratis disponible.</div></div><span class="chip pro">TU CLAVE</span><span class="radio on"></span></div>
+          <div class="prov"><span class="lg" style="background:#10a37f;color:#fff"><span class="ms">auto_awesome</span></span><div class="tx" style="flex:1"><b style="font-weight:500">OpenAI</b><div style="font-size:12px;color:var(--on-sv)">Muy buena y barata. Requiere saldo.</div></div><span class="chip pro">TU CLAVE</span><span class="radio"></span></div>
+        </div>
+        <div class="foot"><span class="btn fill">Siguiente</span></div>
+      </div>
+      <div class="cap">Paso 1: elegir proveedor.</div>
+    </div>
+    <div class="notes">
+      <h4>A favor</h4><ul><li>La más intuitiva: explica qué es la clave y dónde se saca.</li><li>Al terminar el asistente, el DJ queda listo y probado.</li></ul>
+      <h4>En contra</h4><ul><li>Son más pantallas, así que lleva más código.</li><li>Para ajustes sueltos (el nombre, el estilo) hace falta además la lista corta.</li></ul>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── C ───────── -->
+<section>
+  <div class="head"><span class="tag">BOCETO C</span><h3>Estudio del DJ</h3>
+    <p>Todo en una pantalla visual. Arriba, una tarjeta del DJ con su estado y el botón para escucharlo. Debajo, el proveedor en tarjetas, la clave en línea, un carrusel de voces y deslizadores de personalidad. Va con el estilo de la pantalla del DJ.</p></div>
+  <div class="row">
+    <div>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>▮▮ ▲ ●</span></div>
+        <div class="top"><span class="ib ms">arrow_back</span><span class="t">DJ Dezzy</span></div>
+        <div class="body">
+          <div class="hero">
+            <div class="wave"><i style="height:14px"></i><i style="height:30px"></i><i style="height:20px"></i><i style="height:38px"></i><i style="height:16px"></i><i style="height:26px"></i></div>
+            <div class="av"><span class="ms f s28">headphones</span></div>
+            <h4>Dezzy</h4>
+            <div class="st"><span class="dot"></span>Voz lista · ElevenLabs · Sarah</div>
+            <span class="btn fill"><span class="ms s20 f">play_arrow</span>Escuchar cómo suena</span>
+          </div>
+          <div class="lbl">Proveedor de voz</div>
+          <div class="cards">
+            <div class="pc"><span class="lg" style="background:var(--sc2);color:var(--on-sc2)"><span class="ms s20">volume_up</span></span><b>Gratis</b><span class="chip free">SIN CLAVE</span></div>
+            <div class="pc on"><span class="lg" style="background:#fff;color:#000">11</span><b>ElevenLabs</b><span class="chip ok">CONECTADA</span></div>
+            <div class="pc"><span class="lg" style="background:#10a37f;color:#fff"><span class="ms s20">auto_awesome</span></span><b>OpenAI</b><span class="chip pro">TU CLAVE</span></div>
+          </div>
+          <div class="field" style="margin-top:10px"><span class="ms s20">key</span><div class="v"><small>Clave de ElevenLabs · 8.400 caracteres restantes</small>sk_••••••••3f9a</div><span class="ms s20">delete</span></div>
+          <div class="lbl">Voz</div>
+          <div class="voices">
+            <div class="vc on"><div class="a" style="background:#FFB2B9;color:#5F1320"><span class="ms f">play_arrow</span></div><b>Sarah</b><span>Cálida</span></div>
+            <div class="vc"><div class="a" style="background:#E8C08E;color:#5D4219"><span class="ms f">play_arrow</span></div><b>Antoni</b><span>Locutor</span></div>
+            <div class="vc"><div class="a" style="background:#9BD3A6;color:#1F4A2A"><span class="ms f">play_arrow</span></div><b>Bella</b><span>Alegre</span></div>
+          </div>
+          <div class="lbl">Personalidad</div>
+          <div class="card">
+            <div style="font-size:13px;margin-bottom:8px">Estilo</div>
+            <div class="seg"><div>Tranquilo</div><div class="on">Radio</div><div>Fiesta</div></div>
+            <div style="font-size:13px;margin-top:14px">Cuánto habla</div>
+            <div class="slider"><i style="width:45%"></i><b style="left:42%"></b></div>
+            <div class="ends"><span>Sólo al empezar</span><span>Cada canción</span></div>
+          </div>
+          <div class="grp" style="margin-top:10px">
+            <div class="it"><span class="ms">badge</span><div class="tx"><b>Nombre</b><span>Dezzy</span></div></div>
+            <div class="it"><span class="ms">translate</span><div class="tx"><b>Idioma</b><span>Español (México)</span></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Una sola pantalla con todo a la vista.</div>
+    </div>
+    <div class="notes">
+      <h4>A favor</h4><ul><li>La más vistosa: elegir voz es tocar y escuchar.</li><li>El estado está siempre arriba: se ve si la voz funciona sin entrar en nada.</li></ul>
+      <h4>En contra</h4><ul><li>No explica dónde sacar la clave, salvo con un enlace «¿Cómo la consigo?».</li><li>Es una pantalla larga en móviles pequeños.</li></ul>
+      <h4>Idea</h4><ul><li>Se pueden mezclar: el estudio C con el asistente de B la primera vez, cuando aún no hay clave.</li></ul>
+    </div>
+  </div>
+</section>
+</div>
+</body>
+</html>

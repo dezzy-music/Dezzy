@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dezzy escritorio · DJ</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..600,0..1,0&display=swap" rel="stylesheet">
+<style>
+:root{--doc:#f4f1f1;--ink:#22191a;--muted:#6b5b5c;--line:#e3d6d6;
+  --bg:#000;--panel:#121212;--c:#181818;--el:#1f1f1f;--hov:#2a2a2a;--hi:#fff;--sub:#b3b3b3;--dim:#7a7a7a;--ov:#3e3e3e;
+  --acc:#f2606d;--onacc:#1a0407;--accc:#5a1f27;--onaccc:#ffdadc;--ter:#e8c08e;--ok:#9bd3a6;--err:#ffb4ab}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--doc);color:var(--ink);font:15px/1.5 Poppins,system-ui,sans-serif}
+.doc{max-width:1340px;margin:0 auto;padding:40px 24px 80px}
+h1{font-size:30px;margin-bottom:6px}
+.lead{color:var(--muted);max-width:980px}
+.ms{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;font-size:22px;line-height:1;display:inline-block;-webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400;vertical-align:middle}
+.ms.f{font-variation-settings:'FILL' 1,'wght' 500}
+section{margin-top:56px;padding-top:24px;border-top:3px solid var(--ink)}
+.vh{display:flex;align-items:center;gap:12px}
+.vh .tag{display:inline-grid;place-items:center;width:36px;height:36px;border-radius:10px;background:var(--ink);color:#fff;font-weight:700}
+.vh h2{font-size:24px}
+.vp{color:var(--muted);max-width:1040px;margin:4px 0 10px}
+ul.chg{margin:6px 0 14px;padding-left:20px;font-size:14px;max-width:1100px}
+.cap{font-weight:600;margin:18px 0 8px;font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.zoom{zoom:.85}
+@media (max-width:1300px){.zoom{zoom:.65}}
+@media (max-width:900px){.zoom{zoom:.42}}
+
+/* ventana */
+.win{width:1300px;height:780px;border-radius:12px;overflow:hidden;background:var(--bg);color:var(--hi);display:flex;flex-direction:column;box-shadow:0 30px 60px rgba(0,0,0,.35);font-size:14px;position:relative}
+.ab{height:64px;flex:none;display:flex;align-items:center;gap:10px;padding:0 12px}
+.logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--acc),var(--ter));display:grid;place-items:center;color:#000;font-weight:800}
+.rb{width:40px;height:40px;border-radius:50%;background:var(--el);display:grid;place-items:center;color:var(--sub)}
+.rb.on{color:var(--acc);background:var(--accc)}
+.sr{flex:0 1 460px;height:46px;border-radius:23px;background:var(--el);display:flex;align-items:center;gap:10px;padding:0 16px;color:var(--sub);margin-left:6px}
+.sp{flex:1}
+.av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#B76E79,#5C3F41);display:grid;place-items:center;font-weight:700}
+.bd{flex:1;display:flex;gap:8px;padding:0 8px;min-height:0}
+.pn{background:var(--panel);border-radius:10px;min-height:0;overflow:hidden}
+.lib{width:72px;flex:none;display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 0}
+.lib i{width:48px;height:48px;border-radius:8px;display:block}
+.mn{flex:1;display:flex;flex-direction:column;position:relative}
+.side{width:340px;flex:none;padding:16px}
+.pl{height:80px;flex:none;display:grid;grid-template-columns:300px 1fr 300px;align-items:center;padding:0 16px;gap:16px}
+.np{display:flex;align-items:center;gap:12px}.np i{width:54px;height:54px;border-radius:6px}
+.np b{display:block;font-weight:600}.np small{color:var(--sub)}
+.ct{display:flex;flex-direction:column;align-items:center;gap:6px}
+.ct .bt{display:flex;gap:18px;align-items:center;color:var(--sub)}
+.pp{width:36px;height:36px;border-radius:50%;background:#fff;color:#000;display:grid;place-items:center}
+.bar{display:flex;align-items:center;gap:10px;width:100%;max-width:560px;font-size:11px;color:var(--sub)}
+.tr{flex:1;height:4px;border-radius:2px;background:var(--hov);position:relative}
+.tr::before{content:"";position:absolute;left:0;top:0;bottom:0;width:38%;background:#fff;border-radius:2px}
+.ex{display:flex;justify-content:flex-end;gap:14px;color:var(--sub);align-items:center}
+.ex .on{color:var(--acc)}
+.c1{background:linear-gradient(135deg,#E57373,#4A148C)}.c2{background:linear-gradient(135deg,#FFB74D,#BF360C)}
+.c3{background:linear-gradient(135deg,#4DB6AC,#1A237E)}.c4{background:linear-gradient(135deg,#F06292,#311B92)}
+.c5{background:linear-gradient(135deg,#AED581,#33691E)}.c6{background:linear-gradient(135deg,#90A4AE,#263238)}
+.c7{background:linear-gradient(135deg,#CE93D8,#4A0072)}.c8{background:linear-gradient(135deg,#FFD54F,#E65100)}
+
+.btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 18px;border-radius:20px;font-weight:600;font-size:14px;white-space:nowrap}
+.btn.fill{background:var(--acc);color:var(--onacc)}.btn.w{background:#fff;color:#000}
+.btn.out{border:1px solid var(--ov);color:var(--hi)}.btn.ton{background:var(--hov);color:var(--hi)}
+.btn.sm{height:32px;padding:0 14px;font-size:13px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 14px;border-radius:16px;background:var(--el);font-size:13px;color:var(--hi)}
+.chip.on{background:var(--hi);color:#000}
+.pill{font-size:11px;font-weight:700;border-radius:6px;padding:2px 8px;letter-spacing:.3px}
+.pill.ok{background:#1f4a2a;color:var(--ok)}.pill.no{background:var(--hov);color:var(--sub)}.pill.acc{background:var(--accc);color:var(--onaccc)}
+.muted{color:var(--sub)}
+.h3{font-size:28px;font-weight:700;letter-spacing:-.3px}
+.inp{height:52px;border-radius:26px;background:var(--el);display:flex;align-items:center;gap:12px;padding:0 8px 0 20px;color:var(--sub);border:1px solid var(--ov)}
+.inp .sp{flex:1}
+.field{height:46px;border-radius:10px;background:var(--el);border:1px solid var(--ov);display:flex;align-items:center;gap:10px;padding:0 12px;font-family:ui-monospace,Consolas,monospace;letter-spacing:1px;color:var(--hi)}
+.field .v{flex:1}
+.hint{font-size:12px;display:flex;gap:6px;align-items:center;margin-top:6px}
+.hint .ms{font-size:16px}
+
+/* ajustes */
+.snav{width:250px;flex:none;padding:14px 10px;border-right:1px solid #1d1d1d}
+.snav .f{height:38px;border-radius:19px;background:var(--el);display:flex;align-items:center;gap:8px;padding:0 12px;color:var(--sub);margin-bottom:12px;font-size:13px}
+.snav a{display:flex;align-items:center;gap:12px;height:40px;padding:0 12px;border-radius:8px;color:var(--sub);font-weight:500}
+.snav a.on{background:var(--hov);color:#fff}
+.snav a.on .ms{color:var(--acc);font-variation-settings:'FILL' 1}
+.sbody{flex:1;padding:26px 36px;overflow:hidden}
+.grp{background:var(--c);border-radius:12px;overflow:hidden;margin-top:10px}
+.row{display:flex;align-items:center;gap:14px;padding:14px 18px;border-top:1px solid #222}
+.row:first-child{border-top:0}
+.row .tx{flex:1}.row .tx b{display:block;font-weight:500}.row .tx small{color:var(--sub);font-size:13px}
+.row>.ms{color:var(--sub)}
+.sel{height:36px;border-radius:8px;background:var(--el);border:1px solid var(--ov);display:flex;align-items:center;gap:8px;padding:0 10px 0 12px;font-size:13px}
+.seg{display:flex;background:var(--el);border-radius:18px;padding:3px;gap:3px}
+.seg div{padding:6px 14px;border-radius:15px;font-size:13px;color:var(--sub)}
+.seg .on{background:#fff;color:#000;font-weight:600}
+.lbl{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--sub);margin-top:22px}
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.6)}
+.modal{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:620px;background:var(--c);border-radius:16px;padding:26px 28px;box-shadow:0 30px 80px rgba(0,0,0,.7)}
+.steps{display:flex;gap:6px}.steps div{flex:1;height:4px;border-radius:2px;background:var(--hov)}.steps .on{background:var(--acc)}
+.prov{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;background:var(--el);border:2px solid transparent;margin-top:10px}
+.prov.on{border-color:var(--acc);background:#22151a}
+.radio{width:20px;height:20px;border-radius:50%;border:2px solid var(--sub);flex:none}
+.prov.on .radio{border:6px solid var(--acc)}
+.guide{background:var(--el);border-radius:12px;padding:14px 16px;margin-top:14px;font-size:13px}
+.guide ol{padding-left:18px;color:var(--sub);margin:6px 0 10px}
+
+/* DJ */
+.orb{width:180px;height:180px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff9aa3,var(--acc) 40%,#5a1f27 75%);box-shadow:0 0 80px rgba(242,96,109,.45);display:grid;place-items:center;flex:none}
+.wave{display:flex;gap:4px;align-items:center;height:40px}
+.wave i{width:5px;border-radius:3px;background:#fff;display:block}
+.vibe{border-radius:12px;padding:16px;height:96px;display:flex;flex-direction:column;justify-content:space-between;font-weight:600}
+.blk{display:flex;gap:12px;align-items:center;padding:8px 10px;border-radius:8px}
+.blk i{width:42px;height:42px;border-radius:6px;flex:none}
+.blk b{display:block;font-weight:500;font-size:13px}.blk small{color:var(--sub);font-size:12px}
+.blk.on{background:var(--hov)}
+.bhead{display:flex;align-items:center;gap:8px;margin:14px 0 4px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ter)}
+.bhead small{color:var(--sub);text-transform:none;letter-spacing:0;font-weight:500}
+.bub{background:var(--el);border-radius:16px 16px 16px 4px;padding:12px 16px;max-width:560px}
+.bub.me{background:var(--accc);color:var(--onaccc);border-radius:16px 16px 4px 16px;margin-left:auto}
+.sub-live{font-size:26px;font-weight:600;line-height:1.35;max-width:760px}
+.sub-live span{color:var(--dim)}
+</style>
+</head>
+<body>
+<div class="doc">
+<h1>DJ Dezzy en el escritorio</h1>
+<p class="lead">El mismo DJ que en Android: motor de gustos (perfil, bloques, se adapta si saltas), guion con Gemini y voz con la clave del usuario (ElevenLabs u OpenAI; sin clave, voz gratuita). En las tres variantes los <b>ajustes del DJ</b> viven en Ajustes › DJ con el asistente de 4 pasos (Cerebro → Proveedor → Clave → Voz), igual que en el móvil; cambia cómo se ve y se usa la <b>pantalla del DJ</b>. Se entra con un botón <span class="ms">graphic_eq</span> nuevo en la barra superior.</p>
+
+<!-- ================= A ================= -->
+<section>
+<div class="vh"><span class="tag">A</span><h2>Estudio: orbe, petición y vibras</h2></div>
+<p class="vp">Pantalla centrada como el DJ de Android: el orbe late cuando habla, debajo «¿Qué te apetece?» y 4 tarjetas de vibras generadas con tus gustos. Durante la sesión, el panel derecho enseña los bloques que vienen y por qué.</p>
+
+<div class="cap">Pantalla del DJ</div>
+<div class="zoom"><div class="win">
+  <div class="ab"><div class="logo">d</div><div class="rb"><span class="ms">home</span></div><div class="sr"><span class="ms">search</span>¿Qué quieres escuchar?</div><div class="sp"></div>
+    <div class="rb on"><span class="ms f">graphic_eq</span></div><div class="rb"><span class="ms">public</span></div><div class="rb"><span class="ms">leaderboard</span></div><div class="rb"><span class="ms">groups</span></div><div class="rb"><span class="ms">settings</span></div><div class="av">J</div></div>
+  <div class="bd">
+    <div class="pn lib"><i class="c1"></i><i class="c3"></i><i class="c5"></i><i class="c7"></i><i class="c2"></i></div>
+    <div class="pn mn" style="background:linear-gradient(180deg,#3a1218 0%,#121212 55%)">
+      <div style="display:flex;justify-content:flex-end;padding:16px 20px 0"><span class="btn ton sm"><span class="ms" style="font-size:18px">tune</span>Ajustes del DJ</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:18px;padding:6px 40px 0">
+        <div class="orb"><div class="wave"><i style="height:14px"></i><i style="height:30px"></i><i style="height:40px"></i><i style="height:22px"></i><i style="height:34px"></i><i style="height:16px"></i></div></div>
+        <div style="text-align:center"><div class="h3">DJ Dezzy</div><div class="muted">«Ahora, tres temas nuevos que van con lo que llevas escuchando esta semana.»</div></div>
+        <div class="inp" style="width:640px"><span class="ms">auto_awesome</span><span>¿Qué te apetece? Ej.: algo tranquilo para trabajar</span><span class="sp"></span><span class="btn fill sm">Empezar</span></div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;width:100%;max-width:900px">
+          <div class="vibe c4">Ritmos de power pop para esta noche<span class="ms">play_circle</span></div>
+          <div class="vibe c3">Lo-fi house atmosférico<span class="ms">play_circle</span></div>
+          <div class="vibe c2">Alternativo intenso de tu playlist<span class="ms">play_circle</span></div>
+          <div class="vibe c5">Trap y reggaetón para motivar<span class="ms">play_circle</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="pn side">
+      <div style="font-weight:700;font-size:16px">Tu sesión</div><div class="muted" style="font-size:12px">4 bloques · 22 canciones</div>
+      <div class="bhead"><span class="ms" style="font-size:16px">favorite</span>Tus favoritas <small>· ahora</small></div>
+      <div class="blk on"><i class="c1"></i><div><b>Columbia</b><small>Quevedo</small></div></div>
+      <div class="blk"><i class="c6"></i><div><b>Tití me preguntó</b><small>Bad Bunny</small></div></div>
+      <div class="bhead"><span class="ms" style="font-size:16px">explore</span>Descubrimiento <small>· porque escuchas Quevedo</small></div>
+      <div class="blk"><i class="c3"></i><div><b>Nueva canción</b><small>Artista nuevo</small></div></div>
+      <div class="blk"><i class="c8"></i><div><b>Otra joya</b><small>Otro artista</small></div></div>
+      <div class="bhead"><span class="ms" style="font-size:16px">history</span>Hace tiempo que no oyes</div>
+      <div class="blk"><i class="c7"></i><div><b>Clásico tuyo</b><small>De 2023</small></div></div>
+    </div>
+  </div>
+  <div class="pl"><div class="np"><i class="c1"></i><div><b>Columbia</b><small>Quevedo</small></div></div>
+    <div class="ct"><div class="bt"><span class="ms">shuffle</span><span class="ms">skip_previous</span><span class="pp"><span class="ms f">pause</span></span><span class="ms">skip_next</span><span class="ms">repeat</span></div><div class="bar">1:12<div class="tr"></div>3:05</div></div>
+    <div class="ex"><span class="ms on">graphic_eq</span><span class="ms">lyrics</span><span class="ms">queue_music</span><span class="ms">devices</span><span class="ms">volume_up</span></div></div>
+</div></div>
+
+<div class="cap">Ajustes › DJ (igual en A, B y C)</div>
+<div class="zoom"><div class="win">
+  <div class="ab"><div class="logo">d</div><div class="rb"><span class="ms">home</span></div><div class="sr"><span class="ms">search</span>¿Qué quieres escuchar?</div><div class="sp"></div><div class="rb"><span class="ms">graphic_eq</span></div><div class="rb on"><span class="ms f">settings</span></div><div class="av">J</div></div>
+  <div class="bd"><div class="pn mn" style="flex-direction:row">
+    <div class="snav"><div class="f"><span class="ms" style="font-size:18px">search</span>Buscar ajustes</div>
+      <a><span class="ms">phonelink</span>Móvil vinculado</a><a><span class="ms">palette</span>Apariencia</a><a><span class="ms">tune</span>Reproductor y audio</a>
+      <a class="on"><span class="ms">graphic_eq</span>DJ</a><a><span class="ms">download</span>Descargas</a><a><span class="ms">keyboard</span>Atajos</a><a><span class="ms">extension</span>Integraciones</a><a><span class="ms">desktop_windows</span>Windows</a><a><span class="ms">info</span>Acerca de</a></div>
+    <div class="sbody">
+      <div class="h3">DJ</div><div class="muted">Lo que dice, cómo suena y cada cuánto habla.</div>
+      <div style="margin-top:16px;background:var(--accc);border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:14px;color:var(--onaccc)"><span class="ms s28" style="font-size:30px">auto_awesome</span><div style="flex:1"><b>Dale un cerebro a tu DJ</b><div style="font-size:13px;opacity:.85">Con Gemini (gratis) cuenta curiosidades de cada canción. Tarda un minuto.</div></div><span class="btn w sm">Configurar</span></div>
+      <div class="lbl">Tu DJ</div>
+      <div class="grp">
+        <div class="row"><span class="ms">auto_awesome</span><div class="tx"><b>Cerebro</b><small>Sin clave: el DJ usa frases fijas</small></div><span class="btn out sm">Conectar</span></div>
+        <div class="row"><span class="ms">mic</span><div class="tx"><b>Voz</b><small>ElevenLabs · Sarah</small></div><span class="pill ok">LISTA</span><span class="btn out sm">Cambiar</span></div>
+        <div class="row"><span class="ms">play_arrow</span><div class="tx"><b>Probar voz</b><small>Escucha cómo suena tu DJ</small></div><span class="btn ton sm">Probar</span></div>
+        <div class="row"><span class="ms" style="color:var(--err)">delete</span><div class="tx"><b style="color:var(--err)">Borrar clave de voz</b><small>El DJ vuelve a la voz gratuita</small></div></div>
+      </div>
+      <div class="lbl">Personalidad</div>
+      <div class="grp">
+        <div class="row"><span class="ms">person</span><div class="tx"><b>Nombre del DJ</b></div><div class="sel" style="width:220px">Dezzy</div></div>
+        <div class="row"><span class="ms">translate</span><div class="tx"><b>Idioma</b></div><div class="sel">Automático <span class="ms" style="font-size:18px">expand_more</span></div></div>
+        <div class="row"><span class="ms">mood</span><div class="tx"><b>Estilo</b></div><div class="seg"><div class="on">Radio</div><div>Fiesta</div><div>Tranquilo</div></div></div>
+        <div class="row"><span class="ms">timer</span><div class="tx"><b>Cada cuánto habla</b></div><div class="seg"><div>Al empezar</div><div class="on">Por bloques</div><div>A menudo</div></div></div>
+      </div>
+      <div class="hint muted" style="margin-top:12px"><span class="ms">lock</span>Tus claves se guardan cifradas en este ordenador (safeStorage) y sólo se envían a Google y al proveedor de voz.</div>
+    </div>
+  </div></div>
+  <div class="pl"><div class="np"><i class="c1"></i><div><b>Columbia</b><small>Quevedo</small></div></div><div class="ct"><div class="bt"><span class="ms">shuffle</span><span class="ms">skip_previous</span><span class="pp"><span class="ms f">play_arrow</span></span><span class="ms">skip_next</span><span class="ms">repeat</span></div><div class="bar">1:12<div class="tr"></div>3:05</div></div><div class="ex"><span class="ms">lyrics</span><span class="ms">queue_music</span><span class="ms">volume_up</span></div></div>
+  <div class="scrim"></div>
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:18px">Configurar DJ</b><span class="ms muted">close</span></div>
+    <div class="steps" style="margin-top:14px"><div class="on"></div><div class="on"></div><div></div><div></div></div>
+    <div class="muted" style="font-size:12px;margin-top:6px">Paso 2 de 4 · Proveedor de voz</div>
+    <div style="font-size:22px;font-weight:700;margin-top:10px">¿Qué voz quieres para tu DJ?</div>
+    <div class="prov on"><div class="radio"></div><div style="flex:1"><b>ElevenLabs</b> <span class="pill acc">RECOMENDADA</span><div class="muted" style="font-size:13px">Las voces más naturales. Plan gratuito con ~10.000 caracteres al mes.</div></div></div>
+    <div class="prov"><div class="radio"></div><div style="flex:1"><b>OpenAI</b> <span class="pill no">TU CLAVE</span><div class="muted" style="font-size:13px">Voces claras y rápidas. Necesita saldo.</div></div></div>
+    <div class="prov"><div class="radio"></div><div style="flex:1"><b>Voz gratuita</b> <span class="pill ok">GRATIS</span><div class="muted" style="font-size:13px">Sin clave ni cuenta. Suena más básica.</div></div></div>
+    <div style="display:flex;justify-content:space-between;margin-top:20px"><span class="btn out">Atrás</span><span class="btn fill">Siguiente</span></div>
+  </div>
+</div></div>
+<ul class="chg"><li>El asistente de 4 pasos es una ventana modal (en el escritorio no hace falta cambiar de pantalla).</li><li>Estilo y frecuencia como selectores segmentados, más rápido con ratón que una lista.</li></ul>
+</section>
+
+<!-- ================= B ================= -->
+<section>
+<div class="vh"><span class="tag">B</span><h2>Cabina: lo que dice el DJ, como un chat en vivo</h2></div>
+<p class="vp">El centro es una conversación: cada intervención del DJ aparece como subtítulo grande mientras habla y queda en el historial; puedes escribirle en cualquier momento («más tranquilo», «pon algo de los 2000») y rehace los bloques. A la derecha, la sesión por bloques con «Saltar bloque».</p>
+<div class="cap">Pantalla del DJ</div>
+<div class="zoom"><div class="win">
+  <div class="ab"><div class="logo">d</div><div class="rb"><span class="ms">home</span></div><div class="sr"><span class="ms">search</span>¿Qué quieres escuchar?</div><div class="sp"></div><div class="rb on"><span class="ms f">graphic_eq</span></div><div class="rb"><span class="ms">public</span></div><div class="rb"><span class="ms">settings</span></div><div class="av">J</div></div>
+  <div class="bd">
+    <div class="pn lib"><i class="c1"></i><i class="c3"></i><i class="c5"></i><i class="c7"></i></div>
+    <div class="pn mn" style="padding:22px 30px">
+      <div style="display:flex;align-items:center;gap:14px"><div class="orb" style="width:56px;height:56px;box-shadow:0 0 30px rgba(242,96,109,.5)"></div><div><b style="font-size:18px">DJ Dezzy</b><div class="muted" style="font-size:12px"><span style="color:var(--acc)">● Hablando</span> · Estilo radio · voz Sarah</div></div><span class="sp"></span><span class="btn ton sm"><span class="ms" style="font-size:18px">tune</span>Ajustes</span><span class="btn out sm">Terminar sesión</span></div>
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:14px;padding:20px 0">
+        <div class="bub muted" style="font-size:13px">Buenas, Jorge. Arrancamos con tus favoritas de esta semana…</div>
+        <div class="bub me">algo más tranquilo, que estoy trabajando</div>
+        <div class="bub muted" style="font-size:13px">Hecho: bajo revoluciones. Te dejo lo-fi y acústico durante la próxima media hora.</div>
+        <div class="sub-live">«Ahora suena <b>Columbia</b>: ¿sabías que Quevedo la grabó en una sola noche? <span>Y después, tres temas nuevos que…</span>»</div>
+      </div>
+      <div class="inp"><span class="ms">chat</span><span>Dile algo al DJ…</span><span class="sp"></span><span class="chip">Más tranquilo</span><span class="chip">Más movido</span><span class="chip">Sorpréndeme</span><span class="btn fill sm"><span class="ms" style="font-size:18px">send</span></span></div>
+    </div>
+    <div class="pn side">
+      <div style="display:flex;align-items:center"><div><div style="font-weight:700;font-size:16px">Sesión</div><div class="muted" style="font-size:12px">Se adapta si saltas canciones</div></div></div>
+      <div class="bhead"><span class="ms" style="font-size:16px">spa</span>Para concentrarte <small>· ahora</small></div>
+      <div class="blk on"><i class="c3"></i><div><b>Columbia</b><small>Quevedo</small></div></div>
+      <div class="blk"><i class="c6"></i><div><b>Lo-fi tema</b><small>Artista</small></div></div>
+      <div class="blk"><i class="c5"></i><div><b>Acústico</b><small>Artista</small></div></div>
+      <div style="display:flex;gap:8px;margin:8px 0"><span class="btn ton sm"><span class="ms" style="font-size:18px">skip_next</span>Saltar bloque</span></div>
+      <div class="bhead"><span class="ms" style="font-size:16px">explore</span>Descubrimiento <small>· porque escuchas Rels B</small></div>
+      <div class="blk"><i class="c8"></i><div><b>Nueva</b><small>Artista nuevo</small></div></div>
+      <div class="blk"><i class="c4"></i><div><b>Otra</b><small>Artista</small></div></div>
+    </div>
+  </div>
+  <div class="pl"><div class="np"><i class="c3"></i><div><b>Columbia</b><small>Quevedo</small></div></div><div class="ct"><div class="bt"><span class="ms">shuffle</span><span class="ms">skip_previous</span><span class="pp"><span class="ms f">pause</span></span><span class="ms">skip_next</span><span class="ms">repeat</span></div><div class="bar">0:20<div class="tr"></div>3:05</div></div><div class="ex"><span class="ms on">graphic_eq</span><span class="ms">lyrics</span><span class="ms">queue_music</span><span class="ms">volume_up</span></div></div>
+</div></div>
+<div class="cap">Antes de empezar</div>
+<div class="zoom"><div class="win">
+  <div class="ab"><div class="logo">d</div><div class="rb"><span class="ms">home</span></div><div class="sr"><span class="ms">search</span>¿Qué quieres escuchar?</div><div class="sp"></div><div class="rb on"><span class="ms f">graphic_eq</span></div><div class="rb"><span class="ms">settings</span></div><div class="av">J</div></div>
+  <div class="bd"><div class="pn mn" style="align-items:center;justify-content:center;gap:20px;background:radial-gradient(ellipse at 50% 30%,#3a1218,#121212 60%)">
+    <div class="orb" style="width:140px;height:140px"></div>
+    <div class="h3">Hola, Jorge. ¿Qué te pongo?</div>
+    <div class="inp" style="width:680px"><span class="ms">chat</span><span>Cuéntale al DJ qué te apetece…</span><span class="sp"></span><span class="btn fill sm">Empezar</span></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:760px"><span class="chip">✦ Power pop para esta noche</span><span class="chip">✦ Lo-fi house atmosférico</span><span class="chip">✦ Alternativo intenso</span><span class="chip">✦ Trap para motivar</span><span class="chip on">▶ Mi DJ de siempre</span></div>
+    <div class="hint muted"><span class="ms">info</span>El DJ habla con frases fijas: <u style="color:var(--acc)">conecta su cerebro (Gemini)</u> para que cuente curiosidades.</div>
+  </div></div>
+  <div class="pl"><div class="np"><i class="c3"></i><div><b>—</b><small></small></div></div><div class="ct"><div class="bt"><span class="ms">shuffle</span><span class="ms">skip_previous</span><span class="pp"><span class="ms f">play_arrow</span></span><span class="ms">skip_next</span><span class="ms">repeat</span></div></div><div class="ex"><span class="ms">volume_up</span></div></div>
+</div></div>
+<ul class="chg"><li>Ajustes › DJ igual que en A (sección en Ajustes + asistente modal de 4 pasos).</li><li>Los subtítulos sirven también si el usuario tiene el volumen bajo o no ha puesto voz de pago.</li><li>Más trabajo: hay que reconstruir bloques al escribirle durante la sesión.</li></ul>
+</section>
+
+<!-- ================= C ================= -->
+<section>
+<div class="vh"><span class="tag">C</span><h2>Siempre a mano: el DJ en el panel lateral</h2></div>
+<p class="vp">Sin pantalla aparte: el DJ es una pestaña del panel derecho (junto a Letras y Cola) y una tarjeta grande en Inicio para arrancarlo. Mientras navegas por la app sigue viéndose qué bloque suena y lo último que dijo.</p>
+<div class="cap">Inicio + panel del DJ</div>
+<div class="zoom"><div class="win">
+  <div class="ab"><div class="logo">d</div><div class="rb"><span class="ms f">home</span></div><div class="sr"><span class="ms">search</span>¿Qué quieres escuchar?</div><div class="sp"></div><div class="rb"><span class="ms">public</span></div><div class="rb"><span class="ms">settings</span></div><div class="av">J</div></div>
+  <div class="bd">
+    <div class="pn lib"><i class="c1"></i><i class="c3"></i><i class="c5"></i><i class="c7"></i></div>
+    <div class="pn mn" style="padding:22px 28px">
+      <div class="h3">Buenas tardes</div>
+      <div style="margin-top:14px;border-radius:14px;padding:22px;display:flex;align-items:center;gap:22px;background:linear-gradient(120deg,#5a1f27,#2a0e12 60%,#121212)">
+        <div class="orb" style="width:110px;height:110px"></div>
+        <div style="flex:1"><div class="pill acc" style="display:inline-block">DJ</div><div style="font-size:24px;font-weight:700;margin-top:6px">Tu DJ está listo</div><div class="muted">Mezcla tus favoritas con descubrimientos y te cuenta por qué.</div>
+          <div style="display:flex;gap:10px;margin-top:12px"><span class="btn fill"><span class="ms f">play_arrow</span>Empezar</span><span class="btn out">Pedirle algo…</span></div></div>
+      </div>
+      <div style="font-weight:700;font-size:20px;margin-top:22px">Hecho para ti</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:10px"><div><div class="vibe c4" style="height:150px"></div></div><div><div class="vibe c2" style="height:150px"></div></div><div><div class="vibe c3" style="height:150px"></div></div><div><div class="vibe c6" style="height:150px"></div></div><div><div class="vibe c8" style="height:150px"></div></div></div>
+    </div>
+    <div class="pn side">
+      <div style="display:flex;gap:8px"><span class="chip on">DJ</span><span class="chip">Letras</span><span class="chip">Cola</span></div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:16px"><div class="orb" style="width:44px;height:44px"></div><div><b>DJ Dezzy</b><div class="muted" style="font-size:12px">Bloque 2 de 4 · Descubrimiento</div></div></div>
+      <div class="bub" style="margin-top:12px;font-size:13px">«Porque escuchas mucho a Rels B, aquí van tres que no conoces todavía.»</div>
+      <div class="bhead"><span class="ms" style="font-size:16px">explore</span>Ahora</div>
+      <div class="blk on"><i class="c3"></i><div><b>Nueva canción</b><small>Artista nuevo</small></div></div>
+      <div class="blk"><i class="c8"></i><div><b>Otra joya</b><small>Otro artista</small></div></div>
+      <div class="bhead"><span class="ms" style="font-size:16px">history</span>Después</div>
+      <div class="blk"><i class="c7"></i><div><b>Clásico tuyo</b><small>De 2023</small></div></div>
+      <div style="display:flex;gap:8px;margin-top:12px"><span class="btn ton sm">Más tranquilo</span><span class="btn ton sm">Más movido</span></div>
+    </div>
+  </div>
+  <div class="pl"><div class="np"><i class="c3"></i><div><b>Nueva canción</b><small>Artista nuevo</small></div></div><div class="ct"><div class="bt"><span class="ms">shuffle</span><span class="ms">skip_previous</span><span class="pp"><span class="ms f">pause</span></span><span class="ms">skip_next</span><span class="ms">repeat</span></div><div class="bar">0:48<div class="tr"></div>3:20</div></div><div class="ex"><span class="ms on">graphic_eq</span><span class="ms">lyrics</span><span class="ms">queue_music</span><span class="ms">volume_up</span></div></div>
+</div></div>
+<ul class="chg"><li>Ajustes › DJ igual que en A.</li><li>Lo más integrado, pero el DJ pierde «su» pantalla (menos protagonismo que en el móvil).</li></ul>
+</section>
+</div>
+</body>
+</html>

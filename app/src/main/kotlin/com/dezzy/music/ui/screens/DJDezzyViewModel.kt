@@ -13,11 +13,10 @@ import com.dezzy.music.R
 import com.dezzy.music.ai.DjDezzyClient
 import com.dezzy.music.ai.DjSetBuilder
 import com.dezzy.music.ai.TasteProfile
-import com.dezzy.music.ai.ElevenLabsTtsClient
 import com.dezzy.music.ai.OmniVoiceTtsClient
 import com.dezzy.music.ai.GeminiDjClient
-import com.dezzy.music.constants.DjVoiceKey
 import kotlinx.coroutines.flow.first
+import androidx.datastore.preferences.core.edit
 import com.dezzy.music.db.MusicDatabase
 import com.dezzy.music.db.entities.Song
 import com.dezzy.music.extensions.toMediaItem
@@ -57,7 +56,6 @@ class DJDezzyViewModel @Inject constructor(
         .readTimeout(60, TimeUnit.SECONDS)
         .build()
 
-    private val elevenLabsClient = ElevenLabsTtsClient(httpClient)
     private val omniVoiceClient = OmniVoiceTtsClient(httpClient)
 
     private val _uiState = MutableStateFlow(DJUiState.IDLE)
@@ -86,8 +84,76 @@ class DJDezzyViewModel @Inject constructor(
     )
     val dynamicVibeCards: StateFlow<List<String>> = _dynamicVibeCards.asStateFlow()
 
+    /** ¿Hay clave de Gemini? Sin ella el DJ no puede mezclar. null mientras se comprueba. */
+    private val _hasBrain = MutableStateFlow<Boolean?>(null)
+    val hasBrain: StateFlow<Boolean?> = _hasBrain.asStateFlow()
+
+    /** Primera vez: el DJ ha preguntado qué le gusta al oyente y espera la respuesta. */
+    private val _askingTaste = MutableStateFlow(false)
+    val askingTaste: StateFlow<Boolean> = _askingTaste.asStateFlow()
+
     init {
+        refreshKeys()
         loadVibeSuggestions()
+    }
+
+    /** Se llama al entrar en la pantalla (también al volver de Ajustes › DJ). */
+    fun refreshKeys() {
+        viewModelScope.launch(Dispatchers.IO) {
+            _hasBrain.value = com.dezzy.music.ai.DjVoice.geminiKey(context).isNotBlank()
+        }
+    }
+
+    private suspend fun requireBrain(): Boolean {
+        val ok = com.dezzy.music.ai.DjVoice.geminiKey(context).isNotBlank()
+        _hasBrain.value = ok
+        if (!ok) {
+            _statusText.value = "Configura tus claves para que el DJ pueda mezclar"
+            _uiState.value = DJUiState.IDLE
+        }
+        return ok
+    }
+
+    private suspend fun savedTaste(): String =
+        context.dataStore.data.first()[com.dezzy.music.constants.DjTasteKey].orEmpty()
+
+    /** «No te conozco, cuéntame qué te gusta»: lo dice en voz alta y espera la respuesta. */
+    private suspend fun askTaste(playerConnection: PlayerConnection, djName: String, username: String, djLanguage: String) {
+        _askingTaste.value = true
+        _uiState.value = DJUiState.IDLE
+        val en = djLanguage == "en"
+        val shortName = djName.removePrefix("DJ ").ifBlank { "Dezzy" }
+        val fallback = if (en) {
+            "Hi${if (username.isNotBlank()) " $username" else ""}, I'm $shortName. I don't know you yet: tell me what you like (artists, genres, the mood you're in) and I'll build you a station around it."
+        } else {
+            "Hola${if (username.isNotBlank()) ", $username" else ""}, soy $shortName. Todavía no te conozco: cuéntame qué te gusta (artistas, géneros, el plan que tienes) y te pongo una estación basada en eso."
+        }
+        _djScript.value = fallback
+        val line = GeminiDjClient(httpClient, com.dezzy.music.ai.DjVoice.geminiKey(context)).generateTasteQuestion(
+            djName, username, djLanguage,
+            style = context.dataStore.data.first()[com.dezzy.music.constants.DjStyleKey] ?: "radio",
+        ).getOrNull() ?: fallback
+        if (!_askingTaste.value) return
+        _djScript.value = line
+        speak(playerConnection, line, djName, after = DJUiState.IDLE)
+    }
+
+    /** La respuesta del oyente: se guarda y arma la estación con ella. */
+    fun answerTaste(text: String, playerConnection: PlayerConnection) {
+        val taste = text.trim().take(300)
+        if (taste.isBlank()) return
+        _askingTaste.value = false
+        viewModelScope.launch(Dispatchers.IO) {
+            context.dataStore.edit { it[com.dezzy.music.constants.DjTasteKey] = taste }
+        }
+        handleUserRequest(taste, playerConnection)
+    }
+
+    fun cancelTaste() {
+        _askingTaste.value = false
+        djMediaPlayer?.release()
+        djMediaPlayer = null
+        _uiState.value = DJUiState.IDLE
     }
 
     fun loadVibeSuggestions() {
@@ -95,7 +161,7 @@ class DJDezzyViewModel @Inject constructor(
             try {
                 val topSongs = database.songsByPlayTimeAsc().first().reversed().take(5)
                 val topContext = topSongs.joinToString(", ") { "${it.title} de ${it.artists.firstOrNull()?.name ?: "Unknown"}" }
-                val cards = GeminiDjClient(httpClient).generateVibeCards(topContext)
+                val cards = GeminiDjClient(httpClient, com.dezzy.music.ai.DjVoice.geminiKey(context)).generateVibeCards(topContext)
                 if (cards.isNotEmpty()) {
                     _dynamicVibeCards.value = cards
                 }
@@ -108,6 +174,9 @@ class DJDezzyViewModel @Inject constructor(
     }
 
     private var djMediaPlayer: android.media.MediaPlayer? = null
+
+    /** Lo último que dijo el DJ en esta sesión, para no repetirse. */
+    private val recentLines = ArrayDeque<String>()
 
     /** Sesión en curso con sus bloques: el DJ habla al empezar cada uno. */
     @Volatile private var djSet: DjSetBuilder.DjSet? = null
@@ -140,6 +209,12 @@ class DJDezzyViewModel @Inject constructor(
     fun handleUserRequest(requestText: String, playerConnection: PlayerConnection) {
         djJob?.cancel()
         djJob = viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            if (!requireBrain()) return@launch
+            _askingTaste.value = false
+            // Si lo primero que hace es pedir algo, eso ya dice lo que le gusta.
+            if (savedTaste().isBlank()) {
+                context.dataStore.edit { it[com.dezzy.music.constants.DjTasteKey] = requestText.trim().take(300) }
+            }
             _statusText.value = "Analizando el sentimiento de tu mensaje..."
             val sentiment = fetchSentiment(requestText)
             val contextualRequest = "$requestText (El usuario se siente $sentiment)"
@@ -147,7 +222,7 @@ class DJDezzyViewModel @Inject constructor(
 
             _statusText.value = "Interpretando tu petición con IA..."
             _uiState.value = DJUiState.GENERATING
-            val intelligentQuery = GeminiDjClient(httpClient).generateSearchQuery(requestText, sentiment).getOrDefault(requestText)
+            val intelligentQuery = GeminiDjClient(httpClient, com.dezzy.music.ai.DjVoice.geminiKey(context)).generateSearchQuery(requestText, sentiment).getOrDefault(requestText)
 
             _statusText.value = "Buscando \"$intelligentQuery\"..."
             val result = com.dezzy.music.innertube.YouTube.search(intelligentQuery, com.dezzy.music.innertube.YouTube.SearchFilter.FILTER_SONG).getOrNull()
@@ -191,6 +266,13 @@ class DJDezzyViewModel @Inject constructor(
             val djLanguage = prefs[com.dezzy.music.constants.DjLanguageKey] ?: "auto"
             val djName = if (customName.isNotBlank()) "DJ $customName" else "DJ Dezzy"
 
+            if (!requireBrain()) return@launch
+            // Primera vez y sin pedir nada concreto: antes de mezclar, pregunta qué le gusta.
+            if (userRequest == null && savedTaste().isBlank()) {
+                askTaste(playerConnection, djName, username, djLanguage)
+                return@launch
+            }
+
             try {
                 _uiState.value = DJUiState.GENERATING
                 _statusText.value = "Pensando..."
@@ -223,8 +305,9 @@ class DJDezzyViewModel @Inject constructor(
                 val topSongs = database.songsByPlayTimeAsc().first().reversed().take(5)
                 val topContext = tasteContext()
                     ?: topSongs.joinToString(", ") { "${it.title} de ${it.artists.firstOrNull()?.name ?: "Unknown"}" }
+                        .ifBlank { savedTaste() }
 
-                val geminiClient = GeminiDjClient(httpClient)
+                val geminiClient = GeminiDjClient(httpClient, com.dezzy.music.ai.DjVoice.geminiKey(context))
                 val requestText = userRequest ?: "Armame un mix para descubrir musica fresca basándote en: $topContext"
 
                 _statusText.value = "Preparando tu mezcla..."
@@ -372,6 +455,8 @@ class DJDezzyViewModel @Inject constructor(
         monitorJob?.cancel()
         monitorJob = viewModelScope.launch(Dispatchers.IO) {
             var lastSpokenIndex = 0
+            // Ajustes › DJ › «Cada cuánto habla»: start = sólo al empezar, often = cada 2 canciones.
+            val talk = context.dataStore.data.first()[com.dezzy.music.constants.DjTalkKey] ?: "blocks"
             var previousSongTitle = ""
             var previousArtistName = ""
             var previousIndex = -1
@@ -422,10 +507,11 @@ class DJDezzyViewModel @Inject constructor(
                 val followsSet = set != null && set.blocks.size > 1 &&
                     set.items.getOrNull(index)?.mediaId == currentItem?.mediaId
                 val block = if (followsSet) set?.blockStartingAt(index) else null
-                val speak = if (followsSet) {
-                    block != null && index > 0 && index - lastSpokenIndex >= 2
-                } else {
-                    index > 0 && index - lastSpokenIndex >= 4
+                val speak = when {
+                    talk == "start" -> false
+                    talk == "often" -> index > 0 && index - lastSpokenIndex >= 2
+                    followsSet -> block != null && index > 0 && index - lastSpokenIndex >= 2
+                    else -> index > 0 && index - lastSpokenIndex >= 4
                 }
                 if (speak) {
                     lastSpokenIndex = index
@@ -525,7 +611,12 @@ class DJDezzyViewModel @Inject constructor(
                 .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
                 .build()
 
-            val scriptResult = GeminiDjClient(httpClient).generateScript(djName, username, djLanguage, songTitle, artistName, isFirstSong, customRequest)
+            val scriptResult = GeminiDjClient(httpClient, com.dezzy.music.ai.DjVoice.geminiKey(context)).generateScript(
+                djName, username, djLanguage, songTitle, artistName, isFirstSong, customRequest,
+                style = context.dataStore.data.first()[com.dezzy.music.constants.DjStyleKey] ?: "radio",
+                recentLines = if (isFirstSong) emptyList() else recentLines.toList(),
+            )
+            if (isFirstSong) recentLines.clear()
             val script = scriptResult.getOrElse {
                 fallback ?: if (isFirstSong) {
                     listOf(
@@ -534,28 +625,40 @@ class DJDezzyViewModel @Inject constructor(
                     ).random()
                 } else {
                     listOf(
-                        "¡Seguimos con todo! Ahora vamos con un exitazo de $artistName. ¡A disfrutar!",
-                        "La música no para. Súbele el volumen para escuchar $songTitle."
-                    ).random()
+                        "Ahora, $artistName con «$songTitle».",
+                        "Va «$songTitle». Atento a cómo arranca.",
+                        "Cambio de aires: $artistName.",
+                        "Ésta de $artistName me encanta. «$songTitle».",
+                    ).filterNot { line -> recentLines.any { it == line } }.ifEmpty { listOf("Que suene $artistName.") }.random()
                 }
             }
 
+            recentLines.addLast(script)
+            while (recentLines.size > 6) recentLines.removeFirst()
+            speak(playerConnection, script, djName)
+        }
+    }
+
+    /** Graba la locución con la voz elegida y la pone por encima de la música (bajada). */
+    private suspend fun speak(
+        playerConnection: PlayerConnection,
+        script: String,
+        djName: String,
+        after: DJUiState = DJUiState.PLAYING,
+    ) {
+        withContext(Dispatchers.IO) {
             _statusText.value = "Grabando locución..."
-            var voiceName = context.dataStore.get(DjVoiceKey, "EXAVITQu4vr4xnSDxMaL")
-            if (voiceName == "es-MX-DaliaNeural" || voiceName == "nPczCjzI2devNBz1zQrb" || voiceName == "k9KXsQFJqzAoomTCOrJB" || voiceName.isBlank()) {
-                voiceName = "EXAVITQu4vr4xnSDxMaL"
-            }
             val timestamp = System.currentTimeMillis()
             val outputFile = File(context.cacheDir, "dj_intro_$timestamp.mp3")
 
-
-            val ttsResult = elevenLabsClient.synthesize(script, voiceName, outputFile)
+            // Voz de pago con la clave del usuario (Ajustes › DJ); sin clave, la voz gratuita.
+            val ttsResult = com.dezzy.music.ai.DjVoice.synthesize(context, script, outputFile)
             var ttsError = ""
             val audioUri = if (ttsResult.isSuccess) {
                 android.net.Uri.fromFile(outputFile).toString()
             } else {
                 // Fallback to OmniVoice
-                val fallbackResult = omniVoiceClient.synthesize(script, voiceName, outputFile)
+                val fallbackResult = omniVoiceClient.synthesize(script, com.dezzy.music.ai.DjVoice.ELEVENLABS_DEFAULT, outputFile)
                 if (fallbackResult.isSuccess) {
                     android.net.Uri.fromFile(outputFile).toString()
                 } else {
@@ -579,7 +682,7 @@ class DJDezzyViewModel @Inject constructor(
                         _djAudioSessionId.value = audioSessionId
                         setOnCompletionListener {
                             playerConnection.player.volume = 1.0f
-                            _uiState.value = DJUiState.PLAYING
+                            _uiState.value = after
                             _djAudioSessionId.value = 0
                             it.release()
                             djMediaPlayer = null
@@ -588,7 +691,7 @@ class DJDezzyViewModel @Inject constructor(
                     djMediaPlayer?.start()
                 } catch (e: Exception) {
                     playerConnection.player.volume = 1.0f
-                    _uiState.value = DJUiState.PLAYING
+                    _uiState.value = after
                     _djAudioSessionId.value = 0
                 }
 

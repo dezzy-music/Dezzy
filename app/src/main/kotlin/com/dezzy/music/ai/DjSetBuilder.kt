@@ -372,9 +372,7 @@ object DjSetBuilder {
             Kind.REQUEST -> "Seguimos con lo que pidió el oyente."
         }
         val fact = block.reason?.let { " Dato real de su historial (úsalo con naturalidad, sin sonar a estadística): $it" }.orEmpty()
-        val opening = if (first) "Preséntate por tu nombre y saluda en una frase. " else "No repitas tu nombre ni el saludo. "
-        return "$opening$why$fact Empieza con «$title» de $artist. Cuenta en una frase por qué viene, con emoción y cercanía, " +
-            "como un locutor que conoce al oyente. No repitas frases de antes. Máximo 2 frases. Haz una transición fluida."
+        return "$why$fact Cuenta en una frase por qué viene «$title» de $artist, con emoción y cercanía."
     }
 
     /** Frase de respaldo cuando la IA no responde: también explica el motivo del bloque. */

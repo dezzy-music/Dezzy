@@ -93,6 +93,8 @@ import com.dezzy.music.ui.screens.musicrecognition.MusicRecognitionRoute
 import com.dezzy.music.ui.screens.musicrecognition.MusicRecognitionScreen
 import com.dezzy.music.ui.screens.settings.AODSettings
 import com.dezzy.music.ui.screens.settings.AiSettings
+import com.dezzy.music.ui.screens.settings.DjSettings
+import com.dezzy.music.ui.screens.settings.DjVoiceSetup
 import com.dezzy.music.ui.screens.SpotifyLoginScreen
 import com.dezzy.music.ui.screens.settings.PublicRoomsScreen
 
@@ -464,6 +466,12 @@ fun NavGraphBuilder.navigationBuilder(
     }
     composable("settings/ai") {
         AiSettings(navController, scrollBehavior)
+    }
+    composable("settings/dj") {
+        DjSettings(navController, scrollBehavior)
+    }
+    composable("settings/dj/setup") {
+        DjVoiceSetup(navController, scrollBehavior)
     }
     composable("settings/player") {
         PlayerSettings(navController, scrollBehavior)

@@ -84,8 +84,6 @@ fun AiSettings(
     var translateMode by rememberPreference(TranslateModeKey, stringResource(R.string.mode_literal))
     
     var aiSystemPrompt by rememberPreference(AiSystemPromptKey, "")
-    var djVoice by rememberPreference(com.dezzy.music.constants.DjVoiceKey, "es-MX-JorgeNeural")
-    var showDjVoiceDialog by remember { mutableStateOf(false) }
     var canvasAiEnhance by rememberPreference(CanvasAiEnhanceKey, false)
     var deeplApiKey by rememberPreference(DeeplApiKey, "")
     var deeplFormality by rememberPreference(DeeplFormalityKey, "default")
@@ -197,19 +195,6 @@ fun AiSettings(
     var showSystemPromptDialog by rememberSaveable { mutableStateOf(false) }
     var showDeeplFormalityDialog by rememberSaveable { mutableStateOf(false) }
 
-        if (showDjVoiceDialog) {
-                EnumDialog(
-            title = stringResource(R.string.dj_voice),
-            onDismiss = { showDjVoiceDialog = false },
-            onSelect = {
-                djVoice = it
-                showDjVoiceDialog = false
-            },
-            current = djVoice,
-            values = listOf("es-MX-JorgeNeural", "es-MX-DaliaNeural"),
-            valueText = { if (it == "es-MX-DaliaNeural") stringResource(R.string.dalia_female) else stringResource(R.string.jorge_male) }
-        )
-    }
 
 if (showProviderDialog) {
         EnumDialog(

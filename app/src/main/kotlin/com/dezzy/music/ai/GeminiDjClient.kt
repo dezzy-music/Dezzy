@@ -12,10 +12,14 @@ import org.json.JSONObject
 /** Alias que Google actualiza solo; los nombres con versión (p. ej. 1.5-flash-8b) se retiran. */
 private const val MODEL_ID = "gemini-flash-lite-latest"
 
-class GeminiDjClient(private val client: OkHttpClient) {
+/**
+ * Guion, vibras y búsquedas del DJ con Gemini. `apiKey` es la del usuario (Ajustes › DJ); Dezzy
+ * no lleva ninguna. Sin clave, cada llamada falla al momento y el DJ usa sus frases de reserva.
+ */
+class GeminiDjClient(private val client: OkHttpClient, private val apiKey: String) {
 
-    // Tu API Key de Google Gemini
-    private val API_KEY = com.dezzy.music.BuildConfig.GEMINI_API_KEY
+    /** La clave va en cabecera, no en la URL, para que no acabe en registros. */
+    private fun key(): String = apiKey.trim().ifEmpty { throw IllegalStateException("Sin clave de Gemini") }
 
     private val JSON = "application/json; charset=utf-8".toMediaType()
 
@@ -26,7 +30,9 @@ class GeminiDjClient(private val client: OkHttpClient) {
         songTitle: String,
         artistName: String,
         isFirstSong: Boolean = true,
-        customRequest: String? = null
+        customRequest: String? = null,
+        style: String = "radio",
+        recentLines: List<String> = emptyList(),
     ): Result<String> = withContext(Dispatchers.IO) {
         try {
             val modelId = MODEL_ID
@@ -37,19 +43,44 @@ class GeminiDjClient(private val client: OkHttpClient) {
                 else -> "Responde en el idioma predominante de la canción o español por defecto." // Auto
             }
 
-            val userGreeting = if (username.isNotBlank()) " el usuario se llama $username." else ""
-
-            val prompt = if (customRequest != null) {
-                if (customRequest.contains("transición fluida")) {
-                    "Eres $djName, un locutor de radio muy entusiasta de la app OpenTune.$userGreeting Instrucción de contexto: $customRequest. Anuncia la canción con mucha energía y estilo. $languageInstruction"
-                } else {
-                    "Eres $djName, un locutor de radio de OpenTune.$userGreeting El usuario expresó este estado de ánimo/petición: '$customRequest'. Anuncia que comenzarás tocando '$songTitle' de '$artistName' empatizando con su estado de ánimo. $languageInstruction"
-                }
-            } else if (isFirstSong) {
-                "Eres $djName, un locutor de radio muy entusiasta de la app OpenTune.$userGreeting Preséntate brevemente por tu nombre y saluda al usuario. Vas a iniciar la sesión reproduciendo '$songTitle' de '$artistName'. Da 1 dato curioso rápido e interesante sobre el artista o la canción y mándalo con mucho ritmo. $languageInstruction"
+            // Sólo la primera vez se presenta y saluda por su nombre; después ni su nombre ni el del oyente.
+            val identity = if (isFirstSong) {
+                "Eres $djName, el DJ con IA de la app Dezzy." + (if (username.isNotBlank()) " El oyente se llama $username." else "")
             } else {
-                "Eres un locutor de radio muy entusiasta.$userGreeting (OJO: NO repitas tu nombre, ya te presentaste antes). Vas a continuar la sesión musical reproduciendo '$songTitle' de '$artistName'. Menciona 1 dato curioso o anécdota muy interesante sobre esta canción o artista. Ponle muchísima energía, entusiasmo y ritmo para amenizar el momento, pero sé conciso (máximo 3 líneas). $languageInstruction"
+                "Eres el DJ con IA de la app Dezzy y ya estás en mitad de la sesión."
             }
+            val rules = if (isFirstSong) {
+                "Preséntate por tu nombre y saluda en una sola frase corta."
+            } else {
+                "REGLAS: ya te presentaste. NO digas tu nombre, NO saludes y NO digas el nombre del oyente. " +
+                    "No empieces con «¡Hola!», «¿Qué tal?» ni «Seguimos»."
+            }
+            // Cada intervención con un enfoque distinto para que no suene a plantilla.
+            val angle = if (isFirstSong) "" else " Enfoque de esta vez: " + listOf(
+                "un dato curioso y poco conocido de la canción",
+                "una anécdota de cómo se grabó o se compuso",
+                "qué detalle escuchar en la canción (un instrumento, la voz, el ritmo)",
+                "cómo conecta con lo que sonaba antes",
+                "el momento o ambiente ideal para esta canción",
+                "algo sobre la trayectoria del artista en ese momento",
+            ).random() + "."
+            val memory = if (recentLines.isEmpty()) "" else
+                " Lo que ya dijiste antes (no repitas ideas, aperturas ni muletillas): " + recentLines.takeLast(4).joinToString(" | ") { "«$it»" } + "."
+
+            val basePrompt = buildString {
+                append(identity).append(' ').append(rules)
+                if (customRequest != null) append(" Contexto: ").append(customRequest)
+                append(" Va a sonar '$songTitle' de '$artistName'.")
+                append(angle).append(memory)
+                append(" Habla natural, como un locutor que conoce al oyente. Máximo 2 frases. ").append(languageInstruction)
+            }
+            // Estilo elegido en Ajustes › DJ.
+            val styleInstruction = when (style) {
+                "party" -> "Estilo: fiesta, muy animado, como un DJ de club. Frases cortas."
+                "chill" -> "Estilo: tranquilo, cálido y pausado, como radio de madrugada. Nada de gritos ni exceso de energía."
+                else -> "Estilo: locutor de radio cercano y con ritmo."
+            }
+            val prompt = "$basePrompt $styleInstruction"
 
             val jsonBody = JSONObject().apply {
                 put("contents", JSONArray().apply {
@@ -68,7 +99,8 @@ class GeminiDjClient(private val client: OkHttpClient) {
             }
 
             val request = Request.Builder()
-                .url("https://generativelanguage.googleapis.com/v1beta/models/$modelId:generateContent?key=$API_KEY")
+                .url("https://generativelanguage.googleapis.com/v1beta/models/$modelId:generateContent")
+                .header("x-goog-api-key", key())
                 .header("Content-Type", "application/json")
                 .post(jsonBody.toString().toRequestBody(JSON))
                 .build()
@@ -99,6 +131,49 @@ class GeminiDjClient(private val client: OkHttpClient) {
     }
 
 
+    /** Primera vez: el DJ se presenta y pregunta qué le gusta al oyente para armarle una estación. */
+    suspend fun generateTasteQuestion(
+        djName: String,
+        username: String,
+        djLanguage: String,
+        style: String = "radio",
+    ): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val language = if (djLanguage == "en") "Respond in English." else "Responde en español."
+            val who = if (username.isNotBlank()) " El usuario se llama $username." else ""
+            val tone = when (style) {
+                "party" -> "Estilo: fiesta, animado, frases cortas."
+                "chill" -> "Estilo: tranquilo y cálido."
+                else -> "Estilo: locutor de radio cercano."
+            }
+            val prompt = "Eres $djName, el DJ con IA de la app de música Dezzy.$who Es la primera vez que hablas con él y todavía no conoces sus gustos. " +
+                "Preséntate en una frase y pídele con naturalidad que te cuente qué música le gusta (artistas, géneros o el momento) para ponerle una estación basada en eso. " +
+                "Máximo 2 frases, sin listas ni emojis. $language $tone"
+            val jsonBody = JSONObject().apply {
+                put("contents", JSONArray().put(JSONObject().put("parts", JSONArray().put(JSONObject().put("text", prompt)))))
+                put("generationConfig", JSONObject().apply {
+                    put("maxOutputTokens", 90)
+                    put("temperature", 0.8)
+                })
+            }
+            val request = Request.Builder()
+                .url("https://generativelanguage.googleapis.com/v1beta/models/$MODEL_ID:generateContent")
+                .header("x-goog-api-key", key())
+                .post(jsonBody.toString().toRequestBody(JSON))
+                .build()
+            client.newCall(request).execute().use { response ->
+                val body = response.body?.string().orEmpty()
+                if (!response.isSuccessful) return@withContext Result.failure(Exception("Error Gemini: ${response.code}"))
+                val text = JSONObject(body).optJSONArray("candidates")?.optJSONObject(0)?.optJSONObject("content")
+                    ?.optJSONArray("parts")?.optJSONObject(0)?.optString("text", "").orEmpty()
+                    .replace("*", "").trim()
+                if (text.isNotBlank()) Result.success(text) else Result.failure(Exception("Respuesta vacía de Gemini"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun generatePlaylistRecommendationsQuery(contextSongs: List<String>): Result<String> = withContext(Dispatchers.IO) {
         try {
             val modelId = MODEL_ID
@@ -117,9 +192,10 @@ class GeminiDjClient(private val client: OkHttpClient) {
                 })
             }
             
-            val url = java.net.URL("https://generativelanguage.googleapis.com/v1beta/models/$modelId:generateContent?key=$API_KEY")
+            val url = java.net.URL("https://generativelanguage.googleapis.com/v1beta/models/$modelId:generateContent")
             val connection = url.openConnection() as java.net.HttpURLConnection
             connection.requestMethod = "POST"
+            connection.setRequestProperty("x-goog-api-key", key())
             connection.setRequestProperty("Content-Type", "application/json")
             connection.doOutput = true
             
@@ -167,7 +243,8 @@ class GeminiDjClient(private val client: OkHttpClient) {
             }
 
             val request = Request.Builder()
-                .url("https://generativelanguage.googleapis.com/v1beta/models/$modelId:generateContent?key=$API_KEY")
+                .url("https://generativelanguage.googleapis.com/v1beta/models/$modelId:generateContent")
+                .header("x-goog-api-key", key())
                 .post(jsonBody.toString().toRequestBody(JSON))
                 .build()
 
@@ -238,7 +315,8 @@ class GeminiDjClient(private val client: OkHttpClient) {
             }
 
             val request = Request.Builder()
-                .url("https://generativelanguage.googleapis.com/v1beta/models/$modelId:generateContent?key=$API_KEY")
+                .url("https://generativelanguage.googleapis.com/v1beta/models/$modelId:generateContent")
+                .header("x-goog-api-key", key())
                 .post(jsonBody.toString().toRequestBody(JSON))
                 .build()
 
@@ -301,7 +379,8 @@ class GeminiDjClient(private val client: OkHttpClient) {
             }
 
             val request = Request.Builder()
-                .url("https://generativelanguage.googleapis.com/v1beta/models/$modelId:generateContent?key=$API_KEY")
+                .url("https://generativelanguage.googleapis.com/v1beta/models/$modelId:generateContent")
+                .header("x-goog-api-key", key())
                 .post(jsonBody.toString().toRequestBody(JSON))
                 .build()
 

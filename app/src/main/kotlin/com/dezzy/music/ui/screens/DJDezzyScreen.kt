@@ -116,6 +116,12 @@ fun DJDezzyScreen(
     val uiState by viewModel.uiState.collectAsState()
     val statusText by viewModel.statusText.collectAsState()
     val djScript by viewModel.djScript.collectAsState()
+    val hasBrain by viewModel.hasBrain.collectAsState()
+    val askingTaste by viewModel.askingTaste.collectAsState()
+    // Sin clave de Gemini el DJ no puede mezclar: todo lleva al asistente de claves.
+    val locked = hasBrain == false
+    val openSetup = { navController.navigate("settings/dj/setup") }
+    androidx.compose.runtime.LaunchedEffect(Unit) { viewModel.refreshKeys() }
     val mediaMetadata by (playerConnection?.mediaMetadata ?: MutableStateFlow<MediaMetadata?>(null)).collectAsState()
     val isPlaying by (playerConnection?.isPlaying ?: MutableStateFlow(false)).collectAsState()
     val isLiked by (playerConnection?.currentSongLiked ?: MutableStateFlow(false)).collectAsState()
@@ -129,10 +135,14 @@ fun DJDezzyScreen(
 
     // La sesión empieza al tocar la forma (o al pedir algo); no al entrar.
     var sessionStarted by rememberSaveable { mutableStateOf(false) }
-    val sessionActive = sessionStarted || uiState != DJUiState.IDLE
+    val sessionActive = !askingTaste && (sessionStarted || uiState != DJUiState.IDLE)
     var showCaptions by rememberSaveable { mutableStateOf(true) }
 
     fun startSession(connection: PlayerConnection?) {
+        if (locked) {
+            openSetup()
+            return
+        }
         if (connection != null) {
             sessionStarted = true
             viewModel.startDjSession(connection)
@@ -140,6 +150,10 @@ fun DJDezzyScreen(
     }
 
     fun askDj(text: String) {
+        if (locked) {
+            openSetup()
+            return
+        }
         val trimmed = text.trim()
         if (trimmed.isNotBlank() && playerConnection != null) {
             sessionStarted = true
@@ -165,7 +179,7 @@ fun DJDezzyScreen(
             DjTopBar(
                 subtitle = if (sessionActive) daypart.sessionLabel else null,
                 onClose = { navController.popBackStack() },
-                onSettings = { navController.navigate("settings/ai") },
+                onSettings = { navController.navigate("settings/dj") },
             )
 
             Column(
@@ -175,7 +189,23 @@ fun DJDezzyScreen(
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                if (!sessionActive) {
+                if (askingTaste) {
+                    // ── Primera vez: «No te conozco, cuéntame qué te gusta» ──
+                    DjTasteQuestion(
+                        question = djScript,
+                        talking = isDjTalking,
+                        onAnswer = { answer ->
+                            if (playerConnection != null) {
+                                sessionStarted = true
+                                viewModel.answerTaste(answer, playerConnection)
+                            }
+                        },
+                        onCancel = { viewModel.cancelTaste() },
+                    )
+                } else if (locked && !sessionActive) {
+                    // ── Sin claves: no puede mezclar todavía ──
+                    DjKeysNeeded(djName = customDjName.ifBlank { "Dezzy" }, onSetup = openSetup)
+                } else if (!sessionActive) {
                     // ── En espera ──
                     Spacer(Modifier.size(8.dp))
                     DjBlob(
@@ -354,11 +384,13 @@ fun DJDezzyScreen(
                 }
             }
 
-            AskDjBar(
-                enabled = playerConnection != null,
-                onOpen = { showBottomSheet = true },
-                onDictate = startDictation,
-            )
+            if (!askingTaste) {
+                AskDjBar(
+                    enabled = playerConnection != null,
+                    onOpen = { if (locked) openSetup() else showBottomSheet = true },
+                    onDictate = { if (locked) openSetup() else startDictation() },
+                )
+            }
         }
 
         if (showBottomSheet) {
@@ -371,6 +403,117 @@ fun DJDezzyScreen(
             )
         }
     }
+}
+
+/** Sin clave de Gemini: explica que hace falta y lleva al asistente de Ajustes › DJ. */
+@Composable
+private fun DjKeysNeeded(djName: String, onSetup: () -> Unit) {
+    Spacer(Modifier.size(24.dp))
+    DjBlob(
+        size = 180.dp,
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        lively = false,
+        actionLabel = "Configurar el DJ",
+        onClick = onSetup,
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.key),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(52.dp),
+        )
+    }
+    Text(
+        text = "Primero, conecta tus claves",
+        style = MaterialTheme.typography.headlineSmall,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurface,
+        textAlign = TextAlign.Center,
+        modifier = Modifier
+            .padding(start = 24.dp, end = 24.dp, top = 20.dp)
+            .semantics { heading() },
+    )
+    Text(
+        text = "DJ $djName usa tu propia clave de Gemini (gratis) para elegir la música y hablarte. " +
+            "Sin ella no puede empezar a mezclar. Tarda un minuto.",
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(start = 32.dp, end = 32.dp, top = 8.dp),
+    )
+    Button(
+        onClick = onSetup,
+        contentPadding = PaddingValues(horizontal = 28.dp),
+        modifier = Modifier
+            .padding(top = 20.dp)
+            .heightIn(min = 56.dp),
+    ) {
+        Icon(painterResource(R.drawable.key), contentDescription = null, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(10.dp))
+        Text("Configurar el DJ", style = MaterialTheme.typography.titleMedium)
+    }
+    Spacer(Modifier.size(16.dp))
+}
+
+/** Primera vez: el DJ pregunta qué te gusta y con la respuesta arma tu estación. */
+@Composable
+private fun DjTasteQuestion(
+    question: String?,
+    talking: Boolean,
+    onAnswer: (String) -> Unit,
+    onCancel: () -> Unit,
+) {
+    var answer by rememberSaveable { mutableStateOf("") }
+    val send = { if (answer.isNotBlank()) onAnswer(answer.trim()) }
+    Spacer(Modifier.size(8.dp))
+    DjBlob(
+        size = 160.dp,
+        color = MaterialTheme.colorScheme.primaryContainer,
+        lively = talking,
+        actionLabel = "DJ hablando",
+        onClick = {},
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.graphic_eq),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.size(44.dp),
+        )
+    }
+    DjSpeechBubble(text = question ?: "Cuéntame qué te gusta y te pongo una estación basada en eso.")
+    androidx.compose.material3.OutlinedTextField(
+        value = answer,
+        onValueChange = { if (it.length <= 300) answer = it },
+        placeholder = { Text("Artistas, géneros, para qué momento…") },
+        label = { Text("Lo que te gusta") },
+        minLines = 2,
+        maxLines = 4,
+        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Send),
+        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSend = { send() }),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 16.dp),
+    )
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(top = 12.dp),
+    ) {
+        androidx.compose.material3.TextButton(onClick = onCancel, modifier = Modifier.heightIn(min = 48.dp)) {
+            Text("Ahora no")
+        }
+        Button(
+            onClick = send,
+            enabled = answer.isNotBlank(),
+            contentPadding = PaddingValues(horizontal = 24.dp),
+            modifier = Modifier.heightIn(min = 56.dp),
+        ) {
+            Icon(painterResource(R.drawable.auto_awesome), contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(10.dp))
+            Text("Crear mi estación", style = MaterialTheme.typography.titleMedium)
+        }
+    }
+    Spacer(Modifier.size(16.dp))
 }
 
 /** Momento del día: saludo, frase de contexto, etiqueta de sesión y ambiente sugerido. */

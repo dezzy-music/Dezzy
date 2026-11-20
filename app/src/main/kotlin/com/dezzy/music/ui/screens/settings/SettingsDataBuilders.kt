@@ -146,6 +146,14 @@ fun buildSettingsGroups(
                         onClick = { resetSearch(); navController.navigate("settings/ai") },
                     ),
                     SettingsItem(
+                        icon = painterResource(R.drawable.headphones),
+                        title = "DJ Dezzy",
+                        subtitle = "Cerebro (Gemini) y voz del DJ con tus claves",
+                        accentColor = MaterialTheme.colorScheme.tertiary,
+                        keywords = listOf("dj", "voz", "voice", "elevenlabs", "openai", "gemini", "clave", "api", "key", "locutor"),
+                        onClick = { resetSearch(); navController.navigate("settings/dj") },
+                    ),
+                    SettingsItem(
                         icon = painterResource(R.drawable.token),
                         title = stringResource(R.string.po_token_generation),
                         subtitle = stringResource(R.string.po_token_generation_subtitle),

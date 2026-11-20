@@ -1,0 +1,129 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Clave de Gemini del DJ</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Flex:opsz,wght@8..144,400..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet"><style>
+:root{
+  --page:#F4EFEF; --ink:#22191A; --muted:#5E5051; --doc-line:#D8C1C2; --doc-accent:#9C3F48;
+  --primary:#FFB2B9; --on-primary:#5F1320; --pc:#7D2833; --on-pc:#FFDADC;
+  --sc2:#5C3F41; --on-sc2:#FFDADC; --tertiary:#E8C08E; --tc:#5D4219; --on-tc:#FFDDB3;
+  --surface:#1A1112; --s-low:#22191A; --s:#261D1E; --s-high:#312828; --s-highest:#3C3233;
+  --on-s:#F0DEDF; --on-sv:#D7C1C2; --outline:#A08C8D; --ov:#524344;
+  --ok:#9BD3A6; --okc:#1F4A2A; --warn:#FFD180;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--page);color:var(--ink);font-family:Roboto,system-ui,sans-serif;line-height:1.45}
+.ms{font-family:'Material Symbols Outlined';font-weight:400;font-style:normal;font-size:24px;line-height:1;display:inline-block;white-space:nowrap;
+  -webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;user-select:none}
+.ms.f{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+.s18{font-size:18px!important}.s20{font-size:20px!important}.s28{font-size:28px!important}
+.wrap{max-width:1240px;margin:0 auto;padding:40px 16px 80px}
+header h1{font-family:'Roboto Flex',Roboto;font-size:36px;font-weight:700;letter-spacing:-.5px}
+header p{font-size:16px;color:var(--muted);max-width:880px;margin-top:8px}
+.today{margin-top:20px;background:#fff;border:1px solid var(--doc-line);border-radius:20px;padding:18px 20px;font-size:14px;max-width:980px}
+.today h4{font-size:15px;margin-bottom:6px}.today ul{padding-left:18px}.today li{margin:3px 0}
+section{margin-top:56px;padding-top:28px;border-top:3px solid var(--doc-accent)}
+.head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.tag{font:700 13px Roboto;letter-spacing:1px;background:var(--doc-accent);color:#fff;border-radius:8px;padding:4px 10px}
+.head h3{font-family:'Roboto Flex',Roboto;font-size:28px;font-weight:700}
+.head p{flex-basis:100%;color:var(--muted);font-size:15px;max-width:900px}
+.row{display:flex;gap:28px;flex-wrap:wrap;margin-top:22px;align-items:flex-start}
+.cap{font-size:13px;color:var(--muted);margin-top:10px;max-width:360px;text-align:center}
+.notes{flex:1;min-width:260px;max-width:380px;background:#fff;border:1px solid var(--doc-line);border-radius:20px;padding:18px 20px;font-size:14px}
+.notes h4{font-size:15px;margin:10px 0 4px}.notes h4:first-child{margin-top:0}.notes ul{padding-left:18px}.notes li{margin:3px 0}
+
+/* Teléfono */
+.phone{width:360px;height:760px;border-radius:36px;background:var(--surface);color:var(--on-s);overflow:hidden;position:relative;
+  box-shadow:0 24px 50px rgba(0,0,0,.25);border:8px solid #0B0809;display:flex;flex-direction:column;font-size:14px}
+.sb{height:28px;display:flex;justify-content:space-between;align-items:center;padding:0 18px;font-size:12px;color:var(--on-sv);flex:none}
+.top{display:flex;align-items:center;gap:12px;padding:6px 8px 10px;flex:none}
+.top .t{font-family:'Roboto Flex',Roboto;font-size:22px;font-weight:500}
+.ib{width:40px;height:40px;border-radius:20px;display:grid;place-items:center;color:var(--on-s)}
+.body{flex:1;overflow:auto;padding:0 14px 24px}
+.body::-webkit-scrollbar{display:none}
+.lbl{font-size:13px;font-weight:500;color:var(--primary);margin:16px 6px 8px;letter-spacing:.2px}
+.grp{background:var(--s-low);border-radius:20px;overflow:hidden}
+.it{display:flex;align-items:center;gap:14px;padding:14px 16px;border-top:1px solid #2c2223}
+.it:first-child{border-top:0}
+.it .ms{color:var(--on-sv)}
+.it .tx{flex:1;min-width:0}.it .tx b{display:block;font-weight:500;font-size:15px}.it .tx span{font-size:13px;color:var(--on-sv)}
+.chip{font-size:11px;font-weight:700;border-radius:8px;padding:3px 8px;letter-spacing:.3px}
+.chip.ok{background:var(--okc);color:var(--ok)}.chip.free{background:var(--sc2);color:var(--on-sc2)}.chip.pro{background:var(--tc);color:var(--on-tc)}
+.sw{width:52px;height:32px;border-radius:16px;background:var(--primary);position:relative;flex:none}
+.sw:after{content:'';position:absolute;right:4px;top:4px;width:24px;height:24px;border-radius:12px;background:var(--on-primary)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;border-radius:22px;padding:0 20px;font-weight:500;font-size:14px}
+.btn.fill{background:var(--primary);color:var(--on-primary)}.btn.ton{background:var(--sc2);color:var(--on-sc2)}.btn.out{border:1px solid var(--outline);color:var(--on-s)}
+.field{background:var(--s-high);border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:10px;border:1px solid var(--ov)}
+.field .v{flex:1;font-family:ui-monospace,Consolas,monospace;letter-spacing:1px;color:var(--on-s);font-size:14px}
+.field small{display:block;font-size:11px;color:var(--on-sv);font-family:Roboto;letter-spacing:0}
+.hint{font-size:12px;color:var(--on-sv);margin:8px 6px 0;display:flex;gap:6px;align-items:flex-start}
+.hint .ms{font-size:16px}
+.seg{display:flex;background:var(--s-high);border-radius:20px;padding:4px;gap:4px}
+.seg div{flex:1;text-align:center;padding:8px 4px;border-radius:16px;font-size:13px;color:var(--on-sv)}
+.seg .on{background:var(--pc);color:var(--on-pc);font-weight:500}
+.slider{height:4px;background:var(--s-highest);border-radius:2px;position:relative;margin:14px 4px 6px}
+.slider i{position:absolute;left:0;top:0;bottom:0;background:var(--primary);border-radius:2px}
+.slider b{position:absolute;top:-8px;width:20px;height:20px;border-radius:10px;background:var(--primary)}
+.ends{display:flex;justify-content:space-between;font-size:11px;color:var(--on-sv)}
+
+/* A: lista */
+.dlg{position:absolute;left:16px;right:16px;bottom:22px;background:var(--s-high);border-radius:28px;padding:22px 20px 16px;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+.dlg h5{font-family:'Roboto Flex',Roboto;font-size:20px;font-weight:500;margin-bottom:6px}
+.dlg p{font-size:13px;color:var(--on-sv);margin-bottom:14px}
+.acts{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+
+/* B: pasos */
+.steps{display:flex;gap:6px;padding:0 18px 4px;flex:none}
+.steps div{flex:1;height:4px;border-radius:2px;background:var(--s-highest)}.steps .on{background:var(--primary)}
+.stepn{font-size:12px;color:var(--on-sv);padding:8px 20px 0;flex:none}
+.big{font-family:'Roboto Flex',Roboto;font-size:26px;font-weight:600;line-height:1.15;padding:4px 20px 6px}
+.sub{font-size:14px;color:var(--on-sv);padding:0 20px 14px}
+.prov{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:20px;background:var(--s-low);border:2px solid transparent;margin-bottom:10px}
+.prov.on{border-color:var(--primary);background:#2d1e20}
+.prov .lg{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-weight:700;font-size:16px;flex:none}
+.radio{width:20px;height:20px;border-radius:10px;border:2px solid var(--outline);flex:none}
+.radio.on{border:6px solid var(--primary)}
+.guide{background:var(--s-low);border-radius:20px;padding:14px 16px;margin-top:12px}
+.guide ol{padding-left:18px;font-size:13px;color:var(--on-sv)}.guide li{margin:5px 0}.guide b{color:var(--on-s);font-weight:500}
+.foot{flex:none;padding:12px 16px 18px;display:flex;gap:10px;background:linear-gradient(transparent,var(--surface) 30%)}
+.foot .btn{flex:1}
+
+/* C: estudio */
+.hero{border-radius:28px;padding:18px;background:radial-gradient(120% 100% at 0% 0%,#7D2833 0%,#3a1d22 55%,#22191A 100%);position:relative;overflow:hidden}
+.hero .av{width:64px;height:64px;border-radius:32px;background:conic-gradient(from 200deg,#FFB2B9,#E8C08E,#FFB2B9);display:grid;place-items:center;color:#5F1320}
+.hero h4{font-family:'Roboto Flex',Roboto;font-size:24px;font-weight:700;margin-top:12px}
+.hero .st{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--on-pc);margin-top:2px}
+.dot{width:8px;height:8px;border-radius:4px;background:var(--ok)}
+.wave{position:absolute;right:16px;top:22px;display:flex;gap:3px;align-items:center;height:40px}
+.wave i{width:4px;border-radius:2px;background:rgba(255,218,220,.6)}
+.hero .btn{margin-top:14px;height:40px}
+.cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.pc{background:var(--s-low);border-radius:18px;padding:12px 10px;text-align:center;border:2px solid transparent;font-size:12px}
+.pc.on{border-color:var(--primary);background:#2d1e20}
+.pc .lg{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;margin:0 auto 6px;font-weight:700}
+.pc b{display:block;font-size:13px;font-weight:500;margin-bottom:4px}
+.voices{display:flex;gap:10px;overflow:hidden}
+.vc{flex:none;width:100px;background:var(--s-low);border-radius:18px;padding:12px 10px;text-align:center;border:2px solid transparent}
+.vc.on{border-color:var(--primary)}
+.vc .a{width:44px;height:44px;border-radius:22px;margin:0 auto 6px;display:grid;place-items:center}
+.vc b{font-size:13px;font-weight:500;display:block}.vc span{font-size:11px;color:var(--on-sv)}
+.card{background:var(--s-low);border-radius:20px;padding:14px 16px}
+</style></head><body><div class="wrap">
+<header><h1>¿Dónde pone el usuario la clave de Gemini?</h1><p>Gemini escribe lo que dice el DJ (guion, vibras y búsquedas). Nuestra clave ya no va en el APK: sin clave, el DJ sigue funcionando con frases fijas. Las tres opciones usan el mismo campo con «Pegar», comprobación al momento y guía de Google AI Studio.</p></header>
+<section><div class="head"><span class="tag">A</span><h3>Una fila más en Ajustes › DJ</h3><p>Sección «Guion» encima de «Voz». Al tocarla, un diálogo con el campo y el enlace. Lo mínimo: no toca el asistente de voz.</p></div><div class="row"><div><div class="phone"><div class="sb"><span>9:41</span><span class="ms s18">signal_cellular_alt</span></div><div class="top"><div class="ib"><span class="ms">arrow_back</span></div><div class="t">DJ Dezzy</div></div><div class="body"><div class="lbl">Guion (lo que dice el DJ)</div><div class="grp"><div class="it"><span class="ms">psychology</span><div class="tx"><b>Clave de Gemini</b><span>Sin clave: el DJ usa frases fijas</span></div><span class="chip free">GRATIS</span></div></div><div class="lbl">Voz</div><div class="grp"><div class="it"><span class="ms">mic</span><div class="tx"><b>Voz del DJ</b><span>ElevenLabs · Sarah</span></div><span class="chip ok">LISTA</span></div><div class="it"><span class="ms">play_arrow</span><div class="tx"><b>Probar voz</b><span>Escucha cómo suena tu DJ</span></div></div></div><div class="lbl">Personalidad</div><div class="grp"><div class="it"><span class="ms">person</span><div class="tx"><b>Nombre del DJ</b><span>Dezzy</span></div></div><div class="it"><span class="ms">mood</span><div class="tx"><b>Estilo</b><span>Radio · cercano y con ritmo</span></div></div></div></div></div><div class="cap">Ajustes › DJ con la fila nueva</div></div><div><div class="phone"><div class="sb"><span>9:41</span><span class="ms s18">signal_cellular_alt</span></div><div class="top"><div class="ib"><span class="ms">arrow_back</span></div><div class="t">DJ Dezzy</div></div><div class="body"><div class="lbl">Guion (lo que dice el DJ)</div><div class="grp"><div class="it"><span class="ms">psychology</span><div class="tx"><b>Clave de Gemini</b><span>Sin configurar</span></div></div></div><div class="lbl">Voz</div><div class="grp"><div class="it"><span class="ms">mic</span><div class="tx"><b>Voz del DJ</b><span>ElevenLabs · Sarah</span></div><span class="chip ok">LISTA</span></div><div class="it"><span class="ms">play_arrow</span><div class="tx"><b>Probar voz</b><span>Escucha cómo suena tu DJ</span></div></div></div></div><div class="scrim"></div><div class="dlg"><h5>Clave de Gemini</h5><p>Gemini escribe lo que dice tu DJ. Es gratis con tu cuenta de Google.</p><div class="field"><span class="ms">key</span><div class="v"><small>Clave de Gemini</small>••••••••••••••••Qx4</div><span class="ms">content_paste</span></div>
+<div class="hint" style="color:var(--ok)"><span class="ms">check_circle</span>Clave válida</div><div class="hint"><span class="ms">open_in_new</span>Conseguirla en Google AI Studio</div><div class="acts"><div class="btn out">Cancelar</div><div class="btn fill">Guardar</div></div></div></div><div class="cap">Diálogo de la clave</div></div><div class="notes"><h4>A favor</h4><ul><li>Cambio pequeño, todo en una pantalla.</li></ul><h4>En contra</h4><ul><li>La guía cabe peor en un diálogo.</li><li>Es fácil pasarla por alto.</li></ul></div></div></section>
+<section><div class="head"><span class="tag">B</span><h3>Un paso más en el asistente</h3><p>El asistente pasa a 4 pasos: 1 Cerebro (Gemini, se puede saltar) → 2 Proveedor de voz → 3 Clave → 4 Voz. Ajustes › DJ muestra Cerebro y Voz juntos.</p></div><div class="row"><div><div class="phone"><div class="sb"><span>9:41</span><span class="ms s18">signal_cellular_alt</span></div><div class="top"><div class="ib"><span class="ms">arrow_back</span></div><div class="t">Configurar DJ</div></div>
+<div class="steps"><div class="on"></div><div></div><div></div><div></div></div><div class="stepn">Paso 1 de 4 · Cerebro</div>
+<div class="body"><div class="big">Primero, el cerebro del DJ</div><div class="sub">Gemini escribe lo que dice entre canciones. Es gratis con tu cuenta de Google.</div><div class="field"><span class="ms">key</span><div class="v"><small>Clave de Gemini</small>••••••••••••••••Qx4</div><span class="ms">content_paste</span></div>
+<div class="hint" style="color:var(--ok)"><span class="ms">check_circle</span>Clave válida</div><div class="grp" style="padding:14px 16px;margin-top:14px"><div style="display:flex;gap:8px;align-items:center;font-weight:500"><span class="ms" style="color:var(--primary)">lightbulb</span>Cómo conseguirla gratis (1 minuto)</div>
+<ol style="padding-left:20px;margin-top:8px;font-size:13px;color:var(--on-sv)"><li>Entra en Google AI Studio con tu cuenta de Google.</li><li>Pulsa «Create API key».</li><li>Cópiala y pégala aquí con el botón.</li></ol>
+<div class="btn ton" style="width:100%;margin-top:10px"><span class="ms s18">open_in_new</span>Abrir Google AI Studio</div></div></div>
+<div style="display:flex;justify-content:space-between;padding:12px 16px;flex:none"><div class="btn out">Saltar</div><div class="btn fill">Siguiente</div></div></div><div class="cap">Paso 1 de 4: el cerebro</div></div><div><div class="phone"><div class="sb"><span>9:41</span><span class="ms s18">signal_cellular_alt</span></div><div class="top"><div class="ib"><span class="ms">arrow_back</span></div><div class="t">DJ Dezzy</div></div><div class="body"><div class="lbl">Tu DJ</div><div class="grp"><div class="it"><span class="ms">psychology</span><div class="tx"><b>Cerebro</b><span>Gemini · clave guardada</span></div><span class="chip ok">LISTO</span></div><div class="it"><span class="ms">mic</span><div class="tx"><b>Voz</b><span>ElevenLabs · Sarah</span></div><span class="chip ok">LISTA</span></div><div class="it"><span class="ms">tune</span><div class="tx"><b>Cambiar configuración</b><span>Abre el asistente de 4 pasos</span></div></div></div><div class="lbl">Personalidad</div><div class="grp"><div class="it"><span class="ms">person</span><div class="tx"><b>Nombre del DJ</b><span>Dezzy</span></div></div><div class="it"><span class="ms">mood</span><div class="tx"><b>Estilo</b><span>Radio · cercano y con ritmo</span></div></div></div></div></div><div class="cap">Ajustes › DJ ya configurado</div></div><div class="notes"><h4>A favor</h4><ul><li>Sigue el boceto B que elegiste: una sola puerta de entrada.</li><li>Guía completa en pantalla.</li></ul><h4>En contra</h4><ul><li>Un paso más para quien sólo quiere cambiar la voz (puede saltarlo).</li></ul></div></div></section>
+<section><div class="head"><span class="tag">C</span><h3>Panel «Tu DJ al 50 %»</h3><p>Arriba de Ajustes › DJ, dos tarjetas (Cerebro y Voz) con su estado y una barra de progreso. Cada una abre su propia pantalla.</p></div><div class="row"><div><div class="phone"><div class="sb"><span>9:41</span><span class="ms s18">signal_cellular_alt</span></div><div class="top"><div class="ib"><span class="ms">arrow_back</span></div><div class="t">DJ Dezzy</div></div><div class="body"><div class="grp" style="padding:16px;margin-top:6px;background:var(--pc);color:var(--on-pc)"><b style="font-size:16px">Tu DJ está al 50 %</b><div style="font-size:13px;opacity:.85;margin-top:2px">Le falta el cerebro para hablar de cada canción.</div>
+<div style="height:6px;border-radius:3px;background:rgba(255,255,255,.2);margin-top:10px"><div style="width:50%;height:6px;border-radius:3px;background:var(--primary)"></div></div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+<div class="grp" style="padding:14px;border:2px solid var(--primary)"><span class="ms s28" style="color:var(--primary)">psychology</span><b style="display:block;margin-top:6px">Cerebro</b><span style="font-size:12px;color:var(--on-sv)">Gemini · falta clave</span><div class="btn fill" style="height:34px;margin-top:10px;width:100%">Conectar</div></div>
+<div class="grp" style="padding:14px"><span class="ms s28" style="color:var(--ok)">mic</span><b style="display:block;margin-top:6px">Voz</b><span style="font-size:12px;color:var(--on-sv)">ElevenLabs · Sarah</span><div class="btn out" style="height:34px;margin-top:10px;width:100%">Cambiar</div></div></div><div class="lbl">Personalidad</div><div class="grp"><div class="it"><span class="ms">person</span><div class="tx"><b>Nombre del DJ</b><span>Dezzy</span></div></div><div class="it"><span class="ms">mood</span><div class="tx"><b>Estilo</b><span>Radio · cercano y con ritmo</span></div></div></div></div></div><div class="cap">Panel con las dos piezas</div></div><div><div class="phone"><div class="sb"><span>9:41</span><span class="ms s18">signal_cellular_alt</span></div><div class="top"><div class="ib"><span class="ms">arrow_back</span></div><div class="t">Cerebro del DJ</div></div><div class="body"><div class="big" style="padding:4px 6px">Conecta Gemini</div><div class="sub" style="padding:0 6px 14px">Con él, el DJ cuenta curiosidades de cada canción en vez de frases fijas.</div><div class="field"><span class="ms">key</span><div class="v"><small>Clave de Gemini</small>••••••••••••••••Qx4</div><span class="ms">content_paste</span></div>
+<div class="hint" style="color:var(--ok)"><span class="ms">check_circle</span>Clave válida</div><div class="grp" style="padding:14px 16px;margin-top:14px"><div style="display:flex;gap:8px;align-items:center;font-weight:500"><span class="ms" style="color:var(--primary)">lightbulb</span>Cómo conseguirla gratis (1 minuto)</div>
+<ol style="padding-left:20px;margin-top:8px;font-size:13px;color:var(--on-sv)"><li>Entra en Google AI Studio con tu cuenta de Google.</li><li>Pulsa «Create API key».</li><li>Cópiala y pégala aquí con el botón.</li></ol>
+<div class="btn ton" style="width:100%;margin-top:10px"><span class="ms s18">open_in_new</span>Abrir Google AI Studio</div></div><div class="btn fill" style="width:100%;margin-top:16px">Guardar</div></div></div><div class="cap">Pantalla de la clave de Gemini</div></div><div class="notes"><h4>A favor</h4><ul><li>Se ve de un vistazo qué falta.</li><li>Cerebro y voz son independientes.</li></ul><h4>En contra</h4><ul><li>Rediseña la cabecera de Ajustes › DJ que ya hicimos.</li></ul></div></div></section>
+</div></body></html>

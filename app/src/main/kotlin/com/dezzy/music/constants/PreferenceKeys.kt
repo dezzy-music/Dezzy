@@ -1677,6 +1677,23 @@ val OpenRouterApiKey = stringPreferencesKey("openRouterApiKey")
 
 val DjVoiceKey = stringPreferencesKey("djVoice")
 
+/** Proveedor de la voz del DJ: "elevenlabs", "openai" o "free" (voces gratuitas, sin clave). */
+val DjTtsProviderKey = stringPreferencesKey("djTtsProvider")
+
+/** Clave del proveedor de voz que pone el usuario; se guarda cifrada con SessionCrypto. */
+val DjTtsApiKeyKey = stringPreferencesKey("djTtsApiKey")
+val DjVoiceNameKey = stringPreferencesKey("djVoiceName") // nombre visible de la voz elegida
+val DjGeminiKeyKey = stringPreferencesKey("djGeminiKey") // clave de Gemini del usuario, cifrada con SessionCrypto
+
+/** Estilo del DJ: "radio" (por defecto), "party" o "chill". */
+val DjStyleKey = stringPreferencesKey("djStyle")
+
+/** Cada cuánto habla el DJ: "start" (sólo al empezar), "blocks" (al cambiar de bloque) o "often". */
+val DjTalkKey = stringPreferencesKey("djTalk")
+
+/** Lo que el oyente le contó al DJ que le gusta la primera vez (vacío: aún no se lo ha dicho). */
+val DjTasteKey = stringPreferencesKey("djTaste")
+
 val AiProviderKey = stringPreferencesKey("aiProvider")
 
 val OpenRouterBaseUrlKey = stringPreferencesKey("openRouterBaseUrl")
