@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dezzy escritorio · Menús y diálogos</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..600,0..1,0&display=swap" rel="stylesheet">
+<style>
+:root{--doc:#f4f1f1;--ink:#22191a;--muted:#6b5b5c;--line:#e3d6d6;
+  --bg:#000;--panel:#121212;--el:#1f1f1f;--hov:#2a2a2a;--hi:#fff;--sub:#b3b3b3;--dim:#7a7a7a;--acc:#f2606d;--acc-d:#ED5564}
+*{box-sizing:border-box}
+body{margin:0;background:var(--doc);color:var(--ink);font:15px/1.5 Poppins,system-ui,sans-serif}
+.doc{max-width:1340px;margin:0 auto;padding:40px 24px 80px}
+h1{font-size:30px;margin:0 0 6px}
+.lead{color:var(--muted);max-width:980px;margin:0}
+.pick{position:sticky;top:0;z-index:20;background:var(--doc);padding:18px 0 12px;display:flex;flex-wrap:wrap;gap:18px;align-items:center;border-bottom:1px solid var(--line);margin-top:22px}
+.seg{display:flex;gap:6px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:4px}
+.seg button{font:600 14px Poppins;border:0;background:none;padding:8px 14px;border-radius:10px;cursor:pointer;color:var(--muted)}
+.seg button.on{background:var(--ink);color:#fff}
+.vdesc{margin:18px 0 6px}
+.vdesc h2{font-size:22px;margin:0 0 4px;display:flex;align-items:center;gap:12px}
+.vdesc h2 .tag{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--ink);color:#fff;font-size:17px}
+.vdesc p{color:var(--muted);margin:0;max-width:1000px}
+ul.chg{margin:8px 0 12px;padding-left:20px;font-size:14px;max-width:1100px}
+ul.chg li{margin-bottom:3px}
+.ms{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;font-size:22px;line-height:1;display:inline-block;-webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400;vertical-align:middle}
+.ms.f{font-variation-settings:'FILL' 1,'wght' 500}
+.zoom{zoom:.92;margin-top:6px}
+@media (max-width:1300px){.zoom{zoom:.7}}
+@media (max-width:900px){.zoom{zoom:.45}}
+.note{margin-top:34px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 20px;font-size:14px;color:var(--muted)}
+.hide{display:none!important}
+
+/* ventana */
+.win{width:1300px;height:800px;border-radius:12px;overflow:hidden;background:var(--bg);color:var(--hi);display:flex;flex-direction:column;box-shadow:0 18px 50px rgba(0,0,0,.3);font-family:Poppins,sans-serif;font-size:14px}
+.top{height:64px;display:flex;align-items:center;gap:10px;padding:0 14px;flex:none}
+.logo{width:30px;height:30px;border-radius:9px;background:var(--acc-d);display:grid;place-items:center;font-weight:800;font-size:16px;color:#fff}
+.back{width:32px;height:32px;border-radius:50%;background:var(--panel);display:grid;place-items:center}
+.circ{width:48px;height:48px;border-radius:24px;background:var(--el);display:grid;place-items:center}
+.search{width:470px;height:48px;border-radius:24px;background:var(--el);display:flex;align-items:center;gap:12px;padding:0 16px;color:var(--sub)}
+.mid{flex:1;display:flex;justify-content:center;gap:8px}
+.ico{display:flex;gap:14px;color:var(--sub);align-items:center}
+.ico .on{color:#fff}
+.av{width:32px;height:32px;border-radius:50%;background:#1a8f86;display:grid;place-items:center;font-weight:700;color:#fff}
+.body{flex:1;display:flex;gap:8px;padding:0 8px;min-height:0}
+.p{background:var(--panel);border-radius:8px;overflow:hidden;position:relative}
+.lib{width:76px;flex:none;display:flex;flex-direction:column;align-items:center;gap:8px;padding-top:14px;color:var(--sub)}
+.lib i{width:48px;height:48px;border-radius:4px;display:block}
+.main{flex:1;min-width:0}
+.scroll{position:absolute;inset:0;overflow:hidden}
+.bar{height:72px;flex:none;display:grid;grid-template-columns:1fr 1.6fr 1fr;align-items:center;padding:0 16px 0 10px}
+.np{display:flex;gap:12px;align-items:center}
+.np i{width:52px;height:52px;border-radius:4px}
+.np small{display:block;color:var(--sub);font-size:12px}
+.tr{display:flex;flex-direction:column;align-items:center;gap:6px}
+.tr .b{display:flex;gap:20px;align-items:center;color:var(--sub)}
+.tr .pp{width:34px;height:34px;border-radius:50%;background:#fff;color:#000;display:grid;place-items:center}
+.prog{width:100%;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--sub)}
+.prog span.t{flex:1;height:4px;border-radius:2px;background:#4d4d4d;position:relative}
+.prog span.t::before{content:'';position:absolute;inset:0 62% 0 0;background:#fff;border-radius:2px}
+.ex{display:flex;justify-content:flex-end;gap:12px;color:var(--sub);align-items:center}
+.vol{width:90px;height:4px;border-radius:2px;background:linear-gradient(90deg,#fff 70%,#4d4d4d 70%)}
+
+/* comunes */
+.g1{background:linear-gradient(135deg,#7b2ff7,#f2606d)}.g2{background:linear-gradient(135deg,#0f9b8e,#183b5a)}
+.g3{background:linear-gradient(135deg,#f7b733,#fc4a1a)}.g4{background:linear-gradient(135deg,#355c7d,#c06c84)}
+.g5{background:linear-gradient(135deg,#11998e,#38ef7d)}.g6{background:linear-gradient(135deg,#232526,#5b5b5b)}
+.g7{background:linear-gradient(135deg,#ee0979,#ff6a00)}.g8{background:linear-gradient(135deg,#4568dc,#b06ab3)}
+.g9{background:linear-gradient(135deg,#e0c3fc,#8ec5fc)}.g10{background:linear-gradient(135deg,#a8071a,#3a0a12)}
+.liked{background:linear-gradient(135deg,#450af5,#c4efd9)}
+.playc{width:56px;height:56px;border-radius:50%;background:var(--acc);color:#1a0407;display:grid;place-items:center;box-shadow:0 8px 18px rgba(0,0,0,.35);flex:none}
+.playc .ms{font-size:32px}
+.playc.s{width:46px;height:46px}.playc.s .ms{font-size:26px}
+.chip{height:32px;padding:0 14px;border-radius:16px;background:rgba(255,255,255,.1);display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;white-space:nowrap}
+.chip.on{background:#fff;color:#000}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.sh{font-size:22px;font-weight:700;margin:0 0 12px;display:flex;align-items:baseline;gap:10px}
+.sh small{margin-left:auto;font-size:13px;color:var(--sub);font-weight:600}
+.pad{padding:0 24px}
+.sub{color:var(--sub)}
+.row{display:grid;grid-template-columns:28px 40px 1fr 160px 60px;gap:14px;align-items:center;padding:6px 12px;border-radius:4px;color:var(--sub);font-size:13px}
+.row i{width:40px;height:40px;border-radius:3px;display:block}
+.row b{color:#fff;font-weight:400;font-size:15px;display:block}
+.row.h{background:rgba(255,255,255,.08)}
+.row.on b{color:var(--acc)}
+.n{text-align:center;font-size:15px}
+.thead{display:grid;grid-template-columns:28px 40px 1fr 160px 60px;gap:14px;padding:0 12px 8px;margin-bottom:8px;border-bottom:1px solid #2a2a2a;color:var(--sub);font-size:13px}
+.thead span:nth-child(2){grid-column:2/4}
+.cards{display:flex;gap:4px;margin:0 -12px}
+.card{width:176px;padding:12px;border-radius:6px;flex:none;position:relative}
+.card.h{background:var(--el)}
+.card i{display:block;aspect-ratio:1;border-radius:6px;margin-bottom:8px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.card i.r{border-radius:50%}
+.card b{display:block;font-weight:500;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card small{color:var(--sub);font-size:13px}
+.card .hp{position:absolute;right:20px;top:122px}
+.bar2{height:4px;border-radius:2px;background:#3a3a3a;position:relative;overflow:hidden}
+.bar2 span{position:absolute;inset:0 auto 0 0;background:var(--acc);border-radius:2px}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:rgba(242,96,109,.18);color:var(--acc)}
+.badge.g{background:rgba(56,239,125,.14);color:#4ee08f}
+.heat{display:grid;grid-template-columns:repeat(53,1fr);grid-auto-flow:column;grid-template-rows:repeat(7,1fr);gap:3px}
+.heat b{aspect-ratio:1;border-radius:2px;background:#262626}
+.heat b.l1{background:rgba(242,96,109,.3)}.heat b.l2{background:rgba(242,96,109,.55)}.heat b.l3{background:rgba(242,96,109,.8)}.heat b.l4{background:#f2606d}
+.wk{display:flex;align-items:flex-end;gap:10px;height:120px}
+.wk div{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end;font-size:11px;color:var(--sub)}
+.wk div span{width:100%;border-radius:6px 6px 2px 2px;background:#3a3a3a}
+.wk div span.top{background:var(--acc)}
+.hero{display:flex;gap:24px;align-items:flex-end;padding:56px 24px 24px}
+.hero .cov{width:232px;height:232px;border-radius:6px;box-shadow:0 8px 40px rgba(0,0,0,.6);flex:none;display:grid;place-items:center}
+.hero .cov .ms{font-size:110px;color:#fff}
+.hero .tg{font-size:13px;font-weight:500}
+.hero h3n{display:block;font-size:76px;font-weight:800;letter-spacing:-.04em;line-height:1;margin:6px 0 14px}
+.acts{display:flex;align-items:center;gap:22px;padding:20px 24px;color:var(--sub)}
+.acts .ms{font-size:30px}
+.tile{background:var(--el);border-radius:12px;padding:16px;position:relative;overflow:hidden}
+.tile h4{margin:0 0 8px;font-size:13px;font-weight:600;color:var(--sub)}
+.kpi b{display:block;font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.kpi small{color:var(--sub);font-size:12px}
+/* fase 4 */
+.mini{display:grid;grid-template-columns:22px 40px 1fr auto;gap:12px;align-items:center;padding:6px 0;font-size:13px;color:var(--sub)}
+.mini i{width:40px;height:40px;border-radius:3px;display:block}
+.mini b{display:block;color:#fff;font-weight:500;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini .n{font-size:14px}
+.cc{display:inline-grid;place-items:center;min-width:28px;height:20px;padding:0 4px;border-radius:4px;background:#2c2c2c;font-size:10px;font-weight:700;letter-spacing:.04em;color:#fff}
+.world{position:absolute;inset:0}
+.world svg{width:100%;height:100%;display:block}
+.circ.s{width:40px;height:40px;border-radius:20px;background:rgba(31,31,31,.92)}
+.inp{height:40px;border-radius:20px;background:var(--el);display:flex;align-items:center;gap:10px;padding:0 14px;color:var(--sub);font-size:13px}
+.tgl{width:40px;height:22px;border-radius:11px;background:#535353;position:relative;flex:none;display:inline-block}
+.tgl::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff}
+.tgl.on{background:var(--acc)}.tgl.on::after{left:21px}
+.av2{width:36px;height:36px;border-radius:50%;display:inline-grid;place-items:center;font-weight:700;font-size:13px;color:#fff;border:2px solid var(--panel);flex:none}
+.stack{display:flex}.stack .av2+.av2{margin-left:-10px}
+.bub{background:var(--el);border-radius:14px 14px 14px 4px;padding:8px 12px;font-size:13px;max-width:250px;align-self:flex-start}
+.bub small{display:block;font-size:11px;color:var(--acc);font-weight:600}
+.bub.me{background:var(--acc);color:#1a0407;border-radius:14px 14px 4px 14px;align-self:flex-end}
+.chat{display:flex;flex-direction:column;gap:8px}
+.sel{height:36px;padding:0 12px;border-radius:18px;background:var(--el);display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:500}
+.up{color:#4ee08f}.dn{color:#f2606d}.eq{color:#7a7a7a}
+.rk{display:grid;grid-template-columns:28px 34px 40px 1fr 120px 56px;gap:14px;align-items:center;padding:6px 12px;border-radius:4px;font-size:13px;color:var(--sub)}
+.rk i{width:40px;height:40px;border-radius:3px;display:block}
+.rk b{display:block;color:#fff;font-weight:400;font-size:15px}
+.rk.h{background:rgba(255,255,255,.08)}
+.rk .d{font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.srow{display:flex;align-items:center;gap:16px;padding:13px 0;border-bottom:1px solid #222;font-size:14px}
+.srow>div{flex:1}.srow small{display:block;color:var(--sub);font-size:12px}
+.sec{font-size:20px;font-weight:700;margin:26px 0 4px}
+.sw{width:26px;height:26px;border-radius:50%;display:inline-block;border:2px solid transparent}
+.sw.on{border-color:#fff;box-shadow:0 0 0 2px #000 inset}
+.btnw{height:32px;padding:0 16px;border-radius:16px;border:1px solid #727272;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600}
+.btnf{height:32px;padding:0 16px;border-radius:16px;background:#fff;color:#000;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700}
+.vote{display:flex;align-items:center;gap:8px;font-size:12px}
+.vote .bar2{width:70px}
+.big1{font-size:260px;font-weight:800;line-height:.8;letter-spacing:-.06em;color:transparent;-webkit-text-stroke:3px rgba(255,255,255,.55)}
+/* fase 5 */
+.qt{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.q{height:56px;border-radius:4px;background:rgba(255,255,255,.08);display:flex;align-items:center;gap:12px;overflow:hidden;font-weight:600;font-size:13px;position:relative}
+.q i{width:56px;height:56px;flex:none;display:block}
+.q.h{background:rgba(255,255,255,.16)}
+.q .playc.s{position:absolute;right:8px;width:34px;height:34px}.q .playc.s .ms{font-size:22px}
+.bento{display:grid;grid-template-columns:1.4fr 1fr 1fr;grid-template-rows:150px 150px;gap:12px}
+.bt{border-radius:12px;padding:16px;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end}
+.bt small{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.8}
+.bt b{font-size:20px;font-weight:700;line-height:1.15}
+.desk{position:relative;height:560px;border-radius:12px;overflow:hidden;background:linear-gradient(160deg,#3a5a8c,#c76a4b);box-shadow:0 18px 50px rgba(0,0,0,.3)}
+.desk .taskbar{position:absolute;left:0;right:0;bottom:0;height:44px;background:rgba(20,20,20,.75);backdrop-filter:blur(10px)}
+.desk .lbl{position:absolute;color:#fff;font:600 12px Poppins;opacity:.8}
+.mp{position:absolute;color:#fff;font-family:Poppins;box-shadow:0 14px 40px rgba(0,0,0,.5);overflow:hidden}
+.mp .t b{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp .t small{display:block;font-size:12px;color:#b3b3b3}
+.qr{width:180px;height:180px;border-radius:12px;background:#fff;padding:12px;display:grid;grid-template-columns:repeat(21,1fr);gap:0}
+.qr b{background:#111;aspect-ratio:1}.qr b.o{background:transparent}
+.step{display:flex;gap:14px;align-items:flex-start;font-size:14px}
+.step .k{width:28px;height:28px;border-radius:50%;background:#2a2a2a;display:grid;place-items:center;font-weight:700;font-size:13px;flex:none}
+.step .k.on{background:var(--acc);color:#1a0407}
+.code{font:700 26px ui-monospace,'Cascadia Mono',monospace;letter-spacing:.18em}
+.wall{position:absolute;inset:-40px;display:grid;grid-template-columns:repeat(10,1fr);gap:10px;transform:rotate(-8deg) scale(1.15);opacity:.55}
+.wall i{aspect-ratio:1;border-radius:8px;display:block}
+.wall i.r{border-radius:50%}
+.lyr{font-size:15px;font-weight:700;line-height:1.3}
+.lyr span{color:rgba(255,255,255,.45)}
+/* fase 6 */
+.win{position:relative}
+.dim{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:5}
+.ov{position:absolute;z-index:6}
+.menu{background:#282828;border-radius:4px;padding:4px;width:290px;box-shadow:0 16px 24px rgba(0,0,0,.5),0 6px 8px rgba(0,0,0,.3);font-size:14px}
+.mi{display:flex;align-items:center;gap:12px;height:40px;padding:0 12px;border-radius:2px;color:#e6e6e6}
+.mi .ms{font-size:20px;color:var(--sub)}
+.mi.h{background:#3e3e3e;color:#fff}
+.mi.off{opacity:.4}
+.mi .end{margin-left:auto}
+.sep{height:1px;background:#3e3e3e;margin:4px 0}
+.toast{position:absolute;left:50%;transform:translateX(-50%);bottom:96px;z-index:7;display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:8px;font-size:14px;font-weight:500;box-shadow:0 10px 30px rgba(0,0,0,.5);white-space:nowrap}
+.modal{background:#282828;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.6);color:#fff}
+.field{background:#3e3e3e;border-radius:4px;height:40px;display:flex;align-items:center;padding:0 12px;font-size:14px;color:#fff}
+.field.ph{color:#9a9a9a}
+.lbl6{font-size:11px;font-weight:700;color:var(--sub);margin:0 0 6px}
+.plr{display:flex;align-items:center;gap:12px;padding:6px 8px;border-radius:4px;font-size:14px}
+.plr i{width:44px;height:44px;border-radius:4px;display:block;flex:none}
+.plr small{display:block;color:var(--sub);font-size:12px}
+.plr.h{background:#3e3e3e}
+.ck{margin-left:auto;width:22px;height:22px;border-radius:50%;border:2px solid #727272;flex:none}
+.ck.on{border:0;background:var(--acc);display:grid;place-items:center;color:#1a0407}
+.ck.on::after{content:'check';font-family:'Material Symbols Rounded';font-size:16px;font-weight:700}
+.side{position:absolute;top:64px;right:8px;bottom:72px;width:380px;background:var(--panel);border-radius:8px;z-index:6;display:flex;flex-direction:column;overflow:hidden}
+.side .hd{display:flex;align-items:center;gap:10px;padding:16px 16px 10px;font-weight:700;font-size:16px}
+.side .hd .ms:last-child{margin-left:auto;color:var(--sub)}
+.glass{background:rgba(40,28,32,.62);backdrop-filter:blur(26px) saturate(1.4);border:1px solid rgba(255,255,255,.12)}
+.card6{border-radius:14px;display:flex;flex-direction:column;justify-content:flex-end;padding:22px;color:#fff;box-shadow:0 20px 50px rgba(0,0,0,.55);position:relative;overflow:hidden}
+.card6 .art{width:100%;aspect-ratio:1;border-radius:8px;margin-bottom:16px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.card6 b{font-size:22px;font-weight:800;line-height:1.1}
+.card6 small{font-size:14px;opacity:.75}
+.card6 .wm{position:absolute;top:16px;right:18px;font-weight:800;font-size:13px;opacity:.8}
+.pillseg{display:inline-flex;background:#1f1f1f;border-radius:20px;padding:4px;gap:2px}
+.pillseg span{padding:6px 14px;border-radius:16px;font-size:13px;font-weight:600;color:var(--sub)}
+.pillseg span.on{background:#fff;color:#000}
+.dev{display:flex;align-items:center;gap:14px;padding:10px 12px;border-radius:6px}
+.dev .di{width:40px;height:40px;border-radius:8px;background:#3e3e3e;display:grid;place-items:center;flex:none}
+.dev b{display:block;font-weight:500;font-size:14px}
+.dev small{display:block;font-size:12px;color:var(--sub)}
+.dev.cur b,.dev.cur small,.dev.cur .di{color:var(--acc)}
+.dev.h{background:#3e3e3e}
+.eqz{display:inline-flex;gap:2px;align-items:flex-end;height:12px;margin-right:4px}
+.eqz i{width:3px;background:var(--acc);display:block;border-radius:1px}
+.ping{margin-left:auto;font-size:11px;color:var(--dim)}
+.sect{font-size:12px;font-weight:700;color:var(--sub);margin:14px 12px 4px;letter-spacing:.02em}
+.rbtn{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.12)}
+.rcol{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12px;color:#ddd}
+.orb{position:absolute;display:flex;flex-direction:column;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#fff;transform:translate(-50%,-50%)}
+.orb span.c{width:76px;height:76px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15)}
+.orb span.c .ms{font-size:34px}
+.orb small{color:var(--sub);font-weight:400;font-size:11px;margin-top:-6px}
+.ring{position:absolute;border-radius:50%;border:1px dashed rgba(255,255,255,.14);transform:translate(-50%,-50%)}
+.tile6{border-radius:10px;aspect-ratio:1;position:relative;overflow:hidden;display:flex;align-items:flex-end;padding:12px;font-weight:700;font-size:14px;box-shadow:0 10px 24px rgba(0,0,0,.4)}
+.tile6::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 45%,rgba(0,0,0,.65))}
+.tile6 span{position:relative}
+.tile6.new{background:rgba(255,255,255,.08);border:2px dashed rgba(255,255,255,.25);box-shadow:none;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.tile6.new::before{display:none}
+.tile6.sel{outline:3px solid var(--acc);outline-offset:3px}
+</style>
+</head>
+<body>
+<div class="doc">
+<h1>Dezzy escritorio · Menús y diálogos</h1>
+<p class="lead">Fase 6 del estilo Spotify: las ventanas que salen encima de todo y aún usan el diseño antiguo. Social sigue oculta y queda fuera. Elige arriba la propuesta (A, B o C) y la pieza. Se pueden mezclar, como en las fases anteriores.</p>
+
+<div class="pick">
+  <div class="seg" id="segV"><button data-v="A" class="on">A · Clásico</button><button data-v="B">B · Panel</button><button data-v="C">C · Inmersivo</button></div>
+  <div class="seg" id="segS"><button data-s="menu" class="on">Menú contextual</button><button data-s="pl">Añadir a playlist</button><button data-s="share">Compartir</button><button data-s="dev">Dispositivos</button></div>
+</div>
+
+<div class="vdesc" data-v="A"><h2><span class="tag">A</span> Clásico: como en Spotify</h2>
+<p>Ventanitas grises y compactas encima de la app; lo que ya conoces de Spotify.</p>
+<ul class="chg">
+<li><b>Menú contextual:</b> gris oscuro, esquinas casi rectas, icono + texto, separadores, y «Añadir a playlist» abre un submenú al lado con tus playlists y «Nueva playlist».</li>
+<li><b>Añadir a playlist:</b> ventana centrada con buscador, «Nueva playlist» arriba y la lista con un círculo para marcar. Aviso blanco abajo: «Añadida a Tus favoritas 2026».</li>
+<li><b>Compartir:</b> ventana con la tarjeta a la izquierda y, a la derecha, las pestañas Canción / Letra / Canvas y los botones «Copiar imagen» y «Guardar PNG».</li>
+<li><b>Dispositivos:</b> globo que sale del botón de dispositivos de la barra: «Escuchando en Este ordenador» en coral, tus Dezzy, teles y altavoces, y abajo «Todos / Sólo este ordenador».</li>
+</ul></div>
+<div class="vdesc hide" data-v="B"><h2><span class="tag">B</span> Panel: todo en el lateral derecho</h2>
+<p>Las ventanas grandes se abren como panel a la derecha, igual que la cola o la letra; no tapan la música.</p>
+<ul class="chg">
+<li><b>Menú contextual:</b> más ancho, con la canción arriba (portada y título) y una fila de 4 botones rápidos: siguiente, cola, radio y descargar. Debajo, el resto.</li>
+<li><b>Añadir a playlist:</b> panel lateral con buscador, un campo para crear la playlist sin salir y la lista; marcas varias y pulsas «Hecho». Aviso coral abajo.</li>
+<li><b>Compartir:</b> panel lateral con las pestañas arriba, la tarjeta grande en medio y los dos botones abajo a lo ancho.</li>
+<li><b>Dispositivos:</b> panel lateral con «Suena en» arriba, cada dispositivo como fila con su retardo (ms), y el modo de control como interruptor.</li>
+</ul></div>
+<div class="vdesc hide" data-v="C"><h2><span class="tag">C</span> Inmersivo: cristal y portadas</h2>
+<p>Fondo difuminado del color de la canción y piezas grandes, como el modo Dezzy Style.</p>
+<ul class="chg">
+<li><b>Menú contextual:</b> de cristal con el tinte de la portada, esquinas redondas de 14 px y la fila de botones rápidos arriba.</li>
+<li><b>Añadir a playlist:</b> toda la ventana se difumina y aparecen tus playlists como portadas grandes; la primera casilla es «Nueva». Aviso de cristal.</li>
+<li><b>Compartir:</b> la tarjeta grande en el centro, pestañas en píldora encima y botones redondos debajo.</li>
+<li><b>Dispositivos:</b> «Este ordenador» en el centro y tus dispositivos alrededor en anillos según lo cerca que están; abajo, el modo de control.</li>
+</ul></div>
+
+<div class="zoom" id="stage"></div>
+
+<div class="note"><b>En las tres:</b> no cambia lo que hacen: las mismas opciones del menú (también «Descargar» y «Quitar de la playlist» cuando toca), crear playlists en tu cuenta vinculada, las tres tarjetas para compartir y Dezzy Connect con hasta 4 dispositivos. El icono de la app y la pantalla «Pronto» quedan para la última fase.</div>
+</div>
+
+<template id="frame"><div class="win">
+  <div class="top"><span class="logo">d</span><span class="back"><span class="ms">chevron_left</span></span>
+    <div class="mid"><span class="circ" style="color:#fff"><span class="ms f">home</span></span><span class="search"><span class="ms">search</span>¿Qué quieres reproducir?</span></div>
+    <div class="ico"><span class="ms">public</span><span class="ms">leaderboard</span><span class="ms">download</span><span class="ms">settings</span><span class="av">Q</span></div></div>
+  <div class="body">
+    <div class="p lib"><span class="ms f">library_music</span><i class="liked"></i><i class="g1"></i><i class="g4"></i><i class="g2"></i><i class="g3"></i><i class="g8"></i></div>
+    <div class="p main"><div class="scroll" style="background:linear-gradient(180deg,#6b2a1a,#121212 340px)">
+      <div class="hero" style="padding-top:40px"><i class="cov g7" style="width:190px;height:190px"></i><div><span class="tg">Álbum</span><h3n style="font-size:64px">MOTOMAMI</h3n><span class="sub">Rosalía · 2022 · 16 canciones</span></div></div>
+      <div class="acts"><span class="playc"><span class="ms f">play_arrow</span></span><span class="ms">shuffle</span><span class="ms">add_circle</span><span class="ms">more_horiz</span></div>
+      <div class="pad"><div class="thead"><span>#</span><span>Título</span><span>Álbum</span><span class="ms" style="font-size:18px">schedule</span></div>
+        <div class="row"><span class="n">1</span><i class="g7"></i><div><b>SAOKO</b>Rosalía</div><span>MOTOMAMI</span><span>2:17</span></div>
+        <div class="row h"><span class="n">2</span><i class="g7"></i><div><b>CANDY</b>Rosalía</div><span>MOTOMAMI</span><span>3:13</span></div>
+        <div class="row"><span class="n">3</span><i class="g7"></i><div><b>LA FAMA</b>Rosalía, The Weeknd</div><span>MOTOMAMI</span><span>3:08</span></div>
+        <div class="row on"><span class="n">4</span><i class="g7"></i><div><b>DESPECHÁ</b>Rosalía</div><span>MOTOMAMI</span><span>2:37</span></div>
+      </div></div></div>
+  </div>
+  <div class="bar"><div class="np"><i class="g7"></i><div>DESPECHÁ<small>Rosalía</small></div></div><div class="tr"><div class="b"><span class="ms">shuffle</span><span class="ms f">skip_previous</span><span class="pp"><span class="ms f">pause</span></span><span class="ms f">skip_next</span><span class="ms">repeat</span></div><div class="prog">1:02<span class="t"></span>2:37</div></div><div class="ex"><span class="ms">view_sidebar</span><span class="ms">lyrics</span><span class="ms">queue_music</span><span class="ms" id="devbtn">devices</span><span class="ms">volume_up</span><span class="vol"></span></div></div>
+  <div id="ov"></div>
+</div></template>
+
+<template id="items"><div class="mi h"><span class="ms">playlist_play</span>Reproducir a continuación</div><div class="mi"><span class="ms">queue_music</span>Añadir a la cola</div><div class="sep"></div><div class="mi"><span class="ms">radio</span>Iniciar radio</div><div class="mi"><span class="ms">person</span>Ir al artista</div><div class="mi"><span class="ms">album</span>Ir al álbum</div><div class="sep"></div><div class="mi"><span class="ms">playlist_add</span>Añadir a playlist<span class="ms end">chevron_right</span></div><div class="mi"><span class="ms">download</span>Descargar</div><div class="mi"><span class="ms">ios_share</span>Compartir</div></template>
+
+<!-- ════════ A ════════ -->
+<template id="A-menu"><div class="ov menu" style="left:520px;top:250px"><div data-use="items"></div></div>
+<div class="ov menu" style="left:812px;top:450px;width:250px"><div class="mi"><span class="ms">search</span><span class="sub">Buscar una playlist</span></div><div class="mi"><span class="ms">add</span>Nueva playlist</div><div class="sep"></div><div class="mi h">Tus favoritas 2026</div><div class="mi">Para correr</div><div class="mi">Domingo tranquilo</div></div></template>
+
+<template id="A-pl"><div class="dim"></div><div class="ov modal" style="left:410px;top:150px;width:480px;padding:22px 20px 18px">
+  <div style="display:flex;align-items:center;margin-bottom:14px"><b style="font-size:22px">Añadir a playlist</b><span class="ms" style="margin-left:auto;color:var(--sub)">close</span></div>
+  <div class="field ph" style="margin-bottom:12px;gap:10px"><span class="ms" style="font-size:20px">search</span>Buscar una playlist</div>
+  <div class="plr"><i style="background:#3e3e3e;display:grid;place-items:center"><span class="ms">add</span></i><b style="font-weight:500">Nueva playlist</b></div>
+  <div class="plr h"><i class="g5"></i><div>Tus favoritas 2026<small>48 canciones</small></div><span class="ck on"></span></div>
+  <div class="plr"><i class="g3"></i><div>Para correr<small>31 canciones</small></div><span class="ck"></span></div>
+  <div class="plr"><i class="g9"></i><div>Domingo tranquilo<small>22 canciones</small></div><span class="ck"></span></div>
+  <div class="plr"><i class="g4"></i><div>Viaje a Lisboa<small>17 canciones</small></div><span class="ck"></span></div>
+  <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px"><span class="btnw" style="border:0;color:var(--sub)">Cancelar</span><span class="btnf">Hecho</span></div>
+</div>
+<div class="toast" style="background:#fff;color:#000"><span class="ms f" style="color:#000">check_circle</span>Añadida a Tus favoritas 2026</div></template>
+
+<template id="A-share"><div class="dim"></div><div class="ov modal" style="left:290px;top:110px;width:720px;padding:22px;display:flex;gap:24px">
+  <div class="card6" style="width:300px;background:linear-gradient(160deg,#ee0979,#4a0d1c)"><span class="wm">d · Dezzy</span><i class="art g7"></i><b>DESPECHÁ</b><small>Rosalía</small></div>
+  <div style="flex:1;display:flex;flex-direction:column;gap:16px">
+    <div style="display:flex;align-items:center"><b style="font-size:22px">Compartir</b><span class="ms" style="margin-left:auto;color:var(--sub)">close</span></div>
+    <div class="chips"><span class="chip on">Canción</span><span class="chip">Letra</span><span class="chip">Canvas</span></div>
+    <p class="sub" style="margin:0;font-size:13px">La tarjeta toma el color de la portada. Pégala en un chat o guárdala.</p>
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:8px">
+      <div class="mi h" style="border-radius:4px"><span class="ms">content_copy</span>Copiar imagen</div>
+      <div class="mi"><span class="ms">download</span>Guardar PNG</div></div>
+  </div></div></template>
+
+<template id="A-dev"><div class="ov menu" style="right:150px;bottom:80px;width:340px;padding:16px 8px 12px">
+  <b style="display:block;font-size:16px;padding:0 12px 8px">Conectar a un dispositivo</b>
+  <div class="dev cur"><span class="di"><span class="ms">computer</span></span><div><b>Este ordenador</b><small><span class="eqz"><i style="height:6px"></i><i style="height:12px"></i><i style="height:8px"></i></span>Escuchando aquí</small></div></div>
+  <div class="sect">Tus Dezzy</div>
+  <div class="dev h"><span class="di"><span class="ms">smartphone</span></span><div><b>Pixel de Q</b><small>Dezzy Connect</small></div></div>
+  <div class="dev"><span class="di"><span class="ms">laptop</span></span><div><b>Portátil del salón</b><small>Dezzy Connect</small></div></div>
+  <div class="sect">Teles y altavoces</div>
+  <div class="dev"><span class="di"><span class="ms">tv</span></span><div><b>Tele del salón</b><small>Chromecast</small></div></div>
+  <div class="sep" style="margin:8px 4px"></div>
+  <div style="display:flex;align-items:center;gap:8px;padding:4px 12px;font-size:12px;color:var(--sub)">Quién cambia la música<span style="margin-left:auto" class="pillseg"><span class="on">Todos</span><span>Sólo este</span></span></div>
+</div></template>
+
+<!-- ════════ B ════════ -->
+<template id="B-menu"><div class="ov menu" style="left:520px;top:300px;width:330px;padding:0;overflow:hidden">
+  <div style="display:flex;gap:12px;align-items:center;padding:14px 14px 12px;border-bottom:1px solid #3e3e3e"><i class="g7" style="width:48px;height:48px;border-radius:4px;display:block"></i><div><b style="font-weight:600">CANDY</b><small class="sub" style="display:block;font-size:12px">Rosalía · MOTOMAMI</small></div></div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:10px 8px;border-bottom:1px solid #3e3e3e">
+    <div class="rcol" style="font-size:11px"><span class="rbtn" style="width:42px;height:42px"><span class="ms">playlist_play</span></span>Siguiente</div>
+    <div class="rcol" style="font-size:11px"><span class="rbtn" style="width:42px;height:42px"><span class="ms">queue_music</span></span>A la cola</div>
+    <div class="rcol" style="font-size:11px"><span class="rbtn" style="width:42px;height:42px"><span class="ms">radio</span></span>Radio</div>
+    <div class="rcol" style="font-size:11px"><span class="rbtn" style="width:42px;height:42px"><span class="ms">download</span></span>Descargar</div></div>
+  <div style="padding:4px"><div class="mi h"><span class="ms">playlist_add</span>Añadir a playlist…</div><div class="mi"><span class="ms">person</span>Ir al artista</div><div class="mi"><span class="ms">album</span>Ir al álbum</div><div class="mi"><span class="ms">ios_share</span>Compartir</div></div>
+</div></template>
+
+<template id="B-pl"><div class="side"><div class="hd"><span class="ms">playlist_add</span>Añadir a playlist<span class="ms">close</span></div>
+  <div style="padding:0 16px;display:flex;flex-direction:column;gap:10px">
+    <div class="field ph" style="gap:10px;border-radius:20px;background:#242424"><span class="ms" style="font-size:20px">search</span>Buscar</div>
+    <div style="display:flex;gap:8px"><div class="field" style="flex:1;background:#242424">Cena con amigos</div><span class="btnf" style="height:40px;border-radius:20px">Crear</span></div>
+    <div style="display:flex;gap:6px"><span class="chip on" style="height:28px"><span class="ms" style="font-size:16px">lock</span>Privada</span><span class="chip" style="height:28px"><span class="ms" style="font-size:16px">link</span>Oculta</span><span class="chip" style="height:28px"><span class="ms" style="font-size:16px">public</span>Pública</span></div>
+    <div class="sect" style="margin:8px 0 0">Tus playlists</div>
+    <div class="plr h"><i class="g5"></i><div>Tus favoritas 2026<small>48 canciones</small></div><span class="ck on"></span></div>
+    <div class="plr"><i class="g3"></i><div>Para correr<small>31 canciones</small></div><span class="ck on"></span></div>
+    <div class="plr"><i class="g9"></i><div>Domingo tranquilo<small>22 canciones</small></div><span class="ck"></span></div>
+    <div class="plr"><i class="g4"></i><div>Viaje a Lisboa<small>17 canciones</small></div><span class="ck"></span></div></div>
+  <div style="margin-top:auto;padding:16px"><span class="btnf" style="width:100%;justify-content:center;height:44px;border-radius:22px;background:var(--acc);color:#1a0407">Hecho · 2 playlists</span></div></div>
+<div class="toast" style="background:var(--acc);color:#1a0407;left:42%"><span class="ms f">check_circle</span>Añadida a 2 playlists</div></template>
+
+<template id="B-share"><div class="side"><div class="hd"><span class="ms">ios_share</span>Compartir<span class="ms">close</span></div>
+  <div style="padding:0 16px"><span class="pillseg" style="width:100%;display:flex"><span class="on" style="flex:1;text-align:center">Canción</span><span style="flex:1;text-align:center">Letra</span><span style="flex:1;text-align:center">Canvas</span></span></div>
+  <div style="flex:1;display:grid;place-items:center;padding:18px 34px"><div class="card6" style="width:100%;background:linear-gradient(160deg,#ee0979,#4a0d1c)"><span class="wm">d · Dezzy</span><i class="art g7"></i><b>DESPECHÁ</b><small>Rosalía</small></div></div>
+  <div style="padding:0 16px 16px;display:flex;gap:8px"><span class="btnf" style="flex:1;justify-content:center;height:44px;border-radius:22px"><span class="ms" style="font-size:18px">content_copy</span>Copiar imagen</span><span class="btnw" style="flex:1;justify-content:center;height:44px;border-radius:22px"><span class="ms" style="font-size:18px">download</span>Guardar PNG</span></div></div></template>
+
+<template id="B-dev"><div class="side"><div class="hd"><span class="ms">devices</span>Conectar a un dispositivo<span class="ms">refresh</span></div>
+  <div style="padding:0 16px;font-size:12px;color:var(--sub);margin-top:-6px">3 dispositivos en tu red</div>
+  <div style="padding:6px 8px">
+    <div class="sect">Suena en</div>
+    <div class="dev cur" style="background:rgba(242,96,109,.1)"><span class="di"><span class="ms">computer</span></span><div><b>Este ordenador</b><small><span class="eqz"><i style="height:6px"></i><i style="height:12px"></i><i style="height:8px"></i></span>DESPECHÁ</small></div><span class="ping">anfitrión</span></div>
+    <div class="dev"><span class="di"><span class="ms">smartphone</span></span><div><b>Pixel de Q</b><small>En sincronía</small></div><span class="ping">12 ms</span><span class="ms" style="color:var(--sub);font-size:18px">close</span></div>
+    <div class="sect">Añadir</div>
+    <div class="dev h"><span class="di"><span class="ms">laptop</span></span><div><b>Portátil del salón</b><small>Dezzy Connect</small></div><span class="ping">8 ms</span></div>
+    <div class="sect">Teles y altavoces</div>
+    <div class="dev"><span class="di"><span class="ms">tv</span></span><div><b>Tele del salón</b><small>Chromecast</small></div></div>
+    <div class="dev"><span class="di"><span class="ms">speaker</span></span><div><b>Altavoz cocina</b><small>Google Cast</small></div></div></div>
+  <div style="margin-top:auto;padding:14px 16px;border-top:1px solid #2a2a2a;display:flex;align-items:center;gap:12px"><div style="flex:1;font-size:13px">Todos pueden cambiar la música<small class="sub" style="display:block;font-size:12px">Si lo apagas, sólo este ordenador</small></div><span class="tgl on"></span></div></div></template>
+
+<!-- ════════ C ════════ -->
+<template id="C-menu"><div class="ov glass" style="left:520px;top:330px;width:300px;border-radius:14px;padding:8px;box-shadow:0 20px 50px rgba(0,0,0,.5)">
+  <div style="display:flex;gap:6px;padding:4px 4px 8px"><span class="rbtn" style="flex:1;height:52px;border-radius:10px;width:auto"><span class="ms">playlist_play</span></span><span class="rbtn" style="flex:1;height:52px;border-radius:10px;width:auto"><span class="ms">queue_music</span></span><span class="rbtn" style="flex:1;height:52px;border-radius:10px;width:auto"><span class="ms">radio</span></span><span class="rbtn" style="flex:1;height:52px;border-radius:10px;width:auto"><span class="ms">download</span></span></div>
+  <div class="mi h" style="border-radius:8px;background:rgba(255,255,255,.12)"><span class="ms" style="color:#fff">playlist_add</span>Añadir a playlist…</div><div class="mi" style="border-radius:8px"><span class="ms">person</span>Ir al artista</div><div class="mi" style="border-radius:8px"><span class="ms">album</span>Ir al álbum</div><div class="mi" style="border-radius:8px"><span class="ms">ios_share</span>Compartir</div>
+</div></template>
+
+<template id="C-pl"><div class="dim" style="background:rgba(30,6,12,.55);backdrop-filter:blur(18px)"></div><div class="ov" style="inset:70px 120px 90px;display:flex;flex-direction:column;gap:18px">
+  <div style="display:flex;align-items:flex-end;gap:16px"><div><small class="sub">CANDY · Rosalía</small><b style="display:block;font-size:40px;font-weight:800;letter-spacing:-.02em;line-height:1.1">¿A qué playlist?</b></div><span class="ms" style="margin-left:auto;font-size:30px">close</span></div>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:18px">
+    <div class="tile6 new"><span class="ms" style="font-size:40px">add</span><span>Nueva</span></div>
+    <div class="tile6 g5 sel"><span>Tus favoritas 2026</span></div><div class="tile6 g3"><span>Para correr</span></div><div class="tile6 g9"><span>Domingo tranquilo</span></div><div class="tile6 g4"><span>Viaje a Lisboa</span></div>
+    <div class="tile6 g1"><span>Noche</span></div><div class="tile6 g8"><span>Concentración</span></div><div class="tile6 g2"><span>Clásicos</span></div></div></div>
+<div class="toast glass" style="color:#fff;bottom:30px"><span class="ms f" style="color:var(--acc)">check_circle</span>Añadida a Tus favoritas 2026</div></template>
+
+<template id="C-share"><div class="dim" style="background:rgba(60,6,22,.6);backdrop-filter:blur(22px)"></div><div class="ov" style="inset:40px 0 30px;display:flex;flex-direction:column;align-items:center;gap:18px">
+  <div class="pillseg glass"><span class="on">Canción</span><span>Letra</span><span>Canvas</span></div>
+  <div class="card6" style="width:340px;background:linear-gradient(160deg,#ee0979,#4a0d1c)"><span class="wm">d · Dezzy</span><i class="art g7"></i><b>DESPECHÁ</b><small>Rosalía</small></div>
+  <div style="display:flex;gap:28px;margin-top:6px"><div class="rcol"><span class="rbtn" style="background:#fff;color:#000"><span class="ms">content_copy</span></span>Copiar</div><div class="rcol"><span class="rbtn"><span class="ms">download</span></span>Guardar PNG</div><div class="rcol"><span class="rbtn"><span class="ms">close</span></span>Cerrar</div></div></div></template>
+
+<template id="C-dev"><div class="dim" style="background:rgba(10,4,8,.6);backdrop-filter:blur(20px)"></div><div class="ov" style="inset:0">
+  <b style="position:absolute;left:50%;top:60px;transform:translateX(-50%);font-size:28px;font-weight:800">Conectar a un dispositivo</b>
+  <span class="ring" style="left:650px;top:390px;width:300px;height:300px"></span><span class="ring" style="left:650px;top:390px;width:520px;height:520px"></span>
+  <div class="orb" style="left:650px;top:390px"><span class="c" style="background:var(--acc);color:#1a0407;width:96px;height:96px;border:0"><span class="ms f">computer</span></span>Este ordenador<small>suena aquí</small></div>
+  <div class="orb" style="left:520px;top:265px"><span class="c" style="border-color:var(--acc)"><span class="ms">smartphone</span></span>Pixel de Q<small>12 ms · en sincronía</small></div>
+  <div class="orb" style="left:795px;top:290px"><span class="c"><span class="ms">laptop</span></span>Portátil del salón<small>8 ms</small></div>
+  <div class="orb" style="left:410px;top:540px"><span class="c"><span class="ms">tv</span></span>Tele del salón<small>Chromecast</small></div>
+  <div class="orb" style="left:900px;top:530px"><span class="c"><span class="ms">speaker</span></span>Altavoz cocina<small>Google Cast</small></div>
+  <div style="position:absolute;left:50%;bottom:44px;transform:translateX(-50%);display:flex;align-items:center;gap:12px;font-size:13px">Quién cambia la música<span class="pillseg glass"><span class="on">Todos</span><span>Sólo este ordenador</span></span></div>
+</div></template>
+
+<script>
+let v = 'A', s = 'menu'
+const stage = document.getElementById('stage')
+function render() {
+  stage.innerHTML = document.getElementById('frame').innerHTML
+  stage.querySelector('#ov').outerHTML = document.getElementById(`${v}-${s}`).innerHTML
+  stage.querySelectorAll('[data-use]').forEach((el) => (el.outerHTML = document.getElementById(el.dataset.use).innerHTML))
+  if (s === 'dev') stage.querySelector('#devbtn').style.color = 'var(--acc)'
+  document.querySelectorAll('.vdesc').forEach((d) => d.classList.toggle('hide', d.dataset.v !== v))
+  document.querySelectorAll('#segV button').forEach((b) => b.classList.toggle('on', b.dataset.v === v))
+  document.querySelectorAll('#segS button').forEach((b) => b.classList.toggle('on', b.dataset.s === s))
+  history.replaceState(null, '', `#${v}-${s}`)
+}
+document.getElementById('segV').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { v = b.dataset.v; render() } })
+document.getElementById('segS').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { s = b.dataset.s; render() } })
+const m = location.hash.match(/^#([ABC])-(menu|pl|share|dev)$/)
+if (m) { v = m[1]; s = m[2] }
+render()
+</script>
+</body>
+</html>
