@@ -50,11 +50,14 @@ import kotlinx.coroutines.launch
  * «Desde un pin de Pinterest»: pegas pin.it/… o pinterest.com/pin/… y Dezzy baja la imagen
  * o el video del pin y lo pone de fondo. La descarga y todas las comprobaciones están en
  * [PinterestWallpaper]; aquí sólo va el campo, el estado de carga y los mensajes.
+ *
+ * Si el pin es vertical, va al fondo vertical. Si es horizontal, no encaja con la app en vertical:
+ * se guarda sólo como fondo horizontal (al girar el móvil), se deja libre el vertical y se avisa.
  */
 @Composable
 fun PinterestWallpaperField(
-    onImage: (uri: String) -> Unit,
-    onVideo: (uri: String) -> Unit,
+    onImage: (uri: String, landscape: Boolean) -> Unit,
+    onVideo: (uri: String, landscape: Boolean) -> Unit,
 ) {
     val context = LocalContext.current
     val focus = LocalFocusManager.current
@@ -63,6 +66,7 @@ fun PinterestWallpaperField(
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
     var done by remember { mutableStateOf("") }
+    var warn by remember { mutableStateOf("") }
     val isPin = remember(url) { PinterestWallpaper.isPinterestUrl(url) }
 
     fun use() {
@@ -71,12 +75,19 @@ fun PinterestWallpaperField(
         busy = true
         error = ""
         done = ""
+        warn = ""
         scope.launch {
             when (val r = PinterestWallpaper.fetch(context, url)) {
                 is PinterestWallpaper.Result.Ok -> {
                     val uri = android.net.Uri.fromFile(r.file).toString()
-                    if (r.isVideo) onVideo(uri) else onImage(uri)
-                    done = if (r.isVideo) "Listo: tu fondo ahora es el video del pin." else "Listo: tu fondo ahora es la imagen del pin."
+                    if (r.isVideo) onVideo(uri, r.isLandscape) else onImage(uri, r.isLandscape)
+                    val what = if (r.isVideo) "el video" else "la imagen"
+                    if (r.isLandscape) {
+                        warn = "Este pin es horizontal y no es compatible con la app en vertical. " +
+                            "Lo he puesto sólo como fondo horizontal (se ve al girar el móvil); el fondo vertical queda libre."
+                    } else {
+                        done = "Listo: $what del pin es tu fondo en vertical."
+                    }
                     url = ""
                 }
                 is PinterestWallpaper.Result.Error -> error = r.message
@@ -93,7 +104,7 @@ fun PinterestWallpaperField(
     ) {
         Text("Desde un pin de Pinterest", style = MaterialTheme.typography.titleMedium)
         Text(
-            "Pega el enlace de un pin: si tiene video, se usa el video; si no, la imagen.",
+            "Pega el enlace de un pin con imagen o video. Si es vertical, será tu fondo; si es horizontal, sólo se usará al girar el móvil.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
         )
@@ -104,6 +115,7 @@ fun PinterestWallpaperField(
                     url = it
                     error = ""
                     done = ""
+                    warn = ""
                 },
                 enabled = !busy,
                 singleLine = true,
@@ -145,6 +157,14 @@ fun PinterestWallpaperField(
             Text(
                 error,
                 color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            )
+        }
+        if (warn.isNotEmpty()) {
+            Text(
+                warn,
+                color = MaterialTheme.colorScheme.tertiary,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
             )

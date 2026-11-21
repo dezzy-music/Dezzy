@@ -8,6 +8,9 @@ package com.dezzy.music.utils
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.graphics.BitmapFactory
+import android.media.ExifInterface
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -31,7 +34,8 @@ import java.util.concurrent.TimeUnit
  */
 object PinterestWallpaper {
     sealed interface Result {
-        data class Ok(val file: File, val isVideo: Boolean, val title: String) : Result
+        /** [isLandscape]: más ancho que alto (ya contando la rotación del video o el EXIF de la foto). */
+        data class Ok(val file: File, val isVideo: Boolean, val title: String, val isLandscape: Boolean) : Result
         data class Error(val message: String) : Result
     }
 
@@ -334,6 +338,40 @@ object PinterestWallpaper {
         }
     }
 
+    /**
+     * ¿El archivo es horizontal? Cuenta la rotación del video y la orientación EXIF de la foto.
+     * Si no se puede leer el tamaño, se da por vertical (lo normal en Pinterest). Cuadrado = vertical.
+     */
+    private fun isLandscape(file: File, isVideo: Boolean): Boolean = try {
+        if (isVideo) {
+            val r = MediaMetadataRetriever()
+            try {
+                r.setDataSource(file.absolutePath)
+                val w = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull() ?: 0
+                val h = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull() ?: 0
+                val rot = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)?.toIntOrNull() ?: 0
+                if (rot % 180 != 0) h > w else w > h
+            } finally {
+                r.release()
+            }
+        } else {
+            val o = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(file.absolutePath, o)
+            val turned = try {
+                when (ExifInterface(file.absolutePath).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)) {
+                    ExifInterface.ORIENTATION_ROTATE_90, ExifInterface.ORIENTATION_ROTATE_270,
+                    ExifInterface.ORIENTATION_TRANSPOSE, ExifInterface.ORIENTATION_TRANSVERSE -> true
+                    else -> false
+                }
+            } catch (e: Exception) {
+                false
+            }
+            if (turned) o.outHeight > o.outWidth else o.outWidth > o.outHeight
+        }
+    } catch (e: Exception) {
+        false
+    }
+
     /** Enlace de Pinterest → archivo listo para usar como fondo. Si el video no se puede bajar, queda la imagen. */
     suspend fun fetch(context: Context, raw: String): Result = withContext(Dispatchers.IO) {
         try {
@@ -349,7 +387,7 @@ object PinterestWallpaper {
                 for (u in urls()) {
                     try {
                         val (file, isVideo) = download(context, u, wantVideo)
-                        return@withContext Result.Ok(file, isVideo, media.title.trim())
+                        return@withContext Result.Ok(file, isVideo, media.title.trim(), isLandscape(file, isVideo))
                     } catch (e: PinError) {
                         last = e
                         if (e.message == Err.OFFLINE) throw e
