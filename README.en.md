@@ -490,7 +490,7 @@ Special thanks to the following contributors and supporters:
 
 ## License
 
-**Copyright © 2025 Dezzy**
+**Copyright © the OpenTune and Dezzy authors** (see the git history)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
@@ -502,7 +502,7 @@ This program is distributed in the hope that it will be useful, but **WITHOUT AN
 
 </div>
 
-> **Important**: Any unauthorized commercial use of this software or its derivatives constitutes a violation of the license terms.
+> **Trademark**: the "Dezzy" name, logo and icons are not licensed under the GPL (section 7(e)). A fork or your own build must use a different name, icon and `applicationId`. Details in [TRADEMARKS.md](TRADEMARKS.md) (Spanish).
 
 ---
 

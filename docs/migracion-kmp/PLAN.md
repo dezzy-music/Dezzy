@@ -3,10 +3,20 @@
 > Documento de partida para cada sesión que trabaje en la migración. Léelo entero antes de tocar nada.
 > Estado: **no empezado** (creado 2026-11-21). Actualiza la tabla de fases al terminar cada una.
 
+## Decisiones tomadas (2026-11-21)
+
+| Tema | Decisión |
+|---|---|
+| Licencia de la app nueva | **PolyForm Strict 1.0.0** + `TRADEMARKS.md` (mismo esquema que ya tiene Dezzy Desktop desde el commit `5578ebd`) |
+| Repo nuevo | `dezzy-music/dezzy-app`, **privado** |
+| Escritorio | **Se queda en Electron.** La app KMP es para Android (e iOS más adelante). Escritorio y móvil se entienden por protocolos (Connect, Juntos, Nostr), no por código compartido |
+| App Android actual | Sigue en GPL-3.0 con aviso de marca (sección 7e, `TRADEMARKS.md`) hasta que la sustituya la nueva |
+
+
 ## 0. Por qué existe esto
 
 - La app de Android actual (`OpenTune/`) es un **fork de OpenTune bajo GPL-3.0**: 584 commits de Arturo Cervantes y otros, 51 de Dezzy. No se le puede cambiar la licencia, ni cambiando nombres ni reorganizando: sigue siendo obra derivada.
-- Objetivo: **una app nueva, desde cero, en Kotlin Multiplatform (Android + escritorio, iOS más adelante)**, con **licencia propia** desde el primer commit, construida sólo con código de Dezzy y librerías de licencia permisiva.
+- Objetivo: **una app nueva, desde cero, en Kotlin Multiplatform (Android primero, iOS más adelante; el escritorio sigue en Electron)**, con **licencia propia** desde el primer commit, construida sólo con código de Dezzy y librerías de licencia permisiva.
 - Mientras la app nueva no la sustituya, la de Android actual sigue publicándose bajo GPL. Las versiones ya publicadas (hasta 3.0.9) son GPL para siempre.
 - Dezzy Desktop (Electron, `antigravity/dezzy-desktop`) es 100 % de Dezzy: es la referencia principal de comportamiento y su código **sí** se puede traducir.
 
@@ -56,20 +66,20 @@ Es lo único que hace que la licencia nueva sea válida. Si una sesión las romp
 
 | Capa | Elección | Licencia | Notas |
 |---|---|---|---|
-| Lenguaje | Kotlin 2.x, KMP | Apache | Objetivos: `androidTarget`, `jvm("desktop")`, más adelante `iosArm64` |
+| Lenguaje | Kotlin 2.x, KMP | Apache | Objetivos: `androidTarget`, más adelante `iosArm64`. Un `jvm` sólo para pruebas unitarias |
 | UI | Compose Multiplatform + Material 3 | Apache | Reutiliza los bocetos de `design/` |
 | Navegación | Navigation Compose (KMP) con rutas tipadas | Apache | |
 | DI | Koin | Apache | Hilt no es multiplataforma |
-| Red | Ktor Client (OkHttp en Android, CIO/Java en escritorio) | Apache | |
+| Red | Ktor Client (OkHttp en Android, Darwin en iOS) | Apache | |
 | JSON | kotlinx.serialization | Apache | |
 | BD | Room KMP (o SQLDelight) | Apache | Esquema nuevo, con importador desde Dezzy 3.x (§4, fase 11) |
 | Ajustes | DataStore KMP | Apache | Claves sensibles cifradas (Keystore / DPAPI / Keychain) |
 | Imágenes | Coil 3 | Apache | |
 | Audio Android | Media3 ExoPlayer + MediaSession | Apache | |
-| Audio escritorio | **Por decidir**: libmpv (compilada LGPL) vía JNA, o GStreamer (LGPL) | LGPL | Nunca VLCj (GPL) |
+| Audio iOS (más adelante) | AVPlayer vía `expect/actual` | — | El escritorio no entra: sigue en Electron |
 | Núcleo nativo | `dezzy-core` (Rust) vía UniFFI, si §1.1 lo permite | propia | Resolver streams/cifrado una sola vez para todas las plataformas |
 | Criptografía P2P | Bouncy Castle (`bcprov`) | MIT | Ya se usa en la parte propia de `p2p/` |
-| BotGuard / poToken | WebView (Android) / ventana oculta (escritorio) con el método de `bgutils-js` | MIT | |
+| BotGuard / poToken | WebView oculta con el método de `bgutils-js` | MIT | |
 
 ### 2.2 Grafo de módulos
 
@@ -77,7 +87,7 @@ Es lo único que hace que la licencia nueva sea válida. Si una sesión las romp
 graph TD
   subgraph apps
     A[":app-android"]
-    D[":app-desktop"]
+    D[":app-ios (más adelante)"]
   end
   subgraph ui
     UI[":ui:design — tema, componentes, iconos"]
@@ -189,7 +199,7 @@ Lista de funciones que la app nueva tiene que cubrir. Fuente: uso de la app, mem
 - 4 estilos de reproductor + visualizadores Cordillera / Túnel / Espejo (bocetos aprobados en `design/`).
 - Canvas (vídeo corto de fondo) y modo vídeo (videoclip).
 - Burbuja flotante y pantalla siempre encendida (Android).
-- Notificación / controles del sistema / pantalla de bloqueo; en escritorio, controles multimedia del sistema operativo y miniventana.
+- Notificación / controles del sistema / pantalla de bloqueo.
 
 ### 3.4 Vídeo
 - Cliente VISIONOS + `visitorData` → `hlsManifestUrl`, sin poToken; HLS primero y progresivo de respaldo; caché de 256 MB.
@@ -267,11 +277,11 @@ Lista de funciones que la app nueva tiene que cubrir. Fuente: uso de la app, mem
 
 ## 4. Fases
 
-Cada fase termina con: compila en Android y escritorio, se ha probado en marcha (emulador o dispositivo + escritorio), commit propio sin firma de Claude y esta tabla actualizada.
+Cada fase termina con: compila en Android, se ha probado en marcha (emulador o dispositivo), commit propio sin firma de Claude y esta tabla actualizada.
 
 | # | Fase | Entregable | Depende de | Estado |
 |---|---|---|---|---|
-| 0 | Cimientos | Repo nuevo con licencia, plantilla KMP, CI, «hola» en Android y escritorio | — | pendiente |
+| 0 | Cimientos | Repo nuevo con licencia, plantilla KMP, CI, «hola» en Android | — | pendiente |
 | 1 | Núcleo | `core:model`, `core:net`, `core:database`, `core:prefs`, Koin | 0 | pendiente |
 | 2 | Catálogo | `source:youtube`: inicio, búsqueda, álbum, artista, playlist | 1 | pendiente |
 | 3 | Audio | `source:stream` + poToken + caché de URLs + prioridades | 1 | pendiente |
@@ -303,12 +313,12 @@ graph LR
 ```
 
 ### Fase 0 — Cimientos
-1. Decidir con el usuario: nombre del repo (propuesta `dezzy-music/dezzy-app`, privado), licencia (propuesta: PolyForm Strict 1.0.0 + `TRADEMARKS.md`) y si el escritorio pasa de Electron a Compose Desktop o convive un tiempo.
-2. Crear el proyecto con el asistente KMP (Compose Multiplatform, Android + Desktop). Paquete `com.dezzy.app` en el código; `applicationId` final `com.dezzy.music` (fase 11).
-3. `LICENSE`, `TRADEMARKS.md`, `docs/sala-limpia.md` (copia de §1), cabecera de licencia en cada archivo.
-4. GitHub Actions gratis: compilar Android (debug) y escritorio en cada push.
+1. Crear el repo privado `dezzy-music/dezzy-app` (decidido).
+2. Crear el proyecto con el asistente KMP (Compose Multiplatform, objetivo Android; iOS se añade después). Paquete `com.dezzy.app` en el código; `applicationId` final `com.dezzy.music` (fase 11).
+3. `LICENSE.md` (PolyForm Strict 1.0.0 con «Required Notice»; copiar el de `dezzy-desktop`), `TRADEMARKS.md`, `docs/sala-limpia.md` (copia de §1), cabecera de licencia en cada archivo.
+4. GitHub Actions gratis: compilar Android (debug) y pasar las pruebas JVM en cada push.
 5. `graphify` en el repo nuevo y un `CLAUDE.md` que remita a este plan.
-- **Hecho cuando:** la app abre una pantalla «Dezzy» en el móvil y en Windows desde el mismo código.
+- **Hecho cuando:** la app abre una pantalla «Dezzy» en el móvil.
 
 ### Fase 1 — Núcleo
 - Modelos (`Track`, `Album`, `Artist`, `Playlist`, `QueueItem`, `Lyrics`…), cliente Ktor con reintentos y User-Agent configurable, BD con tablas de canciones/álbumes/artistas/playlists/historial/me gusta, ajustes con DataStore y almacén seguro por plataforma.
@@ -321,14 +331,14 @@ graph LR
 
 ### Fase 3 — Audio
 - Opción A: `dezzy-core` vía UniFFI (si §1.1 queda limpio). Opción B: Kotlin puro en `commonMain`.
-- BotGuard: WebView oculta en Android, ventana oculta o motor JS en escritorio; mismo método que `dezzy-desktop/src/main/potoken.ts` (traducible).
+- BotGuard: WebView oculta en Android; mismo método que `dezzy-desktop/src/main/potoken.ts` (traducible).
 - Caché de URLs, deduplicación, prioridades y presupuesto de ráfagas (§3.2).
-- **Hecho cuando:** 20 canciones seguidas se resuelven sin «no eres un bot» en móvil y PC.
+- **Hecho cuando:** 20 canciones seguidas se resuelven sin «no eres un bot» en el móvil.
 
 ### Fase 4 — Reproductor
-- Android: `MediaSessionService` + ExoPlayer; escritorio: libmpv/GStreamer + controles multimedia del sistema.
+- Android: `MediaSessionService` + ExoPlayer (iOS más adelante: AVPlayer).
 - Cola común en `commonMain`; precarga de las 2 siguientes; crossfade; ecualizador propio.
-- **Hecho cuando:** se oye, se pausa desde la notificación / teclas multimedia y la cola avanza sola.
+- **Hecho cuando:** se oye, se pausa desde la notificación y la pantalla de bloqueo, y la cola avanza sola.
 
 ### Fase 5 — UI base
 - Antes de cada pantalla: **3 bocetos HTML (A/B/C) en `design/`, abrirlos en Chrome y esperar la elección** (regla del usuario). Se pueden reutilizar los ya aprobados.
@@ -353,7 +363,7 @@ graph LR
 1. Leer este archivo y `docs/migracion-kmp/archivos-propios.txt`.
 2. Ver en la tabla de §4 la primera fase «pendiente» o «en curso».
 3. Para cada pieza: §3 (qué hace) → ¿hay versión propia? → traducir o escribir de nuevo → indicar el origen en el commit.
-4. Compilar Android y escritorio y probar en marcha.
+4. Compilar Android y probarlo en marcha (y, si toca Connect o Juntos, contra Dezzy Desktop).
 5. Actualizar la tabla de §4 y, si se aprendió algo que no está en el código, apuntarlo en §6.
 
 ## 6. Trampas conocidas
