@@ -391,6 +391,41 @@ footer small { color: var(--color-night-muted); font-size: var(--text-sm); }
   .index { grid-template-columns: minmax(0, 1fr); }
   .nav nav .hide-s { display: none; }
 }
+/* dj: ask the DJ, the request types itself and the station appears */
+.dj { padding-block: var(--section-gap-s); }
+.dj .top { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-2xl); align-items: end; margin-bottom: var(--space-2xl); }
+.dj h2 { font-size: clamp(3rem, 6.5vw, 6.5rem); line-height: 0.94; max-width: 9ch; }
+.dj .lead { margin-top: var(--space-lg); color: var(--color-ink-2); max-width: 32ch; }
+.dj-ask { display: flex; align-items: center; gap: var(--space-md); border: 2px solid var(--color-ink); padding: var(--space-md) var(--space-lg); min-height: 72px; font-size: var(--text-lead); }
+.dj-ask .typed { flex: 0 1 auto; min-width: 0; }
+.dj-ask .caret { margin-right: auto; }
+.dj-ask .typed:empty::before { content: "Pídele algo al DJ…"; color: var(--color-muted); }
+.dj-ask .caret { width: 2px; height: 1.3em; background: var(--color-ink); animation: dj-blink 1s steps(2) infinite; }
+.dj-ask svg { width: 26px; height: 26px; flex: none; }
+@keyframes dj-blink { 50% { opacity: 0; } }
+.dj-chips { display: flex; flex-wrap: wrap; gap: var(--space-xs); margin-top: var(--space-md); }
+.dj-chips button { min-height: 44px; padding-inline: var(--space-md); border: 2px solid var(--color-ink); background: var(--color-paper); color: var(--color-ink); font-weight: 600; cursor: pointer; transition: background-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out); }
+.dj-chips button:hover { background: var(--color-paper-3); }
+.dj-chips button[aria-pressed="true"] { background: var(--color-ink); color: var(--color-paper); }
+.dj-result { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--gap-columns); }
+.dj-station { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: var(--space-xl); padding: var(--space-xl); min-height: 300px; transition: opacity var(--dur-short) var(--ease-out); }
+.dj-station.out { opacity: 0; }
+.dj-cover { aspect-ratio: 1; position: relative; background: repeating-radial-gradient(circle at 50% 50%, var(--color-night-ink) 0 3px, var(--color-night) 3px 12px); }
+.dj-cover::after { content: ""; position: absolute; inset: 38%; border-radius: 50%; background: var(--color-night-ink); }
+.dj-station small { font-size: var(--text-xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-night-muted); }
+.dj-station h3 { font-size: clamp(2rem, 3vw, 3rem); line-height: 0.95; margin-top: var(--space-xs); max-width: 12ch; }
+.dj-station p { margin-top: var(--space-md); color: var(--color-night-muted); max-width: 40ch; min-height: 3em; }
+.dj-voice { display: flex; align-items: center; gap: 4px; height: 24px; margin-top: var(--space-md); }
+.dj-voice i { width: 4px; height: 100%; background: var(--color-night-ink); animation: dj-talk 900ms var(--ease-in-out) infinite alternate; }
+.dj-voice i:nth-child(2n) { animation-duration: 640ms; } .dj-voice i:nth-child(3n) { animation-duration: 1100ms; } .dj-voice i:nth-child(5n) { animation-duration: 780ms; }
+@keyframes dj-talk { from { transform: scaleY(0.15); } to { transform: scaleY(1); } }
+.dj-traits { border-top: 2px solid var(--color-rule); }
+.dj-traits div { padding-block: var(--space-md); border-bottom: 1px solid var(--color-rule-2); }
+.dj-traits b { display: block; font-weight: 800; font-stretch: 62%; font-size: var(--text-2xl); line-height: 1; }
+.dj-traits span { color: var(--color-muted); }
+.dj .fine { margin-top: var(--space-xl); font-size: var(--text-sm); color: var(--color-muted); max-width: 52ch; }
+@media (max-width: 60rem) { .dj .top, .dj-result { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 40rem) { .dj-station { grid-template-columns: minmax(0, 1fr); padding: var(--space-lg); } .dj-cover { max-width: 160px; } }
 </style>
 </head>
 <body>
@@ -399,6 +434,7 @@ footer small { color: var(--color-night-muted); font-size: var(--text-sm); }
     <a class="wordmark" href="#">Dezzy</a>
     <nav aria-label="Principal">
       <a class="hide-s" href="#artistas">Artistas</a>
+      <a class="hide-s" href="#dj">DJ</a>
       <a class="hide-s" href="#funciones">Funciones</a>
       <a class="hide-s" href="#conecta">Conecta</a>
       <a class="hide-s" href="#personaliza">Personaliza</a>
@@ -506,6 +542,45 @@ footer small { color: var(--color-night-muted); font-size: var(--text-sm); }
           <span class="tag"><span><span class="n">Bachata</span><span class="r">Radio sin fin</span></span><span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg></span></span>
         </a>
       </div>
+    </div>
+  </section>
+
+  <section class="dj" id="dj" aria-labelledby="dj-h">
+    <div class="container">
+      <div class="top">
+        <div>
+          <h2 id="dj-h">Pídeselo al DJ.</h2>
+          <p class="lead">Dile qué te apetece y el DJ arma la música y te la presenta con voz.</p>
+        </div>
+        <div>
+          <div class="dj-ask" aria-hidden="true">
+            <span class="typed" id="dj-typed"></span><span class="caret"></span>
+            <svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-2.1A7 7 0 0 0 19 12z"/></svg>
+          </div>
+          <div class="dj-chips" role="group" aria-label="Peticiones de ejemplo">
+            <button type="button" aria-pressed="true" data-ask="0">Algo para correr</button>
+            <button type="button" aria-pressed="false" data-ask="1">Música para cocinar</button>
+            <button type="button" aria-pressed="false" data-ask="2">Sorpréndeme</button>
+          </div>
+        </div>
+      </div>
+      <div class="dj-result">
+        <div class="dj-station night" id="dj-station" aria-live="polite">
+          <div class="dj-cover" aria-hidden="true"></div>
+          <div>
+            <small>Estación del DJ</small>
+            <h3 id="dj-name">Ritmo de carrera</h3>
+            <p id="dj-said">Subimos el pulso: canciones rápidas para que no bajes el paso.</p>
+            <span class="dj-voice" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+          </div>
+        </div>
+        <div class="dj-traits">
+          <div><b>Aprende de ti</b><span>Lo que escuchas entero y lo que saltas.</span></div>
+          <div><b>Habla tu idioma</b><span>Con estilo Radio, Fiesta o Calma.</span></div>
+          <div><b>Lleva tu nombre</b><span>O el que tú le pongas.</span></div>
+        </div>
+      </div>
+      <p class="fine">Funciona con tu propia clave gratuita de Gemini. La app te guía para ponerla en un minuto.</p>
     </div>
   </section>
 
@@ -660,6 +735,7 @@ footer small { color: var(--color-night-muted); font-size: var(--text-sm); }
         <details><summary>¿De verdad es gratis?</summary><p>Sí. Sin anuncios, sin suscripción y con el código abierto bajo licencia GPL-3.0.</p></details>
         <details><summary>¿Necesito una cuenta?</summary><p>No. Abres y escuchas. Si quieres traer tus listas, inicia sesión con YouTube o con Spotify.</p></details>
         <details><summary>¿Funciona sin internet?</summary><p>Sí. Descarga tus canciones y escúchalas donde no haya señal.</p></details>
+        <details><summary>¿Qué necesito para el DJ?</summary><p>Una clave gratuita de Gemini, de Google. La app te lleva paso a paso para crearla y ponerla. Para hablarte, el DJ envía a Gemini, con tu clave, las canciones que suenan y lo que le cuentas que te gusta.</p></details>
         <details><summary>¿En qué dispositivos va?</summary><p>En Android 6.0 o superior y en Windows. Con Dezzy Connect el móvil controla el ordenador.</p></details>
         <details><summary>¿Qué hace con mis datos?</summary><p>Nada. Dezzy no rastrea lo que escuchas ni recoge tus datos.</p></details>
       </div>
@@ -752,6 +828,36 @@ document.querySelectorAll('.seg[data-for]').forEach((g) => {
     target.dataset[g.dataset.key] = b.dataset.val;
   }));
 });
+</script>
+<script>
+(() => {
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const asks = [
+    { text: 'Algo para correr', name: 'Ritmo de carrera', said: 'Subimos el pulso: canciones rápidas para que no bajes el paso.' },
+    { text: 'Música para cocinar', name: 'Cocina abierta', said: 'Algo alegre de fondo, con groove, para que la receta salga sola.' },
+    { text: 'Sorpréndeme', name: 'Fuera de tu zona', said: 'Hoy te llevo a donde no sueles ir. Si no te gusta, sáltala y aprendo.' },
+  ];
+  const typed = document.getElementById('dj-typed'), station = document.getElementById('dj-station');
+  const chips = document.querySelectorAll('.dj-chips button');
+  let timer;
+  const run = (n) => {
+    chips.forEach((b) => b.setAttribute('aria-pressed', b.dataset.ask == n));
+    clearInterval(timer);
+    const t = asks[n].text;
+    const show = () => {
+      document.getElementById('dj-name').textContent = asks[n].name;
+      document.getElementById('dj-said').textContent = asks[n].said;
+      station.classList.remove('out');
+    };
+    if (still) { typed.textContent = t; show(); return; }
+    station.classList.add('out');
+    typed.textContent = '';
+    let k = 0;
+    timer = setInterval(() => { typed.textContent = t.slice(0, ++k); if (k >= t.length) { clearInterval(timer); setTimeout(show, 350); } }, 55);
+  };
+  chips.forEach((b) => b.addEventListener('click', () => run(+b.dataset.ask)));
+  typed.textContent = asks[0].text;
+})();
 </script>
 </body>
 </html>

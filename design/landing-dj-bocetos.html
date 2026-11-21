@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DJ en la landing · bocetos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..100,400..800&display=swap">
+<style>
+/* Copia de website/tokens.css y base.css */
+:root {
+  color-scheme: dark;
+  --space-3xs: 2px; --space-2xs: 4px; --space-xs: 8px; --space-sm: 12px; --space-md: 16px; --space-lg: 24px; --space-xl: 40px; --space-2xl: 64px; --space-3xl: 96px; --space-4xl: 144px;
+  --text-xs: 0.8125rem; --text-sm: 0.875rem; --text-md: 1rem; --text-lg: 1.25rem; --text-xl: 1.5625rem; --text-2xl: 1.953rem; --text-3xl: 2.441rem;
+  --text-display-s: clamp(2.25rem, 4vw + 0.5rem, 3.75rem); --text-display: clamp(2.75rem, 5vw + 1rem, 5.25rem);
+  --text-section: clamp(2rem, 2.5vw + 1rem, 3.5rem); --text-title: clamp(1.25rem, 0.75vw + 0.875rem, 1.625rem); --text-lead: clamp(1.125rem, 0.35vw + 1rem, 1.375rem);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1); --ease-in: cubic-bezier(0.7, 0, 0.84, 0); --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms; --dur-short: 220ms; --dur-long: 420ms;
+  --color-error: oklch(72% 0.15 27); --color-success: oklch(76% 0.13 150);
+  --container: 1440px; --gutter: 64px; --gap-columns: 32px; --section-gap-s: 120px; --section-gap: 144px; --section-gap-l: 176px;
+  --z-base: 1; --z-raised: 10; --z-dropdown: 100; --z-sticky: 200; --z-sticky-nav: 300; --z-modal: 400; --z-toast: 500; --z-tooltip: 600;
+  --color-paper: oklch(14% 0.048 264); --color-paper-2: oklch(18.5% 0.052 264); --color-paper-3: oklch(23% 0.055 264);
+  --color-ink: oklch(95% 0.016 250); --color-ink-2: oklch(88% 0.05 245); --color-muted: oklch(73% 0.04 256);
+  --color-rule: oklch(29% 0.058 264); --color-rule-2: oklch(40% 0.06 262);
+  --color-accent: oklch(80% 0.11 230); --color-accent-2: oklch(58% 0.1 236); --color-accent-ink: oklch(16% 0.05 264); --color-focus: oklch(84% 0.12 228);
+  --font-display: "Mona Sans", ui-sans-serif, system-ui, sans-serif; --font-body: var(--font-display); --font-outlier: var(--font-display);
+  --radius-card: 0; --radius-pill: 0; --rule-hair: 1px;
+  --shadow-card: 0 24px 48px -24px oklch(6% 0.04 264 / 0.7);
+  --tracking-display: -0.015em; --display-weight: 300; --display-stretch: 125%;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { overflow-x: clip; }
+html { scrollbar-color: var(--color-muted) var(--color-paper); scroll-padding-top: var(--space-3xl); }
+body { margin: 0; background: var(--color-paper); color: var(--color-ink); font-family: var(--font-body); font-size: var(--text-md); line-height: 1.55; -webkit-font-smoothing: antialiased; caret-color: var(--color-accent); }
+::selection { background: color-mix(in oklab, var(--color-accent) 22%, transparent); color: var(--color-ink); }
+:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 0.16em; }
+h1, h2, h3 { margin: 0; font-family: var(--font-display); font-weight: var(--display-weight, 700); font-synthesis: none; letter-spacing: var(--tracking-display); line-height: 1.05; overflow-wrap: break-word; min-width: 0; text-wrap: balance; }
+h1 { max-width: 20ch; font-size: var(--text-display); } h2 { max-width: 30ch; font-size: var(--text-section); } h3 { max-width: 40ch; font-size: var(--text-title); line-height: 1.2; }
+.lead { font-size: var(--text-lead); line-height: 1.45; max-width: 52ch; }
+p { margin: 0; text-wrap: pretty; }
+p:not([class]) { max-width: 65ch; }
+img, video { max-width: 100%; height: auto; display: block; }
+svg { display: block; }
+[hidden] { display: none !important; }
+button, input, select, textarea { font: inherit; }
+.container { width: 100%; max-width: var(--container); margin-inline: auto; padding-inline: var(--gutter); box-sizing: border-box; }
+.num, .figure, td.num { font-variant-numeric: tabular-nums; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+[data-slot] { position: relative; overflow: hidden; background: linear-gradient(160deg, var(--color-paper-2, var(--color-paper)), var(--color-paper-3, var(--color-paper))); }
+[data-slot] > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+[data-slot]:has(> img) > :not(img):not([data-keep]) { display: none !important; }
+@media (max-width: 60rem) { :root { --gutter: 24px; --section-gap-s: 80px; --section-gap: 96px; --section-gap-l: 120px; } }
+@media (max-width: 40rem) { :root { --gutter: 16px; --section-gap-s: 56px; --section-gap: 72px; --section-gap-l: 96px; --gap-columns: 16px; } }
+@media (prefers-reduced-motion: reduce) { *:not(.keep-motion), *:not(.keep-motion)::before, *:not(.keep-motion)::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; } }
+</style>
+<style>
+/* Mismos tokens que website/index.html: blanco puro, bandas en negro, Archivo estrecha. */
+:root {
+  color-scheme: light;
+  --color-paper: oklch(100% 0 0); --color-paper-2: oklch(96.5% 0 0); --color-paper-3: oklch(93% 0 0);
+  --color-ink: oklch(0% 0 0); --color-ink-2: oklch(22% 0 0); --color-muted: oklch(42% 0 0);
+  --color-rule: oklch(0% 0 0); --color-rule-2: oklch(86% 0 0);
+  --color-night: oklch(0% 0 0); --color-night-ink: oklch(100% 0 0); --color-night-muted: oklch(70% 0 0); --color-night-dim: oklch(36% 0 0); --color-night-rule: oklch(26% 0 0);
+  --color-accent: oklch(0% 0 0); --color-accent-ink: oklch(100% 0 0); --color-focus: oklch(0% 0 0);
+  --font-display: "Archivo", ui-sans-serif, system-ui, sans-serif; --font-body: var(--font-display);
+  --display-weight: 800; --tracking-display: -0.02em; --radius-pill: 0;
+}
+h1, h2, h3 { font-stretch: 62%; }
+.night { background: var(--color-night); color: var(--color-night-ink); --color-focus: var(--color-night-ink); }
+
+/* Cabecera de cada boceto (no es parte de la landing) */
+.tag { background: var(--color-paper-3); border-block: 2px solid var(--color-ink); padding: var(--space-md) 0; }
+.tag .container { display: flex; gap: var(--space-lg); align-items: baseline; flex-wrap: wrap; }
+.tag b { font-size: var(--text-2xl); font-stretch: 62%; }
+.tag span { color: var(--color-ink-2); }
+.intro { padding-block: var(--space-2xl); }
+.intro h1 { font-size: clamp(2.5rem, 5vw, 4.5rem); max-width: 18ch; }
+.intro p { margin-top: var(--space-md); max-width: 60ch; color: var(--color-ink-2); }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding-inline: var(--space-xl); border: 2px solid var(--color-ink); font-weight: 600; text-decoration: none; cursor: pointer; background: var(--color-paper); color: var(--color-ink); }
+.btn-primary { background: var(--color-ink); color: var(--color-paper); }
+.night .btn { border-color: var(--color-night-ink); background: var(--color-night); color: var(--color-night-ink); }
+.night .btn-primary { background: var(--color-night-ink); color: var(--color-night); }
+.big { font-size: clamp(3rem, 6.5vw, 6.5rem); line-height: 0.94; }
+.small-print { font-size: var(--text-sm); color: var(--color-muted); max-width: 52ch; }
+.night .small-print { color: var(--color-night-muted); }
+
+/* Ondas de voz: barras que suben y bajan mientras habla */
+.voice { display: flex; align-items: center; gap: 4px; height: 36px; }
+.voice i { width: 4px; height: 100%; background: currentColor; transform-origin: center; animation: talk 900ms var(--ease-in-out) infinite alternate; }
+.voice i:nth-child(2n) { animation-duration: 640ms; } .voice i:nth-child(3n) { animation-duration: 1100ms; } .voice i:nth-child(5n) { animation-duration: 780ms; }
+@keyframes talk { from { transform: scaleY(0.15); } to { transform: scaleY(1); } }
+.quiet .voice i { animation-play-state: paused; transform: scaleY(0.15); }
+
+/* ───────── A · La cabina ───────── */
+.a { padding-block: var(--section-gap-s); }
+.a .cols { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-2xl); align-items: stretch; }
+.a .lead { margin-block: var(--space-lg) var(--space-2xl); color: var(--color-ink-2); max-width: 30ch; }
+.a ol { list-style: none; margin: 0 0 var(--space-xl); padding: 0; counter-reset: s; }
+.a li { counter-increment: s; display: grid; grid-template-columns: 56px 1fr; gap: var(--space-md); padding-block: var(--space-md); border-top: 2px solid var(--color-rule); }
+.a li::before { content: counter(s, decimal-leading-zero); font-weight: 800; font-stretch: 62%; font-size: var(--text-2xl); line-height: 1; }
+.a li b { display: block; font-size: var(--text-lg); }
+.a li span { color: var(--color-muted); }
+.booth { display: grid; grid-template-rows: auto 1fr auto; gap: var(--space-lg); padding: var(--space-xl); min-height: 560px; }
+.booth header { display: flex; justify-content: space-between; align-items: center; gap: var(--space-md); border-bottom: 1px solid var(--color-night-rule); padding-bottom: var(--space-md); }
+.onair { display: inline-flex; align-items: center; gap: var(--space-xs); font-weight: 700; letter-spacing: 0.12em; font-size: var(--text-xs); border: 2px solid var(--color-night-ink); padding: 4px 10px; }
+.onair::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--color-night-ink); animation: blink 1.2s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.log { display: flex; flex-direction: column; gap: var(--space-md); justify-content: flex-end; }
+.msg { max-width: 34ch; padding: var(--space-md) var(--space-lg); opacity: 0; transform: translateY(8px); transition: opacity var(--dur-long) var(--ease-out), transform var(--dur-long) var(--ease-out); }
+.msg.in { opacity: 1; transform: none; }
+.msg small { display: block; font-size: var(--text-xs); letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-night-muted); margin-bottom: var(--space-2xs); }
+.msg.dj { border: 2px solid var(--color-night-ink); font-size: var(--text-lg); line-height: 1.35; }
+.msg.you { align-self: flex-end; background: var(--color-night-ink); color: var(--color-night); }
+.msg.you small { color: var(--color-ink-2); }
+.booth footer { display: flex; align-items: center; gap: var(--space-lg); border-top: 1px solid var(--color-night-rule); padding-top: var(--space-md); }
+.booth footer .now { flex: 1; min-width: 0; }
+.booth footer .now b { display: block; font-stretch: 62%; font-size: var(--text-xl); line-height: 1; }
+.booth footer .now span { font-size: var(--text-sm); color: var(--color-night-muted); }
+
+/* ───────── B · En antena ───────── */
+.b { padding-block: var(--section-gap-s); text-align: center; }
+.b .container { display: flex; flex-direction: column; align-items: center; }
+.b h2 { margin-inline: auto; max-width: 12ch; }
+.b .lead { margin: var(--space-lg) auto 0; color: var(--color-night-muted); }
+.blob { position: relative; width: 220px; aspect-ratio: 1; margin-block: var(--space-2xl) var(--space-xl); display: grid; place-items: center; }
+.blob .core { width: 120px; aspect-ratio: 1; border-radius: 50%; background: var(--color-night-ink); color: var(--color-night); display: grid; place-items: center; }
+.blob .core .voice { height: 40px; gap: 5px; } .blob .core .voice i { width: 5px; }
+.blob .ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--color-night-ink); opacity: 0; animation: ripple 2.4s var(--ease-out) infinite; }
+.blob .ring:nth-child(2) { animation-delay: 0.8s; } .blob .ring:nth-child(3) { animation-delay: 1.6s; }
+@keyframes ripple { from { transform: scale(0.55); opacity: 0.9; } to { transform: scale(1.15); opacity: 0; } }
+.b .said { font-stretch: 62%; font-weight: 800; font-size: clamp(2rem, 3.6vw, 3.5rem); line-height: 1; letter-spacing: -0.02em; max-width: 22ch; min-height: 2.1em; }
+.b .said span { color: var(--color-night-dim); transition: color var(--dur-short) var(--ease-out); }
+.b .said span.on { color: var(--color-night-ink); }
+.moods { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-xs); margin-top: var(--space-xl); }
+.moods button { min-height: 44px; padding-inline: var(--space-lg); border: 2px solid var(--color-night-ink); background: transparent; color: var(--color-night-ink); font-weight: 600; cursor: pointer; }
+.moods button[aria-pressed="true"] { background: var(--color-night-ink); color: var(--color-night); }
+.queue { width: 100%; max-width: 880px; margin-top: var(--space-2xl); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 2px solid var(--color-night-ink); text-align: left; }
+.queue > div { padding: var(--space-lg) var(--space-lg) 0 0; }
+.queue > div + div { padding-left: var(--space-lg); border-left: 1px solid var(--color-night-rule); }
+.queue small { font-size: var(--text-xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-night-muted); }
+.queue b { display: block; margin-top: var(--space-xs); font-stretch: 62%; font-size: var(--text-xl); line-height: 1.05; }
+.queue p { margin-top: var(--space-xs); color: var(--color-night-muted); font-size: var(--text-sm); }
+.b .facts { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-lg) var(--space-2xl); margin-top: var(--space-2xl); }
+.b .facts div { text-align: left; } .b .facts b { display: block; font-stretch: 62%; font-size: var(--text-2xl); line-height: 1; }
+.b .facts span { font-size: var(--text-sm); color: var(--color-night-muted); }
+.b .small-print { margin: var(--space-xl) auto 0; }
+
+/* ───────── C · Pídeselo ───────── */
+.c { padding-block: var(--section-gap-s); border-top: 2px solid var(--color-rule); }
+.c .top { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-2xl); align-items: end; margin-bottom: var(--space-2xl); }
+.c .lead { margin-top: var(--space-lg); color: var(--color-ink-2); max-width: 32ch; }
+.ask { display: flex; align-items: center; gap: var(--space-md); border: 2px solid var(--color-ink); padding: var(--space-md) var(--space-lg); min-height: 72px; font-size: var(--text-lead); }
+.ask .typed { flex: 1; min-width: 0; }
+.ask .typed:empty::before { content: "Pídele algo al DJ…"; color: var(--color-muted); }
+.ask .caret { width: 2px; height: 1.3em; background: var(--color-ink); animation: blink 1s steps(2) infinite; }
+.ask svg { width: 26px; height: 26px; flex: none; }
+.chips { display: flex; flex-wrap: wrap; gap: var(--space-xs); margin-top: var(--space-md); }
+.chips button { min-height: 44px; padding-inline: var(--space-md); border: 2px solid var(--color-ink); background: var(--color-paper); font-weight: 600; cursor: pointer; }
+.chips button[aria-pressed="true"] { background: var(--color-ink); color: var(--color-paper); }
+.result { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--gap-columns); margin-top: var(--space-xl); }
+.station { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: var(--space-xl); padding: var(--space-xl); min-height: 300px; }
+.st-cover { aspect-ratio: 1; background: repeating-radial-gradient(circle at 50% 50%, var(--color-night-ink) 0 3px, var(--color-night) 3px 12px); position: relative; }
+.st-cover::after { content: ""; position: absolute; inset: 38%; border-radius: 50%; background: var(--color-night-ink); }
+.station small { font-size: var(--text-xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-night-muted); }
+.station h3 { font-size: clamp(2rem, 3vw, 3rem); line-height: 0.95; margin-top: var(--space-xs); max-width: 12ch; }
+.station .said { margin-top: var(--space-md); color: var(--color-night-muted); max-width: 40ch; min-height: 3em; }
+.station .voice { margin-top: var(--space-md); height: 24px; }
+.traits { display: grid; grid-template-rows: repeat(3, auto); border-top: 2px solid var(--color-rule); }
+.traits div { padding-block: var(--space-md); border-bottom: 1px solid var(--color-rule-2); }
+.traits b { display: block; font-stretch: 62%; font-size: var(--text-2xl); line-height: 1; }
+.traits span { color: var(--color-muted); }
+.c .small-print { margin-top: var(--space-xl); }
+.fade { transition: opacity var(--dur-short) var(--ease-out); } .fade.out { opacity: 0; }
+
+@media (max-width: 60rem) {
+  .a .cols, .c .top, .result { grid-template-columns: minmax(0, 1fr); }
+  .queue { grid-template-columns: minmax(0, 1fr); }
+  .queue > div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--color-night-rule); }
+  .queue > div { padding-bottom: var(--space-md); }
+}
+@media (max-width: 40rem) {
+  .station { grid-template-columns: minmax(0, 1fr); }
+  .st-cover { max-width: 180px; }
+  .booth { padding: var(--space-lg); min-height: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .msg { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+
+<header class="intro container">
+  <h1>Sección del DJ para la landing.</h1>
+  <p>Tres bocetos de la misma sección, con el blanco y negro, la letra Archivo y los botones cuadrados de la landing. Todo dibujado en código, sin capturas. Elige uno o mezcla partes de varios.</p>
+</header>
+
+<!-- ═════════ A ═════════ -->
+<div class="tag"><div class="container"><b>A · La cabina</b><span>Fondo blanco. A la izquierda, cómo funciona en tres pasos; a la derecha, una conversación con el DJ que se escribe sola.</span></div></div>
+<section class="a" aria-labelledby="a-h">
+  <div class="container cols">
+    <div>
+      <h2 id="a-h" class="big">Tu DJ, con voz.</h2>
+      <p class="lead">Un DJ con IA que elige la música por ti y te habla entre canciones, como en la radio.</p>
+      <ol>
+        <li><div><b>Cuéntale qué te gusta.</b><span>La primera vez te pregunta. Con eso arma tu estación.</span></div></li>
+        <li><div><b>Te explica cada canción.</b><span>Un dato, una anécdota o por qué viene ahora.</span></div></li>
+        <li><div><b>Pídele lo que quieras.</b><span>«Algo para correr», «más tranquilo»… y cambia la música.</span></div></li>
+      </ol>
+      <a class="btn btn-primary" href="#">Descargar Dezzy</a>
+      <p class="small-print" style="margin-top: var(--space-lg)">Funciona con tu propia clave gratuita de Gemini. Se configura en un minuto.</p>
+    </div>
+    <div class="booth night" id="booth">
+      <header>
+        <span class="onair">EN EL AIRE</span>
+        <span class="voice" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+      </header>
+      <div class="log" aria-live="polite">
+        <div class="msg dj"><small>DJ</small>No te conozco todavía. Cuéntame qué te gusta y te armo una estación.</div>
+        <div class="msg you"><small>Tú</small>Rock de los 80 y algo de synthpop.</div>
+        <div class="msg dj"><small>DJ</small>Hecho. Empezamos fuerte: guitarras, sintetizadores y mucha noche.</div>
+        <div class="msg you"><small>Tú</small>Ahora algo más tranquilo.</div>
+        <div class="msg dj"><small>DJ</small>Bajamos el ritmo. Ésta se grabó en una sola toma: escucha cómo respira la voz.</div>
+      </div>
+      <footer>
+        <div class="now"><b>Tu estación</b><span>Rock de los 80 · synthpop</span></div>
+        <span class="btn btn-primary" style="min-height:44px">Pídele algo</span>
+      </footer>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ B ═════════ -->
+<div class="tag"><div class="container"><b>B · En antena</b><span>Banda negra centrada. El DJ «habla» con ondas y la frase se enciende palabra a palabra, como la portada. Los botones de ambiente cambian lo que dice.</span></div></div>
+<section class="b night" aria-labelledby="b-h">
+  <div class="container">
+    <h2 id="b-h" class="big">Un DJ que te conoce.</h2>
+    <p class="lead">Elige la música, te cuenta su historia y aprende de lo que saltas.</p>
+    <div class="blob" aria-hidden="true">
+      <span class="ring"></span><span class="ring"></span><span class="ring"></span>
+      <span class="core"><span class="voice"><i></i><i></i><i></i><i></i><i></i></span></span>
+    </div>
+    <p class="said" id="b-said" aria-live="polite"></p>
+    <div class="moods" role="group" aria-label="Ambiente">
+      <button type="button" aria-pressed="true" data-mood="0">Para concentrarme</button>
+      <button type="button" aria-pressed="false" data-mood="1">Fiesta en casa</button>
+      <button type="button" aria-pressed="false" data-mood="2">Día de lluvia</button>
+      <button type="button" aria-pressed="false" data-mood="3">Para correr</button>
+    </div>
+    <div class="queue fade" id="b-queue">
+      <div><small>Ahora</small><b>Instrumental suave</b><p>Sin letra, para que no te distraiga.</p></div>
+      <div><small>Después</small><b>Lo-fi de madrugada</b><p>Porque ayer lo escuchaste entero.</p></div>
+      <div><small>Más tarde</small><b>Piano y ambiente</b><p>Para cerrar la tarde sin prisa.</p></div>
+    </div>
+    <div class="facts">
+      <div><b>3 estilos</b><span>Radio, Fiesta o Calma</span></div>
+      <div><b>Tu idioma</b><span>Te habla en el que elijas</span></div>
+      <div><b>Su nombre</b><span>Ponle el que quieras</span></div>
+    </div>
+    <p class="small-print">Funciona con tu propia clave gratuita de Gemini. Se configura en un minuto.</p>
+  </div>
+</section>
+
+<!-- ═════════ C ═════════ -->
+<div class="tag"><div class="container"><b>C · Pídeselo</b><span>Fondo blanco e interactivo. El visitante toca una petición, se escribe en la barra y aparece la estación que arma el DJ.</span></div></div>
+<section class="c" aria-labelledby="c-h">
+  <div class="container">
+    <div class="top">
+      <div>
+        <h2 id="c-h" class="big">Pídeselo al DJ.</h2>
+        <p class="lead">Dile qué te apetece y el DJ arma la música y te la presenta con voz.</p>
+      </div>
+      <div>
+        <div class="ask" aria-hidden="true">
+          <span class="typed" id="c-typed"></span><span class="caret"></span>
+          <svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-2.1A7 7 0 0 0 19 12z"/></svg>
+        </div>
+        <div class="chips" role="group" aria-label="Peticiones de ejemplo">
+          <button type="button" aria-pressed="true" data-ask="0">Algo para correr</button>
+          <button type="button" aria-pressed="false" data-ask="1">Música para cocinar</button>
+          <button type="button" aria-pressed="false" data-ask="2">Sorpréndeme</button>
+        </div>
+      </div>
+    </div>
+    <div class="result">
+      <div class="station night fade" id="c-station" aria-live="polite">
+        <div class="st-cover" aria-hidden="true"></div>
+        <div>
+          <small>Estación del DJ</small>
+          <h3 id="c-name">Ritmo de carrera</h3>
+          <p class="said" id="c-said">Subimos el pulso: canciones rápidas para que no bajes el paso.</p>
+          <span class="voice" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+        </div>
+      </div>
+      <div class="traits">
+        <div><b>Aprende de ti</b><span>Lo que escuchas entero y lo que saltas.</span></div>
+        <div><b>Habla tu idioma</b><span>Con estilo Radio, Fiesta o Calma.</span></div>
+        <div><b>Lleva tu nombre</b><span>O el que tú le pongas.</span></div>
+      </div>
+    </div>
+    <p class="small-print">Funciona con tu propia clave gratuita de Gemini. Se configura en un minuto.</p>
+  </div>
+</section>
+
+<script>
+const still = matchMedia('(prefers-reduced-motion: reduce)').matches
+
+/* A: la conversación aparece mensaje a mensaje y vuelve a empezar */
+;(() => {
+  const msgs = [...document.querySelectorAll('#booth .msg')]
+  if (still) { msgs.forEach(m => m.classList.add('in')); return }
+  let i = 0
+  const step = () => {
+    if (i === msgs.length) { msgs.forEach(m => m.classList.remove('in')); i = 0; setTimeout(step, 900); return }
+    msgs[i++].classList.add('in')
+    setTimeout(step, i === msgs.length ? 4200 : 1700)
+  }
+  step()
+})()
+
+/* B: la frase se enciende palabra a palabra; los ambientes la cambian */
+;(() => {
+  const moods = [
+    { said: 'Vamos a bajar el ruido. Música sin letra para que te concentres.', q: [['Instrumental suave','Sin letra, para que no te distraiga.'],['Lo-fi de madrugada','Porque ayer lo escuchaste entero.'],['Piano y ambiente','Para cerrar la tarde sin prisa.']] },
+    { said: '¡Esto es una fiesta! Subo el volumen y no paramos.', q: [['Éxitos para bailar','Los que nunca saltas.'],['Reguetón clásico','Para que cante todo el salón.'],['Electrónica','Cuando la noche ya va arriba.']] },
+    { said: 'Afuera llueve, aquí dentro suena algo cálido.', q: [['Acústico','Guitarras y voces cercanas.'],['Indie tranquilo','Como el que guardaste la semana pasada.'],['Soul','Para quedarse en casa.']] },
+    { said: 'Ritmo constante y sin bajones. ¡A correr!', q: [['Pop rápido','Para arrancar con ganas.'],['Rock con fuerza','Para la última subida.'],['Hip hop','Para el estiramiento final.']] },
+  ]
+  const said = document.getElementById('b-said'), queue = document.getElementById('b-queue')
+  let timer
+  const speak = text => {
+    clearInterval(timer)
+    said.innerHTML = text.split(' ').map(w => `<span>${w}</span>`).join(' ')
+    const words = [...said.children]
+    if (still) { words.forEach(w => w.classList.add('on')); return }
+    let k = 0
+    timer = setInterval(() => { if (k < words.length) words[k++].classList.add('on'); else clearInterval(timer) }, 260)
+  }
+  const pick = n => {
+    document.querySelectorAll('.moods button').forEach(b => b.setAttribute('aria-pressed', b.dataset.mood == n))
+    speak(moods[n].said)
+    queue.classList.add('out')
+    setTimeout(() => {
+      queue.querySelectorAll('div').forEach((d, j) => { d.querySelector('b').textContent = moods[n].q[j][0]; d.querySelector('p').textContent = moods[n].q[j][1] })
+      queue.classList.remove('out')
+    }, still ? 0 : 220)
+  }
+  document.querySelectorAll('.moods button').forEach(b => b.addEventListener('click', () => pick(+b.dataset.mood)))
+  pick(0)
+})()
+
+/* C: la petición se escribe sola y aparece la estación */
+;(() => {
+  const asks = [
+    { text: 'Algo para correr', name: 'Ritmo de carrera', said: 'Subimos el pulso: canciones rápidas para que no bajes el paso.' },
+    { text: 'Música para cocinar', name: 'Cocina abierta', said: 'Algo alegre de fondo, con groove, para que la receta salga sola.' },
+    { text: 'Sorpréndeme', name: 'Fuera de tu zona', said: 'Hoy te llevo a donde no sueles ir. Si no te gusta, sáltala y aprendo.' },
+  ]
+  const typed = document.getElementById('c-typed'), station = document.getElementById('c-station')
+  let timer
+  const run = n => {
+    document.querySelectorAll('.chips button').forEach(b => b.setAttribute('aria-pressed', b.dataset.ask == n))
+    clearInterval(timer)
+    station.classList.add('out')
+    const t = asks[n].text
+    const show = () => {
+      document.getElementById('c-name').textContent = asks[n].name
+      document.getElementById('c-said').textContent = asks[n].said
+      station.classList.remove('out')
+    }
+    if (still) { typed.textContent = t; show(); return }
+    typed.textContent = ''
+    let k = 0
+    timer = setInterval(() => { typed.textContent = t.slice(0, ++k); if (k >= t.length) { clearInterval(timer); setTimeout(show, 350) } }, 55)
+  }
+  document.querySelectorAll('.chips button').forEach(b => b.addEventListener('click', () => run(+b.dataset.ask)))
+  run(0)
+})()
+</script>
+</body>
+</html>
