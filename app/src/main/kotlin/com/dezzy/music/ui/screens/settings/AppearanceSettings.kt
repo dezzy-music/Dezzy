@@ -213,7 +213,7 @@ fun AppearanceSettings(
             } catch (e: Exception) {
                 Timber.e(e, "Error taking persistable permission")
             }
-            onWallpaperUriChange(it.toString())
+            com.dezzy.music.utils.PinterestWallpaper.deleteOwnFile(context, wallpaperUri); onWallpaperUriChange(it.toString())
         }
     }
 
@@ -239,7 +239,7 @@ fun AppearanceSettings(
             } catch (e: Exception) {
                 Timber.e(e, "Error taking persistable permission")
             }
-            onVideoWallpaperUriChange(it.toString())
+            com.dezzy.music.utils.PinterestWallpaper.deleteOwnFile(context, videoWallpaperUri); onVideoWallpaperUriChange(it.toString())
         }
     }
 
@@ -679,6 +679,22 @@ fun AppearanceSettings(
             title = stringResource(R.string.wallpaper_and_video)
         )
 
+        // Pegar un pin: pone la imagen o el video como fondo vertical y activa ese tipo de fondo.
+        PinterestWallpaperField(
+            onImage = { uri ->
+                com.dezzy.music.utils.PinterestWallpaper.deleteOwnFile(context, wallpaperUri)
+                onWallpaperUriChange(uri)
+                onEnableWallpaperThemeChange(true)
+                onEnableVideoWallpaperChange(false)
+            },
+            onVideo = { uri ->
+                com.dezzy.music.utils.PinterestWallpaper.deleteOwnFile(context, videoWallpaperUri)
+                onVideoWallpaperUriChange(uri)
+                onEnableVideoWallpaperChange(true)
+                onEnableWallpaperThemeChange(false)
+            },
+        )
+
         SwitchPreference(
             title = { Text(stringResource(R.string.enable_image_wallpaper)) },
             icon = { Icon(painterResource(R.drawable.image), null) },
@@ -699,7 +715,7 @@ fun AppearanceSettings(
                 onOpacityChange = onWallpaperOpacityChange,
                 onPickVertical = { verticalImageLauncher.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly)) },
                 onPickHorizontal = { landscapeImageLauncher.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly)) },
-                onClearVertical = { onWallpaperUriChange("") },
+                onClearVertical = { com.dezzy.music.utils.PinterestWallpaper.deleteOwnFile(context, wallpaperUri); onWallpaperUriChange("") },
                 onClearHorizontal = { onWallpaperLandscapeUriChange("") },
             )
         }
@@ -724,7 +740,7 @@ fun AppearanceSettings(
                 onOpacityChange = onVideoWallpaperOpacityChange,
                 onPickVertical = { verticalVideoLauncher.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.VideoOnly)) },
                 onPickHorizontal = { landscapeVideoLauncher.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.VideoOnly)) },
-                onClearVertical = { onVideoWallpaperUriChange("") },
+                onClearVertical = { com.dezzy.music.utils.PinterestWallpaper.deleteOwnFile(context, videoWallpaperUri); onVideoWallpaperUriChange("") },
                 onClearHorizontal = { onVideoWallpaperLandscapeUriChange("") },
             )
         }

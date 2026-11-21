@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fondo desde Pinterest · bocetos</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--primary:#f2606d;--on-primary:#1a0407;--surface:#0b0b0d;--sc:#181818;--sh:#1f1f1f;--on:#fff;--onv:#b3b3b3;--ov:#3e3e3e;--error:#ffb4ab;--ok:#9bd3a6;--pin:#e60023}
+*{box-sizing:border-box}
+body{margin:0;background:#050506;color:var(--on);font:14px/1.45 Poppins,system-ui,sans-serif;padding:32px 16px 80px}
+h1{font-size:22px;margin:0 0 4px}
+.lead{color:var(--onv);margin:0 0 28px;max-width:760px}
+.grid{display:grid;gap:28px;max-width:860px;margin:auto}
+.card{background:radial-gradient(60% 90% at 10% 0%,#3a1440,transparent 60%),radial-gradient(60% 80% at 100% 100%,#123a3a,transparent 60%),#100c14;border:1px solid #2a2530;border-radius:20px;padding:20px}
+.tag{display:inline-block;background:var(--primary);color:var(--on-primary);font-weight:600;border-radius:8px;padding:2px 10px;margin-bottom:6px}
+.card h2{font-size:17px;margin:0 0 4px}
+.card>p{color:var(--onv);margin:0 0 16px}
+.panel{background:rgba(18,18,22,.72);backdrop-filter:blur(18px);border-radius:16px;padding:6px 16px}
+.dz{border-left:2px solid var(--primary);padding-left:12px;margin-left:4px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid #ffffff10}
+.row:last-child{border:0}
+.t b{display:block;font-weight:500}.t small{color:var(--onv)}
+.thumb{width:96px;height:54px;border-radius:8px;flex:none;background:url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=400') center/cover}
+.cur{display:flex;gap:12px;align-items:center}
+.btn{height:36px;border-radius:18px;border:0;padding:0 16px;font:inherit;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.tonal{background:#2a2a2a;color:#fff}.fill{background:var(--primary);color:var(--on-primary)}.text{background:none;color:var(--primary)}
+.pinbtn{background:var(--pin);color:#fff}
+input{height:36px;border-radius:18px;border:1px solid var(--ov);background:var(--sc);color:#fff;font:inherit;padding:0 12px;width:280px;outline:none}
+input:focus{border-color:var(--primary)}
+.acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.pinlogo{width:18px;height:18px;border-radius:50%;background:var(--pin);display:inline-grid;place-items:center;font-weight:700;font-size:11px;color:#fff;flex:none}
+.err{color:var(--error);font-size:13px;display:flex;gap:6px;align-items:center;padding:0 0 10px}
+.ok{color:var(--ok);font-size:13px}
+.spin{width:14px;height:14px;border:2px solid #ffffff40;border-top-color:#fff;border-radius:50%;animation:s 1s linear infinite;display:inline-block}
+@keyframes s{to{transform:rotate(360deg)}}
+.states{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 0}
+.states span{font-size:12px;color:var(--onv);border:1px solid #ffffff20;border-radius:12px;padding:2px 10px}
+/* B */
+.chips{display:flex;gap:6px;margin-top:6px}
+.chip{font-size:12px;border:1px solid var(--ov);border-radius:12px;padding:2px 10px;color:var(--onv)}
+.chip.on{border-color:var(--primary);color:#fff;background:#f2606d22}
+.prev{display:flex;gap:12px;align-items:center;background:#ffffff08;border-radius:12px;padding:10px;margin:4px 0 12px}
+.prev .big{width:150px;height:84px;border-radius:10px;background:url('https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=400') center/cover;position:relative}
+.prev .big i{position:absolute;left:6px;top:6px}
+/* C */
+.drop{border:1.5px dashed #ffffff30;border-radius:14px;padding:18px;display:flex;gap:14px;align-items:center;margin:10px 0}
+.drop.busy{border-color:var(--primary);background:#f2606d10}
+.drop .ic{width:44px;height:44px;border-radius:12px;background:#ffffff10;display:grid;place-items:center;font-size:20px;flex:none}
+.drop .t small{display:block}
+.bar{height:4px;border-radius:2px;background:#ffffff15;overflow:hidden;margin-top:8px;width:240px}
+.bar i{display:block;height:100%;width:45%;background:var(--primary);animation:b 1.4s ease-in-out infinite}
+@keyframes b{0%{transform:translateX(-100%)}100%{transform:translateX(230%)}}
+@media(max-width:640px){.row{flex-direction:column;align-items:stretch}input{width:100%}.acts{justify-content:flex-start}}
+</style>
+</head>
+<body>
+<div class="grid">
+<header>
+<h1>Fondo desde un enlace de Pinterest</h1>
+<p class="lead">Ajustes › Apariencia › Dezzy Style. Se pega <code>pin.it/…</code>, <code>pinterest.com/pin/…</code>, <code>pinterest.es/…</code> o <code>i.pinimg.com/…</code>. Dezzy baja la imagen (o el vídeo si el pin lo es) y la guarda como fondo local. Elige A, B o C.</p>
+</header>
+
+<!-- A -->
+<section class="card">
+<span class="tag">A</span><h2>Mínimo: el campo de URL de siempre entiende Pinterest</h2>
+<p>Nada nuevo que aprender. El campo actual acepta también pines; aparece el logo de Pinterest al detectar el enlace y el botón dice «Bajando del pin…».</p>
+<div class="panel"><div class="dz">
+ <div class="row"><div class="cur"><span class="thumb"></span><div class="t"><b>Fondo</b><small>Imagen: pin de Pinterest</small></div></div>
+  <div class="acts"><button class="btn tonal">🖼 Imagen del PC</button><button class="btn tonal">🎬 Video del PC</button><button class="btn text">Quitar</button></div></div>
+ <div class="row"><div class="t"><b>Desde una URL o un pin</b><small>Imagen, video o enlace de Pinterest</small></div>
+  <span style="display:flex;gap:8px;align-items:center"><span class="pinlogo">P</span><input value="https://pin.it/3xYzAbC"><button class="btn tonal"><span class="spin"></span> Bajando del pin…</button></span></div>
+ <div class="err">⚠ Ese pin es privado o se ha borrado.</div>
+</div></div>
+<div class="states"><span>Vacío → «Usar»</span><span>Detecta Pinterest → logo rojo</span><span>Cargando → spinner</span><span>Error → línea roja debajo</span></div>
+</section>
+
+<!-- B -->
+<section class="card">
+<span class="tag">B</span><h2>Fila propia «Desde Pinterest» con vista previa</h2>
+<p>Botón rojo de Pinterest junto a los del PC. Al pegar el enlace se muestra la portada del pin antes de ponerla, con «Imagen fija / Animado» si el pin tiene vídeo o GIF.</p>
+<div class="panel"><div class="dz">
+ <div class="row"><div class="cur"><span class="thumb"></span><div class="t"><b>Fondo</b><small>Imagen: atardecer.jpg</small></div></div>
+  <div class="acts"><button class="btn tonal">🖼 Imagen del PC</button><button class="btn tonal">🎬 Video del PC</button><button class="btn pinbtn">P Desde Pinterest</button></div></div>
+ <div class="row"><div class="t"><b>Enlace del pin</b><small>pin.it, pinterest.com/pin o i.pinimg.com</small></div>
+  <span style="display:flex;gap:8px"><input value="https://www.pinterest.es/pin/123456789/"><button class="btn tonal">Ver</button></span></div>
+ <div class="prev"><span class="big"><i class="pinlogo">P</i></span><div class="t"><b>Lago entre montañas</b><small>2400 × 1350 · tiene vídeo</small>
+  <div class="chips"><span class="chip">Imagen fija</span><span class="chip on">Animado</span></div></div>
+  <span style="margin-left:auto;display:flex;gap:8px"><button class="btn text">Cancelar</button><button class="btn fill">Poner de fondo</button></span></div>
+</div></div>
+<div class="states"><span>Pegar → «Ver» busca el pin</span><span>Vista previa → confirmar</span><span>Errores bajo el campo</span></div>
+</section>
+
+<!-- C -->
+<section class="card">
+<span class="tag">C</span><h2>Zona de pegar: Ctrl+V o arrastrar desde el navegador</h2>
+<p>Un recuadro donde pegas o arrastras el enlace (o la imagen desde Pinterest en el navegador). Muestra progreso con barra y el resultado en la misma tarjeta.</p>
+<div class="panel"><div class="dz">
+ <div class="row"><div class="cur"><span class="thumb"></span><div class="t"><b>Fondo</b><small>Imagen: pin de Pinterest</small></div></div>
+  <div class="acts"><button class="btn tonal">🖼 Imagen del PC</button><button class="btn tonal">🎬 Video del PC</button><button class="btn text">Quitar</button></div></div>
+ <div class="drop"><span class="ic">📌</span><div class="t"><b>Pega o arrastra aquí un enlace</b><small>De Pinterest (pin.it, pinterest.es…) o cualquier imagen https://</small></div><span style="margin-left:auto"><button class="btn tonal">Pegar</button></span></div>
+ <div class="drop busy"><span class="ic"><span class="spin"></span></span><div class="t"><b>Bajando el pin…</b><small>pin.it/3xYzAbC</small><div class="bar"><i></i></div></div></div>
+ <div class="err">⚠ Sin conexión. Prueba otra vez cuando vuelva internet.</div>
+</div></div>
+<div class="states"><span>Reposo → recuadro discontinuo</span><span>Cargando → borde rosa + barra</span><span>Error → mensaje debajo</span></div>
+</section>
+</div>
+</body>
+</html>

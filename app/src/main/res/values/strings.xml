@@ -1031,14 +1031,14 @@ Dezzy will only extract your token, and everything else is stored locally.</stri
     <string name="artist_canvas">Artist canvas</string>
     <string name="floating_bubble">Floating bubble</string>
     <string name="floating_bubble_desc">Enable a floating bubble player on screen</string>
-    <string name="wallpaper_and_video">Wallpaper &amp; Video</string>
-    <string name="enable_image_wallpaper">Enable Wallpaper (Image)</string>
+    <string name="wallpaper_and_video">App background</string>
+    <string name="enable_image_wallpaper">Image background</string>
     <string name="select_vertical_image">Select Vertical Image</string>
     <string name="no_image_selected">None selected</string>
     <string name="vertical_image_set">Vertical image set</string>
     <string name="select_horizontal_image">Select Horizontal Image</string>
     <string name="horizontal_image_set">Horizontal image set</string>
-    <string name="enable_video_wallpaper">Enable Video Wallpaper</string>
+    <string name="enable_video_wallpaper">Video background</string>
     <string name="select_vertical_video">Select Vertical Video</string>
     <string name="no_video_selected">None selected</string>
     <string name="vertical_video_set">Vertical video set</string>
